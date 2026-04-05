@@ -1,0 +1,20 @@
+{
+	"geolocation": {
+		"data": {
+			"city": "Goiânia",
+			"country": {
+				"code": "BR",
+				"name": "Brazil"
+			},
+			"subdivision": {
+				"code": "GO",
+				"name": "Goiás"
+			},
+			"timezone": "America/Sao_Paulo",
+			"latitude": -16.6802,
+			"longitude": -49.2564,
+			"postalCode": "74835"
+		},
+		"timestamp": 1775424761762
+	}
+}

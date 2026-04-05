@@ -1,0 +1,6 @@
+{
+  "migrationsDir": "src/infra/migrations",
+  "migrationsTable": "pgmigrations",
+  "tsconfig": "tsconfig.json",
+  "tsx": true
+}

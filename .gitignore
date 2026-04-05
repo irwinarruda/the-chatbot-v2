@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.output/
+.vinxi/
+.tanstack/
+.env.local
+.env.preview
+.env.production
+.env.tui
+*.gen.ts
+bun.lock
+deno.lock
+
+
+# Local Vercel folder
+.vercel
