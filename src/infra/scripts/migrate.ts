@@ -13,9 +13,9 @@ if (!process.env.DATABASE_URL && process.env.DATABASE_CONNECTION_STRING) {
 }
 
 const migrationsDir = join(root, "src", "infra", "migrations");
-const tsconfig = join(root, "tsconfig.json");
 const args = process.argv.slice(2).join(" ");
-execSync(
-  `node-pg-migrate --migrations-dir ${migrationsDir} --tsconfig ${tsconfig} --tsx ${args}`,
-  { stdio: "inherit", cwd: root, env: process.env },
-);
+execSync(`node-pg-migrate --migrations-dir ${migrationsDir} ${args}`, {
+  stdio: "inherit",
+  cwd: root,
+  env: process.env,
+});

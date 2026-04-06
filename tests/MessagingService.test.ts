@@ -11,21 +11,23 @@ function createReceiveMessage(message: string): string {
 const delay = 10;
 
 describe("MessagingService", () => {
-  const messagingService = () => orquestrator.messagingService;
-
   test("sendMessage", async () => {
     await orquestrator.clearDatabase();
     const phoneNumber = TestWhatsAppMessagingGateway.phoneNumber;
-    await messagingService().addAllowedNumber(phoneNumber);
+    await orquestrator.messagingService.addAllowedNumber(phoneNumber);
     const user = await orquestrator.createUser({ phoneNumber });
-    let chat = await messagingService().getChatByPhoneNumber(user.phoneNumber);
+    let chat = await orquestrator.messagingService.getChatByPhoneNumber(
+      user.phoneNumber,
+    );
     expect(chat).toBeUndefined();
-    await messagingService().receiveMessage(
+    await orquestrator.messagingService.receiveMessage(
       createReceiveMessage("User 1"),
       "sig",
     );
     await new Promise((r) => setTimeout(r, delay));
-    chat = await messagingService().getChatByPhoneNumber(user.phoneNumber);
+    chat = await orquestrator.messagingService.getChatByPhoneNumber(
+      user.phoneNumber,
+    );
     expect(chat).toBeDefined();
     expect(chat?.idUser).toBe(user.id);
     expect(chat?.messages.length).toBe(2);
@@ -35,8 +37,13 @@ describe("MessagingService", () => {
     const responseMessage = chat?.messages[1];
     expect(responseMessage?.text).toBe("Response to: User 1");
     expect(responseMessage?.userType).toBe(MessageUserType.Bot);
-    await messagingService().sendTextMessage(user.phoneNumber, "Bot 1");
-    chat = await messagingService().getChatByPhoneNumber(user.phoneNumber);
+    await orquestrator.messagingService.sendTextMessage(
+      user.phoneNumber,
+      "Bot 1",
+    );
+    chat = await orquestrator.messagingService.getChatByPhoneNumber(
+      user.phoneNumber,
+    );
     expect(chat).toBeDefined();
     expect(chat?.messages.length).toBe(3);
   });
@@ -44,15 +51,17 @@ describe("MessagingService", () => {
   test("receiveMessage", async () => {
     await orquestrator.clearDatabase();
     const phoneNumber = TestWhatsAppMessagingGateway.phoneNumber;
-    await messagingService().addAllowedNumber(phoneNumber);
-    let chat = await messagingService().getChatByPhoneNumber(phoneNumber);
+    await orquestrator.messagingService.addAllowedNumber(phoneNumber);
+    let chat =
+      await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber);
     expect(chat).toBeUndefined();
-    await messagingService().receiveMessage(
+    await orquestrator.messagingService.receiveMessage(
       createReceiveMessage("First message"),
       "sig",
     );
     await new Promise((r) => setTimeout(r, delay));
-    chat = await messagingService().getChatByPhoneNumber(phoneNumber);
+    chat =
+      await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber);
     expect(chat).toBeDefined();
     expect(chat?.idUser).toBeUndefined();
     expect(chat?.phoneNumber).toBe(phoneNumber);
@@ -66,18 +75,19 @@ describe("MessagingService", () => {
     expect(botMessage?.text).toContain("\ud83d\udc4b");
 
     const user = await orquestrator.createUser({ phoneNumber });
-    await messagingService().receiveMessage(
+    await orquestrator.messagingService.receiveMessage(
       createReceiveMessage("Second duplicate message"),
       "sig",
     );
     await new Promise((r) => setTimeout(r, delay));
-    await messagingService().receiveMessage(
+    await orquestrator.messagingService.receiveMessage(
       createReceiveMessage("Second duplicate message"),
       "sig",
     );
     await new Promise((r) => setTimeout(r, delay));
     const idProvider = userMessage?.idProvider;
-    chat = await messagingService().getChatByPhoneNumber(phoneNumber);
+    chat =
+      await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber);
     expect(chat).toBeDefined();
     expect(chat?.idUser).toBe(user.id);
     expect(chat?.phoneNumber).toBe(phoneNumber);
@@ -92,25 +102,31 @@ describe("MessagingService", () => {
   test("anotherChatShouldBeCreatedWhenUserIsDeleted", async () => {
     await orquestrator.clearDatabase();
     const phoneNumber = TestWhatsAppMessagingGateway.phoneNumber;
-    await messagingService().addAllowedNumber(phoneNumber);
+    await orquestrator.messagingService.addAllowedNumber(phoneNumber);
     const user = await orquestrator.createUser({ phoneNumber });
-    await messagingService().receiveMessage(
+    await orquestrator.messagingService.receiveMessage(
       createReceiveMessage("Message 1"),
       "sig",
     );
     await new Promise((r) => setTimeout(r, delay));
-    let chat = await messagingService().getChatByPhoneNumber(user.phoneNumber);
+    let chat = await orquestrator.messagingService.getChatByPhoneNumber(
+      user.phoneNumber,
+    );
     expect(chat).toBeDefined();
     expect(chat?.messages.length).toBe(2);
     await orquestrator.deleteUser(phoneNumber);
-    chat = await messagingService().getChatByPhoneNumber(user.phoneNumber);
+    chat = await orquestrator.messagingService.getChatByPhoneNumber(
+      user.phoneNumber,
+    );
     expect(chat).toBeUndefined();
-    await messagingService().receiveMessage(
+    await orquestrator.messagingService.receiveMessage(
       createReceiveMessage("New message 2"),
       "sig",
     );
     await new Promise((r) => setTimeout(r, delay));
-    chat = await messagingService().getChatByPhoneNumber(user.phoneNumber);
+    chat = await orquestrator.messagingService.getChatByPhoneNumber(
+      user.phoneNumber,
+    );
     expect(chat).toBeDefined();
     expect(chat?.messages[0]).toBeDefined();
     expect(chat?.messages[0]?.text).toBe("New message 2");
@@ -119,37 +135,40 @@ describe("MessagingService", () => {
   test("shouldNotReceiveMessageIfNumberIsNotAllowed", async () => {
     await orquestrator.clearDatabase();
     const phoneNumber = TestWhatsAppMessagingGateway.phoneNumber;
-    await messagingService().receiveMessage(
+    await orquestrator.messagingService.receiveMessage(
       createReceiveMessage("Message never reaches"),
       "sig",
     );
     await new Promise((r) => setTimeout(r, delay));
-    let chat = await messagingService().getChatByPhoneNumber(phoneNumber);
+    let chat =
+      await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber);
     expect(chat).toBeUndefined();
-    await messagingService().addAllowedNumber(phoneNumber);
-    await messagingService().receiveMessage(
+    await orquestrator.messagingService.addAllowedNumber(phoneNumber);
+    await orquestrator.messagingService.receiveMessage(
       createReceiveMessage("Message never reaches"),
       "sig",
     );
     await new Promise((r) => setTimeout(r, delay));
-    chat = await messagingService().getChatByPhoneNumber(phoneNumber);
+    chat =
+      await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber);
     expect(chat).toBeDefined();
   });
 
   test("summarizationShouldNotTriggerBeforeThreshold", async () => {
     await orquestrator.clearDatabase();
     const phoneNumber = TestWhatsAppMessagingGateway.phoneNumber;
-    await messagingService().addAllowedNumber(phoneNumber);
+    await orquestrator.messagingService.addAllowedNumber(phoneNumber);
     await orquestrator.createUser({ phoneNumber });
     for (let i = 0; i < 9; i++) {
-      await messagingService().receiveMessage(
+      await orquestrator.messagingService.receiveMessage(
         createReceiveMessage(`Message ${i}`),
         "sig",
       );
       await new Promise((r) => setTimeout(r, delay));
     }
     await new Promise((r) => setTimeout(r, 100));
-    const chat = await messagingService().getChatByPhoneNumber(phoneNumber);
+    const chat =
+      await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber);
     expect(chat).toBeDefined();
     expect(chat?.messages.length).toBe(18);
     expect(chat?.summary).toBeUndefined();
@@ -160,17 +179,18 @@ describe("MessagingService", () => {
   test("summarizationTriggeredAfterThreshold", async () => {
     await orquestrator.clearDatabase();
     const phoneNumber = TestWhatsAppMessagingGateway.phoneNumber;
-    await messagingService().addAllowedNumber(phoneNumber);
+    await orquestrator.messagingService.addAllowedNumber(phoneNumber);
     await orquestrator.createUser({ phoneNumber });
     for (let i = 0; i < 10; i++) {
-      await messagingService().receiveMessage(
+      await orquestrator.messagingService.receiveMessage(
         createReceiveMessage(`Message ${i}`),
         "sig",
       );
       await new Promise((r) => setTimeout(r, delay));
     }
     await new Promise((r) => setTimeout(r, 100));
-    const chat = await messagingService().getChatByPhoneNumber(phoneNumber);
+    const chat =
+      await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber);
     expect(chat).toBeDefined();
     expect(chat?.messages.length).toBe(20);
     expect(chat?.summary).toBeDefined();
@@ -182,29 +202,31 @@ describe("MessagingService", () => {
   test("summarizationIncrementedOnNextThreshold", async () => {
     await orquestrator.clearDatabase();
     const phoneNumber = TestWhatsAppMessagingGateway.phoneNumber;
-    await messagingService().addAllowedNumber(phoneNumber);
+    await orquestrator.messagingService.addAllowedNumber(phoneNumber);
     await orquestrator.createUser({ phoneNumber });
     for (let i = 0; i < 10; i++) {
-      await messagingService().receiveMessage(
+      await orquestrator.messagingService.receiveMessage(
         createReceiveMessage(`Message ${i}`),
         "sig",
       );
       await new Promise((r) => setTimeout(r, delay));
     }
     await new Promise((r) => setTimeout(r, 100));
-    let chat = await messagingService().getChatByPhoneNumber(phoneNumber);
+    let chat =
+      await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber);
     expect(chat).toBeDefined();
     const firstSummary = chat?.summary;
     expect(firstSummary).toBeDefined();
     for (let i = 10; i < 20; i++) {
-      await messagingService().receiveMessage(
+      await orquestrator.messagingService.receiveMessage(
         createReceiveMessage(`Message ${i}`),
         "sig",
       );
       await new Promise((r) => setTimeout(r, delay));
     }
     await new Promise((r) => setTimeout(r, 100));
-    chat = await messagingService().getChatByPhoneNumber(phoneNumber);
+    chat =
+      await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber);
     expect(chat).toBeDefined();
     expect(chat?.messages.length).toBe(40);
     expect(chat?.summary).toBeDefined();

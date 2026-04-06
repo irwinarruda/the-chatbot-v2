@@ -4,20 +4,17 @@ import type { CashFlowAddExpenseDTO } from "~/services/CashFlowService";
 import { orquestrator } from "./orquestrator";
 
 describe("CashFlowService", () => {
-  const cashFlowService = () => orquestrator.cashFlowService;
-  const authService = () => orquestrator.authService;
-
   async function setupUserWithSpreadsheet(
     phoneNumber: string,
     sheetId: string,
   ) {
     const encryption = new Encryption(orquestrator.encryptionConfig);
-    await authService().saveUserByGoogleCredential(
+    await orquestrator.authService.saveUserByGoogleCredential(
       encryption.encrypt(phoneNumber),
       "rightCode",
     );
     const url = `https://docs.google.com/spreadsheets/d/${sheetId}/edit?gid=0#gid=0`;
-    await cashFlowService().addSpreadsheetUrl(phoneNumber, url);
+    await orquestrator.cashFlowService.addSpreadsheetUrl(phoneNumber, url);
   }
 
   test("addSpreadsheetUrl should validate url parsing", async () => {
@@ -26,26 +23,26 @@ describe("CashFlowService", () => {
     await orquestrator.createUser({ phoneNumber });
 
     await expect(() =>
-      cashFlowService().addSpreadsheetUrl(phoneNumber, "WrongURL"),
+      orquestrator.cashFlowService.addSpreadsheetUrl(phoneNumber, "WrongURL"),
     ).rejects.toThrow();
     await expect(() =>
-      cashFlowService().addSpreadsheetUrl(phoneNumber, "http://"),
+      orquestrator.cashFlowService.addSpreadsheetUrl(phoneNumber, "http://"),
     ).rejects.toThrow();
     await expect(() =>
-      cashFlowService().addSpreadsheetUrl(
+      orquestrator.cashFlowService.addSpreadsheetUrl(
         phoneNumber,
         "https://docs.google.com/spreadsheets/d",
       ),
     ).rejects.toThrow();
     await expect(() =>
-      cashFlowService().addSpreadsheetUrl(
+      orquestrator.cashFlowService.addSpreadsheetUrl(
         phoneNumber,
         "https://docs.google.com/spreadsheets/d/",
       ),
     ).rejects.toThrow();
 
     const okUrl = `https://docs.google.com/spreadsheets/d/${orquestrator.googleSheetsConfig.testSheetId}/edit`;
-    await cashFlowService().addSpreadsheetUrl(phoneNumber, okUrl);
+    await orquestrator.cashFlowService.addSpreadsheetUrl(phoneNumber, okUrl);
   });
 
   test("get and delete transaction should not work without data", async () => {
@@ -57,14 +54,15 @@ describe("CashFlowService", () => {
     );
 
     const transactions =
-      await cashFlowService().getAllTransactions(phoneNumber);
+      await orquestrator.cashFlowService.getAllTransactions(phoneNumber);
     expect(transactions).toEqual([]);
 
-    const transaction = await cashFlowService().getLastTransaction(phoneNumber);
+    const transaction =
+      await orquestrator.cashFlowService.getLastTransaction(phoneNumber);
     expect(transaction).toBeUndefined();
 
     await expect(
-      cashFlowService().deleteLastTransaction(phoneNumber),
+      orquestrator.cashFlowService.deleteLastTransaction(phoneNumber),
     ).rejects.toThrow(ValidationException);
   });
 
@@ -79,10 +77,10 @@ describe("CashFlowService", () => {
       description: "UniqueExpense",
       bankAccount: "NuConta",
     };
-    await cashFlowService().addExpense(addExpense);
+    await orquestrator.cashFlowService.addExpense(addExpense);
 
     const lastTransaction =
-      await cashFlowService().getLastTransaction(phoneNumber);
+      await orquestrator.cashFlowService.getLastTransaction(phoneNumber);
     expect(lastTransaction).toBeDefined();
     const txDate = new Date(addExpense.date.toDateString());
     expect(lastTransaction?.date.getTime()).toBe(txDate.getTime());
@@ -94,9 +92,9 @@ describe("CashFlowService", () => {
 
   test("deleteLastTransaction should work", async () => {
     const phoneNumber = "5511984444444";
-    await cashFlowService().deleteLastTransaction(phoneNumber);
+    await orquestrator.cashFlowService.deleteLastTransaction(phoneNumber);
     const lastTransaction =
-      await cashFlowService().getLastTransaction(phoneNumber);
+      await orquestrator.cashFlowService.getLastTransaction(phoneNumber);
     expect(lastTransaction).toBeUndefined();
   });
 
@@ -104,8 +102,9 @@ describe("CashFlowService", () => {
     const phoneNumber = "5511984444444";
 
     const expenseCategories =
-      await cashFlowService().getExpenseCategories(phoneNumber);
-    const bankAccounts = await cashFlowService().getBankAccount(phoneNumber);
+      await orquestrator.cashFlowService.getExpenseCategories(phoneNumber);
+    const bankAccounts =
+      await orquestrator.cashFlowService.getBankAccount(phoneNumber);
 
     const newTransactions: CashFlowAddExpenseDTO[] = [
       {
@@ -127,11 +126,11 @@ describe("CashFlowService", () => {
     ];
 
     for (const tx of newTransactions) {
-      await cashFlowService().addExpense(tx);
+      await orquestrator.cashFlowService.addExpense(tx);
     }
 
     const transactions =
-      await cashFlowService().getAllTransactions(phoneNumber);
+      await orquestrator.cashFlowService.getAllTransactions(phoneNumber);
     expect(transactions.length).toBe(2);
     expect(transactions).not.toEqual([]);
 
@@ -146,7 +145,7 @@ describe("CashFlowService", () => {
     }
 
     for (let i = 0; i < newTransactions.length; i++) {
-      await cashFlowService().deleteLastTransaction(phoneNumber);
+      await orquestrator.cashFlowService.deleteLastTransaction(phoneNumber);
     }
   });
 
@@ -154,22 +153,22 @@ describe("CashFlowService", () => {
     await orquestrator.clearDatabase();
     const phoneNumber = "5511977777777";
     const encryption = new Encryption(orquestrator.encryptionConfig);
-    await authService().saveUserByGoogleCredential(
+    await orquestrator.authService.saveUserByGoogleCredential(
       encryption.encrypt(phoneNumber),
       "rightCode",
     );
     const wrongUrl =
       "https://docs.google.com/spreadsheets/d/WrongSheet/edit?gid=0#gid=0";
-    await cashFlowService().addSpreadsheetUrl(phoneNumber, wrongUrl);
+    await orquestrator.cashFlowService.addSpreadsheetUrl(phoneNumber, wrongUrl);
 
     await expect(
-      cashFlowService().getAllTransactions(phoneNumber),
+      orquestrator.cashFlowService.getAllTransactions(phoneNumber),
     ).rejects.toThrow(ServiceException);
     await expect(
-      cashFlowService().deleteLastTransaction(phoneNumber),
+      orquestrator.cashFlowService.deleteLastTransaction(phoneNumber),
     ).rejects.toThrow(ServiceException);
     await expect(
-      cashFlowService().addExpense({
+      orquestrator.cashFlowService.addExpense({
         phoneNumber,
         date: new Date(),
         value: 1,
@@ -189,13 +188,13 @@ describe("CashFlowService", () => {
     );
 
     const expenseCategories =
-      await cashFlowService().getExpenseCategories(okPhone);
+      await orquestrator.cashFlowService.getExpenseCategories(okPhone);
     expect(expenseCategories.length).toBeGreaterThan(0);
 
     const wrongPhone = "5511955555555";
     await setupUserWithSpreadsheet(wrongPhone, "WrongSheet");
     await expect(
-      cashFlowService().getExpenseCategories(wrongPhone),
+      orquestrator.cashFlowService.getExpenseCategories(wrongPhone),
     ).rejects.toThrow(ServiceException);
   });
 
@@ -208,13 +207,13 @@ describe("CashFlowService", () => {
     );
 
     const earningCategories =
-      await cashFlowService().getEarningCategories(okPhone);
+      await orquestrator.cashFlowService.getEarningCategories(okPhone);
     expect(earningCategories.length).toBeGreaterThan(0);
 
     const wrongPhone = "5511933333333";
     await setupUserWithSpreadsheet(wrongPhone, "WrongSheet");
     await expect(
-      cashFlowService().getEarningCategories(wrongPhone),
+      orquestrator.cashFlowService.getEarningCategories(wrongPhone),
     ).rejects.toThrow(ServiceException);
   });
 
@@ -226,13 +225,14 @@ describe("CashFlowService", () => {
       orquestrator.googleSheetsConfig.testSheetId,
     );
 
-    const bankAccounts = await cashFlowService().getBankAccount(okPhone);
+    const bankAccounts =
+      await orquestrator.cashFlowService.getBankAccount(okPhone);
     expect(bankAccounts.length).toBeGreaterThan(0);
 
     const wrongPhone = "5511911111111";
     await setupUserWithSpreadsheet(wrongPhone, "WrongSheet");
-    await expect(cashFlowService().getBankAccount(wrongPhone)).rejects.toThrow(
-      ServiceException,
-    );
+    await expect(
+      orquestrator.cashFlowService.getBankAccount(wrongPhone),
+    ).rejects.toThrow(ServiceException);
   });
 });

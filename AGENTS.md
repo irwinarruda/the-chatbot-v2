@@ -47,6 +47,10 @@ Tests run serially (`fileParallelism: false`) with a 30s timeout. The `Orquestra
 
 Biome enforces: 2-space indent, double quotes, semicolons always, trailing commas, 80 char line width. `noExplicitAny` is disabled.
 
+## TUI Routes
+
+`api/v1/tui` routes are development-only. Ignore TypeScript errors originating from these files — they may surface due to type generation mismatches.
+
 ## Generated Files
 
 `*.gen.ts` files (including `src/routeTree.gen.ts`) are auto-generated and gitignored. Do not edit them manually.

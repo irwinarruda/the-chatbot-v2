@@ -1,56 +1,55 @@
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
-import fs from "fs";
+import { cpSync, existsSync, readdirSync } from "fs";
 import { nitro } from "nitro/vite";
 import path from "path";
-import ts from "typescript";
-import type { Plugin } from "vite";
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import { loadEnv } from "./src/infra/env";
 
 loadEnv();
 
-function compileMigrations(): Plugin {
-  const VIRTUAL_ID = "virtual:compiled-migrations";
-  const RESOLVED_ID = "\0" + VIRTUAL_ID;
-  let migrationData: Record<string, string> = {};
-
+function copyStaticAssets(): Plugin {
   return {
-    name: "compile-migrations",
-    buildStart() {
-      const srcDir = path.resolve("src", "infra", "migrations");
-      if (!fs.existsSync(srcDir)) return;
-      const files = fs.readdirSync(srcDir).filter((f) => f.endsWith(".ts"));
-      migrationData = {};
-      for (const file of files) {
-        const source = fs.readFileSync(path.join(srcDir, file), "utf-8");
-        const { outputText } = ts.transpileModule(source, {
-          compilerOptions: {
-            module: ts.ModuleKind.ESNext,
-            target: ts.ScriptTarget.ES2022,
-          },
-        });
-        migrationData[file.replace(/\.ts$/, ".js")] = outputText;
-      }
-    },
-    resolveId(id) {
-      if (id === VIRTUAL_ID) return RESOLVED_ID;
-    },
-    load(id) {
-      if (id === RESOLVED_ID) {
-        return `export default ${JSON.stringify(migrationData)};`;
-      }
-    },
+    name: "copy-static-assets",
     closeBundle() {
-      if (Object.keys(migrationData).length === 0) return;
-      const outDir = path.resolve(".output", "server", "infra", "migrations");
-      fs.mkdirSync(outDir, { recursive: true });
-      for (const [file, content] of Object.entries(migrationData)) {
-        fs.writeFileSync(path.join(outDir, file), content);
+      const assets = [
+        {
+          src: path.resolve("src", "infra", "migrations"),
+          dest: path.join("src", "infra", "migrations"),
+        },
+        {
+          src: path.resolve("templates"),
+          dest: "templates",
+        },
+      ];
+
+      // Collect server output directories for all possible presets
+      const serverDirs: string[] = [];
+
+      // node-server preset: .output/server/
+      const nodeServerDir = path.resolve(".output", "server");
+      if (existsSync(nodeServerDir)) {
+        serverDirs.push(nodeServerDir);
       }
-      console.log(
-        `[compile-migrations] Compiled ${Object.keys(migrationData).length} migration(s)`,
-      );
+
+      // vercel preset: .vercel/output/functions/<name>.func/
+      const vercelFunctionsDir = path.resolve(".vercel", "output", "functions");
+      if (existsSync(vercelFunctionsDir)) {
+        for (const entry of readdirSync(vercelFunctionsDir)) {
+          if (entry.endsWith(".func")) {
+            serverDirs.push(path.join(vercelFunctionsDir, entry));
+          }
+        }
+      }
+
+      for (const serverDir of serverDirs) {
+        for (const { src, dest } of assets) {
+          if (!existsSync(src)) continue;
+          const destPath = path.join(serverDir, dest);
+          cpSync(src, destPath, { recursive: true });
+          console.log(`[copy-static-assets] Copied ${dest} to ${destPath}`);
+        }
+      }
     },
   };
 }
@@ -63,9 +62,7 @@ export function getRouterConfig(nodeEnv = process.env.NODE_ENV) {
 export default defineConfig({
   server: {
     port: 3000,
-    // ...(process.env.NODE_ENV !== "production" && {
     allowedHosts: ["parrot-fun-nicely.ngrok-free.app"],
-    // }),
   },
   preview: {
     port: 3000,
@@ -80,6 +77,6 @@ export default defineConfig({
     }),
     nitro(),
     viteReact(),
-    compileMigrations(),
+    copyStaticAssets(),
   ],
 });

@@ -46,11 +46,11 @@ export class Orquestrator {
   summarizationConfig: SummarizationConfig;
   openAiConfig: OpenAiConfig;
 
-  authService!: AuthService;
-  messagingService!: MessagingService;
-  statusService!: StatusService;
-  cashFlowService!: CashFlowService;
-  migrationService!: MigrationService;
+  authService: AuthService;
+  messagingService: MessagingService;
+  statusService: StatusService;
+  cashFlowService: CashFlowService;
+  migrationService: MigrationService;
 
   constructor() {
     this.config = loadConfig();

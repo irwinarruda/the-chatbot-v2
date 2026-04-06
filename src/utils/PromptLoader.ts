@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "fs";
-import { join, resolve } from "path";
+import { join } from "path";
 import { NotFoundException } from "~/infra/exceptions";
+import { resolveTemplatesDir } from "~/infra/paths";
 
 export const PromptLocale = {
   En: "En",
@@ -12,7 +13,7 @@ export interface AiChatGatewayParams {
   phoneNumber: string;
 }
 
-const promptsRoot = resolve(process.cwd(), "templates", "prompts");
+const promptsRoot = resolveTemplatesDir("prompts");
 const cache = new Map<string, string>();
 
 function readFile(fileName: string): string {

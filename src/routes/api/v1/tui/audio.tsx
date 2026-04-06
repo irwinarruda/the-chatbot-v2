@@ -10,64 +10,58 @@ import type {
   ReceiveAudioMessageDTO,
 } from "~/resources/IWhatsAppMessagingGateway";
 import type { MessagingService } from "~/services/MessagingService";
+import { Http } from "~/utils/Http";
 
-export const Route = createFileRoute("/api/v1/tui/audio" as any)({
+export const Route = createFileRoute("/api/v1/tui/audio")({
   server: {
-    handlers: ({ createHandlers }) =>
-      createHandlers({
-        POST: async ({ request }) => {
-          const rawGateway = getService<IWhatsAppMessagingGateway>(
-            "IWhatsAppMessagingGateway",
+    handlers: {
+      async POST({ request }) {
+        const rawGateway = getService<IWhatsAppMessagingGateway>(
+          "IWhatsAppMessagingGateway",
+        );
+        const gateway = requireTuiGateway(rawGateway);
+        if (gateway instanceof Response) {
+          return gateway;
+        }
+        const body = (await request.json()) as {
+          phone_number: string;
+          file_path: string;
+          mime_type?: string;
+        };
+        const filePath = normalizeFilePath(body.file_path);
+        if (!path.isAbsolute(filePath)) {
+          throw new ValidationException(
+            "File path must be absolute (or start with ~/)",
+            "Provide an absolute file path and try again.",
           );
-          const gateway = requireTuiGateway(rawGateway);
-          if (gateway instanceof Response) {
-            return gateway;
-          }
-          const body = (await request.json()) as {
-            phone_number: string;
-            file_path: string;
-            mime_type?: string;
-          };
-          const filePath = normalizeFilePath(body.file_path);
-          if (!path.isAbsolute(filePath)) {
-            throw new ValidationException(
-              "File path must be absolute (or start with ~/)",
-              "Provide an absolute file path and try again.",
-            );
-          }
-          if (!fs.existsSync(filePath)) {
-            throw new ValidationException(
-              "Audio file not found",
-              "Provide a valid audio file path and try again.",
-            );
-          }
-          const mimeType = body.mime_type ?? getMimeType(filePath);
-          if (!mimeType.startsWith("audio/")) {
-            throw new ValidationException(
-              "MimeType must be an audio type",
-              "Provide a supported audio mime type and try again.",
-            );
-          }
-          const fileBuffer = fs.readFileSync(filePath);
-          const mediaId = await gateway.saveMediaAsync(Buffer.from(fileBuffer));
-          const messagingService =
-            getService<MessagingService>("MessagingService");
-          const dto: ReceiveAudioMessageDTO = {
-            from: body.phone_number,
-            mimeType,
-            mediaId,
-            idProvider: crypto.randomUUID(),
-          };
-          await messagingService.listenToMessage(dto);
-          return new Response(
-            JSON.stringify({ status: "ok", media_id: mediaId }),
-            {
-              status: 200,
-              headers: { "Content-Type": "application/json" },
-            },
+        }
+        if (!fs.existsSync(filePath)) {
+          throw new ValidationException(
+            "Audio file not found",
+            "Provide a valid audio file path and try again.",
           );
-        },
-      }),
+        }
+        const mimeType = body.mime_type ?? getMimeType(filePath);
+        if (!mimeType.startsWith("audio/")) {
+          throw new ValidationException(
+            "MimeType must be an audio type",
+            "Provide a supported audio mime type and try again.",
+          );
+        }
+        const fileBuffer = fs.readFileSync(filePath);
+        const mediaId = await gateway.saveMediaAsync(Buffer.from(fileBuffer));
+        const messagingService =
+          getService<MessagingService>("MessagingService");
+        const dto: ReceiveAudioMessageDTO = {
+          from: body.phone_number,
+          mimeType,
+          mediaId,
+          idProvider: crypto.randomUUID(),
+        };
+        await messagingService.listenToMessage(dto);
+        return Http.json({ status: "ok", mediaId });
+      },
+    },
   },
 });
 

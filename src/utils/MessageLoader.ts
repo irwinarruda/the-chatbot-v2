@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "fs";
-import { join, resolve } from "path";
+import { join } from "path";
 import { NotFoundException } from "~/infra/exceptions";
+import { resolveTemplatesDir } from "~/infra/paths";
 
 export const MessageTemplate = {
   SignedIn: "SignedIn",
@@ -19,7 +20,7 @@ export interface MessageParams {
   loginUrl?: string;
 }
 
-const messagesRoot = resolve(process.cwd(), "templates", "messages");
+const messagesRoot = resolveTemplatesDir("messages");
 const cache = new Map<string, string>();
 
 function readFile(fileName: string): string {

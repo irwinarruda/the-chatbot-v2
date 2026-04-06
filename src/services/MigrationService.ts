@@ -1,30 +1,9 @@
-import compiledMigrations from "virtual:compiled-migrations";
 import fs from "fs";
 import { runner } from "node-pg-migrate";
-import os from "os";
-import path from "path";
 import type { AuthConfig, DatabaseConfig } from "~/infra/config";
 import type { Database } from "~/infra/database";
 import { UnauthorizedException } from "~/infra/exceptions";
-
-function resolveMigrationsDir(): string {
-  const standardDir = path.join(import.meta.dirname, "../infra/migrations");
-  if (fs.existsSync(standardDir)) {
-    return standardDir;
-  }
-  const entries = Object.entries(compiledMigrations);
-  if (entries.length === 0) {
-    throw new Error(
-      `Migrations directory not found at ${standardDir} and no embedded migrations available`,
-    );
-  }
-  const tmpDir = path.join(os.tmpdir(), "app-migrations");
-  fs.mkdirSync(tmpDir, { recursive: true });
-  for (const [file, content] of entries) {
-    fs.writeFileSync(path.join(tmpDir, file), content);
-  }
-  return tmpDir;
-}
+import { resolveMigrationsDir } from "~/infra/paths";
 
 const migrationsDir = resolveMigrationsDir();
 

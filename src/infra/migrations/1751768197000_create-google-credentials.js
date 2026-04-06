@@ -1,6 +1,6 @@
-import type { MigrationBuilder } from "node-pg-migrate";
+/** @param {import('node-pg-migrate').MigrationBuilder} pgm */
 
-export function up(pgm: MigrationBuilder): void {
+export function up(pgm) {
   pgm.sql(`
     CREATE TABLE google_credentials (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -15,6 +15,7 @@ export function up(pgm: MigrationBuilder): void {
   `);
 }
 
-export function down(pgm: MigrationBuilder): void {
+/** @param {import('node-pg-migrate').MigrationBuilder} pgm */
+export function down(pgm) {
   pgm.sql(`DROP TABLE google_credentials`);
 }

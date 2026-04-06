@@ -127,14 +127,10 @@ export class MessagingService {
       chat.addUser(user.id);
       await this.saveChat(chat);
     }
-    this.mediator
-      .send("RespondToMessage", {
-        chat,
-        message,
-      } as RespondToMessageEvent)
-      .catch((err) => {
-        console.error(err);
-      });
+    await this.mediator.send("RespondToMessage", {
+      chat,
+      message,
+    } as RespondToMessageEvent);
   }
 
   async respondToMessage(chat: Chat, message: Message): Promise<void> {

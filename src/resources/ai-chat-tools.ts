@@ -3,8 +3,8 @@ import type { AiChatMessage, IAiChatGateway } from "~/resources/IAiChatGateway";
 import { AiChatMessageType, AiChatRole } from "~/resources/IAiChatGateway";
 import type { AuthService } from "~/services/AuthService";
 import type { CashFlowService } from "~/services/CashFlowService";
-import { PromptLoader, PromptLocale } from "~/utils/PromptLoader";
 import { Printable } from "~/utils/Printable";
+import { PromptLoader, PromptLocale } from "~/utils/PromptLoader";
 
 const genericError =
   "There can be a generic error response: { message, action, name, status_code }";

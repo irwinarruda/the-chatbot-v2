@@ -1,6 +1,6 @@
-import type { MigrationBuilder } from "node-pg-migrate";
+/** @param {import('node-pg-migrate').MigrationBuilder} pgm */
 
-export function up(pgm: MigrationBuilder): void {
+export function up(pgm) {
   pgm.sql(`ALTER TABLE messages ADD COLUMN button_reply VARCHAR(10000)`);
   pgm.sql(`ALTER TABLE messages ADD COLUMN button_reply_options VARCHAR(100)`);
   pgm.sql(
@@ -12,7 +12,8 @@ export function up(pgm: MigrationBuilder): void {
   );
 }
 
-export function down(pgm: MigrationBuilder): void {
+/** @param {import('node-pg-migrate').MigrationBuilder} pgm */
+export function down(pgm) {
   pgm.sql(`DROP INDEX ix_messages_id_provider`);
   pgm.sql(`ALTER TABLE messages DROP COLUMN id_provider`);
   pgm.sql(`ALTER TABLE messages DROP COLUMN type`);

@@ -21,7 +21,7 @@
     "cli": "cd cli && bun run dev",
     "migrate:up": "bun src/infra/scripts/migrate.ts up",
     "migrate:down": "bun src/infra/scripts/migrate.ts down",
-    "migrate:create": "node-pg-migrate create --migration-file-language ts",
+    "migrate:create": "node-pg-migrate create --migration-file-language js",
     "lint": "biome lint",
     "lint:fix": "biome lint --write",
     "format": "biome format",
