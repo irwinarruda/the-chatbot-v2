@@ -1,0 +1,65 @@
+{
+  "meta": {
+    "siteTitle": "The Chatbot",
+    "welcomeTitle": "Bem-vindo - The Chatbot",
+    "privacyTitle": "Política de Privacidade - The Chatbot",
+    "thankYouTitle": "Obrigado - The Chatbot",
+    "connectedTitle": "Conectado - The Chatbot"
+  },
+  "nav": {
+    "home": "home/",
+    "privacy": "privacy"
+  },
+  "welcomePage": {
+    "windowTitle": "the-chatbot: ~/welcome",
+    "heading": "The Chatbot",
+    "subtitle": "WhatsApp · Google Sheets · IA",
+    "description": "é um agente conversacional versátil projetado para ajudar você a organizar sua vida diretamente do WhatsApp.",
+    "features": [
+      {
+        "title": "Controle Financeiro",
+        "description": "Acompanhe despesas e fluxo de caixa automaticamente no Google Sheets.",
+        "tags": ["#google-sheets", "#finanças"]
+      },
+      {
+        "title": "Integração Segura",
+        "description": "Seus dados estão protegidos com a Autenticação do Google.",
+        "tags": ["#oauth", "#segurança"]
+      },
+      {
+        "title": "Sempre Disponível",
+        "description": "Interaja naturalmente a qualquer hora, em qualquer lugar.",
+        "tags": ["#whatsapp", "#24h"]
+      }
+    ],
+    "footerPrompt": "Envie uma mensagem para começar"
+  },
+  "privacyPage": {
+    "windowTitle": "the-chatbot: ~/privacy",
+    "copyright": "2025 TheChatbot. Todos os direitos reservados."
+  },
+  "thankYouPage": {
+    "windowTitle": "the-chatbot: ~/auth/success",
+    "heading": "Obrigado!",
+    "subtitle": "Conta conectada com sucesso",
+    "greeting": "Bem-vindo ao",
+    "body": "Obrigado pela confiança. Sua conta Google foi autenticada com sucesso e você já está pronto para explorar todos os recursos.",
+    "footerPrompt": "Você já pode fechar esta janela com segurança"
+  },
+  "alreadySignedInPage": {
+    "windowTitle": "the-chatbot: ~/auth/status",
+    "heading": "Já está conectado!",
+    "subtitle": "Sua sessão do Google está ativa",
+    "badge": "Conectado",
+    "greeting": "Bem-vindo de volta ao",
+    "body": "Detectamos uma autenticação existente para sua conta Google. Sua sessão foi atualizada automaticamente e você está pronto para continuar.",
+    "footerPrompt": "Você já pode fechar esta janela com segurança"
+  },
+  "notFoundPage": {
+    "windowTitle": "the-chatbot: ~/404",
+    "heading": "404",
+    "subtitle": "Página não encontrada",
+    "body": "O caminho solicitado não existe nesta sessão do terminal.",
+    "footerPrompt": "Navegue para uma rota conhecida"
+  }
+}

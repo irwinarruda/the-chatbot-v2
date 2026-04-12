@@ -1,6 +1,6 @@
+import { createApiErrorResponse } from "@infra/exceptions";
+import { ensureBootstrapped } from "@infra/server-bootstrap";
 import { createMiddleware, createStart } from "@tanstack/react-start";
-import { createApiErrorResponse } from "~/infra/exceptions";
-import { ensureBootstrapped } from "~/infra/server-bootstrap";
 
 const securityHeadersMiddleware = createMiddleware({
   type: "request",
@@ -17,7 +17,7 @@ const securityHeadersMiddleware = createMiddleware({
     response.headers.set("X-XSS-Protection", "1; mode=block");
     response.headers.set(
       "Content-Security-Policy",
-      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'",
+      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; frame-ancestors 'none'",
     );
   }
   return response;
@@ -25,12 +25,15 @@ const securityHeadersMiddleware = createMiddleware({
 
 const apiExceptionMiddleware = createMiddleware({ type: "request" }).server(
   async ({ next, pathname }) => {
-    await ensureBootstrapped();
+    const isApi = pathname.startsWith("/api/");
+    if (isApi) {
+      await ensureBootstrapped();
+    }
     try {
       const response = await next();
       return response;
     } catch (error) {
-      if (!pathname.startsWith("/api/")) {
+      if (!isApi) {
         throw error;
       }
       return createApiErrorResponse(error);

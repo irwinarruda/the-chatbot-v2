@@ -1,7 +1,3 @@
-import type { Config } from "~/infra/config";
-import { container } from "~/infra/container";
-import { Database } from "~/infra/database";
-import { shouldUseTuiGateway } from "~/infra/tui";
 import { AiChatGateway } from "~/resources/AiChatGateway";
 import { GoogleAuthGateway } from "~/resources/GoogleAuthGateway";
 import { GoogleCashFlowSpreadsheetGateway } from "~/resources/GoogleCashFlowSpreadsheetGateway";
@@ -18,6 +14,10 @@ import {
 import { MigrationService } from "~/services/MigrationService";
 import { StatusService } from "~/services/StatusService";
 import { Mediator } from "~/utils/Mediator";
+import type { Config } from "./config";
+import { container } from "./container";
+import { Database } from "./database";
+import { shouldUseTuiGateway } from "./tui";
 
 export function registerDependencies(config: Config) {
   const database = new Database(config.database.connectionString);

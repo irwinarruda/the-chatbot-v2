@@ -1,7 +1,7 @@
+import { NotFoundException } from "@infra/exceptions";
+import { resolveTemplatesDir } from "@infra/paths";
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
-import { NotFoundException } from "~/infra/exceptions";
-import { resolveTemplatesDir } from "~/infra/paths";
 
 export const PromptLocale = {
   En: "En",

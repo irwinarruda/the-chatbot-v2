@@ -21,18 +21,18 @@ Use `bun` as the package manager (not npm or yarn).
 
 ## Architecture
 
-The codebase follows a Controller → Service → Entity layered pattern with a custom DI container (`src/infra/container.ts`). Dependency wiring for production lives in `src/infra/bootstrap.ts`.
+The codebase follows a Controller → Service → Entity layered pattern with a custom DI container (`infra/container.ts`). Dependency wiring for production lives in `infra/bootstrap.ts`.
 
 - `src/entities/` — domain objects (User, Chat, Message, etc.)
 - `src/services/` — business logic
 - `src/resources/` — gateway interfaces + implementations (external API clients)
 - `src/routes/` — TanStack Start API routes (`api/v1/*`)
-- `src/infra/` — config, database, container, env, migrations, exceptions
+- `infra/` — config, database, container, env, migrations, exceptions
 - `src/utils/` — mediator, loaders, WhatsAppTextChunker
 
 ## Environment System
 
-Two-layer env loading (see `src/infra/env.ts`):
+Two-layer env loading (see `infra/env.ts`):
 
 1. `.env` is always loaded first (base template with placeholders)
 2. `.env.${MODE}` is loaded with override

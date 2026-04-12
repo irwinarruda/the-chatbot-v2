@@ -1,10 +1,10 @@
+import { ValidationException } from "@infra/exceptions";
+import { getService } from "@infra/server-bootstrap";
+import { requireTuiGateway } from "@infra/tui";
 import { createFileRoute } from "@tanstack/react-router";
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { ValidationException } from "~/infra/exceptions";
-import { getService } from "~/infra/server-bootstrap";
-import { requireTuiGateway } from "~/infra/tui";
 import type {
   IWhatsAppMessagingGateway,
   ReceiveAudioMessageDTO,

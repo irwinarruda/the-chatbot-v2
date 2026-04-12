@@ -32,7 +32,11 @@
         "noStaticOnlyClass": "off"
       },
       "style": {
-        "useNodejsImportProtocol": "off"
+        "useNodejsImportProtocol": "off",
+        "noDescendingSpecificity": "off"
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "off"
       }
     }
   },

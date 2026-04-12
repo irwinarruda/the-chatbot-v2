@@ -1,4 +1,4 @@
-import { UnauthorizedException } from "~/infra/exceptions";
+import { UnauthorizedException } from "@infra/exceptions";
 import { orquestrator } from "./orquestrator";
 
 describe("MigrationService", () => {

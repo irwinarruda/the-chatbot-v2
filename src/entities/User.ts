@@ -1,7 +1,7 @@
+import { ValidationException } from "@infra/exceptions";
 import { v4 as uuidv4 } from "uuid";
 import { Credential, CredentialType } from "~/entities/Credentials";
 import { isValid, sanitize } from "~/entities/PhoneNumberUtils";
-import { ValidationException } from "~/infra/exceptions";
 
 export class User {
   id: string;

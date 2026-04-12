@@ -1,6 +1,6 @@
+import type { OpenAiConfig } from "@infra/config";
+import { ValidationException } from "@infra/exceptions";
 import OpenAI from "openai";
-import type { OpenAiConfig } from "~/infra/config";
-import { ValidationException } from "~/infra/exceptions";
 import type {
   ISpeechToTextGateway,
   TranscribeAudioDTO,

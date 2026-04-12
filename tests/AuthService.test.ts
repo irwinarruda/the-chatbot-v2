@@ -1,5 +1,5 @@
+import { Encryption } from "@infra/encryption";
 import { User } from "~/entities/User";
-import { Encryption } from "~/infra/encryption";
 import { GoogleAuthScopes } from "~/resources/GoogleAuthScopes";
 import { orquestrator } from "./orquestrator";
 

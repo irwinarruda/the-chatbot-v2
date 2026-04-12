@@ -1,5 +1,5 @@
+import { getService } from "@infra/server-bootstrap";
 import { createFileRoute } from "@tanstack/react-router";
-import { getService } from "~/infra/server-bootstrap";
 import type { MigrationService } from "~/services/MigrationService";
 import { Http } from "~/utils/Http";
 

@@ -1,6 +1,6 @@
-import { registerDependencies } from "~/infra/bootstrap";
-import { loadConfig } from "~/infra/config";
-import { container } from "~/infra/container";
+import { registerDependencies } from "./bootstrap";
+import { loadConfig } from "./config";
+import { container } from "./container";
 
 let bootstrapPromise: Promise<void> | null = null;
 

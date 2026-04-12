@@ -1,6 +1,6 @@
-import type { Config } from "~/infra/config";
 import type { IWhatsAppMessagingGateway } from "~/resources/IWhatsAppMessagingGateway";
 import { TuiWhatsAppMessagingGateway } from "~/resources/TuiWhatsAppMessagingGateway";
+import type { Config } from "./config";
 
 type TuiRuntimeConfig = Pick<Config, "mode" | "nodeEnv">;
 

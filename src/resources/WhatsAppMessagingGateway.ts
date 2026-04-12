@@ -1,6 +1,6 @@
+import type { WhatsAppConfig } from "@infra/config";
 import crypto from "crypto";
 import { addDigitNine } from "~/entities/PhoneNumberUtils";
-import type { WhatsAppConfig } from "~/infra/config";
 import type {
   IWhatsAppMessagingGateway,
   ReceiveAudioMessageDTO,

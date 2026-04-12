@@ -1,4 +1,4 @@
-import { NotFoundException } from "~/infra/exceptions";
+import { NotFoundException } from "@infra/exceptions";
 import type {
   IWhatsAppMessagingGateway,
   ReceiveMessageDTO,

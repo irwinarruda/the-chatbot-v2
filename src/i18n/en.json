@@ -1,0 +1,65 @@
+{
+  "meta": {
+    "siteTitle": "The Chatbot",
+    "welcomeTitle": "Welcome - The Chatbot",
+    "privacyTitle": "Privacy Policy - The Chatbot",
+    "thankYouTitle": "Thank You - The Chatbot",
+    "connectedTitle": "Connected - The Chatbot"
+  },
+  "nav": {
+    "home": "home/",
+    "privacy": "privacy"
+  },
+  "welcomePage": {
+    "windowTitle": "the-chatbot: ~/welcome",
+    "heading": "The Chatbot",
+    "subtitle": "WhatsApp · Google Sheets · AI",
+    "description": "is a versatile conversational agent designed to help you organize your life directly from WhatsApp.",
+    "features": [
+      {
+        "title": "Financial Control",
+        "description": "Track expenses and cash flow automatically in Google Sheets.",
+        "tags": ["#google-sheets", "#finance"]
+      },
+      {
+        "title": "Secure Integration",
+        "description": "Your data is protected with Google Authentication.",
+        "tags": ["#oauth", "#security"]
+      },
+      {
+        "title": "Always Available",
+        "description": "Interact naturally at any time, anywhere.",
+        "tags": ["#whatsapp", "#24h"]
+      }
+    ],
+    "footerPrompt": "Send a message to get started"
+  },
+  "privacyPage": {
+    "windowTitle": "the-chatbot: ~/privacy",
+    "copyright": "2025 TheChatbot. All rights reserved."
+  },
+  "thankYouPage": {
+    "windowTitle": "the-chatbot: ~/auth/success",
+    "heading": "Thank you!",
+    "subtitle": "Account connected successfully",
+    "greeting": "Welcome to",
+    "body": "Thank you for trusting us. Your Google account has been successfully authenticated and you are ready to explore all features.",
+    "footerPrompt": "You can now safely close this window"
+  },
+  "alreadySignedInPage": {
+    "windowTitle": "the-chatbot: ~/auth/status",
+    "heading": "Already connected!",
+    "subtitle": "Your Google session is active",
+    "badge": "Connected",
+    "greeting": "Welcome back to",
+    "body": "We detected an existing authentication for your Google account. Your session has been automatically updated and you are ready to continue.",
+    "footerPrompt": "You can now safely close this window"
+  },
+  "notFoundPage": {
+    "windowTitle": "the-chatbot: ~/404",
+    "heading": "404",
+    "subtitle": "Page not found",
+    "body": "The requested path does not exist in this terminal session.",
+    "footerPrompt": "Navigate to a known route"
+  }
+}

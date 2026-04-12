@@ -1,5 +1,5 @@
+import type { GoogleConfig } from "@infra/config";
 import { google } from "googleapis";
-import type { GoogleConfig } from "~/infra/config";
 import { buildScopes } from "~/resources/GoogleAuthScopes";
 import type {
   GoogleTokens,

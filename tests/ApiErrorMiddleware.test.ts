@@ -1,15 +1,15 @@
+import { ValidationException } from "@infra/exceptions";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { ValidationException } from "~/infra/exceptions";
 
 const getServiceMock = vi.hoisted(() => vi.fn());
 const requireTuiGatewayMock = vi.hoisted(() => vi.fn());
 
-vi.mock("~/infra/server-bootstrap", () => ({
+vi.mock("@infra/server-bootstrap", () => ({
   getService: getServiceMock,
   ensureBootstrapped: vi.fn(),
 }));
 
-vi.mock("~/infra/tui", () => ({
+vi.mock("@infra/tui", () => ({
   requireTuiGateway: requireTuiGatewayMock,
 }));
 

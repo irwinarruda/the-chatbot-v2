@@ -4,7 +4,7 @@ import { cpSync, existsSync, readdirSync } from "fs";
 import { nitro } from "nitro/vite";
 import path from "path";
 import { defineConfig, type Plugin } from "vite";
-import { loadEnv } from "./src/infra/env";
+import { loadEnv } from "./infra/env";
 
 loadEnv();
 
@@ -14,8 +14,8 @@ function copyStaticAssets(): Plugin {
     closeBundle() {
       const assets = [
         {
-          src: path.resolve("src", "infra", "migrations"),
-          dest: path.join("src", "infra", "migrations"),
+          src: path.resolve("infra", "migrations"),
+          dest: path.join("infra", "migrations"),
         },
         {
           src: path.resolve("templates"),
@@ -75,8 +75,8 @@ export default defineConfig({
     tanstackStart({
       router: getRouterConfig(),
     }),
-    nitro(),
     viteReact(),
+    nitro(),
     copyStaticAssets(),
   ],
 });

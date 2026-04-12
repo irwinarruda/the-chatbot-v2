@@ -1,5 +1,5 @@
-import type { GoogleConfig } from "~/infra/config";
-import { DeveloperException } from "~/infra/exceptions";
+import type { GoogleConfig } from "@infra/config";
+import { DeveloperException } from "@infra/exceptions";
 import { buildScopes } from "~/resources/GoogleAuthScopes";
 import type {
   GoogleTokens,

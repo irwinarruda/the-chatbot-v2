@@ -13,10 +13,11 @@
     "jsx": "react-jsx",
     "paths": {
       "~/*": ["./src/*"],
-      "~/tests/*": ["./tests/*"]
+      "~/tests/*": ["./tests/*"],
+      "@infra/*": ["./infra/*"]
     },
     "types": ["node", "vitest/globals"]
   },
-  "include": ["src/**/*", "tests/**/*"],
+  "include": ["src/**/*", "infra/**/*", "tests/**/*"],
   "exclude": ["node_modules"]
 }

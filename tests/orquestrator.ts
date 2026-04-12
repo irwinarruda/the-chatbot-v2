@@ -1,5 +1,4 @@
 import { faker } from "@faker-js/faker";
-import { User } from "~/entities/User";
 import type {
   AiConfig,
   AuthConfig,
@@ -10,10 +9,11 @@ import type {
   GoogleSheetsConfig,
   OpenAiConfig,
   SummarizationConfig,
-} from "~/infra/config";
-import { loadConfig } from "~/infra/config";
-import { Container } from "~/infra/container";
-import { Database } from "~/infra/database";
+} from "@infra/config";
+import { loadConfig } from "@infra/config";
+import { Container } from "@infra/container";
+import { Database } from "@infra/database";
+import { User } from "~/entities/User";
 import { GoogleCashFlowSpreadsheetGateway } from "~/resources/GoogleCashFlowSpreadsheetGateway";
 import { TestAiChatGateway } from "~/resources/TestAiChatGateway";
 import { TestCashFlowSpreadsheetGateway } from "~/resources/TestCashFlowSpreadsheetGateway";

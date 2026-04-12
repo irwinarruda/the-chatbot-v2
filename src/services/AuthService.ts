@@ -1,9 +1,9 @@
+import type { EncryptionConfig } from "@infra/config";
+import type { Database } from "@infra/database";
+import { Encryption } from "@infra/encryption";
+import { ValidationException } from "@infra/exceptions";
 import { Credential, CredentialType } from "~/entities/Credentials";
 import { User } from "~/entities/User";
-import type { EncryptionConfig } from "~/infra/config";
-import type { Database } from "~/infra/database";
-import { Encryption } from "~/infra/encryption";
-import { ValidationException } from "~/infra/exceptions";
 import type { IGoogleAuthGateway } from "~/resources/IGoogleAuthGateway";
 import type { IMediator } from "~/utils/Mediator";
 

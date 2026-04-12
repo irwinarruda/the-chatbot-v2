@@ -1,5 +1,5 @@
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import type { R2Config } from "~/infra/config";
+import type { R2Config } from "@infra/config";
 import type {
   IStorageGateway,
   UploadFileDTO,
