@@ -1,9 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-
-export const CredentialType = {
-  Google: "google",
-} as const;
-export type CredentialType = ValueOf<typeof CredentialType>;
+import { CredentialType } from "~/entities/enums/CredentialType";
 
 export class Credential {
   id: string;

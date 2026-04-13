@@ -75,20 +75,16 @@ describe("API exception middleware", () => {
     getServiceMock.mockReturnValue({});
 
     const { Route } = await import("~/routes/api/v1/tui/audio");
-    const handlers = (
-      Route.options.server as {
-        handlers: (options: { createHandlers: <T>(routeHandlers: T) => T }) => {
-          POST: (options: { request: Request }) => Promise<Response>;
-        };
-      }
-    ).handlers({
-      createHandlers: <T>(routeHandlers: T): T => routeHandlers,
-    });
+    const handlers = Route.options.server as {
+      handlers: {
+        POST: (options: { request: Request }) => Promise<Response>;
+      };
+    };
 
     const response = await runApiMiddleware({
       pathname: "/api/v1/tui/audio",
       next: async () =>
-        handlers.POST({
+        handlers.handlers.POST({
           request: new Request("http://localhost/api/v1/tui/audio", {
             method: "POST",
             headers: { "Content-Type": "application/json" },

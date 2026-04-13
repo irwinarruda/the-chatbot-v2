@@ -1,9 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-
-export const CashFlowSpreadsheetType = {
-  Google: "google",
-} as const;
-export type CashFlowSpreadsheetType = ValueOf<typeof CashFlowSpreadsheetType>;
+import { CashFlowSpreadsheetType } from "~/entities/enums/CashFlowSpreadsheetType";
 
 export class CashFlowSpreadsheet {
   id: string;

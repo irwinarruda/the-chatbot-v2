@@ -3,19 +3,23 @@ import type { Database } from "@infra/database";
 import { UnauthorizedException, ValidationException } from "@infra/exceptions";
 import { v4 as uuidv4 } from "uuid";
 import { AllowedNumber } from "~/entities/AllowedNumber";
-import { Chat, type ChatType } from "~/entities/Chat";
-import { Message, MessageType, MessageUserType } from "~/entities/Message";
+import { Chat } from "~/entities/Chat";
+import { ChatType } from "~/entities/enums/ChatType";
+import { MessageType } from "~/entities/enums/MessageType";
+import { MessageUserType } from "~/entities/enums/MessageUserType";
+import { Message } from "~/entities/Message";
 import type { AiChatMessage, IAiChatGateway } from "~/resources/IAiChatGateway";
 import { AiChatMessageType, AiChatRole } from "~/resources/IAiChatGateway";
-import type { ISpeechToTextGateway } from "~/resources/ISpeechToTextGateway";
-import type { IStorageGateway } from "~/resources/IStorageGateway";
 import type {
-  IWhatsAppMessagingGateway,
+  IMessagingGateway,
   ReceiveAudioMessageDTO,
   ReceiveInteractiveButtonMessageDTO,
   ReceiveMessageDTO,
   ReceiveTextMessageDTO,
-} from "~/resources/IWhatsAppMessagingGateway";
+} from "~/resources/IMessagingGateway";
+import type { ISpeechToTextGateway } from "~/resources/ISpeechToTextGateway";
+import type { IStorageGateway } from "~/resources/IStorageGateway";
+import type { IWhatsAppMessagingGateway } from "~/resources/IWhatsAppMessagingGateway";
 import type { AuthService } from "~/services/AuthService";
 import type { IMediator } from "~/utils/Mediator";
 import { MessageLoader, MessageTemplate } from "~/utils/MessageLoader";
@@ -63,7 +67,19 @@ export class MessagingService {
     this.summarizationConfig = summarizationConfig;
   }
 
-  async receiveMessage(rawBody: string, signature?: string): Promise<void> {
+  private getMessagingGatewayByChatType(chatType: ChatType): IMessagingGateway {
+    switch (chatType) {
+      case ChatType.WhatsApp:
+        return this.whatsAppMessagingGateway;
+      default:
+        throw new ValidationException("Unsupported chat type");
+    }
+  }
+
+  async receiveWhatsAppMessage(
+    rawBody: string,
+    signature?: string,
+  ): Promise<void> {
     if (
       signature == null ||
       !this.whatsAppMessagingGateway.validateSignature(signature, rawBody)
@@ -74,7 +90,8 @@ export class MessagingService {
       );
     }
     const data = JSON.parse(rawBody);
-    const receiveMessage = this.whatsAppMessagingGateway.receiveMessage(data);
+    const receiveMessage =
+      this.whatsAppMessagingGateway.receiveWhatsAppMessage(data);
     if (receiveMessage != null) {
       await this.listenToMessage(receiveMessage);
     }
@@ -87,6 +104,7 @@ export class MessagingService {
     if (chat == null) {
       chat = new Chat();
       chat.phoneNumber = receiveMessage.from;
+      chat.type = receiveMessage.chatType;
       await this.createChat(chat);
     }
     let message: Message;
@@ -134,6 +152,7 @@ export class MessagingService {
   }
 
   async respondToMessage(chat: Chat, message: Message): Promise<void> {
+    const gateway = this.getMessagingGatewayByChatType(chat.type);
     if (message.type === MessageType.Audio) {
       if (message.mediaId == null || message.mimeType == null) return;
       await this.sendTextMessage(
@@ -141,8 +160,7 @@ export class MessagingService {
         MessageLoader.getMessage(MessageTemplate.ProcessingAudio),
         chat,
       );
-      const mediaContent =
-        await this.whatsAppMessagingGateway.downloadMediaAsync(message.mediaId);
+      const mediaContent = await gateway.downloadMediaAsync(message.mediaId);
       const key = `audio/${chat.id}/${uuidv4()}${getExtension(message.mimeType)}`;
       const permanentUrl = await this.storageGateway.uploadFileAsync({
         key,
@@ -194,9 +212,10 @@ export class MessagingService {
         "Please create a chat first before continuing",
       );
     }
+    const gateway = this.getMessagingGatewayByChatType(chat.type);
     const message = chat.addBotTextMessage(text);
     await this.createMessage(message);
-    await this.whatsAppMessagingGateway.sendTextMessage({
+    await gateway.sendTextMessage({
       to: phoneNumber,
       text,
     });
@@ -215,9 +234,10 @@ export class MessagingService {
         "Please create a chat first before continuing",
       );
     }
+    const gateway = this.getMessagingGatewayByChatType(chat.type);
     const message = chat.addBotButtonReply(text, options);
     await this.createMessage(message);
-    await this.whatsAppMessagingGateway.sendInteractiveReplyButtonMessage({
+    await gateway.sendInteractiveReplyButtonMessage({
       to: chat.phoneNumber,
       text,
       buttons: options,

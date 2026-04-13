@@ -22,7 +22,7 @@ export const Route = createFileRoute("/api/v1/whatsapp/webhook")({
         const xHubSignature256 =
           request.headers.get("x-hub-signature-256") ?? "";
         const stringifiedBody = await request.text();
-        await messagingService.receiveMessage(
+        await messagingService.receiveWhatsAppMessage(
           stringifiedBody,
           xHubSignature256,
         );

@@ -5,10 +5,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import fs from "fs";
 import os from "os";
 import path from "path";
-import type {
-  IWhatsAppMessagingGateway,
-  ReceiveAudioMessageDTO,
-} from "~/resources/IWhatsAppMessagingGateway";
+import { ChatType } from "~/entities/enums/ChatType";
+import type { ReceiveAudioMessageDTO } from "~/resources/IMessagingGateway";
+import type { IWhatsAppMessagingGateway } from "~/resources/IWhatsAppMessagingGateway";
 import type { MessagingService } from "~/services/MessagingService";
 import { Http } from "~/utils/Http";
 
@@ -56,6 +55,7 @@ export const Route = createFileRoute("/api/v1/tui/audio")({
           from: body.phone_number,
           mimeType,
           mediaId,
+          chatType: ChatType.WhatsApp,
           idProvider: crypto.randomUUID(),
         };
         await messagingService.listenToMessage(dto);

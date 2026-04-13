@@ -1,10 +1,10 @@
 import { NotFoundException } from "@infra/exceptions";
 import type {
-  IWhatsAppMessagingGateway,
   ReceiveMessageDTO,
   SendInteractiveButtonMessageDTO,
   SendTextMessageDTO,
-} from "~/resources/IWhatsAppMessagingGateway";
+} from "~/resources/IMessagingGateway";
+import type { IWhatsAppMessagingGateway } from "~/resources/IWhatsAppMessagingGateway";
 import { WhatsAppTextChunker } from "~/utils/WhatsAppTextChunker";
 
 export interface TuiOutgoingMessage {
@@ -37,7 +37,7 @@ export class TuiWhatsAppMessagingGateway implements IWhatsAppMessagingGateway {
     });
   }
 
-  receiveMessage(_data: unknown): ReceiveMessageDTO | undefined {
+  receiveWhatsAppMessage(_data: unknown): ReceiveMessageDTO | undefined {
     return undefined;
   }
 

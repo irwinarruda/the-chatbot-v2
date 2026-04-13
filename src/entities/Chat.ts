@@ -1,11 +1,9 @@
 import { ValidationException } from "@infra/exceptions";
 import { v4 as uuidv4 } from "uuid";
-import { Message, MessageType, MessageUserType } from "~/entities/Message";
-
-export const ChatType = {
-  WhatsApp: "wa_biz",
-} as const;
-export type ChatType = ValueOf<typeof ChatType>;
+import { ChatType } from "~/entities/enums/ChatType";
+import { MessageType } from "~/entities/enums/MessageType";
+import { MessageUserType } from "~/entities/enums/MessageUserType";
+import { Message } from "~/entities/Message";
 
 export class Chat {
   id: string;

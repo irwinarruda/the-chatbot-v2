@@ -1,39 +1,17 @@
-export interface SendTextMessageDTO {
-  to: string;
-  text: string;
-}
+import type { IMessagingGateway, ReceiveMessageDTO } from "./IMessagingGateway";
 
-export interface SendInteractiveButtonMessageDTO {
-  to: string;
-  text: string;
-  buttons: string[];
-}
+export type {
+  IMessagingGateway,
+  ReceiveAudioMessageDTO,
+  ReceiveInteractiveButtonMessageDTO,
+  ReceiveMessageDTO,
+  ReceiveTextMessageDTO,
+  SendInteractiveButtonMessageDTO,
+  SendTextMessageDTO,
+} from "./IMessagingGateway";
 
-export interface ReceiveMessageDTO {
-  from: string;
-  idProvider: string;
-}
-
-export interface ReceiveTextMessageDTO extends ReceiveMessageDTO {
-  text: string;
-}
-
-export interface ReceiveInteractiveButtonMessageDTO extends ReceiveMessageDTO {
-  buttonReply: string;
-}
-
-export interface ReceiveAudioMessageDTO extends ReceiveMessageDTO {
-  mediaId: string;
-  mimeType: string;
-}
-
-export interface IWhatsAppMessagingGateway {
-  sendTextMessage(dto: SendTextMessageDTO): Promise<void>;
-  sendInteractiveReplyButtonMessage(
-    dto: SendInteractiveButtonMessageDTO,
-  ): Promise<void>;
-  receiveMessage(data: unknown): ReceiveMessageDTO | undefined;
-  downloadMediaAsync(mediaId: string): Promise<Buffer>;
+export interface IWhatsAppMessagingGateway extends IMessagingGateway {
   validateSignature(signature: string, rawBody: string): boolean;
   validateWebhook(hubMode: string, hubVerifyToken: string): boolean;
+  receiveWhatsAppMessage(data: unknown): ReceiveMessageDTO | undefined;
 }

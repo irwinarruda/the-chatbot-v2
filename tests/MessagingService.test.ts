@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import { Chat } from "~/entities/Chat";
-import { MessageUserType } from "~/entities/Message";
+import { MessageUserType } from "~/entities/enums/MessageUserType";
 import { TestWhatsAppMessagingGateway } from "~/resources/TestWhatsAppMessagingGateway";
 import { orquestrator } from "./orquestrator";
 
@@ -20,7 +20,7 @@ describe("MessagingService", () => {
       user.phoneNumber,
     );
     expect(chat).toBeUndefined();
-    await orquestrator.messagingService.receiveMessage(
+    await orquestrator.messagingService.receiveWhatsAppMessage(
       createReceiveMessage("User 1"),
       "sig",
     );
@@ -55,7 +55,7 @@ describe("MessagingService", () => {
     let chat =
       await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber);
     expect(chat).toBeUndefined();
-    await orquestrator.messagingService.receiveMessage(
+    await orquestrator.messagingService.receiveWhatsAppMessage(
       createReceiveMessage("First message"),
       "sig",
     );
@@ -75,12 +75,12 @@ describe("MessagingService", () => {
     expect(botMessage?.text).toContain("\ud83d\udc4b");
 
     const user = await orquestrator.createUser({ phoneNumber });
-    await orquestrator.messagingService.receiveMessage(
+    await orquestrator.messagingService.receiveWhatsAppMessage(
       createReceiveMessage("Second duplicate message"),
       "sig",
     );
     await new Promise((r) => setTimeout(r, delay));
-    await orquestrator.messagingService.receiveMessage(
+    await orquestrator.messagingService.receiveWhatsAppMessage(
       createReceiveMessage("Second duplicate message"),
       "sig",
     );
@@ -104,7 +104,7 @@ describe("MessagingService", () => {
     const phoneNumber = TestWhatsAppMessagingGateway.phoneNumber;
     await orquestrator.messagingService.addAllowedNumber(phoneNumber);
     const user = await orquestrator.createUser({ phoneNumber });
-    await orquestrator.messagingService.receiveMessage(
+    await orquestrator.messagingService.receiveWhatsAppMessage(
       createReceiveMessage("Message 1"),
       "sig",
     );
@@ -119,7 +119,7 @@ describe("MessagingService", () => {
       user.phoneNumber,
     );
     expect(chat).toBeUndefined();
-    await orquestrator.messagingService.receiveMessage(
+    await orquestrator.messagingService.receiveWhatsAppMessage(
       createReceiveMessage("New message 2"),
       "sig",
     );
@@ -135,7 +135,7 @@ describe("MessagingService", () => {
   test("shouldNotReceiveMessageIfNumberIsNotAllowed", async () => {
     await orquestrator.clearDatabase();
     const phoneNumber = TestWhatsAppMessagingGateway.phoneNumber;
-    await orquestrator.messagingService.receiveMessage(
+    await orquestrator.messagingService.receiveWhatsAppMessage(
       createReceiveMessage("Message never reaches"),
       "sig",
     );
@@ -144,7 +144,7 @@ describe("MessagingService", () => {
       await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber);
     expect(chat).toBeUndefined();
     await orquestrator.messagingService.addAllowedNumber(phoneNumber);
-    await orquestrator.messagingService.receiveMessage(
+    await orquestrator.messagingService.receiveWhatsAppMessage(
       createReceiveMessage("Message never reaches"),
       "sig",
     );
@@ -160,7 +160,7 @@ describe("MessagingService", () => {
     await orquestrator.messagingService.addAllowedNumber(phoneNumber);
     await orquestrator.createUser({ phoneNumber });
     for (let i = 0; i < 9; i++) {
-      await orquestrator.messagingService.receiveMessage(
+      await orquestrator.messagingService.receiveWhatsAppMessage(
         createReceiveMessage(`Message ${i}`),
         "sig",
       );
@@ -182,7 +182,7 @@ describe("MessagingService", () => {
     await orquestrator.messagingService.addAllowedNumber(phoneNumber);
     await orquestrator.createUser({ phoneNumber });
     for (let i = 0; i < 10; i++) {
-      await orquestrator.messagingService.receiveMessage(
+      await orquestrator.messagingService.receiveWhatsAppMessage(
         createReceiveMessage(`Message ${i}`),
         "sig",
       );
@@ -205,7 +205,7 @@ describe("MessagingService", () => {
     await orquestrator.messagingService.addAllowedNumber(phoneNumber);
     await orquestrator.createUser({ phoneNumber });
     for (let i = 0; i < 10; i++) {
-      await orquestrator.messagingService.receiveMessage(
+      await orquestrator.messagingService.receiveWhatsAppMessage(
         createReceiveMessage(`Message ${i}`),
         "sig",
       );
@@ -218,7 +218,7 @@ describe("MessagingService", () => {
     const firstSummary = chat?.summary;
     expect(firstSummary).toBeDefined();
     for (let i = 10; i < 20; i++) {
-      await orquestrator.messagingService.receiveMessage(
+      await orquestrator.messagingService.receiveWhatsAppMessage(
         createReceiveMessage(`Message ${i}`),
         "sig",
       );

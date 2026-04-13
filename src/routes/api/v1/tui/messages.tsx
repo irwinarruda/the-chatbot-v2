@@ -1,10 +1,9 @@
 import { getService } from "@infra/server-bootstrap";
 import { requireTuiGateway } from "@infra/tui";
 import { createFileRoute } from "@tanstack/react-router";
-import type {
-  IWhatsAppMessagingGateway,
-  ReceiveTextMessageDTO,
-} from "~/resources/IWhatsAppMessagingGateway";
+import { ChatType } from "~/entities/enums/ChatType";
+import type { ReceiveTextMessageDTO } from "~/resources/IMessagingGateway";
+import type { IWhatsAppMessagingGateway } from "~/resources/IWhatsAppMessagingGateway";
 import type { MessagingService } from "~/services/MessagingService";
 import { Http } from "~/utils/Http";
 
@@ -28,6 +27,7 @@ export const Route = createFileRoute("/api/v1/tui/messages")({
         const dto: ReceiveTextMessageDTO = {
           from: body.phone_number,
           text: body.text,
+          chatType: ChatType.WhatsApp,
           idProvider: crypto.randomUUID(),
         };
         await messagingService.listenToMessage(dto);

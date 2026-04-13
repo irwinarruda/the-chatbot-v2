@@ -1,17 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
-
-export const MessageType = {
-  Text: "text",
-  ButtonReply: "interactive",
-  Audio: "audio",
-} as const;
-export type MessageType = ValueOf<typeof MessageType>;
-
-export const MessageUserType = {
-  User: "user",
-  Bot: "bot",
-} as const;
-export type MessageUserType = ValueOf<typeof MessageUserType>;
+import type { MessageType } from "~/entities/enums/MessageType";
+import type { MessageUserType } from "~/entities/enums/MessageUserType";
 
 export interface MessageConfig {
   idChat: string;

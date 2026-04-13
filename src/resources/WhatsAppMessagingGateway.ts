@@ -1,15 +1,16 @@
 import type { WhatsAppConfig } from "@infra/config";
 import crypto from "crypto";
+import { ChatType } from "~/entities/enums/ChatType";
 import { addDigitNine } from "~/entities/PhoneNumberUtils";
 import type {
-  IWhatsAppMessagingGateway,
   ReceiveAudioMessageDTO,
   ReceiveInteractiveButtonMessageDTO,
   ReceiveMessageDTO,
   ReceiveTextMessageDTO,
   SendInteractiveButtonMessageDTO,
   SendTextMessageDTO,
-} from "~/resources/IWhatsAppMessagingGateway";
+} from "~/resources/IMessagingGateway";
+import type { IWhatsAppMessagingGateway } from "~/resources/IWhatsAppMessagingGateway";
 import { WhatsAppTextChunker } from "~/utils/WhatsAppTextChunker";
 
 export class WhatsAppMessagingGateway implements IWhatsAppMessagingGateway {
@@ -109,7 +110,7 @@ export class WhatsAppMessagingGateway implements IWhatsAppMessagingGateway {
     );
   }
 
-  receiveMessage(data: unknown): ReceiveMessageDTO | undefined {
+  receiveWhatsAppMessage(data: unknown): ReceiveMessageDTO | undefined {
     try {
       const root = data as any;
       const entry = root?.entry?.[0];
@@ -123,10 +124,12 @@ export class WhatsAppMessagingGateway implements IWhatsAppMessagingGateway {
       const contact = value?.contacts?.[0];
       const from = addDigitNine(contact?.wa_id ?? "");
       const idProvider = message.id;
+      const chatType = ChatType.WhatsApp;
       if (message.audio) {
         return {
           from,
           idProvider,
+          chatType,
           mediaId: message.audio.id,
           mimeType: message.audio.mime_type,
         } as ReceiveAudioMessageDTO;
@@ -135,6 +138,7 @@ export class WhatsAppMessagingGateway implements IWhatsAppMessagingGateway {
         return {
           from,
           idProvider,
+          chatType,
           buttonReply: message.interactive.button_reply.title,
         } as ReceiveInteractiveButtonMessageDTO;
       }
@@ -142,6 +146,7 @@ export class WhatsAppMessagingGateway implements IWhatsAppMessagingGateway {
         return {
           from,
           idProvider,
+          chatType,
           text: message.text.body,
         } as ReceiveTextMessageDTO;
       }

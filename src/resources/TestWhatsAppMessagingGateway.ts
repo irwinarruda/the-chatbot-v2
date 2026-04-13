@@ -1,11 +1,12 @@
 import { randomUUID } from "crypto";
+import { ChatType } from "~/entities/enums/ChatType";
 import type {
-  IWhatsAppMessagingGateway,
   ReceiveMessageDTO,
   ReceiveTextMessageDTO,
   SendInteractiveButtonMessageDTO,
   SendTextMessageDTO,
-} from "~/resources/IWhatsAppMessagingGateway";
+} from "~/resources/IMessagingGateway";
+import type { IWhatsAppMessagingGateway } from "~/resources/IWhatsAppMessagingGateway";
 
 export class TestWhatsAppMessagingGateway implements IWhatsAppMessagingGateway {
   static phoneNumber = "5511984444444";
@@ -17,11 +18,12 @@ export class TestWhatsAppMessagingGateway implements IWhatsAppMessagingGateway {
     _dto: SendInteractiveButtonMessageDTO,
   ): Promise<void> {}
 
-  receiveMessage(data: unknown): ReceiveMessageDTO | undefined {
+  receiveWhatsAppMessage(data: unknown): ReceiveMessageDTO | undefined {
     const text = typeof data === "string" ? data : JSON.stringify(data);
     const receiveTextMessage: ReceiveTextMessageDTO = {
       from: TestWhatsAppMessagingGateway.phoneNumber,
       text: text,
+      chatType: ChatType.WhatsApp,
       idProvider: text.includes("Second duplicate")
         ? TestWhatsAppMessagingGateway.fixedIdProvider
         : randomUUID(),
