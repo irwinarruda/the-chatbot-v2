@@ -19,6 +19,8 @@ export const googleConfigSchema = z.object({
 
   redirectUri: z.string().min(1),
   loginUri: z.string().min(1),
+  webRedirectUri: z.string().default(""),
+  webLoginUri: z.string().default(""),
   serviceAccountId: z.string().default(""),
   serviceAccountPrivateKey: z.string().default(""),
   speechProjectId: z.string().default(""),
@@ -81,6 +83,12 @@ export const googleSheetsConfigSchema = z.object({
 });
 export type GoogleSheetsConfig = z.infer<typeof googleSheetsConfigSchema>;
 
+export const jwtConfigSchema = z.object({
+  secret: z.string().min(1),
+  expiresIn: z.string().default("7d"),
+});
+export type JwtConfig = z.infer<typeof jwtConfigSchema>;
+
 export const configSchema = z.object({
   database: databaseConfigSchema,
   encryption: encryptionConfigSchema,
@@ -92,6 +100,7 @@ export const configSchema = z.object({
   auth: authConfigSchema,
   summarization: summarizationConfigSchema,
   googleSheets: googleSheetsConfigSchema,
+  jwt: jwtConfigSchema,
   nodeEnv: z.enum(["development", "production", "test"]).default("development"),
   mode: z
     .enum(["local", "development", "test", "preview", "production", "tui"])
@@ -118,6 +127,8 @@ export function loadConfig(): Config {
 
       redirectUri: process.env.GOOGLE_REDIRECT_URI,
       loginUri: process.env.GOOGLE_LOGIN_URI,
+      webRedirectUri: process.env.GOOGLE_WEB_REDIRECT_URI,
+      webLoginUri: process.env.GOOGLE_WEB_LOGIN_URI,
       serviceAccountId: process.env.GOOGLE_SERVICE_ACCOUNT_ID,
       serviceAccountPrivateKey: process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY,
       speechProjectId: process.env.GOOGLE_SPEECH_PROJECT_ID,
@@ -163,6 +174,10 @@ export function loadConfig(): Config {
     },
     googleSheets: {
       testSheetId: process.env.GOOGLE_SHEETS_TEST_SHEET_ID,
+    },
+    jwt: {
+      secret: process.env.JWT_SECRET,
+      expiresIn: process.env.JWT_EXPIRES_IN,
     },
     nodeEnv: process.env.NODE_ENV,
     mode: process.env.MODE,

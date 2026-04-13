@@ -8,6 +8,7 @@ export class User {
   id: string;
   name: string;
   phoneNumber: string;
+  email: string | null;
   isInactive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -18,6 +19,7 @@ export class User {
     this.isInactive = false;
     this.name = "";
     this.phoneNumber = "";
+    this.email = null;
     this.googleCredential = undefined;
     this.createdAt = new Date();
     this.updatedAt = new Date();

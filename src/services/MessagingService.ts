@@ -19,6 +19,7 @@ import type {
 } from "~/resources/IMessagingGateway";
 import type { ISpeechToTextGateway } from "~/resources/ISpeechToTextGateway";
 import type { IStorageGateway } from "~/resources/IStorageGateway";
+import type { IWebMessagingGateway } from "~/resources/IWebMessagingGateway";
 import type { IWhatsAppMessagingGateway } from "~/resources/IWhatsAppMessagingGateway";
 import type { AuthService } from "~/services/AuthService";
 import type { IMediator } from "~/utils/Mediator";
@@ -35,6 +36,7 @@ export interface TranscriptDTO {
 export interface RespondToMessageEvent {
   chat: Chat;
   message: Message;
+  chatType: ChatType;
 }
 
 export class MessagingService {
@@ -42,6 +44,7 @@ export class MessagingService {
   private authService: AuthService;
   private mediator: IMediator;
   private whatsAppMessagingGateway: IWhatsAppMessagingGateway;
+  private webMessagingGateway: IWebMessagingGateway;
   private aiChatGateway: IAiChatGateway;
   private storageGateway: IStorageGateway;
   private speechToTextGateway: ISpeechToTextGateway;
@@ -52,6 +55,7 @@ export class MessagingService {
     authService: AuthService,
     mediator: IMediator,
     whatsAppMessagingGateway: IWhatsAppMessagingGateway,
+    webMessagingGateway: IWebMessagingGateway,
     aiChatGateway: IAiChatGateway,
     storageGateway: IStorageGateway,
     speechToTextGateway: ISpeechToTextGateway,
@@ -61,6 +65,7 @@ export class MessagingService {
     this.authService = authService;
     this.mediator = mediator;
     this.whatsAppMessagingGateway = whatsAppMessagingGateway;
+    this.webMessagingGateway = webMessagingGateway;
     this.aiChatGateway = aiChatGateway;
     this.storageGateway = storageGateway;
     this.speechToTextGateway = speechToTextGateway;
@@ -71,6 +76,8 @@ export class MessagingService {
     switch (chatType) {
       case ChatType.WhatsApp:
         return this.whatsAppMessagingGateway;
+      case ChatType.Web:
+        return this.webMessagingGateway;
       default:
         throw new ValidationException("Unsupported chat type");
     }
@@ -148,17 +155,23 @@ export class MessagingService {
     await this.mediator.send("RespondToMessage", {
       chat,
       message,
+      chatType: receiveMessage.chatType,
     } as RespondToMessageEvent);
   }
 
-  async respondToMessage(chat: Chat, message: Message): Promise<void> {
-    const gateway = this.getMessagingGatewayByChatType(chat.type);
+  async respondToMessage(
+    chat: Chat,
+    message: Message,
+    chatType: ChatType,
+  ): Promise<void> {
+    const gateway = this.getMessagingGatewayByChatType(chatType);
     if (message.type === MessageType.Audio) {
       if (message.mediaId == null || message.mimeType == null) return;
       await this.sendTextMessage(
         chat.phoneNumber,
         MessageLoader.getMessage(MessageTemplate.ProcessingAudio),
         chat,
+        chatType,
       );
       const mediaContent = await gateway.downloadMediaAsync(message.mediaId);
       const key = `audio/${chat.id}/${uuidv4()}${getExtension(message.mimeType)}`;
@@ -188,13 +201,19 @@ export class MessagingService {
       aiMessages,
     );
     if (response.type === AiChatMessageType.Text) {
-      await this.sendTextMessage(chat.phoneNumber, response.text, chat);
+      await this.sendTextMessage(
+        chat.phoneNumber,
+        response.text,
+        chat,
+        chatType,
+      );
     } else if (response.type === AiChatMessageType.Button) {
       await this.sendButtonReplyMessage(
         chat.phoneNumber,
         response.text,
         [...response.buttons],
         chat,
+        chatType,
       );
     }
     await this.triggerSummarization(chat);
@@ -204,6 +223,7 @@ export class MessagingService {
     phoneNumber: string,
     text: string,
     chat?: Chat,
+    chatType?: ChatType,
   ): Promise<void> {
     chat ??= await this.getChatByPhoneNumber(phoneNumber);
     if (chat == null) {
@@ -212,7 +232,7 @@ export class MessagingService {
         "Please create a chat first before continuing",
       );
     }
-    const gateway = this.getMessagingGatewayByChatType(chat.type);
+    const gateway = this.getMessagingGatewayByChatType(chatType ?? chat.type);
     const message = chat.addBotTextMessage(text);
     await this.createMessage(message);
     await gateway.sendTextMessage({
@@ -226,6 +246,7 @@ export class MessagingService {
     text: string,
     options: string[],
     chat?: Chat,
+    chatType?: ChatType,
   ): Promise<void> {
     chat ??= await this.getChatByPhoneNumber(phoneNumber);
     if (chat == null) {
@@ -234,7 +255,7 @@ export class MessagingService {
         "Please create a chat first before continuing",
       );
     }
-    const gateway = this.getMessagingGatewayByChatType(chat.type);
+    const gateway = this.getMessagingGatewayByChatType(chatType ?? chat.type);
     const message = chat.addBotButtonReply(text, options);
     await this.createMessage(message);
     await gateway.sendInteractiveReplyButtonMessage({

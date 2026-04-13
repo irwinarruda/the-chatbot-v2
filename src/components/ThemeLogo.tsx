@@ -1,5 +1,3 @@
-"use client";
-
 import { usePrefs } from "~/components/PrefsProvider";
 
 export function ThemeLogo() {

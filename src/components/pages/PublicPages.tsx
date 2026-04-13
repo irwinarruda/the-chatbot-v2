@@ -23,6 +23,7 @@ function TerminalWindow({
   const navLinks = [
     { label: dictionary.nav.home, href: "/" },
     { label: dictionary.nav.privacy, href: "/privacy" },
+    { label: dictionary.nav.chat, href: "/chat" },
   ];
 
   return (

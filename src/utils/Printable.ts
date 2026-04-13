@@ -4,6 +4,7 @@ function toSnakeCase(str: string): string {
 
 function transformToSnakeCase(obj: unknown): unknown {
   if (Array.isArray(obj)) return obj.map(transformToSnakeCase);
+  if (obj instanceof Date) return obj;
   if (obj != null && typeof obj === "object") {
     return Object.fromEntries(
       Object.entries(obj as Record<string, unknown>).map(([key, value]) => [

@@ -8,7 +8,8 @@
   },
   "nav": {
     "home": "home/",
-    "privacy": "privacy"
+    "privacy": "privacy",
+    "chat": "chat"
   },
   "welcomePage": {
     "windowTitle": "the-chatbot: ~/welcome",
@@ -61,5 +62,31 @@
     "subtitle": "Página não encontrada",
     "body": "O caminho solicitado não existe nesta sessão do terminal.",
     "footerPrompt": "Navegue para uma rota conhecida"
+  },
+  "chatPage": {
+    "windowTitle": "the-chatbot: ~/chat",
+    "loading": "Carregando...",
+    "errorLoading": "Falha ao carregar o chat. Tente novamente.",
+    "errorSending": "Falha ao enviar mensagem. Tente novamente.",
+    "errorMicrophone": "Não foi possível acessar o microfone. Verifique as permissões.",
+    "connected": "Conectado",
+    "disconnected": "Desconectado",
+    "logout": "sair",
+    "emptyState": "Envie uma mensagem para começar a conversar",
+    "you": "você",
+    "bot": "bot",
+    "placeholder": "Digite uma mensagem...",
+    "send": "Enviar",
+    "startRecording": "Gravar áudio",
+    "recording": "Gravando",
+    "stopRecording": "Parar",
+    "audioSent": "Mensagem de áudio enviada"
+  },
+  "chatNotRegisteredPage": {
+    "windowTitle": "the-chatbot: ~/chat/not-registered",
+    "heading": "Não Registrado",
+    "subtitle": "Conta não encontrada",
+    "body": "Você precisa se registrar pelo WhatsApp antes de usar o chat web. Envie uma mensagem para nosso bot no WhatsApp para começar.",
+    "backLink": "Voltar para o início"
   }
 }
