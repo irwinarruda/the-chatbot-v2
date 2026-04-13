@@ -1,4 +1,4 @@
 export const CashFlowSpreadsheetType = {
-  Google: "google",
+  Google: "Google",
 } as const;
 export type CashFlowSpreadsheetType = ValueOf<typeof CashFlowSpreadsheetType>;

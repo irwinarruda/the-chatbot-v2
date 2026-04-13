@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
-import type { MessageType } from "~/entities/enums/MessageType";
-import type { MessageUserType } from "~/entities/enums/MessageUserType";
+import { MessageType } from "~/entities/enums/MessageType";
+import { MessageUserType } from "~/entities/enums/MessageUserType";
 
 export interface MessageConfig {
   idChat: string;
@@ -35,8 +35,8 @@ export class Message {
     this.id = uuidv4();
     this.idChat = config?.idChat ?? "";
     this.idProvider = config?.idProvider ?? undefined;
-    this.type = config?.type ?? ("text" as MessageType);
-    this.userType = config?.userType ?? ("user" as MessageUserType);
+    this.type = config?.type ?? MessageType.Text;
+    this.userType = config?.userType ?? MessageUserType.User;
     this.text = config?.text ?? undefined;
     this.buttonReply = config?.buttonReply ?? undefined;
     this.buttonReplyOptions = config?.buttonReplyOptions ?? undefined;

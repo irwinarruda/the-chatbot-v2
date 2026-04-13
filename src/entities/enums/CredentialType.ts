@@ -1,4 +1,4 @@
 export const CredentialType = {
-  Google: "google",
+  Google: "Google",
 } as const;
 export type CredentialType = ValueOf<typeof CredentialType>;

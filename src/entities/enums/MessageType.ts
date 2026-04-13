@@ -1,6 +1,6 @@
 export const MessageType = {
-  Text: "text",
-  ButtonReply: "interactive",
-  Audio: "audio",
+  Text: "Text",
+  ButtonReply: "Interactive",
+  Audio: "Audio",
 } as const;
 export type MessageType = ValueOf<typeof MessageType>;

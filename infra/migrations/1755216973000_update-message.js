@@ -4,7 +4,7 @@ export function up(pgm) {
   pgm.sql(`ALTER TABLE messages ADD COLUMN button_reply VARCHAR(10000)`);
   pgm.sql(`ALTER TABLE messages ADD COLUMN button_reply_options VARCHAR(100)`);
   pgm.sql(
-    `ALTER TABLE messages ADD COLUMN type VARCHAR(11) NOT NULL DEFAULT 'text'`,
+    `ALTER TABLE messages ADD COLUMN type VARCHAR(11) NOT NULL DEFAULT 'Text'`,
   );
   pgm.sql(`ALTER TABLE messages ADD COLUMN id_provider VARCHAR(1000)`);
   pgm.sql(

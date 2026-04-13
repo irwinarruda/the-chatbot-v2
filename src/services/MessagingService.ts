@@ -303,7 +303,7 @@ export class MessagingService {
       INNER JOIN chats c ON c.id = m.id_chat
       WHERE c.phone_number = ${phoneNumber}
       AND c.is_deleted = false
-      AND m.type = 'Audio'
+      AND m.type = ${MessageType.Audio}
       AND m.transcript IS NOT NULL
       ORDER BY m.created_at DESC
     `;

@@ -1,4 +1,4 @@
 export const ChatType = {
-  WhatsApp: "wa_biz",
+  WhatsApp: "WhatsApp",
 } as const;
 export type ChatType = ValueOf<typeof ChatType>;
