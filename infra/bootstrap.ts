@@ -4,6 +4,7 @@ import { GoogleCashFlowSpreadsheetGateway } from "~/resources/GoogleCashFlowSpre
 import { OpenAiSpeechToTextGateway } from "~/resources/OpenAiSpeechToTextGateway";
 import { R2StorageGateway } from "~/resources/R2StorageGateway";
 import { TuiWhatsAppMessagingGateway } from "~/resources/TuiWhatsAppMessagingGateway";
+import { WebMessagingGateway } from "~/resources/WebMessagingGateway";
 import { WhatsAppMessagingGateway } from "~/resources/WhatsAppMessagingGateway";
 import { AuthService } from "~/services/AuthService";
 import { CashFlowService } from "~/services/CashFlowService";
@@ -51,6 +52,11 @@ export function registerDependencies(config: Config) {
       shouldUseTuiGateway(config)
         ? new TuiWhatsAppMessagingGateway()
         : new WhatsAppMessagingGateway(config.whatsApp),
+    "singleton",
+  );
+  container.register(
+    "IWebMessagingGateway",
+    () => new WebMessagingGateway(),
     "singleton",
   );
   container.register(
@@ -124,6 +130,7 @@ export function registerDependencies(config: Config) {
         container.resolve("AuthService"),
         mediator,
         container.resolve("IWhatsAppMessagingGateway"),
+        container.resolve("IWebMessagingGateway"),
         container.resolve("IAiChatGateway"),
         container.resolve("IStorageGateway"),
         container.resolve("ISpeechToTextGateway"),
@@ -148,6 +155,10 @@ export function registerDependencies(config: Config) {
   mediator.register<RespondToMessageEvent>("RespondToMessage", async (data) => {
     const messagingService =
       container.resolve<MessagingService>("MessagingService");
-    await messagingService.respondToMessage(data.chat, data.message);
+    await messagingService.respondToMessage(
+      data.chat,
+      data.message,
+      data.chatType,
+    );
   });
 }

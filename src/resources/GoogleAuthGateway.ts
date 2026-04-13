@@ -9,12 +9,18 @@ import type {
 
 export class GoogleAuthGateway implements IGoogleAuthGateway {
   private oauth2Client: InstanceType<typeof google.auth.OAuth2>;
+  private webOAuth2Client: InstanceType<typeof google.auth.OAuth2>;
 
   constructor(private config: GoogleConfig) {
     this.oauth2Client = new google.auth.OAuth2(
       config.clientId,
       config.secretClientKey,
       config.redirectUri,
+    );
+    this.webOAuth2Client = new google.auth.OAuth2(
+      config.clientId,
+      config.secretClientKey,
+      config.webRedirectUri || config.redirectUri,
     );
   }
 
@@ -76,5 +82,27 @@ export class GoogleAuthGateway implements IGoogleAuthGateway {
     const url = new URL(this.config.loginUri);
     url.searchParams.set("phone_number", phoneNumber);
     return url.toString();
+  }
+
+  createWebAuthorizationCodeUrl(): string {
+    return this.webOAuth2Client.generateAuthUrl({
+      access_type: "offline",
+      prompt: "consent",
+      scope: buildScopes(),
+    });
+  }
+
+  async exchangeWebCodeForTokens(code: string): Promise<GoogleTokens> {
+    const { tokens } = await this.webOAuth2Client.getToken(code);
+    if (!tokens.access_token) {
+      throw new Error("Failed to obtain required tokens from Google");
+    }
+    return {
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token ?? "",
+      expiresInSeconds: tokens.expiry_date
+        ? Math.floor((tokens.expiry_date - Date.now()) / 1000)
+        : 3600,
+    };
   }
 }

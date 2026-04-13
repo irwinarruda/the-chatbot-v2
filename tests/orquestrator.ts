@@ -20,6 +20,7 @@ import { TestCashFlowSpreadsheetGateway } from "~/resources/TestCashFlowSpreadsh
 import { TestGoogleAuthGateway } from "~/resources/TestGoogleAuthGateway";
 import { TestSpeechToTextGateway } from "~/resources/TestSpeechToTextGateway";
 import { TestStorageGateway } from "~/resources/TestStorageGateway";
+import { TestWebMessagingGateway } from "~/resources/TestWebMessagingGateway";
 import { TestWhatsAppMessagingGateway } from "~/resources/TestWhatsAppMessagingGateway";
 import { AuthService } from "~/services/AuthService";
 import { CashFlowService } from "~/services/CashFlowService";
@@ -122,6 +123,11 @@ export class Orquestrator {
       "singleton",
     );
     this.container.register(
+      "IWebMessagingGateway",
+      () => new TestWebMessagingGateway(),
+      "singleton",
+    );
+    this.container.register(
       "IAiChatGateway",
       () => new TestAiChatGateway(),
       "singleton",
@@ -193,6 +199,7 @@ export class Orquestrator {
           this.container.resolve("AuthService"),
           this.mediator,
           this.container.resolve("IWhatsAppMessagingGateway"),
+          this.container.resolve("IWebMessagingGateway"),
           this.container.resolve("IAiChatGateway"),
           this.container.resolve("IStorageGateway"),
           this.container.resolve("ISpeechToTextGateway"),
@@ -223,7 +230,7 @@ export class Orquestrator {
       async (data) => {
         const svc =
           this.container.resolve<MessagingService>("MessagingService");
-        await svc.respondToMessage(data.chat, data.message);
+        await svc.respondToMessage(data.chat, data.message, data.chatType);
       },
     );
   }

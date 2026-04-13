@@ -75,4 +75,33 @@ export class TestGoogleAuthGateway implements IGoogleAuthGateway {
     url.searchParams.set("phone_number", phoneNumber);
     return url.toString();
   }
+
+  createWebAuthorizationCodeUrl(): string {
+    const scopes = buildScopes();
+    const redirectUri =
+      this.googleConfig.webRedirectUri || this.googleConfig.redirectUri;
+    const params = new URLSearchParams({
+      client_id: this.googleConfig.clientId,
+      redirect_uri: redirectUri,
+      response_type: "code",
+      scope: scopes.join(" "),
+      access_type: "offline",
+      prompt: "consent",
+    });
+    return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+  }
+
+  async exchangeWebCodeForTokens(code: string): Promise<GoogleTokens> {
+    if (code !== "rightCode") {
+      throw new DeveloperException(
+        "[exchangeWebCodeForTokens]",
+        "Wrong code testing variable!",
+      );
+    }
+    return {
+      accessToken: "ya29.a0ARrdaM9test_web_access_token_123456789",
+      refreshToken: "",
+      expiresInSeconds: 3600,
+    };
+  }
 }
