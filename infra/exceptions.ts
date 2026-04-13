@@ -5,15 +5,6 @@ export interface ResponseException {
   statusCode: number;
 }
 
-function toResponse(error: AppError): ResponseException {
-  return {
-    message: error.message,
-    action: error.action,
-    name: error.name,
-    statusCode: error.statusCode,
-  };
-}
-
 export class AppError extends Error {
   action: string;
   override name: string;
@@ -29,6 +20,15 @@ export class AppError extends Error {
     this.action = action;
     this.name = name;
     this.statusCode = statusCode;
+  }
+
+  toResponse(): ResponseException {
+    return {
+      message: this.message,
+      action: this.action,
+      name: this.name,
+      statusCode: this.statusCode,
+    };
   }
 }
 
@@ -128,11 +128,11 @@ export const ExceptionResponse = {
       if (error.statusCode >= 500) {
         console.error("[InternalError]", error.message, error.cause ?? "");
       }
-      return toResponse(error);
+      return error.toResponse();
     }
     console.error("[UnhandledError]", error);
     const internalError = error instanceof Error ? error : undefined;
-    return toResponse(new InternalServerException(internalError));
+    return new InternalServerException(internalError).toResponse();
   },
 };
 

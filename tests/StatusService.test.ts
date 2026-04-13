@@ -1,3 +1,4 @@
+import { StatusService } from "~/server/services/StatusService";
 import { orquestrator } from "./orquestrator";
 
 describe("StatusService", () => {
@@ -11,5 +12,26 @@ describe("StatusService", () => {
     );
     expect(dto.database.maxConnections).toBeGreaterThan(0);
     expect(dto.database.openConnections).toBeGreaterThanOrEqual(1);
+    expect(dto.ai.modelName).toBe(orquestrator.aiConfig.model);
+  });
+
+  test("getStatus falls back to defaults when database metadata is missing", async () => {
+    const sql = vi
+      .fn()
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+    const service = new StatusService(
+      { sql } as unknown as typeof orquestrator.database,
+      orquestrator.databaseConfig,
+      orquestrator.aiConfig,
+    );
+
+    const dto = await service.getStatus();
+
+    expect(dto.database.serverVersion).toBe("unknown");
+    expect(dto.database.maxConnections).toBe(0);
+    expect(dto.database.openConnections).toBe(0);
+    expect(dto.ai.modelName).toBe(orquestrator.aiConfig.model);
   });
 });

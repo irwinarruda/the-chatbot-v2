@@ -1,19 +1,20 @@
-import { AiChatGateway } from "~/resources/AiChatGateway";
-import { GoogleAuthGateway } from "~/resources/GoogleAuthGateway";
-import { GoogleCashFlowSpreadsheetGateway } from "~/resources/GoogleCashFlowSpreadsheetGateway";
-import { OpenAiSpeechToTextGateway } from "~/resources/OpenAiSpeechToTextGateway";
-import { R2StorageGateway } from "~/resources/R2StorageGateway";
-import { TuiWhatsAppMessagingGateway } from "~/resources/TuiWhatsAppMessagingGateway";
-import { WhatsAppMessagingGateway } from "~/resources/WhatsAppMessagingGateway";
-import { AuthService } from "~/services/AuthService";
-import { CashFlowService } from "~/services/CashFlowService";
+import { Mediator } from "~/infra/Mediator";
+import { AiChatGateway } from "~/server/resources/AiChatGateway";
+import { GoogleAuthGateway } from "~/server/resources/GoogleAuthGateway";
+import { GoogleCashFlowSpreadsheetGateway } from "~/server/resources/GoogleCashFlowSpreadsheetGateway";
+import { OpenAiSpeechToTextGateway } from "~/server/resources/OpenAiSpeechToTextGateway";
+import { R2StorageGateway } from "~/server/resources/R2StorageGateway";
+import { TuiWhatsAppMessagingGateway } from "~/server/resources/TuiWhatsAppMessagingGateway";
+import { WebMessagingGateway } from "~/server/resources/WebMessagingGateway";
+import { WhatsAppMessagingGateway } from "~/server/resources/WhatsAppMessagingGateway";
+import { AuthService } from "~/server/services/AuthService";
+import { CashFlowService } from "~/server/services/CashFlowService";
 import {
   MessagingService,
   type RespondToMessageEvent,
-} from "~/services/MessagingService";
-import { MigrationService } from "~/services/MigrationService";
-import { StatusService } from "~/services/StatusService";
-import { Mediator } from "~/utils/Mediator";
+} from "~/server/services/MessagingService";
+import { MigrationService } from "~/server/services/MigrationService";
+import { StatusService } from "~/server/services/StatusService";
 import type { Config } from "./config";
 import { container } from "./container";
 import { Database } from "./database";
@@ -54,6 +55,11 @@ export function registerDependencies(config: Config) {
     "singleton",
   );
   container.register(
+    "IWebMessagingGateway",
+    () => new WebMessagingGateway(),
+    "singleton",
+  );
+  container.register(
     "IStorageGateway",
     () => new R2StorageGateway(config.r2),
     "singleton",
@@ -91,6 +97,7 @@ export function registerDependencies(config: Config) {
       new AuthService(
         database,
         config.encryption,
+        config.jwt,
         container.resolve("IGoogleAuthGateway"),
         mediator,
       ),
@@ -124,6 +131,7 @@ export function registerDependencies(config: Config) {
         container.resolve("AuthService"),
         mediator,
         container.resolve("IWhatsAppMessagingGateway"),
+        container.resolve("IWebMessagingGateway"),
         container.resolve("IAiChatGateway"),
         container.resolve("IStorageGateway"),
         container.resolve("ISpeechToTextGateway"),
@@ -148,6 +156,10 @@ export function registerDependencies(config: Config) {
   mediator.register<RespondToMessageEvent>("RespondToMessage", async (data) => {
     const messagingService =
       container.resolve<MessagingService>("MessagingService");
-    await messagingService.respondToMessage(data.chat, data.message);
+    await messagingService.respondToMessage(
+      data.chat,
+      data.message,
+      data.chatType,
+    );
   });
 }

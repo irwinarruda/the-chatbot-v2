@@ -11,7 +11,7 @@ export function AudioPathInput({
   disabled: boolean;
   focused?: boolean;
 }) {
-  const inputRef = useRef<InputRenderable>(null);
+  const [input, setInput] = useState<InputRenderable | undefined>(undefined);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const debounceRef = useRef<Timer | undefined>(undefined);
@@ -65,23 +65,20 @@ export function AudioPathInput({
     [homeDir, resolvePath],
   );
 
-  const handleInput = useCallback(
-    (value: string) => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => searchFiles(value), 200);
-    },
-    [searchFiles],
-  );
+  const handleInput = (value: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => searchFiles(value), 200);
+  };
 
   const handleSubmit = useCallback(
     (value: string) => {
       const filePath = value.trim();
       if (!filePath || disabled) return;
       onSend(resolvePath(filePath));
-      if (inputRef.current) inputRef.current.value = "";
+      if (input) input.value = "";
       setSuggestions([]);
     },
-    [disabled, onSend, resolvePath],
+    [disabled, input, onSend, resolvePath],
   );
 
   const handleKeyDown = useCallback(
@@ -98,15 +95,15 @@ export function AudioPathInput({
       } else if (key.name === "tab") {
         key.preventDefault();
         key.stopPropagation();
-        if (inputRef.current && suggestions[selectedIndex]) {
-          inputRef.current.value = suggestions[selectedIndex];
+        if (input && suggestions[selectedIndex]) {
+          input.value = suggestions[selectedIndex];
           setSuggestions([]);
         }
       } else if (key.name === "return") {
         key.preventDefault();
         key.stopPropagation();
-        if (inputRef.current && suggestions[selectedIndex]) {
-          inputRef.current.value = suggestions[selectedIndex];
+        if (input && suggestions[selectedIndex]) {
+          input.value = suggestions[selectedIndex];
           setSuggestions([]);
         }
       } else if (key.name === "escape") {
@@ -114,7 +111,7 @@ export function AudioPathInput({
         setSuggestions([]);
       }
     },
-    [suggestions, selectedIndex],
+    [input, selectedIndex, suggestions],
   );
 
   return (
@@ -142,7 +139,7 @@ export function AudioPathInput({
       >
         <text fg={theme.accent.cyan}>{"@ "}</text>
         <input
-          ref={inputRef}
+          ref={(node) => setInput(node ?? undefined)}
           flexGrow={1}
           placeholder={
             disabled

@@ -10,6 +10,7 @@ This is a TypeScript rewrite of the parent C# project at the repo root. The `AGE
 
 - `bun run dev` — start dev server (defaults to MODE=local, port 3000)
 - `bun run test` — run tests (uses `.env.test` automatically via `NODE_OPTIONS='--import tsx/esm'`)
+- `bun run test:coverage` — run tests with coverage (uses `.env.test` automatically via `NODE_OPTIONS='--import tsx/esm'`)
 - `bun run typecheck` — `tsc --noEmit`
 - `bun run check` — biome lint + format check
 - `bun run format:fix` — auto-fix formatting with biome

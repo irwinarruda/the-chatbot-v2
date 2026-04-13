@@ -1,10 +1,10 @@
-import { UnauthorizedException } from "@infra/exceptions";
+import { UnauthorizedException } from "~/infra/exceptions";
 import { orquestrator } from "./orquestrator";
 
 describe("MigrationService", () => {
   test("testMigration", async () => {
     await orquestrator.wipeDatabase();
-    const migrationCount = 10;
+    const migrationCount = 11;
     let migrations =
       await orquestrator.migrationService.listPendingMigrations();
     expect(migrations.length).toBeGreaterThan(0);

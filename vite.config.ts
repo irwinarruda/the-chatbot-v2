@@ -1,12 +1,16 @@
+import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import { cpSync, existsSync, readdirSync } from "fs";
 import { nitro } from "nitro/vite";
 import path from "path";
 import { defineConfig, type Plugin } from "vite";
-import { loadEnv } from "./infra/env";
+import { Env } from "./infra/env";
+import { routes as virtualRoutes } from "./src/server/tanstack/index";
 
-loadEnv();
+Env.load();
+
+const ROOT_ROUTE_ID = "__root__";
 
 function copyStaticAssets(): Plugin {
   return {
@@ -54,9 +58,144 @@ function copyStaticAssets(): Plugin {
   };
 }
 
+function seedRoutesManifest(): Plugin {
+  const routesManifest = {
+    [ROOT_ROUTE_ID]: {
+      filePath: path.resolve("src/client/routes/__root.tsx"),
+      children: [
+        "/",
+        "/privacy",
+        "/chat",
+        "/google/already-signed-in",
+        "/google/thank-you",
+        "/api/v1/status",
+        "/api/v1/migration",
+        "/api/v1/whatsapp/webhook",
+        "/api/v1/google/login",
+        "/api/v1/google/redirect",
+        "/api/v1/web/auth/login",
+        "/api/v1/web/auth/logout",
+        "/api/v1/web/auth/me",
+        "/api/v1/web/auth/redirect",
+        "/api/v1/web/messages",
+        "/api/v1/web/audio",
+        "/api/v1/web/stream",
+        "/api/v1/tui/messages",
+        "/api/v1/tui/audio",
+        "/api/v1/tui/stream",
+        "/api/v1/tui/transcripts",
+      ],
+    },
+    "/": {
+      filePath: path.resolve("src/client/routes/index.tsx"),
+    },
+    "/privacy": {
+      filePath: path.resolve("src/client/routes/privacy.tsx"),
+    },
+    "/chat": {
+      filePath: path.resolve("src/client/routes/chat.tsx"),
+      children: ["/chat/", "/chat/not-registered"],
+    },
+    "/chat/": {
+      filePath: path.resolve("src/client/routes/chat/index.tsx"),
+    },
+    "/chat/not-registered": {
+      filePath: path.resolve("src/client/routes/chat/not-registered.tsx"),
+    },
+    "/google/already-signed-in": {
+      filePath: path.resolve("src/client/routes/google/already-signed-in.tsx"),
+    },
+    "/google/thank-you": {
+      filePath: path.resolve("src/client/routes/google/thank-you.tsx"),
+    },
+    "/api/v1/status": {
+      filePath: path.resolve("src/server/tanstack/controllers/status.ts"),
+    },
+    "/api/v1/migration": {
+      filePath: path.resolve("src/server/tanstack/controllers/migration.ts"),
+    },
+    "/api/v1/whatsapp/webhook": {
+      filePath: path.resolve(
+        "src/server/tanstack/controllers/whatsapp-webhook.ts",
+      ),
+    },
+    "/api/v1/google/login": {
+      filePath: path.resolve("src/server/tanstack/controllers/google-login.ts"),
+    },
+    "/api/v1/google/redirect": {
+      filePath: path.resolve(
+        "src/server/tanstack/controllers/google-redirect.ts",
+      ),
+    },
+    "/api/v1/web/auth/login": {
+      filePath: path.resolve(
+        "src/server/tanstack/controllers/web-auth-login.ts",
+      ),
+    },
+    "/api/v1/web/auth/logout": {
+      filePath: path.resolve(
+        "src/server/tanstack/controllers/web-auth-logout.ts",
+      ),
+    },
+    "/api/v1/web/auth/me": {
+      filePath: path.resolve("src/server/tanstack/controllers/web-auth-me.ts"),
+    },
+    "/api/v1/web/auth/redirect": {
+      filePath: path.resolve(
+        "src/server/tanstack/controllers/web-auth-redirect.ts",
+      ),
+    },
+    "/api/v1/web/messages": {
+      filePath: path.resolve("src/server/tanstack/controllers/web-messages.ts"),
+    },
+    "/api/v1/web/audio": {
+      filePath: path.resolve("src/server/tanstack/controllers/web-audio.ts"),
+    },
+    "/api/v1/web/stream": {
+      filePath: path.resolve("src/server/tanstack/controllers/web-stream.ts"),
+    },
+    "/api/v1/tui/messages": {
+      filePath: path.resolve("src/server/tanstack/controllers/tui-messages.ts"),
+    },
+    "/api/v1/tui/audio": {
+      filePath: path.resolve("src/server/tanstack/controllers/tui-audio.ts"),
+    },
+    "/api/v1/tui/stream": {
+      filePath: path.resolve("src/server/tanstack/controllers/tui-stream.ts"),
+    },
+    "/api/v1/tui/transcripts": {
+      filePath: path.resolve(
+        "src/server/tanstack/controllers/tui-transcripts.ts",
+      ),
+    },
+  };
+
+  return {
+    name: "seed-start-routes-manifest",
+    buildStart() {
+      globalThis.TSS_ROUTES_MANIFEST = routesManifest;
+    },
+    configureServer() {
+      globalThis.TSS_ROUTES_MANIFEST = routesManifest;
+    },
+  };
+}
+
 export function getRouterConfig(nodeEnv = process.env.NODE_ENV) {
-  if (nodeEnv !== "production") return {};
-  return { routeFileIgnorePattern: "^tui$" };
+  const config = {
+    routesDirectory: ".",
+    generatedRouteTree: "./routeTree.gen.ts",
+    virtualRouteConfig: virtualRoutes,
+  };
+
+  if (nodeEnv !== "production") {
+    return config;
+  }
+
+  return {
+    ...config,
+    routeFileIgnorePattern: "^tui$",
+  };
 }
 
 export default defineConfig({
@@ -72,11 +211,13 @@ export default defineConfig({
     tsconfigPaths: true,
   },
   plugins: [
+    tailwindcss(),
     tanstackStart({
       router: getRouterConfig(),
     }),
     viteReact(),
     nitro(),
+    seedRoutesManifest(),
     copyStaticAssets(),
   ],
 });

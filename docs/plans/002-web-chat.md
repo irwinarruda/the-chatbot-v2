@@ -14,7 +14,7 @@ Add a production-grade web chat interface with Google OAuth authentication. Web 
 
 ```
 Browser → GET /api/v1/web/auth/login → Redirect to Google OAuth
-Google  → GET /api/v1/web/auth/callback → Exchange code → Lookup user by email → Sign JWT → Set HttpOnly cookie
+Google  → GET /api/v1/web/auth/redirect → Exchange code → Lookup user by email → Sign JWT → Set HttpOnly cookie
 Browser → GET /api/v1/web/auth/me → Verify JWT → Return user info
 ```
 
@@ -59,22 +59,22 @@ chatType in DTO/event = routing info for gateway dispatch
 
 ## Decisions Log
 
-| Decision | Choice | Rationale |
-|---|---|---|
-| Web users | Must exist via WhatsApp first | Simplifies auth — no user creation from web |
-| User identification | Email lookup → phone number → chat | Google OAuth provides email; user already has phone |
-| Chat model | One chat per phone number, shared | Interoperable — web and WhatsApp see same history |
-| `chat.type` | Informational only, set once on creation | Records origin provider, never changes |
-| Gateway dispatch | `chatType` param on `respondToMessage` | Decoupled from `chat.type`; DTO carries routing info |
-| `ChatType.Web` | Added to enum for DTO routing only | NOT used for `chat.type` storage |
-| Session mechanism | JWT in HttpOnly cookie via `jose` | No existing auth infrastructure; simple, stateless |
-| Google OAuth | Separate `webRedirectUri` | Different callback URL from WhatsApp flow |
-| Real-time | SSE (same pattern as TUI) | Proven pattern; `TuiWhatsAppMessagingGateway` as template |
-| Audio visualization | `wavesurfer.js` + `@wavesurfer/react` | Beautiful waveform display, not plain `<audio>` |
-| AuthService refactor | Break into reusable private methods | Web auth reuses `exchangeAndGetUserInfo` without credential saving |
-| Enum imports | Import directly from `~/entities/enums/` | No re-exports; consistent with codebase convention |
-| Migration files | `bun run migrate:create -- <name>` | Use tooling, not manual file creation |
-| Email on users | Add `email VARCHAR(255)` column | Google OAuth provides email; needed for web user lookup |
+| Decision             | Choice                                   | Rationale                                                          |
+| -------------------- | ---------------------------------------- | ------------------------------------------------------------------ |
+| Web users            | Must exist via WhatsApp first            | Simplifies auth — no user creation from web                        |
+| User identification  | Email lookup → phone number → chat       | Google OAuth provides email; user already has phone                |
+| Chat model           | One chat per phone number, shared        | Interoperable — web and WhatsApp see same history                  |
+| `chat.type`          | Informational only, set once on creation | Records origin provider, never changes                             |
+| Gateway dispatch     | `chatType` param on `respondToMessage`   | Decoupled from `chat.type`; DTO carries routing info               |
+| `ChatType.Web`       | Added to enum for DTO routing only       | NOT used for `chat.type` storage                                   |
+| Session mechanism    | JWT in HttpOnly cookie via `jose`        | No existing auth infrastructure; simple, stateless                 |
+| Google OAuth         | Separate `webRedirectUri`                | Different callback URL from WhatsApp flow                          |
+| Real-time            | SSE (same pattern as TUI)                | Proven pattern; `TuiWhatsAppMessagingGateway` as template          |
+| Audio visualization  | `wavesurfer.js` + `@wavesurfer/react`    | Beautiful waveform display, not plain `<audio>`                    |
+| AuthService refactor | Break into reusable private methods      | Web auth reuses `exchangeAndGetUserInfo` without credential saving |
+| Enum imports         | Import directly from `~/entities/enums/` | No re-exports; consistent with codebase convention                 |
+| Migration files      | `bun run migrate:create -- <name>`       | Use tooling, not manual file creation                              |
+| Email on users       | Add `email VARCHAR(255)` column          | Google OAuth provides email; needed for web user lookup            |
 
 ## Implementation Steps
 
@@ -157,10 +157,7 @@ export async function signJwt(
   expiresIn: string,
 ): Promise<string>;
 
-export async function verifyJwt<T>(
-  token: string,
-  secret: string,
-): Promise<T>;
+export async function verifyJwt<T>(token: string, secret: string): Promise<T>;
 ```
 
 ### Step 6: Create Web Auth Helpers
@@ -177,10 +174,7 @@ export function requireWebAuth(
   config: Config,
 ): Promise<{ userId: string; email: string; phoneNumber: string }>;
 
-export function setAuthCookie(
-  response: Headers,
-  token: string,
-): void;
+export function setAuthCookie(response: Headers, token: string): void;
 
 export function clearAuthCookie(response: Headers): void;
 ```
@@ -367,10 +361,10 @@ GET /api/v1/web/auth/login
   → Redirect browser to Google
 ```
 
-**New file:** `src/routes/api/v1/web/auth/callback.tsx`
+**New file:** `src/routes/api/v1/web/auth/redirect.tsx`
 
 ```
-GET /api/v1/web/auth/callback?code=...
+GET /api/v1/web/auth/redirect?code=...
   → authService.handleWebGoogleRedirect(code)
   → Sign JWT with { userId, email, phoneNumber }
   → Set HttpOnly cookie
@@ -470,6 +464,7 @@ Add navigation link to `/chat` in the terminal window header/nav.
 **File:** `src/i18n/en.json` + `src/i18n/pt-BR.json`
 
 Add translations for:
+
 - Chat page title, placeholder text, send button
 - Audio recording states
 - Error messages
@@ -501,48 +496,48 @@ Add actual values to `.env.local`, `.env.development`, etc.
 
 ### New Files (17)
 
-| File | Purpose |
-|---|---|
-| `infra/jwt.ts` | JWT sign/verify utilities using `jose` |
-| `infra/web.ts` | Web auth helpers (requireWebAuth, cookies) |
-| `src/resources/IWebMessagingGateway.ts` | Web gateway interface |
-| `src/resources/WebMessagingGateway.ts` | Production web gateway (multi-tenant SSE channels) |
-| `src/resources/TestWebMessagingGateway.ts` | Test web gateway |
-| `src/routes/api/v1/web/auth/login.tsx` | Google OAuth redirect |
-| `src/routes/api/v1/web/auth/callback.tsx` | OAuth callback + JWT cookie |
-| `src/routes/api/v1/web/auth/me.tsx` | Current user endpoint |
-| `src/routes/api/v1/web/auth/logout.tsx` | Clear session |
-| `src/routes/api/v1/web/messages.tsx` | Send message + GET chat history |
-| `src/routes/api/v1/web/audio.tsx` | Send audio message |
-| `src/routes/api/v1/web/stream.tsx` | SSE stream |
-| `src/routes/chat.tsx` | Chat page route |
-| `src/routes/chat/not-registered.tsx` | Not registered page |
-| `src/components/pages/ChatPage.tsx` | Chat UI with wavesurfer.js audio |
-| `src/components/pages/ChatPage.css` | Chat styles (terminal aesthetic) |
+| File                                       | Purpose                                            |
+| ------------------------------------------ | -------------------------------------------------- |
+| `infra/jwt.ts`                             | JWT sign/verify utilities using `jose`             |
+| `infra/web.ts`                             | Web auth helpers (requireWebAuth, cookies)         |
+| `src/resources/IWebMessagingGateway.ts`    | Web gateway interface                              |
+| `src/resources/WebMessagingGateway.ts`     | Production web gateway (multi-tenant SSE channels) |
+| `src/resources/TestWebMessagingGateway.ts` | Test web gateway                                   |
+| `src/routes/api/v1/web/auth/login.tsx`     | Google OAuth redirect                              |
+| `src/routes/api/v1/web/auth/redirect.tsx`  | OAuth redirect + JWT cookie                        |
+| `src/routes/api/v1/web/auth/me.tsx`        | Current user endpoint                              |
+| `src/routes/api/v1/web/auth/logout.tsx`    | Clear session                                      |
+| `src/routes/api/v1/web/messages.tsx`       | Send message + GET chat history                    |
+| `src/routes/api/v1/web/audio.tsx`          | Send audio message                                 |
+| `src/routes/api/v1/web/stream.tsx`         | SSE stream                                         |
+| `src/routes/chat.tsx`                      | Chat page route                                    |
+| `src/routes/chat/not-registered.tsx`       | Not registered page                                |
+| `src/components/pages/ChatPage.tsx`        | Chat UI with wavesurfer.js audio                   |
+| `src/components/pages/ChatPage.css`        | Chat styles (terminal aesthetic)                   |
 
 ### Modified Files (14)
 
-| File | Changes |
-|---|---|
-| `src/entities/User.ts` | Add `email` field |
-| `src/entities/enums/ChatType.ts` | Add `Web: "web"` |
-| `src/services/AuthService.ts` | Refactor into private methods, add `handleWebGoogleRedirect`, `getUserByEmail`, persist email |
-| `src/services/MessagingService.ts` | Add `webMessagingGateway`, `respondToMessage` takes `chatType`, update mediator event |
-| `src/resources/IGoogleAuthGateway.ts` | Add `createWebAuthorizationCodeUrl`, `exchangeWebCodeForTokens` |
-| `src/resources/GoogleAuthGateway.ts` | Web OAuth client + implementations |
-| `src/resources/TestGoogleAuthGateway.ts` | Stub web auth methods |
-| `infra/config.ts` | Add `jwt` config, `webRedirectUri`, `webLoginUri` |
-| `infra/bootstrap.ts` | Register `IWebMessagingGateway`, update `MessagingService`, update mediator for `chatType` |
-| `tests/orquestrator.ts` | Register `TestWebMessagingGateway`, update `MessagingService` |
-| `src/i18n/en.json` | Chat page translations |
-| `src/i18n/pt-BR.json` | Chat page translations |
-| `src/components/pages/PublicPages.tsx` | Add chat nav link |
-| `package.json` | Add `jose`, `wavesurfer.js`, `@wavesurfer/react` |
+| File                                     | Changes                                                                                       |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `src/entities/User.ts`                   | Add `email` field                                                                             |
+| `src/entities/enums/ChatType.ts`         | Add `Web: "web"`                                                                              |
+| `src/services/AuthService.ts`            | Refactor into private methods, add `handleWebGoogleRedirect`, `getUserByEmail`, persist email |
+| `src/services/MessagingService.ts`       | Add `webMessagingGateway`, `respondToMessage` takes `chatType`, update mediator event         |
+| `src/resources/IGoogleAuthGateway.ts`    | Add `createWebAuthorizationCodeUrl`, `exchangeWebCodeForTokens`                               |
+| `src/resources/GoogleAuthGateway.ts`     | Web OAuth client + implementations                                                            |
+| `src/resources/TestGoogleAuthGateway.ts` | Stub web auth methods                                                                         |
+| `infra/config.ts`                        | Add `jwt` config, `webRedirectUri`, `webLoginUri`                                             |
+| `infra/bootstrap.ts`                     | Register `IWebMessagingGateway`, update `MessagingService`, update mediator for `chatType`    |
+| `tests/orquestrator.ts`                  | Register `TestWebMessagingGateway`, update `MessagingService`                                 |
+| `src/i18n/en.json`                       | Chat page translations                                                                        |
+| `src/i18n/pt-BR.json`                    | Chat page translations                                                                        |
+| `src/components/pages/PublicPages.tsx`   | Add chat nav link                                                                             |
+| `package.json`                           | Add `jose`, `wavesurfer.js`, `@wavesurfer/react`                                              |
 
 ### Migration
 
-| File | SQL |
-|---|---|
+| File                                                       | SQL                                               |
+| ---------------------------------------------------------- | ------------------------------------------------- |
 | `infra/migrations/1776038219244_update-user-with-email.js` | `ALTER TABLE users ADD COLUMN email VARCHAR(255)` |
 
 ## Message Flow (After Implementation)
@@ -589,3 +584,27 @@ GET /api/v1/web/messages → requireWebAuth() → user
 - **Audio storage for web** — Web audio uploads need a mechanism for `downloadMediaAsync` to retrieve the buffer. Options: temp in-memory map keyed by generated mediaId, or direct buffer pass. Implementation detail.
 - **No user creation from web** — If a user has never interacted via WhatsApp, they cannot use web chat. This is by design but may need revisiting.
 - **`chat.type` semantics** — For interoperable chats, `chat.type` records the origin provider. A chat created via WhatsApp stays `wa_biz` even when the user chats from web. This is intentional — `chatType` in the DTO handles routing.
+
+## UI
+
+- Create a beautiful web chat interface following the terminal aesthetic design system. Use `wavesurfer.js` for audio visualization. Ensure responsive design and good UX.
+
+## Implementation Checklist
+
+- [x] **Step 1** — Run migration: add `email VARCHAR(255)` column to `users` table
+- [x] **Step 2** — Update `User` entity: add `email` field, update `fromRow()` / `create()` / `toRow()`
+- [x] **Step 3** — Add `ChatType.Web = "web"` to `src/entities/enums/ChatType.ts`
+- [x] **Step 4** — Update `infra/config.ts`: add `jwt` config schema, `webRedirectUri`, `webLoginUri`
+- [x] **Step 5** — Create `infra/jwt.ts`: `signJwt` and `verifyJwt` utilities using `jose`
+- [x] **Step 6** — Create `infra/web.ts`: `requireWebAuth`, `setAuthCookie`, `clearAuthCookie`
+- [x] **Step 7** — Refactor `AuthService`: extract private methods, add `handleWebGoogleRedirect`, `getUserByEmail`, persist email on WhatsApp flow
+- [x] **Step 8** — Update `IGoogleAuthGateway` + `GoogleAuthGateway` + `TestGoogleAuthGateway`: add web OAuth client and methods
+- [x] **Step 9** — Create `IWebMessagingGateway`, `WebMessagingGateway`, and `TestWebMessagingGateway`
+- [x] **Step 10** — Update `MessagingService`: add `webMessagingGateway`, add `chatType` param to `respondToMessage`, update `RespondToMessageEvent`
+- [x] **Step 11** — Update `infra/bootstrap.ts` and `tests/orquestrator.ts`: register web gateway, update `MessagingService` wiring and mediator handler
+- [x] **Step 12** — Create web auth routes: `login.tsx`, `redirect.tsx`, `me.tsx`, `logout.tsx`
+- [x] **Step 13** — Create web messaging routes: `messages.tsx`, `audio.tsx`, `stream.tsx`
+- [x] **Step 14** — Create `src/routes/chat.tsx`, `src/routes/chat/not-registered.tsx`, `ChatPage.tsx`, `ChatPage.css`
+- [x] **Step 15** — Update `PublicPages.tsx` and i18n files (`en.json`, `pt-BR.json`) with chat translations
+- [x] **Step 16** — Install dependencies: `bun add jose wavesurfer.js @wavesurfer/react`
+- [x] **Step 17** — Add env vars to `.env`: `JWT_SECRET`, `JWT_EXPIRES_IN`, `GOOGLE_WEB_REDIRECT_URI`, `GOOGLE_WEB_LOGIN_URI`

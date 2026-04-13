@@ -21,6 +21,11 @@
     "lineEnding": "lf",
     "lineWidth": 80
   },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  },
   "linter": {
     "enabled": true,
     "rules": {
