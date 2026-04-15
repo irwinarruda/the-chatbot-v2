@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
-import type { AiConfig } from "@infra/config";
 import OpenAI from "openai";
+import type { AiConfig } from "~/infra/config";
 import { executeTool, toolDefinitions } from "~/resources/ai-chat-tools";
 import type {
   AiChatMessage,

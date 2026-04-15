@@ -1,6 +1,3 @@
-import type { SummarizationConfig } from "@infra/config";
-import type { Database } from "@infra/database";
-import { UnauthorizedException, ValidationException } from "@infra/exceptions";
 import { v4 as uuidv4 } from "uuid";
 import { AllowedNumber } from "~/entities/AllowedNumber";
 import { Chat } from "~/entities/Chat";
@@ -8,6 +5,10 @@ import { ChatType } from "~/entities/enums/ChatType";
 import { MessageType } from "~/entities/enums/MessageType";
 import { MessageUserType } from "~/entities/enums/MessageUserType";
 import { Message } from "~/entities/Message";
+import type { SummarizationConfig } from "~/infra/config";
+import type { Database } from "~/infra/database";
+import { UnauthorizedException, ValidationException } from "~/infra/exceptions";
+import type { IMediator } from "~/infra/Mediator";
 import type { AiChatMessage, IAiChatGateway } from "~/resources/IAiChatGateway";
 import { AiChatMessageType, AiChatRole } from "~/resources/IAiChatGateway";
 import type {
@@ -19,10 +20,12 @@ import type {
 } from "~/resources/IMessagingGateway";
 import type { ISpeechToTextGateway } from "~/resources/ISpeechToTextGateway";
 import type { IStorageGateway } from "~/resources/IStorageGateway";
-import type { IWebMessagingGateway } from "~/resources/IWebMessagingGateway";
+import type {
+  IWebMessagingGateway,
+  WebChatEvent,
+} from "~/resources/IWebMessagingGateway";
 import type { IWhatsAppMessagingGateway } from "~/resources/IWhatsAppMessagingGateway";
 import type { AuthService } from "~/services/AuthService";
-import type { IMediator } from "~/utils/Mediator";
 import { MessageLoader, MessageTemplate } from "~/utils/MessageLoader";
 
 export interface TranscriptDTO {
@@ -104,6 +107,16 @@ export class MessagingService {
     }
   }
 
+  async receiveWebMessage(phoneNumber: string, body: unknown): Promise<void> {
+    const receiveMessage = await this.webMessagingGateway.receiveWebMessage(
+      phoneNumber,
+      body,
+    );
+    if (receiveMessage != null) {
+      await this.listenToMessage(receiveMessage);
+    }
+  }
+
   async listenToMessage(receiveMessage: ReceiveMessageDTO): Promise<void> {
     if (await this.isMessageDuplicate(receiveMessage.idProvider)) return;
     if (!(await this.isAllowedNumber(receiveMessage.from))) return;
@@ -174,18 +187,29 @@ export class MessagingService {
         chatType,
       );
       const mediaContent = await gateway.downloadMediaAsync(message.mediaId);
-      const key = `audio/${chat.id}/${uuidv4()}${getExtension(message.mimeType)}`;
+      const baseMimeType = message.mimeType.split(";")[0].trim().toLowerCase();
+      const key = `audio/${chat.id}/${uuidv4()}${getExtension(baseMimeType)}`;
       const permanentUrl = await this.storageGateway.uploadFileAsync({
         key,
         content: mediaContent,
-        contentType: message.mimeType,
+        contentType: baseMimeType,
       });
       const transcript = await this.speechToTextGateway.transcribeAsync({
         audioStream: mediaContent,
-        mimeType: message.mimeType,
+        mimeType: baseMimeType,
       });
       message.addAudioTranscriptAndUrl(transcript, permanentUrl);
       await this.saveMessage(message);
+      if (chatType === ChatType.Web) {
+        this.webMessagingGateway.enqueue(chat.phoneNumber, {
+          type: "audio",
+          data: {
+            mediaUrl: permanentUrl,
+            mimeType: baseMimeType,
+            transcript,
+          },
+        });
+      }
     }
     const aiMessages: AiChatMessage[] = [];
     if (chat.summary) {
@@ -270,6 +294,13 @@ export class MessagingService {
       phoneNumber,
       MessageLoader.getMessage(MessageTemplate.SignedIn),
     );
+  }
+
+  async subscribeToWebEvents(
+    phoneNumber: string,
+    signal: AbortSignal,
+  ): Promise<AsyncGenerator<WebChatEvent>> {
+    return this.webMessagingGateway.subscribe(phoneNumber, signal);
   }
 
   private async triggerSummarization(chat: Chat): Promise<void> {
@@ -479,17 +510,27 @@ function parseMessagesToAi(messages: Message[]): AiChatMessage[] {
 }
 
 function getExtension(mimeType: string): string {
-  switch (mimeType) {
+  const baseType = mimeType.split(";")[0].trim().toLowerCase();
+  switch (baseType) {
     case "audio/ogg":
       return ".ogg";
     case "audio/mpeg":
+    case "audio/mp3":
       return ".mp3";
     case "audio/mp4":
+    case "audio/m4a":
+    case "audio/x-m4a":
       return ".m4a";
     case "audio/aac":
       return ".aac";
     case "audio/amr":
       return ".amr";
+    case "audio/webm":
+      return ".webm";
+    case "audio/wav":
+    case "audio/wave":
+    case "audio/x-wav":
+      return ".wav";
     default:
       return ".bin";
   }

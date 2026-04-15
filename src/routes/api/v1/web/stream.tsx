@@ -1,16 +1,14 @@
-import { loadConfig } from "@infra/config";
-import { getService } from "@infra/server-bootstrap";
-import { requireWebAuth } from "@infra/web";
 import { createFileRoute } from "@tanstack/react-router";
+import { ServerBootstrap } from "~/infra/server-bootstrap";
 import type { IWebMessagingGateway } from "~/resources/IWebMessagingGateway";
+import { WebAuth } from "~/utils/WebAuth";
 
 export const Route = createFileRoute("/api/v1/web/stream")({
   server: {
     handlers: {
       async GET({ request }) {
-        const config = loadConfig();
-        const auth = await requireWebAuth(request, config);
-        const webGateway = getService<IWebMessagingGateway>(
+        const auth = await WebAuth.requireAuth(request);
+        const webGateway = ServerBootstrap.getService<IWebMessagingGateway>(
           "IWebMessagingGateway",
         );
         const abortController = new AbortController();

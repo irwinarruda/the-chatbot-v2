@@ -1,5 +1,7 @@
-import { Encryption } from "@infra/encryption";
 import { User } from "~/entities/User";
+import { UnauthorizedException } from "~/infra/exceptions";
+import { Encryption } from "~/infra/encryption";
+import { Jwt } from "~/infra/jwt";
 import { GoogleAuthScopes } from "~/resources/GoogleAuthScopes";
 import { orquestrator } from "./orquestrator";
 
@@ -188,5 +190,180 @@ describe("AuthService", () => {
     users = await orquestrator.authService.getUsers();
     expect(users.length).toBe(1);
     expect(users[0]?.googleCredential).toBeDefined();
+  });
+
+  test("saveUserByGoogleCredential persists email for new user", async () => {
+    await orquestrator.clearDatabase();
+    const encryption = new Encryption(orquestrator.encryptionConfig);
+    const phoneNumber = "5511984444444";
+
+    await orquestrator.authService.saveUserByGoogleCredential(
+      encryption.encrypt(phoneNumber),
+      "rightCode",
+    );
+    const users = await orquestrator.authService.getUsers();
+    expect(users.length).toBe(1);
+    expect(users[0]?.email).toBe("savegooglecredentials@example.com");
+  });
+
+  test("saveUserByGoogleCredential backfills email on existing user", async () => {
+    await orquestrator.clearDatabase();
+    const encryption = new Encryption(orquestrator.encryptionConfig);
+    const phoneNumber = "5511984444444";
+
+    await orquestrator.authService.saveUserByGoogleCredential(
+      encryption.encrypt(phoneNumber),
+      "rightCode",
+    );
+    let user = await orquestrator.authService.getUserByPhoneNumber(phoneNumber);
+    expect(user?.email).toBe("savegooglecredentials@example.com");
+
+    // Simulate a legacy user that was stored without an email.
+    await orquestrator.database
+      .sql`UPDATE users SET email = NULL WHERE phone_number = ${phoneNumber}`;
+    user = await orquestrator.authService.getUserByPhoneNumber(phoneNumber);
+    expect(user?.email).toBeNull();
+
+    await orquestrator.authService.saveUserByGoogleCredential(
+      encryption.encrypt(phoneNumber),
+      "rightCode",
+    );
+    user = await orquestrator.authService.getUserByPhoneNumber(phoneNumber);
+    expect(user?.email).toBe("savegooglecredentials@example.com");
+  });
+
+  test("getUserByEmail", async () => {
+    await orquestrator.clearDatabase();
+    expect(
+      await orquestrator.authService.getUserByEmail("missing@example.com"),
+    ).toBeUndefined();
+
+    const phoneNumber = "5511984444444";
+    const email = "user@example.com";
+    const user = new User("Irwin Arruda", phoneNumber);
+    user.email = email;
+    await orquestrator.authService.createUser(user);
+
+    const found = await orquestrator.authService.getUserByEmail(email);
+    expect(found).toBeDefined();
+    expect(found?.id).toBe(user.id);
+    expect(found?.email).toBe(email);
+    expect(found?.phoneNumber).toBe(phoneNumber);
+  });
+
+  test("getWebLoginUrl", () => {
+    const url = orquestrator.authService.getWebLoginUrl();
+    const uri = new URL(url);
+    const params = uri.searchParams;
+    expect(uri.hostname).toBe("accounts.google.com");
+    expect(params.get("client_id")).toBe(orquestrator.googleConfig.clientId);
+    const scope = params.get("scope");
+    expect(scope).toContain(GoogleAuthScopes.email);
+    expect(scope).toContain(GoogleAuthScopes.profile);
+    expect(params.get("state")).toBeNull();
+  });
+
+  test("createWebToken and verifyWebToken round-trip", async () => {
+    await orquestrator.clearDatabase();
+    const user = new User("Irwin Arruda", "5511984444444");
+    user.email = "user@example.com";
+    await orquestrator.authService.createUser(user);
+
+    const token = await orquestrator.authService.createWebToken(user);
+    expect(typeof token).toBe("string");
+    expect(token.length).toBeGreaterThan(0);
+
+    const payload = await orquestrator.authService.verifyWebToken(token);
+    expect(payload.userId).toBe(user.id);
+    expect(payload.email).toBe(user.email);
+    expect(payload.phoneNumber).toBe(user.phoneNumber);
+  });
+
+  test("verifyWebToken rejects invalid and malformed tokens", async () => {
+    await expect(
+      orquestrator.authService.verifyWebToken("not-a-jwt"),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+
+    const jwt = new Jwt(orquestrator.jwtConfig);
+    const incompleteToken = await jwt.sign({ userId: "only-user-id" });
+    await expect(
+      orquestrator.authService.verifyWebToken(incompleteToken),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  test("handleWebGoogleRedirect throws when user is not registered", async () => {
+    await orquestrator.clearDatabase();
+    await expect(
+      orquestrator.authService.handleWebGoogleRedirect("rightCode"),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  test("handleWebGoogleRedirect returns registered user", async () => {
+    await orquestrator.clearDatabase();
+    const user = new User("Irwin Arruda", "5511984444444");
+    user.email = "savegooglecredentials@example.com";
+    await orquestrator.authService.createUser(user);
+
+    const result =
+      await orquestrator.authService.handleWebGoogleRedirect("rightCode");
+    expect(result.id).toBe(user.id);
+    expect(result.email).toBe(user.email);
+  });
+
+  test("handleWebLogin returns user and valid token", async () => {
+    await orquestrator.clearDatabase();
+    const user = new User("Irwin Arruda", "5511984444444");
+    user.email = "savegooglecredentials@example.com";
+    await orquestrator.authService.createUser(user);
+
+    const result = await orquestrator.authService.handleWebLogin("rightCode");
+    expect(result.user.id).toBe(user.id);
+    expect(typeof result.token).toBe("string");
+
+    const payload = await orquestrator.authService.verifyWebToken(result.token);
+    expect(payload.userId).toBe(user.id);
+    expect(payload.email).toBe(user.email);
+    expect(payload.phoneNumber).toBe(user.phoneNumber);
+  });
+
+  test("handleWebLogin throws for unregistered user", async () => {
+    await orquestrator.clearDatabase();
+    await expect(
+      orquestrator.authService.handleWebLogin("rightCode"),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  test("authenticateWebUser returns authenticated user from token", async () => {
+    await orquestrator.clearDatabase();
+    const user = new User("Irwin Arruda", "5511984444444");
+    user.email = "user@example.com";
+    await orquestrator.authService.createUser(user);
+
+    const token = await orquestrator.authService.createWebToken(user);
+    const authenticatedUser =
+      await orquestrator.authService.authenticateWebUser(token);
+
+    expect(authenticatedUser.id).toBe(user.id);
+    expect(authenticatedUser.email).toBe(user.email);
+    expect(authenticatedUser.phoneNumber).toBe(user.phoneNumber);
+  });
+
+  test("authenticateWebUser rejects missing or stale users", async () => {
+    await orquestrator.clearDatabase();
+
+    await expect(
+      orquestrator.authService.authenticateWebUser(""),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+
+    const user = new User("Irwin Arruda", "5511984444444");
+    user.email = "user@example.com";
+    await orquestrator.authService.createUser(user);
+
+    const token = await orquestrator.authService.createWebToken(user);
+    await orquestrator.database.sql`DELETE FROM users WHERE id = ${user.id}`;
+
+    await expect(
+      orquestrator.authService.authenticateWebUser(token),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 });

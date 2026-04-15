@@ -1,12 +1,19 @@
-import type { EncryptionConfig } from "@infra/config";
-import type { Database } from "@infra/database";
-import { Encryption } from "@infra/encryption";
-import { UnauthorizedException, ValidationException } from "@infra/exceptions";
 import { Credential } from "~/entities/Credentials";
 import { CredentialType } from "~/entities/enums/CredentialType";
 import { User } from "~/entities/User";
+import type { EncryptionConfig, JwtConfig } from "~/infra/config";
+import type { Database } from "~/infra/database";
+import { Encryption } from "~/infra/encryption";
+import { UnauthorizedException, ValidationException } from "~/infra/exceptions";
+import { Jwt } from "~/infra/jwt";
+import type { IMediator } from "~/infra/Mediator";
 import type { IGoogleAuthGateway } from "~/resources/IGoogleAuthGateway";
-import type { IMediator } from "~/utils/Mediator";
+
+export interface WebAuthTokenPayload {
+  userId: string;
+  email: string;
+  phoneNumber: string;
+}
 
 export type GoogleLoginResult =
   | { type: "redirect"; url: string }
@@ -17,17 +24,20 @@ export type GoogleRedirectResult = { type: "success" };
 export class AuthService {
   private database: Database;
   private encryptionConfig: EncryptionConfig;
+  private jwtConfig: JwtConfig;
   private googleAuthGateway: IGoogleAuthGateway;
   private mediator: IMediator;
 
   constructor(
     database: Database,
     encryptionConfig: EncryptionConfig,
+    jwtConfig: JwtConfig,
     googleAuthGateway: IGoogleAuthGateway,
     mediator: IMediator,
   ) {
     this.database = database;
     this.encryptionConfig = encryptionConfig;
+    this.jwtConfig = jwtConfig;
     this.googleAuthGateway = googleAuthGateway;
     this.mediator = mediator;
   }
@@ -206,11 +216,68 @@ export class AuthService {
         "You need to register via WhatsApp first.",
       );
     }
-    if (!user.email) {
-      user.email = userinfo.email;
-      await this.saveUserEmail(user);
+    return user;
+  }
+
+  getWebLoginUrl(): string {
+    return this.googleAuthGateway.createWebAuthorizationCodeUrl();
+  }
+
+  getWebPostLoginRedirect(): string {
+    return this.googleAuthGateway.getWebPostLoginRedirect();
+  }
+
+  async verifyWebToken(token: string): Promise<WebAuthTokenPayload> {
+    const jwt = new Jwt(this.jwtConfig);
+    try {
+      const payload = await jwt.verify<WebAuthTokenPayload>(token);
+      if (!payload.userId || !payload.email || !payload.phoneNumber) {
+        throw new UnauthorizedException(
+          "Invalid authentication token",
+          "Please log in again.",
+        );
+      }
+      return payload;
+    } catch (error) {
+      if (error instanceof UnauthorizedException) throw error;
+      throw new UnauthorizedException(
+        "Invalid or expired authentication token",
+        "Please log in again.",
+      );
+    }
+  }
+
+  async authenticateWebUser(token: string): Promise<User> {
+    if (!token) {
+      throw new UnauthorizedException(
+        "Authentication required",
+        "Please log in to continue.",
+      );
+    }
+    const payload = await this.verifyWebToken(token);
+    const user = await this.getUserById(payload.userId);
+    if (!user || user.email !== payload.email) {
+      throw new UnauthorizedException(
+        "Invalid authentication token",
+        "Please log in again.",
+      );
     }
     return user;
+  }
+
+  async createWebToken(user: User): Promise<string> {
+    const jwt = new Jwt(this.jwtConfig);
+    return jwt.sign({
+      userId: user.id,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+    });
+  }
+
+  async handleWebLogin(code: string): Promise<{ user: User; token: string }> {
+    const user = await this.handleWebGoogleRedirect(code);
+    const token = await this.createWebToken(user);
+    return { user, token };
   }
 
   private async hydrateUser(dbUser: DbUser): Promise<User> {

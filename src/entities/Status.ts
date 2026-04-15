@@ -29,12 +29,4 @@ export class Status {
       modelName,
     };
   }
-
-  toJSON() {
-    return {
-      updatedAt: this.updatedAt.toISOString(),
-      database: this.database,
-      ai: this.ai,
-    };
-  }
 }

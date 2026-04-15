@@ -1,20 +1,21 @@
-export function addDigitNine(phoneNumber: string): string {
-  phoneNumber = sanitize(phoneNumber);
-  const ddiAndDdd =
-    phoneNumber.length >= 4 ? phoneNumber.slice(0, 4) : phoneNumber;
-  if (!ddiAndDdd.startsWith("55")) {
-    return phoneNumber;
+export class PhoneNumberUtils {
+  static addDigitNine(phoneNumber: string): string {
+    const sanitized = PhoneNumberUtils.sanitize(phoneNumber);
+    const ddiAndDdd = sanitized.length >= 4 ? sanitized.slice(0, 4) : sanitized;
+    if (!ddiAndDdd.startsWith("55")) {
+      return sanitized;
+    }
+    if (sanitized.length === 13) {
+      return sanitized;
+    }
+    return `${ddiAndDdd}9${sanitized.slice(4)}`;
   }
-  if (phoneNumber.length === 13) {
-    return phoneNumber;
+
+  static sanitize(phoneNumber: string): string {
+    return phoneNumber.replace(/\D/g, "");
   }
-  return `${ddiAndDdd}9${phoneNumber.slice(4)}`;
-}
 
-export function sanitize(phoneNumber: string): string {
-  return phoneNumber.replace(/\D/g, "");
-}
-
-export function isValid(phoneNumber: string): boolean {
-  return phoneNumber.length >= 8 && phoneNumber.length <= 15;
+  static isValid(phoneNumber: string): boolean {
+    return phoneNumber.length >= 8 && phoneNumber.length <= 15;
+  }
 }

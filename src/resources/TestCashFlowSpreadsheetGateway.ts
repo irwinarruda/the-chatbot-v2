@@ -1,5 +1,5 @@
-import type { GoogleSheetsConfig } from "@infra/config";
-import { ServiceException, ValidationException } from "@infra/exceptions";
+import type { GoogleSheetsConfig } from "~/infra/config";
+import { ServiceException, ValidationException } from "~/infra/exceptions";
 import type {
   AddEarningDTO,
   AddExpenseDTO,

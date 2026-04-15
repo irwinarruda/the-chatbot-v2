@@ -1,6 +1,6 @@
-import { createApiErrorResponse } from "@infra/exceptions";
-import { ensureBootstrapped } from "@infra/server-bootstrap";
 import { createMiddleware, createStart } from "@tanstack/react-start";
+import { createApiErrorResponse } from "~/infra/exceptions";
+import { ServerBootstrap } from "~/infra/server-bootstrap";
 
 const securityHeadersMiddleware = createMiddleware({
   type: "request",
@@ -27,7 +27,7 @@ const apiExceptionMiddleware = createMiddleware({ type: "request" }).server(
   async ({ next, pathname }) => {
     const isApi = pathname.startsWith("/api/");
     if (isApi) {
-      await ensureBootstrapped();
+      await ServerBootstrap.ensureBootstrapped();
     }
     try {
       const response = await next();

@@ -1,8 +1,8 @@
-import { ValidationException } from "@infra/exceptions";
 import { v4 as uuidv4 } from "uuid";
 import { Credential } from "~/entities/Credentials";
 import { CredentialType } from "~/entities/enums/CredentialType";
-import { isValid, sanitize } from "~/entities/PhoneNumberUtils";
+import { PhoneNumberUtils } from "~/entities/PhoneNumberUtils";
+import { ValidationException } from "~/infra/exceptions";
 
 export class User {
   id: string;
@@ -31,8 +31,8 @@ export class User {
           "Chose another name and continue",
         );
       }
-      const sanitized = sanitize(phoneNumber);
-      if (!isValid(sanitized)) {
+      const sanitized = PhoneNumberUtils.sanitize(phoneNumber);
+      if (!PhoneNumberUtils.isValid(sanitized)) {
         throw new ValidationException(
           "User phone number is not valid",
           "Chose another phone number and continue",
@@ -74,5 +74,14 @@ export class User {
       );
     }
     this.googleCredential.update(accessToken, refreshToken, expiresInSeconds);
+  }
+
+  toJSON() {
+    return {
+      id: this.id,
+      name: this.name,
+      email: this.email,
+      phoneNumber: this.phoneNumber,
+    };
   }
 }

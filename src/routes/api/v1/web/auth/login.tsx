@@ -1,19 +1,16 @@
-import { getService } from "@infra/server-bootstrap";
 import { createFileRoute } from "@tanstack/react-router";
-import type { IGoogleAuthGateway } from "~/resources/IGoogleAuthGateway";
+import { ServerBootstrap } from "~/infra/server-bootstrap";
+import type { AuthService } from "~/services/AuthService";
 import { Http } from "~/utils/Http";
 
 export const Route = createFileRoute("/api/v1/web/auth/login")({
   server: {
     handlers: {
       async GET() {
-        const googleAuthGateway =
-          getService<IGoogleAuthGateway>("IGoogleAuthGateway");
-        const url = googleAuthGateway.createWebAuthorizationCodeUrl();
-        return Http.json(null, {
-          status: 302,
-          headers: { Location: url },
-        });
+        const authService =
+          ServerBootstrap.getService<AuthService>("AuthService");
+        const url = authService.getWebLoginUrl();
+        return Http.redirect(url);
       },
     },
   },

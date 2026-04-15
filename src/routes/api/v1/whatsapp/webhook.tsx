@@ -1,5 +1,5 @@
-import { getService } from "@infra/server-bootstrap";
 import { createFileRoute } from "@tanstack/react-router";
+import { ServerBootstrap } from "~/infra/server-bootstrap";
 import type { MessagingService } from "~/services/MessagingService";
 import { Http } from "~/utils/Http";
 
@@ -8,7 +8,7 @@ export const Route = createFileRoute("/api/v1/whatsapp/webhook")({
     handlers: {
       async GET({ request }) {
         const messagingService =
-          getService<MessagingService>("MessagingService");
+          ServerBootstrap.getService<MessagingService>("MessagingService");
         const url = new URL(request.url);
         const hubMode = url.searchParams.get("hub.mode") ?? "";
         const hubChallenge = url.searchParams.get("hub.challenge") ?? "";
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/api/v1/whatsapp/webhook")({
       },
       async POST({ request }) {
         const messagingService =
-          getService<MessagingService>("MessagingService");
+          ServerBootstrap.getService<MessagingService>("MessagingService");
         const xHubSignature256 =
           request.headers.get("x-hub-signature-256") ?? "";
         const stringifiedBody = await request.text();

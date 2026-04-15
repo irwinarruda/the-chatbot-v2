@@ -1,4 +1,4 @@
-import { ExceptionResponse, ValidationException } from "@infra/exceptions";
+import { ExceptionResponse, ValidationException } from "~/infra/exceptions";
 import type { AiChatMessage, IAiChatGateway } from "~/resources/IAiChatGateway";
 import { AiChatMessageType, AiChatRole } from "~/resources/IAiChatGateway";
 import type { AuthService } from "~/services/AuthService";

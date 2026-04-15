@@ -1,17 +1,16 @@
-import { loadConfig } from "@infra/config";
-import { getService } from "@infra/server-bootstrap";
-import { requireWebAuth } from "@infra/web";
 import { createFileRoute } from "@tanstack/react-router";
+import { ServerBootstrap } from "~/infra/server-bootstrap";
 import type { AuthService } from "~/services/AuthService";
 import { Http } from "~/utils/Http";
+import { WebAuth } from "~/utils/WebAuth";
 
 export const Route = createFileRoute("/api/v1/web/auth/me")({
   server: {
     handlers: {
       async GET({ request }) {
-        const config = loadConfig();
-        const authService = getService<AuthService>("AuthService");
-        const auth = await requireWebAuth(request, config);
+        const authService =
+          ServerBootstrap.getService<AuthService>("AuthService");
+        const auth = await WebAuth.requireAuth(request);
         const user = await authService.getUserByEmail(auth.email);
         if (!user) {
           return Http.json({ error: "User not found" }, { status: 404 });

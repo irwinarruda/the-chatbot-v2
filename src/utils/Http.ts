@@ -24,4 +24,15 @@ export class Http {
       ...init,
     });
   }
+
+  static redirect(url: string, init?: Init): Response {
+    const headers = new Headers(init?.headers);
+    headers.set("Location", url);
+    const { headers: _headers, ...rest } = init ?? {};
+    return new Response(null, {
+      status: 302,
+      headers,
+      ...rest,
+    });
+  }
 }

@@ -14,7 +14,7 @@
     "paths": {
       "~/*": ["./src/*"],
       "~/tests/*": ["./tests/*"],
-      "@infra/*": ["./infra/*"]
+      "~/infra/*": ["./infra/*"]
     },
     "types": ["node", "vitest/globals"]
   },

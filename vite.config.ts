@@ -4,9 +4,9 @@ import { cpSync, existsSync, readdirSync } from "fs";
 import { nitro } from "nitro/vite";
 import path from "path";
 import { defineConfig, type Plugin } from "vite";
-import { loadEnv } from "./infra/env";
+import { Env } from "./infra/env";
 
-loadEnv();
+Env.load();
 
 function copyStaticAssets(): Plugin {
   return {

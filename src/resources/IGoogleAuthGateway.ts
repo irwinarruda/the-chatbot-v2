@@ -18,6 +18,7 @@ export interface IGoogleAuthGateway {
     refreshToken: string,
   ): Promise<GoogleTokens>;
   getAppLoginUrl(phoneNumber: string): string;
+  getWebPostLoginRedirect(): string;
   createWebAuthorizationCodeUrl(): string;
   exchangeWebCodeForTokens(code: string): Promise<GoogleTokens>;
 }

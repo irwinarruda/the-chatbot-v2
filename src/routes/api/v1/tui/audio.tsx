@@ -1,11 +1,11 @@
-import { ValidationException } from "@infra/exceptions";
-import { getService } from "@infra/server-bootstrap";
-import { requireTuiGateway } from "@infra/tui";
 import { createFileRoute } from "@tanstack/react-router";
 import fs from "fs";
 import os from "os";
 import path from "path";
 import { ChatType } from "~/entities/enums/ChatType";
+import { ValidationException } from "~/infra/exceptions";
+import { ServerBootstrap } from "~/infra/server-bootstrap";
+import { requireTuiGateway } from "~/infra/tui";
 import type { ReceiveAudioMessageDTO } from "~/resources/IMessagingGateway";
 import type { IWhatsAppMessagingGateway } from "~/resources/IWhatsAppMessagingGateway";
 import type { MessagingService } from "~/services/MessagingService";
@@ -15,9 +15,10 @@ export const Route = createFileRoute("/api/v1/tui/audio")({
   server: {
     handlers: {
       async POST({ request }) {
-        const rawGateway = getService<IWhatsAppMessagingGateway>(
-          "IWhatsAppMessagingGateway",
-        );
+        const rawGateway =
+          ServerBootstrap.getService<IWhatsAppMessagingGateway>(
+            "IWhatsAppMessagingGateway",
+          );
         const gateway = requireTuiGateway(rawGateway);
         if (gateway instanceof Response) {
           return gateway;
@@ -50,7 +51,7 @@ export const Route = createFileRoute("/api/v1/tui/audio")({
         const fileBuffer = fs.readFileSync(filePath);
         const mediaId = await gateway.saveMediaAsync(Buffer.from(fileBuffer));
         const messagingService =
-          getService<MessagingService>("MessagingService");
+          ServerBootstrap.getService<MessagingService>("MessagingService");
         const dto: ReceiveAudioMessageDTO = {
           from: body.phone_number,
           mimeType,

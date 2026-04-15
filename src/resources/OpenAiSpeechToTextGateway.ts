@@ -1,6 +1,6 @@
-import type { OpenAiConfig } from "@infra/config";
-import { ValidationException } from "@infra/exceptions";
 import OpenAI from "openai";
+import type { OpenAiConfig } from "~/infra/config";
+import { ValidationException } from "~/infra/exceptions";
 import type {
   ISpeechToTextGateway,
   TranscribeAudioDTO,
@@ -23,12 +23,13 @@ export class OpenAiSpeechToTextGateway implements ISpeechToTextGateway {
         "Use a shorter audio file (max 25 MB) and try again",
       );
     }
-    const extension = this.getExtensionFromMimeType(dto.mimeType);
+    const baseMimeType = dto.mimeType.split(";")[0].trim().toLowerCase();
+    const extension = this.getExtensionFromMimeType(baseMimeType);
     const filename = `audio.${extension}`;
     const blob = new Blob([new Uint8Array(dto.audioStream)], {
-      type: dto.mimeType,
+      type: baseMimeType,
     });
-    const file = new File([blob], filename, { type: dto.mimeType });
+    const file = new File([blob], filename, { type: baseMimeType });
     const response = await this.openai.audio.transcriptions.create({
       model: "whisper-1",
       file,

@@ -1,6 +1,6 @@
-import type { AiConfig, DatabaseConfig } from "@infra/config";
-import type { Database } from "@infra/database";
 import { Status } from "~/entities/Status";
+import type { AiConfig, DatabaseConfig } from "~/infra/config";
+import type { Database } from "~/infra/database";
 
 export class StatusService {
   private database: Database;

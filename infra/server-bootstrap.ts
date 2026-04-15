@@ -2,28 +2,30 @@ import { registerDependencies } from "./bootstrap";
 import { loadConfig } from "./config";
 import { container } from "./container";
 
-let bootstrapPromise: Promise<void> | null = null;
+export class ServerBootstrap {
+  private static bootstrapPromise: Promise<void> | null = null;
 
-function bootstrapApp(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    try {
-      const config = loadConfig();
-      registerDependencies(config);
-      resolve();
-    } catch (error) {
-      bootstrapPromise = null;
-      reject(error);
+  static ensureBootstrapped(): Promise<void> {
+    if (!ServerBootstrap.bootstrapPromise) {
+      ServerBootstrap.bootstrapPromise = ServerBootstrap.bootstrapApp();
     }
-  });
-}
-
-export function ensureBootstrapped(): Promise<void> {
-  if (!bootstrapPromise) {
-    bootstrapPromise = bootstrapApp();
+    return ServerBootstrap.bootstrapPromise;
   }
-  return bootstrapPromise;
-}
 
-export function getService<T>(name: string): T {
-  return container.resolve<T>(name);
+  static getService<T>(name: string): T {
+    return container.resolve<T>(name);
+  }
+
+  private static bootstrapApp(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      try {
+        const config = loadConfig();
+        registerDependencies(config);
+        resolve();
+      } catch (error) {
+        ServerBootstrap.bootstrapPromise = null;
+        reject(error);
+      }
+    });
+  }
 }

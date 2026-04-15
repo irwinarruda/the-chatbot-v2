@@ -1,4 +1,6 @@
+import { ChatType } from "~/entities/enums/ChatType";
 import type {
+  ReceiveMessageDTO,
   SendInteractiveButtonMessageDTO,
   SendTextMessageDTO,
 } from "~/resources/IMessagingGateway";
@@ -11,6 +13,43 @@ export class TestWebMessagingGateway implements IWebMessagingGateway {
   private events: WebChatEvent[] = [];
   private mediaById = new Map<string, Buffer>();
 
+  async receiveWebMessage(
+    phoneNumber: string,
+    body: unknown,
+  ): Promise<ReceiveMessageDTO | undefined> {
+    const data = body as {
+      text?: string;
+      buttonReply?: string;
+      audioBuffer?: Buffer;
+      mimeType?: string;
+    };
+    if (data.audioBuffer && data.mimeType) {
+      const mediaId = crypto.randomUUID();
+      this.mediaById.set(mediaId, data.audioBuffer);
+      return {
+        from: phoneNumber,
+        mediaId,
+        mimeType: data.mimeType,
+        chatType: ChatType.Web,
+        idProvider: crypto.randomUUID(),
+      } as ReceiveMessageDTO;
+    }
+    if (data.buttonReply) {
+      return {
+        from: phoneNumber,
+        buttonReply: data.buttonReply,
+        chatType: ChatType.Web,
+        idProvider: crypto.randomUUID(),
+      } as ReceiveMessageDTO;
+    }
+    return {
+      from: phoneNumber,
+      text: data.text ?? "",
+      chatType: ChatType.Web,
+      idProvider: crypto.randomUUID(),
+    } as ReceiveMessageDTO;
+  }
+
   async sendTextMessage(dto: SendTextMessageDTO): Promise<void> {
     this.enqueue(dto.to, { type: "text", data: dto });
   }
@@ -19,12 +58,6 @@ export class TestWebMessagingGateway implements IWebMessagingGateway {
     dto: SendInteractiveButtonMessageDTO,
   ): Promise<void> {
     this.enqueue(dto.to, { type: "interactive_button", data: dto });
-  }
-
-  async saveMediaAsync(buffer: Buffer): Promise<string> {
-    const mediaId = crypto.randomUUID();
-    this.mediaById.set(mediaId, buffer);
-    return mediaId;
   }
 
   async downloadMediaAsync(_mediaId: string): Promise<Buffer> {

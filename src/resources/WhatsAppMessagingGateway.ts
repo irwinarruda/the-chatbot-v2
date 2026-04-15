@@ -1,7 +1,7 @@
-import type { WhatsAppConfig } from "@infra/config";
 import crypto from "crypto";
 import { ChatType } from "~/entities/enums/ChatType";
-import { addDigitNine } from "~/entities/PhoneNumberUtils";
+import { PhoneNumberUtils } from "~/entities/PhoneNumberUtils";
+import type { WhatsAppConfig } from "~/infra/config";
 import type {
   ReceiveAudioMessageDTO,
   ReceiveInteractiveButtonMessageDTO,
@@ -122,7 +122,7 @@ export class WhatsAppMessagingGateway implements IWhatsAppMessagingGateway {
       if (!messages || messages.length === 0) return undefined;
       const message = messages[0];
       const contact = value?.contacts?.[0];
-      const from = addDigitNine(contact?.wa_id ?? "");
+      const from = PhoneNumberUtils.addDigitNine(contact?.wa_id ?? "");
       const idProvider = message.id;
       const chatType = ChatType.WhatsApp;
       if (message.audio) {

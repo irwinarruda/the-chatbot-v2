@@ -1,8 +1,8 @@
-import { ValidationException } from "@infra/exceptions";
+import { ValidationException } from "~/infra/exceptions";
 
 describe("ExceptionResponse", () => {
   test("createApiErrorResponse serializes app errors into json responses", async () => {
-    const exceptions = (await import("@infra/exceptions")) as Record<
+    const exceptions = (await import("~/infra/exceptions")) as Record<
       string,
       unknown
     >;

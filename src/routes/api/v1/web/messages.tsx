@@ -1,23 +1,16 @@
-import { loadConfig } from "@infra/config";
-import { getService } from "@infra/server-bootstrap";
-import { requireWebAuth } from "@infra/web";
 import { createFileRoute } from "@tanstack/react-router";
-import { ChatType } from "~/entities/enums/ChatType";
-import type {
-  ReceiveInteractiveButtonMessageDTO,
-  ReceiveTextMessageDTO,
-} from "~/resources/IMessagingGateway";
+import { ServerBootstrap } from "~/infra/server-bootstrap";
 import type { MessagingService } from "~/services/MessagingService";
 import { Http } from "~/utils/Http";
+import { WebAuth } from "~/utils/WebAuth";
 
 export const Route = createFileRoute("/api/v1/web/messages")({
   server: {
     handlers: {
       async GET({ request }) {
-        const config = loadConfig();
-        const auth = await requireWebAuth(request, config);
+        const auth = await WebAuth.requireAuth(request);
         const messagingService =
-          getService<MessagingService>("MessagingService");
+          ServerBootstrap.getService<MessagingService>("MessagingService");
         const chat = await messagingService.getChatByPhoneNumber(
           auth.phoneNumber,
         );
@@ -26,8 +19,8 @@ export const Route = createFileRoute("/api/v1/web/messages")({
         }
         const messages = chat.messages.map((m) => ({
           id: m.id,
-          type: m.type.toLowerCase(),
-          userType: m.userType.toLowerCase(),
+          type: m.type,
+          userType: m.userType,
           text: m.text,
           buttonReply: m.buttonReply,
           buttonReplyOptions: m.buttonReplyOptions,
@@ -39,31 +32,11 @@ export const Route = createFileRoute("/api/v1/web/messages")({
         return Http.json({ messages });
       },
       async POST({ request }) {
-        const config = loadConfig();
-        const auth = await requireWebAuth(request, config);
-        const body = (await request.json()) as {
-          text?: string;
-          buttonReply?: string;
-        };
+        const auth = await WebAuth.requireAuth(request);
+        const body = await request.json();
         const messagingService =
-          getService<MessagingService>("MessagingService");
-        if (body.buttonReply) {
-          const dto: ReceiveInteractiveButtonMessageDTO = {
-            from: auth.phoneNumber,
-            buttonReply: body.buttonReply,
-            chatType: ChatType.Web,
-            idProvider: crypto.randomUUID(),
-          };
-          await messagingService.listenToMessage(dto);
-        } else {
-          const dto: ReceiveTextMessageDTO = {
-            from: auth.phoneNumber,
-            text: body.text ?? "",
-            chatType: ChatType.Web,
-            idProvider: crypto.randomUUID(),
-          };
-          await messagingService.listenToMessage(dto);
-        }
+          ServerBootstrap.getService<MessagingService>("MessagingService");
+        await messagingService.receiveWebMessage(auth.phoneNumber, body);
         return Http.json({ status: "ok" });
       },
     },

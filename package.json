@@ -13,7 +13,7 @@
     "build": "vite build",
     "start": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "bun run services:ready && NODE_OPTIONS='--import tsx/esm' vitest run",
+    "test": "MODE=test bun run services:ready && NODE_OPTIONS='--import tsx/esm' vitest run",
     "test:watch": "NODE_OPTIONS='--import tsx/esm' vitest",
     "test:local": "NODE_OPTIONS='--import tsx/esm' MODE=local vitest run",
     "test:prev": "NODE_OPTIONS='--import tsx/esm' MODE=preview vitest run",

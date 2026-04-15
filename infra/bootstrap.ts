@@ -1,3 +1,4 @@
+import { Mediator } from "~/infra/Mediator";
 import { AiChatGateway } from "~/resources/AiChatGateway";
 import { GoogleAuthGateway } from "~/resources/GoogleAuthGateway";
 import { GoogleCashFlowSpreadsheetGateway } from "~/resources/GoogleCashFlowSpreadsheetGateway";
@@ -14,7 +15,6 @@ import {
 } from "~/services/MessagingService";
 import { MigrationService } from "~/services/MigrationService";
 import { StatusService } from "~/services/StatusService";
-import { Mediator } from "~/utils/Mediator";
 import type { Config } from "./config";
 import { container } from "./container";
 import { Database } from "./database";
@@ -97,6 +97,7 @@ export function registerDependencies(config: Config) {
       new AuthService(
         database,
         config.encryption,
+        config.jwt,
         container.resolve("IGoogleAuthGateway"),
         mediator,
       ),

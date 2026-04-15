@@ -7,7 +7,7 @@
     "connectedTitle": "Conectado - The Chatbot"
   },
   "nav": {
-    "home": "home/",
+    "home": "home",
     "privacy": "privacy",
     "chat": "chat"
   },
@@ -76,6 +76,8 @@
     "you": "você",
     "bot": "bot",
     "placeholder": "Digite uma mensagem...",
+    "audioInputLabel": "Microfone",
+    "audioInputUnavailable": "Microfone padrão",
     "send": "Enviar",
     "startRecording": "Gravar áudio",
     "recording": "Gravando",

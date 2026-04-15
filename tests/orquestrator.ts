@@ -1,4 +1,5 @@
 import { faker } from "@faker-js/faker";
+import { User } from "~/entities/User";
 import type {
   AiConfig,
   AuthConfig,
@@ -7,13 +8,14 @@ import type {
   EncryptionConfig,
   GoogleConfig,
   GoogleSheetsConfig,
+  JwtConfig,
   OpenAiConfig,
   SummarizationConfig,
-} from "@infra/config";
-import { loadConfig } from "@infra/config";
-import { Container } from "@infra/container";
-import { Database } from "@infra/database";
-import { User } from "~/entities/User";
+} from "~/infra/config";
+import { loadConfig } from "~/infra/config";
+import { Container } from "~/infra/container";
+import { Database } from "~/infra/database";
+import { Mediator } from "~/infra/Mediator";
 import { GoogleCashFlowSpreadsheetGateway } from "~/resources/GoogleCashFlowSpreadsheetGateway";
 import { TestAiChatGateway } from "~/resources/TestAiChatGateway";
 import { TestCashFlowSpreadsheetGateway } from "~/resources/TestCashFlowSpreadsheetGateway";
@@ -30,7 +32,6 @@ import {
 } from "~/services/MessagingService";
 import { MigrationService } from "~/services/MigrationService";
 import { StatusService } from "~/services/StatusService";
-import { Mediator } from "~/utils/Mediator";
 
 export class Orquestrator {
   config: Config;
@@ -46,6 +47,7 @@ export class Orquestrator {
   authConfig: AuthConfig;
   summarizationConfig: SummarizationConfig;
   openAiConfig: OpenAiConfig;
+  jwtConfig: JwtConfig;
 
   authService: AuthService;
   messagingService: MessagingService;
@@ -69,6 +71,7 @@ export class Orquestrator {
     this.authConfig = this.config.auth;
     this.summarizationConfig = this.config.summarization;
     this.openAiConfig = this.config.openAi;
+    this.jwtConfig = this.config.jwt;
 
     this.container.register("Database", () => this.database, "singleton");
     this.container.register("Mediator", () => this.mediator, "singleton");
@@ -176,6 +179,7 @@ export class Orquestrator {
         new AuthService(
           this.database,
           this.encryptionConfig,
+          this.jwtConfig,
           this.container.resolve("IGoogleAuthGateway"),
           this.mediator,
         ),

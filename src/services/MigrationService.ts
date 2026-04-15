@@ -1,11 +1,11 @@
-import type { AuthConfig, DatabaseConfig } from "@infra/config";
-import type { Database } from "@infra/database";
-import { UnauthorizedException } from "@infra/exceptions";
-import { resolveMigrationsDir } from "@infra/paths";
 import fs from "fs";
 import { runner } from "node-pg-migrate";
+import type { AuthConfig, DatabaseConfig } from "~/infra/config";
+import type { Database } from "~/infra/database";
+import { UnauthorizedException } from "~/infra/exceptions";
+import { Paths } from "~/infra/paths";
 
-const migrationsDir = resolveMigrationsDir();
+const migrationsDir = Paths.migrationsDir();
 
 const noop = () => {};
 const noopLogger = { debug: noop, info: noop, warn: noop, error: noop };

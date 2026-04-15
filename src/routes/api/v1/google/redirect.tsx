@@ -1,5 +1,5 @@
-import { getService } from "@infra/server-bootstrap";
 import { createFileRoute } from "@tanstack/react-router";
+import { ServerBootstrap } from "~/infra/server-bootstrap";
 import type { AuthService } from "~/services/AuthService";
 import { Http } from "~/utils/Http";
 
@@ -7,7 +7,8 @@ export const Route = createFileRoute("/api/v1/google/redirect")({
   server: {
     handlers: {
       async GET({ request }) {
-        const authService = getService<AuthService>("AuthService");
+        const authService =
+          ServerBootstrap.getService<AuthService>("AuthService");
         const url = new URL(request.url);
         const state = url.searchParams.get("state") ?? "";
         const code = url.searchParams.get("code") ?? "";

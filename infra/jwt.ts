@@ -1,20 +1,25 @@
 import * as jose from "jose";
+import type { JwtConfig } from "./config";
 
-export async function signJwt(
-  payload: Record<string, unknown>,
-  secret: string,
-  expiresIn: string,
-): Promise<string> {
-  const encodedSecret = new TextEncoder().encode(secret);
-  return new jose.SignJWT(payload)
-    .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime(expiresIn)
-    .sign(encodedSecret);
-}
+export class Jwt {
+  private secret: Uint8Array;
+  private expiresIn: string;
 
-export async function verifyJwt<T>(token: string, secret: string): Promise<T> {
-  const encodedSecret = new TextEncoder().encode(secret);
-  const { payload } = await jose.jwtVerify(token, encodedSecret);
-  return payload as T;
+  constructor(config: JwtConfig) {
+    this.secret = new TextEncoder().encode(config.secret);
+    this.expiresIn = config.expiresIn;
+  }
+
+  async sign(payload: Record<string, unknown>): Promise<string> {
+    return new jose.SignJWT(payload)
+      .setProtectedHeader({ alg: "HS256" })
+      .setIssuedAt()
+      .setExpirationTime(this.expiresIn)
+      .sign(this.secret);
+  }
+
+  async verify<T>(token: string): Promise<T> {
+    const { payload } = await jose.jwtVerify(token, this.secret);
+    return payload as T;
+  }
 }

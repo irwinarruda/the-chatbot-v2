@@ -1,6 +1,8 @@
 import { v4 as uuidv4 } from "uuid";
 import { Chat } from "~/entities/Chat";
+import { ChatType } from "~/entities/enums/ChatType";
 import { MessageUserType } from "~/entities/enums/MessageUserType";
+import { TestWebMessagingGateway } from "~/resources/TestWebMessagingGateway";
 import { TestWhatsAppMessagingGateway } from "~/resources/TestWhatsAppMessagingGateway";
 import { orquestrator } from "./orquestrator";
 
@@ -243,5 +245,128 @@ describe("MessagingService", () => {
     chat.addBotTextMessage("Hi there");
     chat.setSummary("Some summary", uuidv4());
     expect(chat.effectiveMessages.length).toBe(2);
+  });
+
+  test("receiveWebMessage creates Web chat and responds via web gateway", async () => {
+    await orquestrator.clearDatabase();
+    const phoneNumber = "5511912345678";
+    await orquestrator.messagingService.addAllowedNumber(phoneNumber);
+    const user = await orquestrator.createUser({ phoneNumber });
+
+    const webGateway = orquestrator.container.resolve<TestWebMessagingGateway>(
+      "IWebMessagingGateway",
+    );
+    const eventsBefore = webGateway.getEvents().length;
+
+    await orquestrator.messagingService.receiveWebMessage(phoneNumber, {
+      text: "Hello from web",
+    });
+    await new Promise((r) => setTimeout(r, delay));
+
+    const chat =
+      await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber);
+    expect(chat).toBeDefined();
+    expect(chat?.type).toBe(ChatType.Web);
+    expect(chat?.idUser).toBe(user.id);
+    expect(chat?.messages.length).toBe(2);
+    expect(chat?.messages[0]?.text).toBe("Hello from web");
+    expect(chat?.messages[0]?.userType).toBe(MessageUserType.User);
+    expect(chat?.messages[1]?.userType).toBe(MessageUserType.Bot);
+    expect(chat?.messages[1]?.text).toBe("Response to: Hello from web");
+
+    const events = webGateway.getEvents();
+    expect(events.length).toBeGreaterThan(eventsBefore);
+    const lastEvent = events[events.length - 1];
+    expect(lastEvent?.type).toBe("text");
+    expect((lastEvent?.data as { to: string; text: string }).to).toBe(
+      phoneNumber,
+    );
+    expect((lastEvent?.data as { to: string; text: string }).text).toBe(
+      "Response to: Hello from web",
+    );
+  });
+
+  test("receiveWebMessage with buttonReply routes through web gateway", async () => {
+    await orquestrator.clearDatabase();
+    const phoneNumber = "5511912345678";
+    await orquestrator.messagingService.addAllowedNumber(phoneNumber);
+    await orquestrator.createUser({ phoneNumber });
+
+    await orquestrator.messagingService.receiveWebMessage(phoneNumber, {
+      buttonReply: "Yes",
+    });
+    await new Promise((r) => setTimeout(r, delay));
+
+    const chat =
+      await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber);
+    expect(chat).toBeDefined();
+    expect(chat?.type).toBe(ChatType.Web);
+    expect(chat?.messages[0]?.buttonReply).toBe("Yes");
+    expect(chat?.messages[0]?.userType).toBe(MessageUserType.User);
+  });
+
+  test("subscribeToWebEvents yields enqueued events and stops on abort", async () => {
+    const phoneNumber = "5511912345678";
+    const webGateway = orquestrator.container.resolve<TestWebMessagingGateway>(
+      "IWebMessagingGateway",
+    );
+    // Reset any previously enqueued events from sibling tests.
+    (webGateway as unknown as { events: unknown[] }).events.length = 0;
+
+    const controller = new AbortController();
+    const generator = await orquestrator.messagingService.subscribeToWebEvents(
+      phoneNumber,
+      controller.signal,
+    );
+
+    webGateway.enqueue(phoneNumber, {
+      type: "text",
+      data: { to: phoneNumber, text: "hello subscriber" },
+    });
+
+    const first = await generator.next();
+    expect(first.done).toBe(false);
+    expect(first.value?.type).toBe("text");
+    expect((first.value?.data as { text: string }).text).toBe(
+      "hello subscriber",
+    );
+
+    controller.abort();
+    const next = await generator.next();
+    expect(next.done).toBe(true);
+  });
+
+  test("sendTextMessage honors explicit chatType override", async () => {
+    await orquestrator.clearDatabase();
+    const phoneNumber = TestWhatsAppMessagingGateway.phoneNumber;
+    await orquestrator.messagingService.addAllowedNumber(phoneNumber);
+    await orquestrator.createUser({ phoneNumber });
+
+    await orquestrator.messagingService.receiveWhatsAppMessage(
+      createReceiveMessage("Init"),
+      "sig",
+    );
+    await new Promise((r) => setTimeout(r, delay));
+    const chat =
+      await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber);
+    expect(chat?.type).toBe(ChatType.WhatsApp);
+
+    const webGateway = orquestrator.container.resolve<TestWebMessagingGateway>(
+      "IWebMessagingGateway",
+    );
+    const eventsBefore = webGateway.getEvents().length;
+
+    await orquestrator.messagingService.sendTextMessage(
+      phoneNumber,
+      "Forced web",
+      undefined,
+      ChatType.Web,
+    );
+
+    const events = webGateway.getEvents();
+    expect(events.length).toBe(eventsBefore + 1);
+    const lastEvent = events[events.length - 1];
+    expect(lastEvent?.type).toBe("text");
+    expect((lastEvent?.data as { text: string }).text).toBe("Forced web");
   });
 });

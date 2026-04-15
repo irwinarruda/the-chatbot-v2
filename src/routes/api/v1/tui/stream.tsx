@@ -1,15 +1,16 @@
-import { getService } from "@infra/server-bootstrap";
-import { requireTuiGateway } from "@infra/tui";
 import { createFileRoute } from "@tanstack/react-router";
+import { ServerBootstrap } from "~/infra/server-bootstrap";
+import { requireTuiGateway } from "~/infra/tui";
 import type { IWhatsAppMessagingGateway } from "~/resources/IWhatsAppMessagingGateway";
 
 export const Route = createFileRoute("/api/v1/tui/stream")({
   server: {
     handlers: {
       async GET({ request }) {
-        const rawGateway = getService<IWhatsAppMessagingGateway>(
-          "IWhatsAppMessagingGateway",
-        );
+        const rawGateway =
+          ServerBootstrap.getService<IWhatsAppMessagingGateway>(
+            "IWhatsAppMessagingGateway",
+          );
         const gateway = requireTuiGateway(rawGateway);
         if (gateway instanceof Response) {
           return gateway;

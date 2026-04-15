@@ -1,9 +1,9 @@
-import { ValidationException } from "@infra/exceptions";
 import { v4 as uuidv4 } from "uuid";
 import { ChatType } from "~/entities/enums/ChatType";
 import { MessageType } from "~/entities/enums/MessageType";
 import { MessageUserType } from "~/entities/enums/MessageUserType";
 import { Message } from "~/entities/Message";
+import { ValidationException } from "~/infra/exceptions";
 
 export class Chat {
   id: string;
@@ -133,5 +133,18 @@ export class Chat {
     });
     this.messages.push(message);
     return message;
+  }
+
+  toJSON() {
+    return {
+      id: this.id,
+      phoneNumber: this.phoneNumber,
+      type: this.type.toLowerCase(),
+      messages: this.messages.map((m) => m.toJSON()),
+      summary: this.summary,
+      createdAt: this.createdAt.toISOString(),
+      updatedAt: this.updatedAt.toISOString(),
+      isDeleted: this.isDeleted,
+    };
   }
 }

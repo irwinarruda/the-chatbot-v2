@@ -3,6 +3,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AudioWaveform } from "~/components/AudioWaveform";
 import { usePrefs } from "~/components/PrefsProvider";
 import { getDictionary } from "~/i18n";
+import {
+  type AudioInputOption,
+  getStoredAudioInputDeviceId,
+  listAudioInputOptions,
+  resolveSelectedAudioInput,
+  storeAudioInputDeviceId,
+} from "~/utils/audioInputDevices";
+import {
+  createRecordedAudioBlob,
+  pickSupportedRecordingMimeType,
+} from "~/utils/webAudioRecording";
 import "./ChatPage.css";
 
 interface ChatMessage {
@@ -31,6 +42,9 @@ interface WebChatEvent {
     to?: string;
     text?: string;
     buttons?: string[];
+    mediaUrl?: string;
+    mimeType?: string;
+    transcript?: string;
   };
 }
 
@@ -39,7 +53,6 @@ export function ChatPage() {
   const dictionary = getDictionary(locale);
   const t = dictionary.chatPage;
   const navigate = useNavigate();
-
   const [user, setUser] = useState<UserInfo | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -48,6 +61,10 @@ export function ChatPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [sseConnected, setSseConnected] = useState(false);
+  const [audioInputOptions, setAudioInputOptions] = useState<
+    AudioInputOption[]
+  >([]);
+  const [selectedAudioInputId, setSelectedAudioInputId] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -67,8 +84,7 @@ export function ChatPage() {
       try {
         const res = await fetch("/api/v1/web/auth/me");
         if (!res.ok) {
-          navigate({ to: "/api/v1/web/auth/login" });
-          return;
+          throw new Error("Authentication required");
         }
         const data = await res.json();
         if (cancelled) return;
@@ -132,8 +148,8 @@ export function ChatPage() {
               ...prev,
               {
                 id: crypto.randomUUID(),
-                type: "text",
-                userType: "bot",
+                type: "Text",
+                userType: "Bot",
                 text: event.data.text,
                 createdAt: now,
               },
@@ -143,13 +159,36 @@ export function ChatPage() {
               ...prev,
               {
                 id: crypto.randomUUID(),
-                type: "interactive",
-                userType: "bot",
+                type: "Interactive",
+                userType: "Bot",
                 text: event.data.text,
                 buttonReplyOptions: event.data.buttons,
                 createdAt: now,
               },
             ]);
+          } else if (event.type === "audio") {
+            setMessages((prev) => {
+              let idx = -1;
+              for (let i = prev.length - 1; i >= 0; i--) {
+                if (
+                  prev[i].type === "Audio" &&
+                  prev[i].userType === "User" &&
+                  !prev[i].transcript
+                ) {
+                  idx = i;
+                  break;
+                }
+              }
+              if (idx < 0) return prev;
+              const updated = [...prev];
+              updated[idx] = {
+                ...updated[idx],
+                mediaUrl: updated[idx].mediaUrl ?? event.data.mediaUrl,
+                mimeType: updated[idx].mimeType ?? event.data.mimeType,
+                transcript: event.data.transcript,
+              };
+              return updated;
+            });
           }
         } catch {
           // ignore parse errors
@@ -172,6 +211,50 @@ export function ChatPage() {
     };
   }, [user]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    let cancelled = false;
+
+    const syncAudioInputs = async () => {
+      if (typeof navigator === "undefined" || !navigator.mediaDevices) return;
+
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      if (cancelled) return;
+
+      const audioInputs = listAudioInputOptions(devices);
+      setAudioInputOptions(audioInputs);
+      setSelectedAudioInputId((current) => {
+        const storedDeviceId = getStoredAudioInputDeviceId(window.localStorage);
+        return resolveSelectedAudioInput(
+          audioInputs,
+          current || storedDeviceId || undefined,
+        );
+      });
+    };
+
+    void syncAudioInputs();
+
+    const handleDeviceChange = () => {
+      void syncAudioInputs();
+    };
+
+    navigator.mediaDevices.addEventListener("devicechange", handleDeviceChange);
+
+    return () => {
+      cancelled = true;
+      navigator.mediaDevices.removeEventListener(
+        "devicechange",
+        handleDeviceChange,
+      );
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !selectedAudioInputId) return;
+    storeAudioInputDeviceId(window.localStorage, selectedAudioInputId);
+  }, [selectedAudioInputId]);
+
   const sendMessage = useCallback(
     async (text: string) => {
       if (!text.trim() || isSending) return;
@@ -179,8 +262,8 @@ export function ChatPage() {
       setInput("");
       const optimistic: ChatMessage = {
         id: crypto.randomUUID(),
-        type: "text",
-        userType: "user",
+        type: "Text",
+        userType: "User",
         text: text.trim(),
         createdAt: new Date().toISOString(),
       };
@@ -207,8 +290,8 @@ export function ChatPage() {
       setIsSending(true);
       const optimistic: ChatMessage = {
         id: crypto.randomUUID(),
-        type: "interactive",
-        userType: "user",
+        type: "Interactive",
+        userType: "User",
         buttonReply: buttonText,
         createdAt: new Date().toISOString(),
       };
@@ -230,14 +313,29 @@ export function ChatPage() {
 
   const startRecording = useCallback(async () => {
     try {
+      const audioConstraint = selectedAudioInputId
+        ? {
+            deviceId: { exact: selectedAudioInputId },
+          }
+        : true;
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
+        audio: audioConstraint,
       });
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: MediaRecorder.isTypeSupported("audio/webm")
-          ? "audio/webm"
-          : "audio/mp4",
-      });
+
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const audioInputs = listAudioInputOptions(devices);
+      setAudioInputOptions(audioInputs);
+      setSelectedAudioInputId((current) =>
+        resolveSelectedAudioInput(audioInputs, current || selectedAudioInputId),
+      );
+
+      const recordingMimeType = pickSupportedRecordingMimeType(
+        MediaRecorder.isTypeSupported.bind(MediaRecorder),
+      );
+      const mediaRecorder =
+        recordingMimeType != null
+          ? new MediaRecorder(stream, { mimeType: recordingMimeType })
+          : new MediaRecorder(stream);
       audioChunksRef.current = [];
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) audioChunksRef.current.push(e.data);
@@ -246,16 +344,24 @@ export function ChatPage() {
         for (const track of stream.getTracks()) {
           track.stop();
         }
-        const blob = new Blob(audioChunksRef.current, {
-          type: mediaRecorder.mimeType,
-        });
-        if (blob.size === 0) return;
+        const recordedBlob = createRecordedAudioBlob(
+          audioChunksRef.current,
+          mediaRecorder.mimeType,
+        );
+
+        if (recordedBlob.size === 0) {
+          setError(t.errorSending);
+          return;
+        }
+
         setIsSending(true);
+        const localAudioUrl = URL.createObjectURL(recordedBlob);
         const optimistic: ChatMessage = {
           id: crypto.randomUUID(),
-          type: "audio",
-          userType: "user",
-          text: t.audioSent,
+          type: "Audio",
+          userType: "User",
+          mediaUrl: localAudioUrl,
+          mimeType: recordedBlob.type,
           createdAt: new Date().toISOString(),
         };
         setMessages((prev) => [...prev, optimistic]);
@@ -263,9 +369,9 @@ export function ChatPage() {
           await fetch("/api/v1/web/audio", {
             method: "POST",
             headers: {
-              "Content-Type": mediaRecorder.mimeType,
+              "Content-Type": recordedBlob.type,
             },
-            body: blob,
+            body: recordedBlob,
           });
         } catch {
           setError(t.errorSending);
@@ -283,7 +389,14 @@ export function ChatPage() {
     } catch {
       setError(t.errorMicrophone);
     }
-  }, [t.audioSent, t.errorSending, t.errorMicrophone]);
+  }, [selectedAudioInputId, t.errorSending, t.errorMicrophone]);
+
+  const handleAudioInputChange = useCallback(
+    (event: React.ChangeEvent<HTMLSelectElement>) => {
+      setSelectedAudioInputId(event.target.value);
+    },
+    [],
+  );
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current?.state === "recording") {
@@ -395,18 +508,18 @@ export function ChatPage() {
               className={`chat-message chat-message--${msg.userType}`}
             >
               <div className="chat-message-label">
-                {msg.userType === "user" ? t.you : t.bot}
+                {msg.userType === "User" ? t.you : t.bot}
               </div>
               <div className="chat-message-bubble">
-                {msg.type === "audio" && msg.mediaUrl ? (
+                {msg.type === "Audio" && msg.mediaUrl ? (
                   <div className="chat-audio-container">
                     <AudioWaveform src={msg.mediaUrl} theme={theme} />
                     {msg.transcript && (
                       <p className="chat-audio-transcript">{msg.transcript}</p>
                     )}
                   </div>
-                ) : msg.type === "interactive" &&
-                  msg.userType === "bot" &&
+                ) : msg.type === "Interactive" &&
+                  msg.userType === "Bot" &&
                   msg.buttonReplyOptions ? (
                   <div className="chat-button-reply">
                     <p className="chat-message-text">{msg.text}</p>
@@ -460,34 +573,88 @@ export function ChatPage() {
             </div>
           ) : (
             <form className="chat-form" onSubmit={handleSubmit}>
-              <span className="chat-input-prompt">{">"}</span>
-              <input
-                ref={inputRef}
-                type="text"
-                className="chat-input"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder={t.placeholder}
-                disabled={isSending}
-                autoComplete="off"
-              />
-              <button
-                type="button"
-                className="chat-mic-btn"
-                onClick={startRecording}
-                disabled={isSending}
-                title={t.startRecording}
+              <div className="chat-form-meta">
+                <span className="chat-form-meta-hint">
+                  <span className="chat-form-meta-key">enter</span>
+                  <span className="chat-form-meta-sep">·</span>
+                  <span>{t.send}</span>
+                </span>
+                <label
+                  className="chat-device-chip"
+                  data-disabled={
+                    audioInputOptions.length < 2 || isSending || isRecording
+                  }
+                  title={t.audioInputLabel}
+                >
+                  <span className="chat-device-chip-icon" aria-hidden="true">
+                    <MicIcon />
+                  </span>
+                  <span className="chat-device-chip-label">
+                    {audioInputOptions.find(
+                      (o) => o.deviceId === selectedAudioInputId,
+                    )?.label ?? t.audioInputUnavailable}
+                  </span>
+                  <ChevronIcon />
+                  <select
+                    className="chat-device-chip-select"
+                    value={selectedAudioInputId}
+                    onChange={handleAudioInputChange}
+                    disabled={
+                      isSending || isRecording || audioInputOptions.length < 2
+                    }
+                    aria-label={t.audioInputLabel}
+                  >
+                    {audioInputOptions.length === 0 ? (
+                      <option value="">{t.audioInputUnavailable}</option>
+                    ) : (
+                      audioInputOptions.map((option) => (
+                        <option key={option.deviceId} value={option.deviceId}>
+                          {option.label}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </label>
+              </div>
+              <div
+                className="chat-input-shell"
+                data-focused={undefined}
+                data-disabled={isSending || undefined}
               >
-                <MicIcon />
-              </button>
-              <button
-                type="submit"
-                className="chat-send-btn"
-                disabled={!input.trim() || isSending}
-                title={t.send}
-              >
-                <SendIcon />
-              </button>
+                <span className="chat-input-prompt">{">"}</span>
+                <input
+                  ref={inputRef}
+                  type="text"
+                  className="chat-input"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder={t.placeholder}
+                  disabled={isSending}
+                  autoComplete="off"
+                />
+                <div className="chat-input-actions">
+                  <button
+                    type="button"
+                    className="chat-mic-btn"
+                    onClick={startRecording}
+                    disabled={isSending}
+                    title={t.startRecording}
+                    aria-label={t.startRecording}
+                  >
+                    <MicIcon />
+                  </button>
+                  <span className="chat-input-divider" aria-hidden="true" />
+                  <button
+                    type="submit"
+                    className="chat-send-btn"
+                    disabled={!input.trim() || isSending}
+                    title={t.send}
+                    aria-label={t.send}
+                  >
+                    <SendIcon />
+                  </button>
+                </div>
+              </div>
             </form>
           )}
         </div>
@@ -511,6 +678,24 @@ function SendIcon() {
     >
       <path d="M22 2L11 13" />
       <path d="M22 2L15 22L11 13L2 9L22 2Z" />
+    </svg>
+  );
+}
+
+function ChevronIcon() {
+  return (
+    <svg
+      width="10"
+      height="10"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M6 9l6 6 6-6" />
     </svg>
   );
 }

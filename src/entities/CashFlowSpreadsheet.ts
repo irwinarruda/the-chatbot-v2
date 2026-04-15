@@ -17,4 +17,15 @@ export class CashFlowSpreadsheet {
     this.createdAt = new Date();
     this.updatedAt = new Date();
   }
+
+  toJSON() {
+    return {
+      id: this.id,
+      idUser: this.idUser,
+      idSheet: this.idSheet,
+      type: this.type.toLowerCase(),
+      createdAt: this.createdAt.toISOString(),
+      updatedAt: this.updatedAt.toISOString(),
+    };
+  }
 }

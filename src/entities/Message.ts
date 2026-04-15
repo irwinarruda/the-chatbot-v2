@@ -53,4 +53,19 @@ export class Message {
     this.mediaUrl = url;
     this.updatedAt = new Date();
   }
+
+  toJSON() {
+    return {
+      id: this.id,
+      type: this.type.toLowerCase(),
+      userType: this.userType.toLowerCase(),
+      text: this.text,
+      buttonReply: this.buttonReply,
+      buttonReplyOptions: this.buttonReplyOptions,
+      mediaUrl: this.mediaUrl,
+      mimeType: this.mimeType,
+      transcript: this.transcript,
+      createdAt: this.createdAt.toISOString(),
+    };
+  }
 }

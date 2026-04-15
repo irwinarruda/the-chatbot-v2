@@ -1,5 +1,5 @@
-import type { GoogleConfig } from "@infra/config";
 import { google } from "googleapis";
+import type { GoogleConfig } from "~/infra/config";
 import { buildScopes } from "~/resources/GoogleAuthScopes";
 import type {
   GoogleTokens,
@@ -82,6 +82,10 @@ export class GoogleAuthGateway implements IGoogleAuthGateway {
     const url = new URL(this.config.loginUri);
     url.searchParams.set("phone_number", phoneNumber);
     return url.toString();
+  }
+
+  getWebPostLoginRedirect(): string {
+    return this.config.webLoginUri;
   }
 
   createWebAuthorizationCodeUrl(): string {

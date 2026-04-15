@@ -40,4 +40,14 @@ export class Credential {
       this.expirationDate = new Date(Date.now() + expiresInSeconds * 1000);
     }
   }
+
+  toJSON() {
+    return {
+      id: this.id,
+      idUser: this.idUser,
+      type: this.type.toLowerCase(),
+      createdAt: this.createdAt.toISOString(),
+      updatedAt: this.updatedAt.toISOString(),
+    };
+  }
 }
