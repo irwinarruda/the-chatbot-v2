@@ -16,11 +16,9 @@ export type EncryptionConfig = z.infer<typeof encryptionConfigSchema>;
 export const googleConfigSchema = z.object({
   clientId: z.string().min(1),
   secretClientKey: z.string().min(1),
-
   redirectUri: z.string().min(1),
   loginUri: z.string().min(1),
   webRedirectUri: z.string().default(""),
-  webLoginUri: z.string().default(""),
   serviceAccountId: z.string().default(""),
   serviceAccountPrivateKey: z.string().default(""),
   speechProjectId: z.string().default(""),
@@ -124,11 +122,9 @@ export function loadConfig(): Config {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID,
       secretClientKey: process.env.GOOGLE_SECRET_CLIENT_KEY,
-
       redirectUri: process.env.GOOGLE_REDIRECT_URI,
       loginUri: process.env.GOOGLE_LOGIN_URI,
       webRedirectUri: process.env.GOOGLE_WEB_REDIRECT_URI,
-      webLoginUri: process.env.GOOGLE_WEB_LOGIN_URI,
       serviceAccountId: process.env.GOOGLE_SERVICE_ACCOUNT_ID,
       serviceAccountPrivateKey: process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY,
       speechProjectId: process.env.GOOGLE_SPEECH_PROJECT_ID,

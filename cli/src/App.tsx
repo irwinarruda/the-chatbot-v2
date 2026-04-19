@@ -17,7 +17,7 @@ export function App() {
     return <SetupView onConnect={handleConnect} />;
   }
 
-  if (!config) return null;
+  if (!config) return undefined;
 
   if (view === "transcripts") {
     return (

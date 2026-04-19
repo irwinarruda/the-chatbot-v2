@@ -20,5 +20,11 @@ export default defineConfig({
     setupFiles: ["tests/orquestrator.ts"],
     fileParallelism: false,
     testTimeout: 30000,
+    coverage: {
+      include: [
+        "src/server/services/**/*.ts",
+        "src/shared/entities/**/*.ts",
+      ],
+    },
   },
 });

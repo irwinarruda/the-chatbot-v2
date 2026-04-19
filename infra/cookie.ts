@@ -23,7 +23,7 @@ export class Cookie {
       "HttpOnly",
       `Path=${options.path ?? "/"}`,
     ];
-    if (options.maxAge != null) {
+    if (options.maxAge !== undefined) {
       parts.push(`Max-Age=${options.maxAge}`);
     }
     if (options.secure) {

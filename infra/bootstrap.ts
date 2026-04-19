@@ -1,20 +1,20 @@
 import { Mediator } from "~/infra/Mediator";
-import { AiChatGateway } from "~/resources/AiChatGateway";
-import { GoogleAuthGateway } from "~/resources/GoogleAuthGateway";
-import { GoogleCashFlowSpreadsheetGateway } from "~/resources/GoogleCashFlowSpreadsheetGateway";
-import { OpenAiSpeechToTextGateway } from "~/resources/OpenAiSpeechToTextGateway";
-import { R2StorageGateway } from "~/resources/R2StorageGateway";
-import { TuiWhatsAppMessagingGateway } from "~/resources/TuiWhatsAppMessagingGateway";
-import { WebMessagingGateway } from "~/resources/WebMessagingGateway";
-import { WhatsAppMessagingGateway } from "~/resources/WhatsAppMessagingGateway";
-import { AuthService } from "~/services/AuthService";
-import { CashFlowService } from "~/services/CashFlowService";
+import { AiChatGateway } from "~/server/resources/AiChatGateway";
+import { GoogleAuthGateway } from "~/server/resources/GoogleAuthGateway";
+import { GoogleCashFlowSpreadsheetGateway } from "~/server/resources/GoogleCashFlowSpreadsheetGateway";
+import { OpenAiSpeechToTextGateway } from "~/server/resources/OpenAiSpeechToTextGateway";
+import { R2StorageGateway } from "~/server/resources/R2StorageGateway";
+import { TuiWhatsAppMessagingGateway } from "~/server/resources/TuiWhatsAppMessagingGateway";
+import { WebMessagingGateway } from "~/server/resources/WebMessagingGateway";
+import { WhatsAppMessagingGateway } from "~/server/resources/WhatsAppMessagingGateway";
+import { AuthService } from "~/server/services/AuthService";
+import { CashFlowService } from "~/server/services/CashFlowService";
 import {
   MessagingService,
   type RespondToMessageEvent,
-} from "~/services/MessagingService";
-import { MigrationService } from "~/services/MigrationService";
-import { StatusService } from "~/services/StatusService";
+} from "~/server/services/MessagingService";
+import { MigrationService } from "~/server/services/MigrationService";
+import { StatusService } from "~/server/services/StatusService";
 import type { Config } from "./config";
 import { container } from "./container";
 import { Database } from "./database";

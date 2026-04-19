@@ -1,6 +1,11 @@
 import { Encryption } from "~/infra/encryption";
-import { ServiceException, ValidationException } from "~/infra/exceptions";
-import type { CashFlowAddExpenseDTO } from "~/services/CashFlowService";
+import {
+  NotFoundException,
+  ServiceException,
+  ValidationException,
+} from "~/infra/exceptions";
+import type { CashFlowAddExpenseDTO } from "~/server/services/CashFlowService";
+import { User } from "~/shared/entities/User";
 import { orquestrator } from "./orquestrator";
 
 describe("CashFlowService", () => {
@@ -9,7 +14,7 @@ describe("CashFlowService", () => {
     sheetId: string,
   ) {
     const encryption = new Encryption(orquestrator.encryptionConfig);
-    await orquestrator.authService.saveUserByGoogleCredential(
+    await orquestrator.authService.handleGoogleRedirect(
       encryption.encrypt(phoneNumber),
       "rightCode",
     );
@@ -153,7 +158,7 @@ describe("CashFlowService", () => {
     await orquestrator.clearDatabase();
     const phoneNumber = "5511977777777";
     const encryption = new Encryption(orquestrator.encryptionConfig);
-    await orquestrator.authService.saveUserByGoogleCredential(
+    await orquestrator.authService.handleGoogleRedirect(
       encryption.encrypt(phoneNumber),
       "rightCode",
     );
@@ -234,5 +239,135 @@ describe("CashFlowService", () => {
     await expect(
       orquestrator.cashFlowService.getBankAccount(wrongPhone),
     ).rejects.toThrow(ServiceException);
+  });
+
+  test("addSpreadsheetUrl rejects missing users and duplicate sheets", async () => {
+    await orquestrator.clearDatabase();
+
+    await expect(
+      orquestrator.cashFlowService.addSpreadsheetUrl(
+        "5511900000000",
+        "https://docs.google.com/spreadsheets/d/test-sheet/edit",
+      ),
+    ).rejects.toThrow(NotFoundException);
+
+    const phoneNumber = "5511981111111";
+    await setupUserWithSpreadsheet(
+      phoneNumber,
+      orquestrator.googleSheetsConfig.testSheetId,
+    );
+
+    await expect(
+      orquestrator.cashFlowService.addSpreadsheetUrl(
+        phoneNumber,
+        "https://docs.google.com/spreadsheets/d/another-sheet/edit",
+      ),
+    ).rejects.toThrow(ValidationException);
+  });
+
+  test("addEarning and getCategoriesAndBankAccounts should work", async () => {
+    await orquestrator.clearDatabase();
+    const phoneNumber = "5511982222222";
+    await setupUserWithSpreadsheet(
+      phoneNumber,
+      orquestrator.googleSheetsConfig.testSheetId,
+    );
+
+    await orquestrator.cashFlowService.addEarning({
+      phoneNumber,
+      date: new Date("2025-02-01"),
+      value: -123.45,
+      category: "Salário",
+      description: "Pagamento",
+      bankAccount: "Caju",
+    });
+
+    const lastTransaction =
+      await orquestrator.cashFlowService.getLastTransaction(phoneNumber);
+    expect(lastTransaction?.value).toBe(123.45);
+    expect(lastTransaction?.category).toBe("Salário");
+
+    const config =
+      await orquestrator.cashFlowService.getCategoriesAndBankAccounts(
+        phoneNumber,
+      );
+    expect(config.categories).toEqual(
+      expect.arrayContaining([
+        "Telefone, internet e TV",
+        "Delivery",
+        "Salário",
+        "Outras Receitas",
+      ]),
+    );
+    expect(config.bankAccounts).toEqual(
+      expect.arrayContaining(["NuConta", "Caju"]),
+    );
+  });
+
+  test("cash flow operations validate missing google auth and missing spreadsheets", async () => {
+    await orquestrator.clearDatabase();
+
+    await expect(
+      orquestrator.cashFlowService.getAllTransactions("5511900000001"),
+    ).rejects.toThrow(NotFoundException);
+
+    const noGooglePhone = "5511983333333";
+    await orquestrator.createUser({ phoneNumber: noGooglePhone });
+    await expect(
+      orquestrator.cashFlowService.getExpenseCategories(noGooglePhone),
+    ).rejects.toThrow(ValidationException);
+
+    const phoneWithoutSheet = "5511984444000";
+    const encryption = new Encryption(orquestrator.encryptionConfig);
+    await orquestrator.authService.handleGoogleRedirect(
+      encryption.encrypt(phoneWithoutSheet),
+      "rightCode",
+    );
+
+    await expect(
+      orquestrator.cashFlowService.getBankAccount(phoneWithoutSheet),
+    ).rejects.toThrow(ValidationException);
+  });
+
+  test("cash flow internal guards cover refresh and missing credential branches", async () => {
+    const service = orquestrator.cashFlowService as unknown as {
+      ensureSpreadsheetAccess: (user: User) => Promise<void>;
+      getUserAndSheet: (phoneNumber: string) => Promise<unknown>;
+      authService: {
+        getUserByPhoneNumber: (
+          phoneNumber: string,
+        ) => Promise<User | undefined>;
+        refreshGoogleCredential: (user: User) => Promise<void>;
+      };
+    };
+
+    const expiringUser = new User("Irwin", "5511985555555");
+    expiringUser.createGoogleCredential("access", "refresh", 3600);
+    if (!expiringUser.googleCredential) {
+      throw new Error("google credential should exist in test");
+    }
+    expiringUser.googleCredential.expirationDate = new Date(Date.now() - 1000);
+
+    const refreshGoogleCredential = service.authService.refreshGoogleCredential;
+    const refreshSpy = vi.fn().mockResolvedValue(undefined);
+    service.authService.refreshGoogleCredential = refreshSpy;
+
+    await service.ensureSpreadsheetAccess(expiringUser);
+    expect(refreshSpy).toHaveBeenCalledWith(expiringUser);
+
+    service.authService.refreshGoogleCredential = refreshGoogleCredential;
+
+    const userWithoutCredential = new User("Irwin", "5511986666666");
+    const getUserByPhoneNumber = service.authService.getUserByPhoneNumber;
+    service.authService.getUserByPhoneNumber = vi
+      .fn()
+      .mockResolvedValue(userWithoutCredential);
+    vi.spyOn(service, "ensureSpreadsheetAccess").mockResolvedValue(undefined);
+
+    await expect(
+      service.getUserAndSheet(userWithoutCredential.phoneNumber),
+    ).rejects.toThrow("User is not connected to Google");
+
+    service.authService.getUserByPhoneNumber = getUserByPhoneNumber;
   });
 });

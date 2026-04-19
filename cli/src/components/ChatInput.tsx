@@ -1,5 +1,5 @@
 import type { TextareaRenderable } from "@opentui/core";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { theme } from "../theme.ts";
 
 export function ChatInput({
@@ -11,20 +11,22 @@ export function ChatInput({
   disabled: boolean;
   focused?: boolean;
 }) {
-  const textareaRef = useRef<TextareaRenderable>(null);
+  const [textarea, setTextarea] = useState<TextareaRenderable | undefined>(
+    undefined,
+  );
 
   const handleSubmit = useCallback(() => {
-    if (!textareaRef.current || disabled) return;
-    const text = textareaRef.current.plainText.trim();
+    if (!textarea || disabled) return;
+    const text = textarea.plainText.trim();
     if (!text) return;
     onSend(text);
-    textareaRef.current.clear();
-  }, [disabled, onSend]);
+    textarea.clear();
+  }, [disabled, onSend, textarea]);
 
   useEffect(() => {
-    if (!textareaRef.current) return;
-    textareaRef.current.onSubmit = handleSubmit;
-  }, [handleSubmit]);
+    if (!textarea) return;
+    textarea.onSubmit = handleSubmit;
+  }, [handleSubmit, textarea]);
 
   const keyBindings = useMemo(
     () => [
@@ -47,7 +49,7 @@ export function ChatInput({
     >
       <text fg={theme.green[500]}>{"> "}</text>
       <textarea
-        ref={textareaRef}
+        ref={(node) => setTextarea(node ?? undefined)}
         flexGrow={1}
         placeholder={
           disabled ? "Waiting for connection..." : "Type a message..."

@@ -6,11 +6,10 @@ export interface IMediator {
   ): void;
 }
 
+type Handler = (payload: unknown) => Promise<void> | void;
+
 export class Mediator implements IMediator {
-  private handlers = new Map<
-    string,
-    ((...args: unknown[]) => Promise<void> | void)[]
-  >();
+  private handlers = new Map<string, Handler[]>();
 
   async send<T>(eventName: string, payload: T): Promise<void> {
     const handlers = this.handlers.get(eventName);
@@ -36,6 +35,6 @@ export class Mediator implements IMediator {
       handlerList = [];
       this.handlers.set(eventName, handlerList);
     }
-    handlerList.push(handler as (...args: unknown[]) => Promise<void> | void);
+    handlerList.push(handler as Handler);
   }
 }

@@ -1,0 +1,431 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ==========================================================
+   Tailwind v4 — Terminal Aesthetic
+   CSS-first config (no tailwind.config.{js,ts})
+   Dark theme is default, light theme via [data-theme="light"]
+   ========================================================== */
+
+@theme {
+  --font-mono:
+    "JetBrains Mono", ui-monospace, "Cascadia Code", "Source Code Pro", Menlo,
+    Consolas, monospace;
+  --font-serif: Georgia, "Times New Roman", serif;
+
+  /* Surfaces */
+  --color-term-bg: #0c1018;
+  --color-term-window: #131a23;
+  --color-term-chrome: #1c2330;
+  --color-term-border: #282f3c;
+
+  /* Accents */
+  --color-term-green: #50dfaa;
+  --color-term-green-dim: #3ab888;
+  --color-term-green-dot: #27c93f;
+  --color-term-amber: #ffb627;
+  --color-term-amber-strong: #ffb627;
+  --color-term-red: #ff5f56;
+  --color-term-yellow: #ffbd2e;
+  --color-term-blue: #58a6ff;
+  --color-term-cyan: #7ee8fa;
+  --color-term-cyan-strong: #7ee8fa;
+  --color-term-magenta: #d2a8ff;
+  --color-term-magenta-strong: #d2a8ff;
+
+  /* Text */
+  --color-term-text: #b0bec9;
+  --color-term-muted: #8494a7;
+  --color-term-bright: #f8fafc;
+
+  /* Animations */
+  --animate-blink: blink 1.1s step-end infinite;
+  --animate-glow-pulse: glow-pulse 4s ease-in-out infinite;
+  --animate-fade-in-up: fade-in-up 0.5s ease-out both;
+  --shadow-field:
+    inset 0 0 0 1px var(--color-term-green), 0 0 0 3px rgba(80, 223, 170, 0.12),
+    0 10px 24px rgba(0, 0, 0, 0.14);
+
+  @keyframes blink {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0;
+    }
+  }
+  @keyframes glow-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.85;
+    }
+  }
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --radius-sm: 0.125rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
+  --radius-4xl: 2rem;
+}
+
+/* --- Custom utilities --- */
+
+@utility text-2xs {
+  font-size: 0.625rem;
+  line-height: 0.875rem;
+}
+
+/* Staggered fade-in delays — composable with motion-safe: variant */
+@utility fade-in {
+  animation: fade-in-up 0.5s ease-out both;
+}
+@utility fade-in-delay-1 {
+  animation: fade-in-up 0.5s ease-out 0.1s both;
+}
+@utility fade-in-delay-2 {
+  animation: fade-in-up 0.5s ease-out 0.2s both;
+}
+@utility fade-in-delay-3 {
+  animation: fade-in-up 0.5s ease-out 0.3s both;
+}
+@utility fade-in-delay-4 {
+  animation: fade-in-up 0.5s ease-out 0.4s both;
+}
+@utility fade-in-delay-5 {
+  animation: fade-in-up 0.5s ease-out 0.5s both;
+}
+@utility fade-in-delay-6 {
+  animation: fade-in-up 0.5s ease-out 0.6s both;
+}
+
+/* Terminal cursor — blinking caret */
+@utility terminal-cursor {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.95rem;
+  background: var(--color-term-green);
+  vertical-align: text-bottom;
+  margin-left: 2px;
+  animation: blink 1.1s step-end infinite;
+}
+
+/* --- Light theme overrides --- */
+
+@layer base {
+  :root {
+    color-scheme: dark;
+    --background: var(--color-term-bg);
+    --foreground: var(--color-term-text);
+    --card: var(--color-term-window);
+    --card-foreground: var(--color-term-text);
+    --popover: var(--color-term-window);
+    --popover-foreground: var(--color-term-bright);
+    --primary: var(--color-term-green);
+    --primary-foreground: var(--color-term-bg);
+    --secondary: var(--color-term-chrome);
+    --secondary-foreground: var(--color-term-bright);
+    --muted: var(--color-term-chrome);
+    --muted-foreground: var(--color-term-muted);
+    --accent: var(--color-term-chrome);
+    --accent-foreground: var(--color-term-cyan);
+    --destructive: var(--color-term-red);
+    --destructive-foreground: var(--color-term-bright);
+    --border: var(--color-term-border);
+    --input: var(--color-term-border);
+    --ring: var(--color-term-green);
+    --chart-1: var(--color-term-green);
+    --chart-2: var(--color-term-cyan);
+    --chart-3: var(--color-term-blue);
+    --chart-4: var(--color-term-amber);
+    --chart-5: var(--color-term-magenta);
+    --sidebar: var(--color-term-window);
+    --sidebar-foreground: var(--color-term-text);
+    --sidebar-primary: var(--color-term-green);
+    --sidebar-primary-foreground: var(--color-term-bg);
+    --sidebar-accent: var(--color-term-chrome);
+    --sidebar-accent-foreground: var(--color-term-cyan);
+    --sidebar-border: var(--color-term-border);
+    --sidebar-ring: var(--color-term-green);
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-term-muted) transparent;
+  }
+
+  ::selection {
+    background: rgba(80, 223, 170, 0.15);
+    color: var(--color-term-green);
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--font-mono);
+    color: var(--color-term-text);
+    background: var(--color-term-bg);
+    isolation: isolate;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-term-green);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  [data-theme="light"] {
+    color-scheme: light;
+
+    --color-term-bg: #eae8e4;
+    --color-term-window: #faf8f5;
+    --color-term-chrome: #e6e3de;
+    --color-term-border: #d1cdc6;
+
+    --color-term-green: #0b7d4e;
+    --color-term-green-dim: #0a7248;
+    --color-term-green-dot: #22c55e;
+    --color-term-amber: #a06000;
+    --color-term-amber-strong: #8a5200;
+    --color-term-red: #ef4444;
+    --color-term-yellow: #daa520;
+    --color-term-blue: #2563eb;
+    --color-term-cyan: #067a96;
+    --color-term-cyan-strong: #0b6b85;
+    --color-term-magenta: #7c4ddb;
+    --color-term-magenta-strong: #6f42c1;
+
+    --color-term-text: #4d5566;
+    --color-term-muted: #5c6676;
+    --color-term-bright: #1c2028;
+  }
+
+  [data-theme="light"] ::selection {
+    background: rgba(18, 165, 102, 0.18);
+    color: var(--color-term-green);
+  }
+}
+
+/* --- Reduced motion: kill all keyframe-based utilities --- */
+
+@media (prefers-reduced-motion: reduce) {
+  .terminal-cursor,
+  [class*="fade-in"],
+  [class*="animate-"] {
+    /* biome-ignore lint/complexity/noImportantStyles: reduced-motion must override generated animation utilities */
+    animation: none !important;
+  }
+}
+
+/* --- Terminal logo glow — drop-shadow per theme --- */
+
+.terminal-logo-glow {
+  filter: drop-shadow(0 0 12px rgba(80, 223, 170, 0.25));
+}
+[data-theme="light"] .terminal-logo-glow {
+  filter: drop-shadow(0 0 12px rgba(11, 125, 78, 0.2));
+}
+
+/* --- Terminal prose (markdown content from `dangerouslySetInnerHTML`) --- */
+
+.terminal-prose {
+  color: var(--color-term-text);
+}
+
+.terminal-prose > :last-child {
+  margin-bottom: 0;
+}
+
+.terminal-prose h1 {
+  margin: 0 0 0.375rem;
+  font-family: var(--font-mono);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-term-green);
+  letter-spacing: -0.025em;
+}
+
+.terminal-prose h2 {
+  margin: 2rem 0 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-term-border);
+  font-family: var(--font-mono);
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-term-green);
+  letter-spacing: -0.01em;
+}
+
+.terminal-prose h3 {
+  margin: 1.5rem 0 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--color-term-cyan);
+}
+
+.terminal-prose p {
+  margin: 0 0 1rem;
+  font-family: var(--font-serif);
+  font-size: 1.125rem;
+  line-height: 1.75;
+  color: var(--color-term-text);
+}
+
+.terminal-prose strong {
+  color: var(--color-term-bright);
+  font-weight: 600;
+}
+
+.terminal-prose em {
+  color: var(--color-term-amber);
+  font-style: italic;
+}
+
+.terminal-prose ul,
+.terminal-prose ol {
+  margin: 0 0 1rem;
+  padding-left: 1.5rem;
+  list-style: none;
+}
+.terminal-prose ol {
+  counter-reset: ol-counter;
+}
+
+.terminal-prose li {
+  position: relative;
+  margin-bottom: 0.625rem;
+  padding-left: 1.25rem;
+  font-family: var(--font-serif);
+  font-size: 1.125rem;
+  line-height: 1.75;
+  color: var(--color-term-text);
+}
+
+.terminal-prose ul li::before {
+  content: ">";
+  position: absolute;
+  left: 0;
+  color: var(--color-term-green);
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+
+.terminal-prose ol li {
+  counter-increment: ol-counter;
+}
+.terminal-prose ol li::before {
+  content: counter(ol-counter) ".";
+  position: absolute;
+  left: 0;
+  color: var(--color-term-green);
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+
+.terminal-prose a {
+  color: var(--color-term-blue);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.2s;
+}
+.terminal-prose a:hover {
+  color: var(--color-term-cyan);
+}
+
+.terminal-prose blockquote {
+  margin: 1.25em 0;
+  padding: 1rem 1.25rem;
+  border-radius: 0.5rem;
+  background: var(--color-term-chrome);
+  border-left: 2px solid var(--color-term-green);
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
+  font-style: italic;
+  color: var(--color-term-text);
+}
+.terminal-prose blockquote p {
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  margin: 0;
+  color: inherit;
+}
+
+.terminal-prose code {
+  color: var(--color-term-amber);
+  background: rgba(255, 182, 39, 0.08);
+  padding: 0.15em 0.4em;
+  border-radius: 0.25rem;
+  font-size: 0.85em;
+  font-family: var(--font-mono);
+}
+[data-theme="light"] .terminal-prose code {
+  background: rgba(196, 118, 0, 0.1);
+}
+
+.terminal-prose hr {
+  border: none;
+  height: 1px;
+  background: var(--color-term-border);
+  margin: 2em 0;
+}

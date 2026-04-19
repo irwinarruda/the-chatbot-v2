@@ -3,7 +3,7 @@ import { loadConfig } from "./config";
 import { container } from "./container";
 
 export class ServerBootstrap {
-  private static bootstrapPromise: Promise<void> | null = null;
+  private static bootstrapPromise: Promise<void> | undefined;
 
   static ensureBootstrapped(): Promise<void> {
     if (!ServerBootstrap.bootstrapPromise) {
@@ -23,7 +23,7 @@ export class ServerBootstrap {
         registerDependencies(config);
         resolve();
       } catch (error) {
-        ServerBootstrap.bootstrapPromise = null;
+        ServerBootstrap.bootstrapPromise = undefined;
         reject(error);
       }
     });

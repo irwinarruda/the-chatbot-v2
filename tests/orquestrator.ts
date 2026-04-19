@@ -1,5 +1,4 @@
 import { faker } from "@faker-js/faker";
-import { User } from "~/entities/User";
 import type {
   AiConfig,
   AuthConfig,
@@ -16,22 +15,23 @@ import { loadConfig } from "~/infra/config";
 import { Container } from "~/infra/container";
 import { Database } from "~/infra/database";
 import { Mediator } from "~/infra/Mediator";
-import { GoogleCashFlowSpreadsheetGateway } from "~/resources/GoogleCashFlowSpreadsheetGateway";
-import { TestAiChatGateway } from "~/resources/TestAiChatGateway";
-import { TestCashFlowSpreadsheetGateway } from "~/resources/TestCashFlowSpreadsheetGateway";
-import { TestGoogleAuthGateway } from "~/resources/TestGoogleAuthGateway";
-import { TestSpeechToTextGateway } from "~/resources/TestSpeechToTextGateway";
-import { TestStorageGateway } from "~/resources/TestStorageGateway";
-import { TestWebMessagingGateway } from "~/resources/TestWebMessagingGateway";
-import { TestWhatsAppMessagingGateway } from "~/resources/TestWhatsAppMessagingGateway";
-import { AuthService } from "~/services/AuthService";
-import { CashFlowService } from "~/services/CashFlowService";
+import { GoogleCashFlowSpreadsheetGateway } from "~/server/resources/GoogleCashFlowSpreadsheetGateway";
+import { TestAiChatGateway } from "~/server/resources/TestAiChatGateway";
+import { TestCashFlowSpreadsheetGateway } from "~/server/resources/TestCashFlowSpreadsheetGateway";
+import { TestGoogleAuthGateway } from "~/server/resources/TestGoogleAuthGateway";
+import { TestSpeechToTextGateway } from "~/server/resources/TestSpeechToTextGateway";
+import { TestStorageGateway } from "~/server/resources/TestStorageGateway";
+import { TestWebMessagingGateway } from "~/server/resources/TestWebMessagingGateway";
+import { TestWhatsAppMessagingGateway } from "~/server/resources/TestWhatsAppMessagingGateway";
+import { AuthService } from "~/server/services/AuthService";
+import { CashFlowService } from "~/server/services/CashFlowService";
 import {
   MessagingService,
   type RespondToMessageEvent,
-} from "~/services/MessagingService";
-import { MigrationService } from "~/services/MigrationService";
-import { StatusService } from "~/services/StatusService";
+} from "~/server/services/MessagingService";
+import { MigrationService } from "~/server/services/MigrationService";
+import { StatusService } from "~/server/services/StatusService";
+import { User } from "~/shared/entities/User";
 
 export class Orquestrator {
   config: Config;
