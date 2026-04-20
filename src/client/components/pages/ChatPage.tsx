@@ -782,9 +782,12 @@ function MessageBlock({ block }: { block: WhatsAppBlockNode }) {
     case "bulletList": {
       const getBulletKey = createSiblingKeyFactory();
       return (
-        <ul className="m-0 space-y-1 pl-5 marker:text-term-green/80">
+        <ul className="m-0 list-none space-y-1 p-0">
           {block.items.map((item) => (
-            <li key={getBulletKey(serializeInlineNodes(item))} className="pl-1">
+            <li
+              key={getBulletKey(serializeInlineNodes(item))}
+              className="relative pl-5 before:absolute before:left-0 before:font-mono before:font-semibold before:text-term-green before:content-['>']"
+            >
               <InlineNodes nodes={item} />
             </li>
           ))}
