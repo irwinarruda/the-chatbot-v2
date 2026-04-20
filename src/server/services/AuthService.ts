@@ -28,9 +28,7 @@ export type GoogleLoginResult =
   | { type: "redirect"; url: string }
   | { type: "alreadySignedIn" };
 
-export type WebGoogleLoginResult =
-  | { type: "redirect"; url: string }
-  | { type: "notRegistered" };
+export type WebGoogleLoginResult = { type: "redirect"; url: string };
 
 export type GoogleRedirectResult = { type: "success" };
 
@@ -90,33 +88,17 @@ export class AuthService {
     return { type: "success" };
   }
 
-  async handleWebGoogleLogin(
-    phoneNumber: string,
-  ): Promise<WebGoogleLoginResult> {
-    if (!phoneNumber) {
-      throw new ValidationException("Phone number has no length");
-    }
-    const user = await this.getUserByPhoneNumber(phoneNumber);
-    if (!user) {
-      return { type: "notRegistered" };
-    }
-    if (user?.googleCredential) {
-      await this.refreshGoogleCredential(user);
-      const state = this.encryptPhoneNumber(user.phoneNumber);
-      const url = this.googleAuthGateway.createAuthorizationCodeUrl(
-        state,
-        "web",
-      );
-      return { type: "redirect", url };
-    }
-    return { type: "notRegistered" };
+  async handleWebGoogleLogin(): Promise<WebGoogleLoginResult> {
+    const url = this.googleAuthGateway.createAuthorizationCodeUrl(
+      undefined,
+      "web",
+    );
+    return { type: "redirect", url };
   }
 
   async handleWebGoogleRedirect(
-    state: string,
     code: string,
   ): Promise<WebGoogleRedirectResult> {
-    const phoneNumber = this.decryptPhoneNumber(state);
     const userToken = await this.googleAuthGateway.exchangeCodeForTokens(
       code,
       "web",
@@ -124,12 +106,25 @@ export class AuthService {
     const userinfo = await this.googleAuthGateway.getUserInfo(
       userToken.accessToken,
     );
-    const user = await this.saveUserFromGoogleAuth(
-      phoneNumber,
-      userToken,
-      userinfo,
-      "web",
+    const user = await this.getUserByEmail(userinfo.email);
+    if (!user) {
+      throw new NotFoundException(
+        "User not found",
+        "Register this Google account in the app before signing in on the web.",
+      );
+    }
+    if (!user.googleCredential) {
+      throw new NotFoundException(
+        "User not found",
+        "Register this Google account in the app before signing in on the web.",
+      );
+    }
+    user.updateGoogleCredential(
+      userToken.accessToken,
+      userToken.refreshToken,
+      userToken.expiresInSeconds,
     );
+    await this.saveGoogleCredential(user.googleCredential);
     return this.createWebToken(user);
   }
 

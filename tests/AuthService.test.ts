@@ -302,24 +302,7 @@ describe("AuthService", () => {
   test("handleWebGoogleLogin", async () => {
     await orquestrator.clearDatabase();
 
-    let result =
-      await orquestrator.authService.handleWebGoogleLogin("5511984444444");
-    expect(result.type).toBe("notRegistered");
-
-    const existingUser = await orquestrator.createUser();
-    result = await orquestrator.authService.handleWebGoogleLogin(
-      existingUser.phoneNumber,
-    );
-    expect(result.type).toBe("notRegistered");
-
-    const encryption = new Encryption(orquestrator.encryptionConfig);
-    const phoneNumber = "5511999888777";
-    await orquestrator.authService.handleGoogleRedirect(
-      encryption.encrypt(phoneNumber),
-      "rightCode",
-    );
-
-    result = await orquestrator.authService.handleWebGoogleLogin(phoneNumber);
+    const result = await orquestrator.authService.handleWebGoogleLogin();
     expect(result.type).toBe("redirect");
     if (result.type === "redirect") {
       const uri = new URL(result.url);
@@ -333,42 +316,44 @@ describe("AuthService", () => {
       const scope = params.get("scope");
       expect(scope).toContain(GoogleAuthScopes.email);
       expect(scope).toContain(GoogleAuthScopes.profile);
-      expect(params.get("state")).toBeTruthy();
-      expect(encryption.decrypt(params.get("state") ?? "")).toBe(phoneNumber);
+      expect(params.get("state")).toBeNull();
     }
   });
 
   test("handleWebGoogleRedirect returns user and valid token for existing credentialed user", async () => {
     await orquestrator.clearDatabase();
     const encryption = new Encryption(orquestrator.encryptionConfig);
-    const user = await orquestrator.createUser({
-      phoneNumber: "5511999888777",
-    });
+    const phoneNumber = "5511999888777";
 
-    const token = await orquestrator.authService.handleWebGoogleRedirect(
-      encryption.encrypt(user.phoneNumber),
+    await orquestrator.authService.handleGoogleRedirect(
+      encryption.encrypt(phoneNumber),
       "rightCode",
     );
+    const user =
+      await orquestrator.authService.getUserByPhoneNumber(phoneNumber);
+    expect(user).toBeDefined();
+
+    const token =
+      await orquestrator.authService.handleWebGoogleRedirect("rightCode");
     const authenticatedUser =
       await orquestrator.authService.authenticateWebUser(token);
 
-    expect(authenticatedUser.phoneNumber).toBe(user.phoneNumber);
+    expect(authenticatedUser.phoneNumber).toBe(phoneNumber);
+    expect(authenticatedUser.email).toBe("savegooglecredentials@example.com");
   });
 
   test("handleWebGoogleRedirect exchanges code with the web redirect target", async () => {
     await orquestrator.clearDatabase();
     const encryption = new Encryption(orquestrator.encryptionConfig);
-    const user = await orquestrator.createUser({
-      phoneNumber: "5511999888777",
-    });
+    await orquestrator.authService.handleGoogleRedirect(
+      encryption.encrypt("5511999888777"),
+      "rightCode",
+    );
     const gateway =
       orquestrator.container.resolve<IGoogleAuthGateway>("IGoogleAuthGateway");
     const spy = vi.spyOn(gateway, "exchangeCodeForTokens");
 
-    await orquestrator.authService.handleWebGoogleRedirect(
-      encryption.encrypt(user.phoneNumber),
-      "rightCode",
-    );
+    await orquestrator.authService.handleWebGoogleRedirect("rightCode");
 
     expect(spy).toHaveBeenCalledWith("rightCode", "web");
   });
@@ -402,93 +387,96 @@ describe("AuthService", () => {
     ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
-  test("handleWebGoogleRedirect creates or updates user by phone number", async () => {
+  test("handleWebGoogleRedirect updates credentials for an eligible user", async () => {
     await orquestrator.clearDatabase();
     const encryption = new Encryption(orquestrator.encryptionConfig);
-    const user = await orquestrator.createUser({
-      phoneNumber: "5511984444444",
-    });
-    const token = await orquestrator.authService.handleWebGoogleRedirect(
-      encryption.encrypt(user.phoneNumber),
+    const phoneNumber = "5511984444444";
+
+    await orquestrator.authService.handleGoogleRedirect(
+      encryption.encrypt(phoneNumber),
       "rightCode",
     );
+    const token =
+      await orquestrator.authService.handleWebGoogleRedirect("rightCode");
     const authenticatedUser =
       await orquestrator.authService.authenticateWebUser(token);
-    expect(authenticatedUser.phoneNumber).toBe(user.phoneNumber);
+    expect(authenticatedUser.phoneNumber).toBe(phoneNumber);
 
     const persistedUser = await orquestrator.authService.getUserByPhoneNumber(
       authenticatedUser.phoneNumber,
     );
     expect(persistedUser?.googleCredential).toBeDefined();
+    expect(persistedUser?.email).toBe("savegooglecredentials@example.com");
   });
 
-  test("handleWebGoogleRedirect returns matching phone user", async () => {
+  test("handleWebGoogleRedirect returns the matching email user", async () => {
     await orquestrator.clearDatabase();
     const encryption = new Encryption(orquestrator.encryptionConfig);
-    const user = new User("Irwin Arruda", "5511984444444");
-    user.email = "savegooglecredentials@example.com";
-    await orquestrator.authService.createUser(user);
+    const phoneNumber = "5511984444444";
 
-    const token = await orquestrator.authService.handleWebGoogleRedirect(
-      encryption.encrypt(user.phoneNumber),
+    await orquestrator.authService.handleGoogleRedirect(
+      encryption.encrypt(phoneNumber),
       "rightCode",
     );
+    const user =
+      await orquestrator.authService.getUserByPhoneNumber(phoneNumber);
+    expect(user).toBeDefined();
+
+    const token =
+      await orquestrator.authService.handleWebGoogleRedirect("rightCode");
     const authenticatedUser =
       await orquestrator.authService.authenticateWebUser(token);
-    expect(authenticatedUser.id).toBe(user.id);
-    expect(authenticatedUser.email).toBe(user.email);
+    expect(authenticatedUser.id).toBe(user?.id);
+    expect(authenticatedUser.email).toBe(user?.email);
   });
 
   test("handleWebGoogleRedirect returns user and valid token", async () => {
     await orquestrator.clearDatabase();
     const encryption = new Encryption(orquestrator.encryptionConfig);
-    const user = new User("Irwin Arruda", "5511984444444");
-    user.email = "savegooglecredentials@example.com";
-    await orquestrator.authService.createUser(user);
+    const phoneNumber = "5511984444444";
 
-    const result = await orquestrator.authService.handleWebGoogleRedirect(
-      encryption.encrypt(user.phoneNumber),
+    await orquestrator.authService.handleGoogleRedirect(
+      encryption.encrypt(phoneNumber),
       "rightCode",
     );
+    const user =
+      await orquestrator.authService.getUserByPhoneNumber(phoneNumber);
+    expect(user).toBeDefined();
+
+    const result =
+      await orquestrator.authService.handleWebGoogleRedirect("rightCode");
     expect(typeof result).toBe("string");
 
     const authenticatedUser =
       await orquestrator.authService.authenticateWebUser(result);
-    expect(authenticatedUser.id).toBe(user.id);
-    expect(authenticatedUser.email).toBe(user.email);
-    expect(authenticatedUser.phoneNumber).toBe(user.phoneNumber);
+    expect(authenticatedUser.id).toBe(user?.id);
+    expect(authenticatedUser.email).toBe(user?.email);
+    expect(authenticatedUser.phoneNumber).toBe(user?.phoneNumber);
   });
 
-  test("handleWebGoogleRedirect rejects mismatched email for existing user", async () => {
+  test("handleWebGoogleRedirect rejects matching email users without Google credentials", async () => {
     await orquestrator.clearDatabase();
-    const encryption = new Encryption(orquestrator.encryptionConfig);
     const user = new User("Irwin Arruda", "5511984444444");
-    user.email = "another@example.com";
+    user.email = "savegooglecredentials@example.com";
     await orquestrator.authService.createUser(user);
 
     await expect(
-      orquestrator.authService.handleWebGoogleRedirect(
-        encryption.encrypt(user.phoneNumber),
-        "rightCode",
-      ),
-    ).rejects.toBeInstanceOf(UnauthorizedException);
+      orquestrator.authService.handleWebGoogleRedirect("rightCode"),
+    ).rejects.toBeInstanceOf(NotFoundException);
 
     const unchangedUser = await orquestrator.authService.getUserByPhoneNumber(
       user.phoneNumber,
     );
-    expect(unchangedUser?.email).toBe("another@example.com");
+    expect(unchangedUser?.email).toBe("savegooglecredentials@example.com");
     expect(unchangedUser?.googleCredential).toBeUndefined();
   });
 
-  test("handleWebGoogleRedirect rejects unknown phone numbers", async () => {
+  test("handleWebGoogleRedirect rejects unknown emails without creating users", async () => {
     await orquestrator.clearDatabase();
-    const encryption = new Encryption(orquestrator.encryptionConfig);
     await expect(
-      orquestrator.authService.handleWebGoogleRedirect(
-        encryption.encrypt("5511984444444"),
-        "rightCode",
-      ),
+      orquestrator.authService.handleWebGoogleRedirect("rightCode"),
     ).rejects.toBeInstanceOf(NotFoundException);
+    expect(await orquestrator.authService.getUsers()).toHaveLength(0);
   });
 
   test("authenticateWebUser returns authenticated user from token", async () => {
@@ -531,12 +519,6 @@ describe("AuthService", () => {
     ).rejects.toThrow("Phone number has no length");
     await expect(
       orquestrator.authService.handleGoogleRedirect("", "rightCode"),
-    ).rejects.toThrow("Phone number has no length");
-    await expect(
-      orquestrator.authService.handleWebGoogleLogin(""),
-    ).rejects.toThrow("Phone number has no length");
-    await expect(
-      orquestrator.authService.handleWebGoogleRedirect("", "rightCode"),
     ).rejects.toThrow("Phone number has no length");
 
     const user = new User("Irwin Arruda", "5511984444444");

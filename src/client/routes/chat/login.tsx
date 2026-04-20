@@ -1,5 +1,4 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { useState } from "react";
 import { usePrefs } from "~/client/components/PrefsProvider";
 import {
   Footer,
@@ -9,12 +8,9 @@ import {
   Prompt,
   TerminalWindow,
 } from "~/client/components/pages/PublicPages";
-import { Alert, AlertDescription } from "~/client/components/ui/alert";
 import { Button } from "~/client/components/ui/button";
-import { Input } from "~/client/components/ui/input";
 import { getDictionary } from "~/client/i18n";
 import { requireChatAccess } from "~/server/tanstack/functions/require-chat-access";
-import { PhoneNumberUtils } from "~/shared/entities/PhoneNumberUtils";
 
 export const Route = createFileRoute("/chat/login")({
   beforeLoad: async () => {
@@ -33,8 +29,6 @@ function ChatLoginRoute() {
   const { locale } = usePrefs();
   const dictionary = getDictionary(locale);
   const t = dictionary.chatLoginPage;
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [error, setError] = useState<string | undefined>(undefined);
 
   return (
     <TerminalWindow
@@ -45,44 +39,7 @@ function ChatLoginRoute() {
       <PageHeader heading={t.heading} subtitle={t.subtitle} withLogo={false} />
       <Panel>
         <PanelText>{t.body}</PanelText>
-        <form
-          method="GET"
-          action="/api/v1/web/auth/login"
-          className="mt-5 flex flex-col gap-4"
-          onSubmit={(event) => {
-            const sanitized = PhoneNumberUtils.sanitize(phoneNumber);
-            if (!PhoneNumberUtils.isValid(sanitized)) {
-              event.preventDefault();
-              setError(t.invalidPhoneNumber);
-              return;
-            }
-            setPhoneNumber(sanitized);
-            setError(undefined);
-          }}
-        >
-          <label className="flex flex-col gap-1.5 text-sm text-term-text">
-            <span className="font-medium text-term-bright">{t.inputLabel}</span>
-            <Input
-              name="phone_number"
-              type="tel"
-              inputMode="tel"
-              autoComplete="tel"
-              value={phoneNumber}
-              onChange={(event) => setPhoneNumber(event.target.value)}
-              placeholder={t.placeholder}
-              className="h-11 rounded-md border-term-border bg-term-bg px-3.5 font-mono text-sm text-term-text placeholder:text-term-muted/70 focus-visible:shadow-[0_0_0_3px_rgba(80,223,170,0.12)]"
-            />
-          </label>
-          {error && (
-            <Alert
-              variant="destructive"
-              className="border-term-red/25 bg-term-red/10"
-            >
-              <AlertDescription className="m-0 text-sm text-term-red [&_p:not(:last-child)]:mb-0">
-                {error}
-              </AlertDescription>
-            </Alert>
-          )}
+        <form method="GET" action="/api/v1/web/auth/login" className="mt-5">
           <Button
             type="submit"
             className="h-11 w-full rounded-md border border-term-border bg-white px-4 text-sm font-semibold text-slate-900 hover:bg-slate-100"

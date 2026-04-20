@@ -44,14 +44,13 @@ Valid modes: `local`, `development`, `test`, `preview`, `production`, `tui`. MOD
 
 Tests run serially (`fileParallelism: false`) with a 30s timeout. The `Orquestrator` class in `tests/orquestrator.ts` handles DI wiring and **wipes the entire database schema** before each test file (`DROP SCHEMA public CASCADE` → recreate → run migrations). Tests require a running PostgreSQL instance.
 
-Only application tests are allowed in the Vitest suite: tests for
-Services, Entities, and Utils. Do not add route, controller,
-middleware, gateway/resource, or infra-focused tests to the default
-test run.
+Only application tests are allowed in the Vitest suite: tests for Services, Entities, and Utils. Do not add route, controller, middleware, gateway/resource, or infra-focused tests to the default test run.
 
 ## Code Style
 
 Biome enforces: 2-space indent, double quotes, semicolons always, trailing commas, 80 char line width. `noExplicitAny` is disabled.
+
+Within a class, keep logic inline by default. Do not split logic into helper private methods just to make the class look smaller. Extract a separate method only when the same logic is reused more than once in that class.
 
 ## TUI Routes
 

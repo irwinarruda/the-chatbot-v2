@@ -87,11 +87,8 @@
   "chatLoginPage": {
     "windowTitle": "the-chatbot: ~/chat/login",
     "heading": "Sign in to chat",
-    "subtitle": "Enter your WhatsApp phone number",
-    "body": "Use the same WhatsApp number linked to The Chatbot. After Google authentication, you will be redirected straight into the web chat.",
-    "inputLabel": "Phone number",
-    "placeholder": "5511999999999",
-    "invalidPhoneNumber": "Enter a valid phone number with country code.",
+    "subtitle": "Use your Google account to continue",
+    "body": "Sign in with the same Google account already registered in The Chatbot app. If your account is eligible, you will be redirected straight into the web chat.",
     "loginButton": "Log in with Google",
     "footerPrompt": "Authenticate with Google to open your chat session"
   },

@@ -13,13 +13,11 @@ export const Route = createFileRoute("/api/v1/web/auth/redirect")({
         const authService =
           ServerBootstrap.getService<AuthService>("AuthService");
         const url = new URL(request.url);
-        const state = url.searchParams.get("state") ?? "";
         const code = url.searchParams.get("code") ?? "";
         let token = "";
         try {
-          token = await authService.handleWebGoogleRedirect(state, code);
-        } catch (err) {
-          console.error("Error handling web auth redirect:", err);
+          token = await authService.handleWebGoogleRedirect(code);
+        } catch {
           const headers = new Headers();
           Cookie.delete(headers, AUTH_COOKIE);
           return Http.redirect(

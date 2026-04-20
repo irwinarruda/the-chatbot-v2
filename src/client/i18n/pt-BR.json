@@ -87,11 +87,8 @@
   "chatLoginPage": {
     "windowTitle": "the-chatbot: ~/chat/login",
     "heading": "Entrar no chat",
-    "subtitle": "Informe seu número de WhatsApp",
-    "body": "Use o mesmo número de WhatsApp vinculado ao The Chatbot. Depois da autenticação com Google, você será redirecionado direto para o chat web.",
-    "inputLabel": "Número de telefone",
-    "placeholder": "5511999999999",
-    "invalidPhoneNumber": "Informe um número de telefone válido com DDI.",
+    "subtitle": "Use sua conta Google para continuar",
+    "body": "Entre com a mesma conta Google já registrada no app do The Chatbot. Se sua conta estiver apta, você será redirecionado direto para o chat web.",
     "loginButton": "Entrar com Google",
     "footerPrompt": "Autentique com Google para abrir sua sessão no chat"
   },
