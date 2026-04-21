@@ -69,7 +69,7 @@ chatType in DTO/event = routing info for gateway dispatch
 | `ChatType.Web`       | Added to enum for DTO routing only       | NOT used for `chat.type` storage                                   |
 | Session mechanism    | JWT in HttpOnly cookie via `jose`        | No existing auth infrastructure; simple, stateless                 |
 | Google OAuth         | Separate `webRedirectUri`                | Different callback URL from WhatsApp flow                          |
-| Real-time            | SSE (same pattern as TUI)                | Proven pattern; `TuiWhatsAppMessagingGateway` as template          |
+| Real-time            | SSE (proven pattern)                     | Simple, works behind proxies; `WebMessagingGateway` as implementation      |
 | Audio visualization  | `wavesurfer.js` + `@wavesurfer/react`    | Beautiful waveform display, not plain `<audio>`                    |
 | AuthService refactor | Break into reusable private methods      | Web auth reuses `exchangeAndGetUserInfo` without credential saving |
 | Enum imports         | Import directly from `~/entities/enums/` | No re-exports; consistent with codebase convention                 |
@@ -164,7 +164,7 @@ export async function verifyJwt<T>(token: string, secret: string): Promise<T>;
 
 **New file:** `infra/web.ts`
 
-Pattern follows `infra/tui.ts`:
+Pattern follows `infra/web.ts`:
 
 ```typescript
 import type { Config } from "~/infra/config";
@@ -267,7 +267,7 @@ export type WebChatEvent = {
 
 **New file:** `src/resources/WebMessagingGateway.ts`
 
-Multi-tenant channels pattern (based on `TuiWhatsAppMessagingGateway`):
+Multi-tenant channels pattern:
 
 ```typescript
 export class WebMessagingGateway implements IWebMessagingGateway {
@@ -419,7 +419,7 @@ POST /api/v1/web/audio
 
 **New file:** `src/routes/api/v1/web/stream.tsx`
 
-Pattern follows `src/routes/api/v1/tui/stream.tsx`:
+Pattern follows web stream SSE route:
 
 ```
 GET /api/v1/web/stream

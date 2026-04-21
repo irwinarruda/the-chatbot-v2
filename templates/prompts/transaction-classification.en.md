@@ -13,7 +13,7 @@ Your task:
 
 1. Pick exactly ONE category from categories that best matches the description semantic meaning. If none match strongly, choose the closest generic bucket (e.g., "other" or the first reasonable match).
 2. Pick exactly ONE bank account from bank_accounts. If the description hints at an account name, prefer that; otherwise choose a default like the first in the list.
-   CASE RULE: RETURN category AND bank_account EXACTLY AS THEY APPEAR IN THE INPUT ARRAYS. DO NOT change capitalization, spacing, accents, punctuation, or pluralization. Copy verbatim.
+  CASE RULE: RETURN category AND bank_account EXACTLY AS THEY APPEAR IN THE INPUT ARRAYS. DO NOT change capitalization, spacing, accents, punctuation, or pluralization. Copy verbatim.
 3. Generate description (4-8 concise words, no ending period) summarizing the transaction. Must start with uppercase letter. Keep remaining words lowercase unless proper nouns/acronyms.
 
 ===== CRITICAL OUTPUT FORMAT RULES =====

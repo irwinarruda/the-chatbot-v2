@@ -80,10 +80,6 @@ function seedRoutesManifest(): Plugin {
         "/api/v1/web/messages",
         "/api/v1/web/audio",
         "/api/v1/web/stream",
-        "/api/v1/tui/messages",
-        "/api/v1/tui/audio",
-        "/api/v1/tui/stream",
-        "/api/v1/tui/transcripts",
       ],
     },
     "/": {
@@ -154,20 +150,6 @@ function seedRoutesManifest(): Plugin {
     "/api/v1/web/stream": {
       filePath: path.resolve("src/server/tanstack/controllers/web-stream.ts"),
     },
-    "/api/v1/tui/messages": {
-      filePath: path.resolve("src/server/tanstack/controllers/tui-messages.ts"),
-    },
-    "/api/v1/tui/audio": {
-      filePath: path.resolve("src/server/tanstack/controllers/tui-audio.ts"),
-    },
-    "/api/v1/tui/stream": {
-      filePath: path.resolve("src/server/tanstack/controllers/tui-stream.ts"),
-    },
-    "/api/v1/tui/transcripts": {
-      filePath: path.resolve(
-        "src/server/tanstack/controllers/tui-transcripts.ts",
-      ),
-    },
   };
 
   return {
@@ -181,20 +163,11 @@ function seedRoutesManifest(): Plugin {
   };
 }
 
-export function getRouterConfig(nodeEnv = process.env.NODE_ENV) {
-  const config = {
+export function getRouterConfig() {
+  return {
     routesDirectory: ".",
     generatedRouteTree: "./routeTree.gen.ts",
     virtualRouteConfig: virtualRoutes,
-  };
-
-  if (nodeEnv !== "production") {
-    return config;
-  }
-
-  return {
-    ...config,
-    routeFileIgnorePattern: "^tui$",
   };
 }
 

@@ -12,12 +12,12 @@ Você receberá:
 
 1. Um prompt de sistema (este documento)
 2. Uma mensagem do usuário contendo a conversa a ser resumida, formatada como:
-   ```
-   [User]: texto da mensagem
-   [Assistant]: texto da resposta
-   [User]: outra mensagem
-   ...
-   ```
+  ```
+  [User]: texto da mensagem
+  [Assistant]: texto da resposta
+  [User]: outra mensagem
+  ...
+  ```
 
 ## Contexto do Resumo Existente
 

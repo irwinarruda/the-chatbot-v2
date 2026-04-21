@@ -1,6 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { usePrefs } from "~/client/components/PrefsProvider";
-import { ThankYouPage } from "~/client/components/pages/PublicPages";
+import { TerminalFooter } from "~/client/components/TerminalFooter";
+import { TerminalPageHeader } from "~/client/components/TerminalPageHeader";
+import { TerminalPanel } from "~/client/components/TerminalPanel";
+import { TerminalPanelText } from "~/client/components/TerminalPanelText";
+import { TerminalPrompt } from "~/client/components/TerminalPrompt";
+import { TerminalWindow } from "~/client/components/TerminalWindow";
 import { getDictionary, type Locale } from "~/client/i18n";
 
 export const Route = createFileRoute("/google/thank-you")({
@@ -18,5 +23,20 @@ export const Route = createFileRoute("/google/thank-you")({
 function ThankYouRoute() {
   const { locale } = usePrefs();
   const dictionary = getDictionary(locale);
-  return <ThankYouPage dictionary={dictionary} />;
+  const t = dictionary.thankYouPage;
+
+  return (
+    <TerminalWindow title={t.windowTitle} dictionary={dictionary}>
+      <TerminalPageHeader heading={t.heading} subtitle={t.subtitle} />
+      <TerminalPanel>
+        <TerminalPanelText>
+          {t.greeting} <strong>TheChatbot</strong>!
+        </TerminalPanelText>
+        <TerminalPanelText>{t.body}</TerminalPanelText>
+      </TerminalPanel>
+      <TerminalFooter>
+        <TerminalPrompt text={t.footerPrompt} />
+      </TerminalFooter>
+    </TerminalWindow>
+  );
 }

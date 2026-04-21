@@ -101,7 +101,7 @@ export const configSchema = z.object({
   jwt: jwtConfigSchema,
   nodeEnv: z.enum(["development", "production", "test"]).default("development"),
   mode: z
-    .enum(["local", "development", "test", "preview", "production", "tui"])
+    .enum(["local", "development", "test", "preview", "production"])
     .default("local"),
   port: z.coerce.number().default(3000),
 });

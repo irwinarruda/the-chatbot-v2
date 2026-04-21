@@ -31,10 +31,19 @@
     "rules": {
       "recommended": true,
       "suspicious": {
-        "noExplicitAny": "off"
+        "noExplicitAny": "off",
+        "noDeprecatedImports": "error"
       },
       "complexity": {
         "noStaticOnlyClass": "off"
+      },
+      "nursery": {
+        "useSortedClasses": {
+          "level": "error",
+          "options": {
+            "functions": ["cn", "clsx", "cva", "tw", "tw.*"]
+          }
+        }
       },
       "style": {
         "useNodejsImportProtocol": "off",

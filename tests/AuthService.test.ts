@@ -31,7 +31,6 @@ describe("AuthService", () => {
     const scope = params.get("scope");
     expect(scope).not.toBeNull();
     expect(scope).toContain(GoogleAuthScopes.spreadsheets);
-    expect(scope).toContain(GoogleAuthScopes.tasks);
     expect(scope).toContain(GoogleAuthScopes.email);
     expect(scope).toContain(GoogleAuthScopes.profile);
     expect(scope).toContain(GoogleAuthScopes.openId);

@@ -1,12 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { usePrefs } from "~/client/components/PrefsProvider";
-import {
-  Footer,
-  PageHeader,
-  Panel,
-  PanelText,
-  TerminalWindow,
-} from "~/client/components/pages/PublicPages";
+import { TerminalFooter } from "~/client/components/TerminalFooter";
+import { TerminalPageHeader } from "~/client/components/TerminalPageHeader";
+import { TerminalPanel } from "~/client/components/TerminalPanel";
+import { TerminalPanelText } from "~/client/components/TerminalPanelText";
+import { TerminalWindow } from "~/client/components/TerminalWindow";
 import { getDictionary } from "~/client/i18n";
 
 export const Route = createFileRoute("/chat/not-registered")({
@@ -26,11 +24,15 @@ function NotRegisteredRoute() {
       activePath="/chat"
       dictionary={dictionary}
     >
-      <PageHeader heading={t.heading} subtitle={t.subtitle} withLogo={false} />
-      <Panel>
-        <PanelText>{t.body}</PanelText>
-      </Panel>
-      <Footer>
+      <TerminalPageHeader
+        heading={t.heading}
+        subtitle={t.subtitle}
+        withLogo={false}
+      />
+      <TerminalPanel>
+        <TerminalPanelText>{t.body}</TerminalPanelText>
+      </TerminalPanel>
+      <TerminalFooter>
         <span className="font-semibold text-term-green">$</span>{" "}
         <Link
           to="/"
@@ -38,7 +40,7 @@ function NotRegisteredRoute() {
         >
           {t.backLink}
         </Link>
-      </Footer>
+      </TerminalFooter>
     </TerminalWindow>
   );
 }

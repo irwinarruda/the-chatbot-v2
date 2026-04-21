@@ -13,9 +13,7 @@ export const Route = createFileRoute("/api/v1/google/redirect")({
         const state = url.searchParams.get("state") ?? "";
         const code = url.searchParams.get("code") ?? "";
         await authService.handleGoogleRedirect(state, code);
-        return Http.redirect(
-          new URL("/google/thank-you", request.url).href,
-        );
+        return Http.redirect(new URL("/google/thank-you", request.url).href);
       },
     },
   },

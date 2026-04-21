@@ -7,7 +7,6 @@ const validModes = [
   "test",
   "preview",
   "production",
-  "tui",
 ] as const;
 
 type Mode = (typeof validModes)[number];

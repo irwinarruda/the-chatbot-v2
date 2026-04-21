@@ -371,7 +371,7 @@ Text sizes scale responsively, e.g. `text-xl sm:text-2xl md:text-3xl` for page h
 ```
 Page (thin metadata wrapper, defines generateMetadata)
   +-- Screen (server component, data fetching)
-       +-- TerminalWindow (shell frame)
+      +-- TerminalWindow (shell frame)
             +-- Chrome bar (dots + title + locale switcher + theme toggle)
             +-- TerminalNav (horizontal links)
             +-- Content (screen-specific)

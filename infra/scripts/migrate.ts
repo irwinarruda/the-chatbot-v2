@@ -8,9 +8,7 @@ const mode = process.env.MODE ?? "local";
 config({ path: join(root, ".env") });
 config({ path: join(root, `.env.${mode}`), override: true });
 
-if (!process.env.DATABASE_URL && process.env.DATABASE_CONNECTION_STRING) {
-  process.env.DATABASE_URL = process.env.DATABASE_CONNECTION_STRING;
-}
+process.env.DATABASE_URL = process.env.DATABASE_CONNECTION_STRING;
 
 const migrationsDir = join(root, "infra", "migrations");
 const args = process.argv.slice(2).join(" ");

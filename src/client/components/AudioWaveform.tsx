@@ -1,5 +1,5 @@
-import WaveSurfer from "wavesurfer.js";
 import { useCallback, useEffect, useState } from "react";
+import WaveSurfer from "wavesurfer.js";
 
 interface AudioWaveformProps {
   src: string;
@@ -89,13 +89,13 @@ export function AudioWaveform({ src, theme = "dark" }: AudioWaveformProps) {
   };
 
   return (
-    <div className="flex min-w-[220px] max-w-[280px] items-center gap-2">
+    <div className="flex min-w-55 max-w-70 items-center gap-2">
       <button
         type="button"
         onClick={togglePlayPause}
         disabled={!isReady}
         aria-label={isPlaying ? "Pause" : "Play"}
-        className="flex h-[30px] w-[30px] shrink-0 cursor-pointer items-center justify-center rounded-md border border-term-border bg-term-bg p-0 text-term-green transition-colors duration-200 hover:border-term-green/40 hover:bg-term-green/10 disabled:cursor-not-allowed disabled:opacity-40"
+        className="flex h-7.5 w-7.5 shrink-0 cursor-pointer items-center justify-center rounded-md border border-term-border bg-term-bg p-0 text-term-green transition-colors duration-200 hover:border-term-green/40 hover:bg-term-green/10 disabled:cursor-not-allowed disabled:opacity-40"
       >
         {isPlaying ? <PauseIcon /> : <PlayIcon />}
       </button>
@@ -104,7 +104,7 @@ export function AudioWaveform({ src, theme = "dark" }: AudioWaveformProps) {
           ref={(node) => setContainer(node ?? undefined)}
           className="w-full overflow-hidden rounded"
         />
-        <span className="text-2xs tracking-wide text-term-muted">
+        <span className="text-2xs text-term-muted tracking-wide">
           {isReady
             ? `${formatTime(currentTime)} / ${formatTime(duration)}`
             : "--:--"}

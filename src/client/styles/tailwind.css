@@ -5,10 +5,10 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ==========================================================
-   Tailwind v4 — Terminal Aesthetic
-   CSS-first config (no tailwind.config.{js,ts})
-   Dark theme is default, light theme via [data-theme="light"]
-   ========================================================== */
+  Tailwind v4 — Terminal Aesthetic
+  CSS-first config (no tailwind.config.{js,ts})
+  Dark theme is default, light theme via [data-theme="light"]
+  ========================================================== */
 
 @theme {
   --font-mono:

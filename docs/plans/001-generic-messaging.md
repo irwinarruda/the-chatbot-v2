@@ -170,7 +170,6 @@ Renamed: `receiveMessage` → `receiveWhatsAppMessage`.
 All three implementations now implement `IWhatsAppMessagingGateway` (which extends `IMessagingGateway`):
 
 - `WhatsAppMessagingGateway` — rename `receiveMessage` → `receiveWhatsAppMessage`
-- `TuiWhatsAppMessagingGateway` — same rename
 - `TestWhatsAppMessagingGateway` — same rename
 
 ### Step 8: No Schema Changes

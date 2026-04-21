@@ -3,7 +3,7 @@ import { index, rootRoute, route } from "@tanstack/virtual-file-routes";
 export const routes = rootRoute("client/routes/__root.tsx", [
   index("client/routes/index.tsx"),
   route("/privacy", "client/routes/privacy.tsx"),
-  route("/chat", "client/routes/chat.tsx", [
+  route("/chat", [
     index("client/routes/chat/index.tsx"),
     route("/login", "client/routes/chat/login.tsx"),
     route("/not-registered", "client/routes/chat/not-registered.tsx"),
@@ -39,13 +39,6 @@ export const routes = rootRoute("client/routes/__root.tsx", [
   route("/api/v1/web/messages", "server/tanstack/controllers/web-messages.ts"),
   route("/api/v1/web/audio", "server/tanstack/controllers/web-audio.ts"),
   route("/api/v1/web/stream", "server/tanstack/controllers/web-stream.ts"),
-  route("/api/v1/tui/messages", "server/tanstack/controllers/tui-messages.ts"),
-  route("/api/v1/tui/audio", "server/tanstack/controllers/tui-audio.ts"),
-  route("/api/v1/tui/stream", "server/tanstack/controllers/tui-stream.ts"),
-  route(
-    "/api/v1/tui/transcripts",
-    "server/tanstack/controllers/tui-transcripts.ts",
-  ),
 ]);
 
 export default routes;

@@ -38,7 +38,7 @@ Two-layer env loading (see `infra/env.ts`):
 1. `.env` is always loaded first (base template with placeholders)
 2. `.env.${MODE}` is loaded with override
 
-Valid modes: `local`, `development`, `test`, `preview`, `production`, `tui`. MODE defaults to `local`. NODE_ENV is derived from MODE — do not set it independently.
+Valid modes: `local`, `development`, `test`, `preview`, `production`. MODE defaults to `local`. NODE_ENV is derived from MODE — do not set it independently.
 
 ## Testing
 
@@ -51,10 +51,6 @@ Only application tests are allowed in the Vitest suite: tests for Services, Enti
 Biome enforces: 2-space indent, double quotes, semicolons always, trailing commas, 80 char line width. `noExplicitAny` is disabled.
 
 Within a class, keep logic inline by default. Do not split logic into helper private methods just to make the class look smaller. Extract a separate method only when the same logic is reused more than once in that class.
-
-## TUI Routes
-
-`api/v1/tui` routes are development-only. Ignore TypeScript errors originating from these files — they may surface due to type generation mismatches.
 
 ## Generated Files
 

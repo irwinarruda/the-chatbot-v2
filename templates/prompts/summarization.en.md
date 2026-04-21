@@ -12,12 +12,12 @@ You will receive:
 
 1. A system prompt (this document)
 2. A user message containing the conversation to summarize, formatted as:
-   ```
-   [User]: message text
-   [Assistant]: response text
-   [User]: another message
-   ...
-   ```
+  ```
+  [User]: message text
+  [Assistant]: response text
+  [User]: another message
+  ...
+  ```
 
 ## Existing Summary Context
 

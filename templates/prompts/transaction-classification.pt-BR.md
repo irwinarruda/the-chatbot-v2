@@ -13,7 +13,7 @@ Sua tarefa:
 
 1. Escolha exatamente UMA categoria de categories que melhor corresponda ao significado semântico da descrição. Se nenhuma corresponder bem, use um agrupamento genérico (ex: "other" ou a primeira opção razoável).
 2. Escolha exatamente UMA conta bancária de bank_accounts. Se a descrição indicar claramente um nome de conta, prefira essa; caso contrário escolha um padrão como a primeira da lista.
-   REGRA DE CASO: RETORNE category e bank_account EXATAMENTE como aparecem nas listas de entrada. NÃO altere capitalização, acentos, espaços ou pontuação. Copie literalmente.
+  REGRA DE CASO: RETORNE category e bank_account EXATAMENTE como aparecem nas listas de entrada. NÃO altere capitalização, acentos, espaços ou pontuação. Copie literalmente.
 3. Gere description (4-8 palavras concisas, sem ponto final) resumindo a transação. Deve iniciar com letra maiúscula. Mantenha demais palavras em minúsculas salvo nomes próprios/siglas.
 
 ===== REGRAS CRÍTICAS DE FORMATO DE SAÍDA =====

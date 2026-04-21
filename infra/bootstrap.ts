@@ -4,7 +4,6 @@ import { GoogleAuthGateway } from "~/server/resources/GoogleAuthGateway";
 import { GoogleCashFlowSpreadsheetGateway } from "~/server/resources/GoogleCashFlowSpreadsheetGateway";
 import { OpenAiSpeechToTextGateway } from "~/server/resources/OpenAiSpeechToTextGateway";
 import { R2StorageGateway } from "~/server/resources/R2StorageGateway";
-import { TuiWhatsAppMessagingGateway } from "~/server/resources/TuiWhatsAppMessagingGateway";
 import { WebMessagingGateway } from "~/server/resources/WebMessagingGateway";
 import { WhatsAppMessagingGateway } from "~/server/resources/WhatsAppMessagingGateway";
 import { AuthService } from "~/server/services/AuthService";
@@ -18,7 +17,6 @@ import { StatusService } from "~/server/services/StatusService";
 import type { Config } from "./config";
 import { container } from "./container";
 import { Database } from "./database";
-import { shouldUseTuiGateway } from "./tui";
 
 export function registerDependencies(config: Config) {
   const database = new Database(config.database.connectionString);
@@ -48,10 +46,7 @@ export function registerDependencies(config: Config) {
 
   container.register(
     "IWhatsAppMessagingGateway",
-    () =>
-      shouldUseTuiGateway(config)
-        ? new TuiWhatsAppMessagingGateway()
-        : new WhatsAppMessagingGateway(config.whatsApp),
+    () => new WhatsAppMessagingGateway(config.whatsApp),
     "singleton",
   );
   container.register(

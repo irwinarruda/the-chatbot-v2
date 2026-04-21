@@ -7,7 +7,12 @@ import {
 import { createIsomorphicFn } from "@tanstack/react-start";
 import type { ReactNode } from "react";
 import { PrefsProvider, type Theme } from "~/client/components/PrefsProvider";
-import { NotFoundPage } from "~/client/components/pages/PublicPages";
+import { TerminalFooter } from "~/client/components/TerminalFooter";
+import { TerminalPageHeader } from "~/client/components/TerminalPageHeader";
+import { TerminalPanel } from "~/client/components/TerminalPanel";
+import { TerminalPanelText } from "~/client/components/TerminalPanelText";
+import { TerminalPrompt } from "~/client/components/TerminalPrompt";
+import { TerminalWindow } from "~/client/components/TerminalWindow";
 import {
   DEFAULT_LOCALE,
   getDictionary,
@@ -111,5 +116,17 @@ function RootDocument({ children }: { children: ReactNode }) {
 function NotFoundRoute() {
   const { locale } = Route.useRouteContext();
   const dictionary = getDictionary(locale);
-  return <NotFoundPage dictionary={dictionary} />;
+  const t = dictionary.notFoundPage;
+
+  return (
+    <TerminalWindow title={t.windowTitle} dictionary={dictionary}>
+      <TerminalPageHeader heading={t.heading} subtitle={t.subtitle} />
+      <TerminalPanel>
+        <TerminalPanelText>{t.body}</TerminalPanelText>
+      </TerminalPanel>
+      <TerminalFooter>
+        <TerminalPrompt text={t.footerPrompt} />
+      </TerminalFooter>
+    </TerminalWindow>
+  );
 }
