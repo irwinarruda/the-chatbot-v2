@@ -35,7 +35,7 @@ The bot is the entry point. The platform behind it is what I actually care about
 
 ## A short history: from C# to TypeScript
 
-The first version of this project was written in **C# / .NET 9**. It was clean, fast, and well-tested — and there is nothing wrong with it. The reason for the rewrite is purely about where the project is going:
+The first version of this project was written in **C# / .NET 9** ([irwinarruda/the-chatbot](https://github.com/irwinarruda/the-chatbot)). It was clean, fast, and well-tested — and there is nothing wrong with it. The reason for the rewrite is purely about where the project is going:
 
 - **Frontends are now part of the product.** A welcome page, a privacy page, a web chat, and eventually richer dashboards (bank balances, notes). Living in a single TypeScript codebase with React + TanStack Start removes an entire context switch.
 - **One language, end to end.** Server, client, scripts (CLI, migrations) and shared domain entities now share types. The `User`, `Chat`, and `Message` you see in a route loader are literally the same class the service uses.
@@ -97,7 +97,7 @@ infra/
   bootstrap.ts        # DI wiring (the one place that knows what implements what)
   container.ts        # Tiny dependency container
   database.ts         # postgres.js client wrapper
-  Mediator.ts         # In-process event bus
+  mediator.ts         # In-process event bus
   config.ts           # Runtime config built from process.env
   migrations/         # node-pg-migrate, plain JS
 src/
@@ -133,9 +133,8 @@ tests/                # Vitest, runs serially, wipes schema per file
 
 ```bash
 bun install
-bun run services:up        # starts Postgres in Docker
-bun run migrate:up         # applies migrations
 cp .env .env.development   # then fill in real values for your providers
+bun run services:ready
 bun run dev                # mode=development, http://localhost:3000
 ```
 
