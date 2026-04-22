@@ -8,7 +8,7 @@ import {
   ValidationException,
 } from "~/infra/exceptions";
 import { Jwt } from "~/infra/jwt";
-import type { IMediator } from "~/infra/Mediator";
+import type { IMediator } from "~/infra/mediator";
 import type {
   GoogleTokens,
   GoogleUserInfo,

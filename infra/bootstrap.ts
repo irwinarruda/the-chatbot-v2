@@ -1,4 +1,4 @@
-import { Mediator } from "~/infra/Mediator";
+import { Mediator } from "~/infra/mediator";
 import { AiChatGateway } from "~/server/resources/AiChatGateway";
 import { GoogleAuthGateway } from "~/server/resources/GoogleAuthGateway";
 import { GoogleCashFlowSpreadsheetGateway } from "~/server/resources/GoogleCashFlowSpreadsheetGateway";

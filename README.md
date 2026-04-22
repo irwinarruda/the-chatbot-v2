@@ -98,7 +98,7 @@ infra/
   container.ts        # Tiny dependency container
   database.ts         # postgres.js client wrapper
   Mediator.ts         # In-process event bus
-  env.ts / config.ts  # Two-layer env loading: .env then .env.${MODE}
+  config.ts           # Runtime config built from process.env
   migrations/         # node-pg-migrate, plain JS
 src/
   server/
@@ -135,8 +135,8 @@ tests/                # Vitest, runs serially, wipes schema per file
 bun install
 bun run services:up        # starts Postgres in Docker
 bun run migrate:up         # applies migrations
-cp .env.local .env.local   # then fill in real values for your providers
-bun run dev                # MODE=local, http://localhost:3000
+cp .env .env.development   # then fill in real values for your providers
+bun run dev                # mode=development, http://localhost:3000
 ```
 
 To expose the local server to WhatsApp:
@@ -149,7 +149,7 @@ bun run dev:local          # starts vite + ngrok in parallel
 
 | Command                  | What it does                                                     |
 | ------------------------ | ---------------------------------------------------------------- |
-| `bun run dev`            | Dev server in `MODE=local` on port 3000                          |
+| `bun run dev`            | Dev server in `mode=development` on port 3000                    |
 | `bun run dev:local`      | Same as above + ngrok tunnel for WhatsApp webhooks               |
 | `bun run test`           | Spin up Postgres, migrate, run Vitest serially against a real DB |
 | `bun run typecheck`      | `tsc --noEmit`                                                   |
@@ -161,8 +161,8 @@ bun run dev:local          # starts vite + ngrok in parallel
 
 ### Environments
 
-`MODE` is the single source of truth. Valid values: `local`, `development`, `test`, `preview`, `production`.
-`.env` is always loaded first (template with placeholders), then `.env.${MODE}` overrides it. **Do not set `NODE_ENV` directly** — it is derived from `MODE` (see [`infra/env.ts`](./infra/env.ts)).
+`--mode` is the single source of truth. Valid values: `development`, `test`, `preview`, `production`.
+`.env` is always loaded first (template with placeholders), then `.env.${mode}` overrides it. Vite and Vitest have `envDir: false`, so only the explicitly selected mode file is loaded by the project config.
 
 ## Testing philosophy
 

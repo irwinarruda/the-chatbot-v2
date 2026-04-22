@@ -14,7 +14,7 @@ import type {
 import { loadConfig } from "~/infra/config";
 import { Container } from "~/infra/container";
 import { Database } from "~/infra/database";
-import { Mediator } from "~/infra/Mediator";
+import { Mediator } from "~/infra/mediator";
 import { GoogleCashFlowSpreadsheetGateway } from "~/server/resources/GoogleCashFlowSpreadsheetGateway";
 import { TestAiChatGateway } from "~/server/resources/TestAiChatGateway";
 import { TestCashFlowSpreadsheetGateway } from "~/server/resources/TestCashFlowSpreadsheetGateway";

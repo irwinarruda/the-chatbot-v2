@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 import type { SummarizationConfig } from "~/infra/config";
 import type { Database } from "~/infra/database";
 import { UnauthorizedException, ValidationException } from "~/infra/exceptions";
-import type { IMediator } from "~/infra/Mediator";
+import type { IMediator } from "~/infra/mediator";
 import type {
   AiChatMessage,
   IAiChatGateway,

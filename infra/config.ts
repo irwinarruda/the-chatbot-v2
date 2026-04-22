@@ -99,10 +99,6 @@ export const configSchema = z.object({
   summarization: summarizationConfigSchema,
   googleSheets: googleSheetsConfigSchema,
   jwt: jwtConfigSchema,
-  nodeEnv: z.enum(["development", "production", "test"]).default("development"),
-  mode: z
-    .enum(["local", "development", "test", "preview", "production"])
-    .default("local"),
   port: z.coerce.number().default(3000),
 });
 
@@ -175,8 +171,6 @@ export function loadConfig(): Config {
       secret: process.env.JWT_SECRET,
       expiresIn: process.env.JWT_EXPIRES_IN,
     },
-    nodeEnv: process.env.NODE_ENV,
-    mode: process.env.MODE,
     port: process.env.PORT,
   });
 }

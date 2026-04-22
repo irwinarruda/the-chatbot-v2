@@ -490,7 +490,7 @@ GOOGLE_WEB_REDIRECT_URI=
 GOOGLE_WEB_LOGIN_URI=
 ```
 
-Add actual values to `.env.local`, `.env.development`, etc.
+Add actual values to `.env.development`, `.env.preview`, etc.
 
 ## Files Summary
 

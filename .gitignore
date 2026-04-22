@@ -3,6 +3,7 @@ dist/
 .output/
 .vinxi/
 .tanstack/
+.env.development
 .env.local
 .env.preview
 .env.production

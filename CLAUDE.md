@@ -8,9 +8,9 @@ This is a TypeScript rewrite of the parent C# project at the repo root. The `AGE
 
 ## Commands
 
-- `bun run dev` — start dev server (defaults to MODE=local, port 3000)
-- `bun run test` — run tests (uses `.env.test` automatically via `NODE_OPTIONS='--import tsx/esm'`)
-- `bun run test:coverage` — run tests with coverage (uses `.env.test` automatically via `NODE_OPTIONS='--import tsx/esm'`)
+- `bun run dev` — start dev server (defaults to `--mode development`, port 3000)
+- `bun run test` — run tests (uses `.env.test` automatically)
+- `bun run test:coverage` — run tests with coverage (uses `.env.test` automatically)
 - `bun run typecheck` — `tsc --noEmit`
 - `bun run check` — biome lint + format check
 - `bun run format:fix` — auto-fix formatting with biome
@@ -28,17 +28,17 @@ The codebase follows a Controller → Service → Entity layered pattern with a 
 - `src/services/` — business logic
 - `src/resources/` — gateway interfaces + implementations (external API clients)
 - `src/routes/` — TanStack Start API routes (`api/v1/*`)
-- `infra/` — config, database, container, env, migrations, exceptions
+- `infra/` — config, database, container, migrations, exceptions
 - `src/utils/` — mediator, loaders, WhatsAppTextChunker
 
 ## Environment System
 
-Two-layer env loading (see `infra/env.ts`):
+Two-layer env loading is handled by the Vite/Vitest configs and infra scripts:
 
 1. `.env` is always loaded first (base template with placeholders)
-2. `.env.${MODE}` is loaded with override
+2. `.env.${mode}` is loaded with override
 
-Valid modes: `local`, `development`, `test`, `preview`, `production`. MODE defaults to `local`. NODE_ENV is derived from MODE — do not set it independently.
+Valid modes: `development`, `test`, `preview`, `production`. `bun run dev` defaults to `--mode development` and Vitest defaults to `--mode test`.
 
 ## Testing
 
