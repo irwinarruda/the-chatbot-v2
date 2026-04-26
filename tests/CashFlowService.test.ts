@@ -53,6 +53,82 @@ describe("CashFlowService", () => {
     }
   }
 
+  async function clearSpreadsheetTransactions(phoneNumber: string) {
+    let transactionCount = (
+      await orquestrator.cashFlowService.getAllTransactions(phoneNumber)
+    ).length;
+    let attempt = 0;
+    while (transactionCount > 0) {
+      if (attempt > 100) {
+        throw new Error("Could not clear spreadsheet transactions");
+      }
+      await orquestrator.cashFlowService.deleteLastTransaction(phoneNumber);
+      transactionCount = (
+        await orquestrator.cashFlowService.getAllTransactions(phoneNumber)
+      ).length;
+      attempt++;
+    }
+  }
+
+  async function withEmptySpreadsheet<T>(
+    phoneNumber: string,
+    run: () => Promise<T>,
+  ): Promise<T> {
+    await clearSpreadsheetTransactions(phoneNumber);
+    expect(
+      await orquestrator.cashFlowService.getAllTransactions(phoneNumber),
+    ).toEqual([]);
+    try {
+      return await run();
+    } finally {
+      await clearSpreadsheetTransactions(phoneNumber);
+      expect(
+        await orquestrator.cashFlowService.getAllTransactions(phoneNumber),
+      ).toEqual([]);
+    }
+  }
+
+  async function getBankAccountsStatusEventually(
+    phoneNumber: string,
+    date: Date,
+    expected: { bankAccount: string; balance: number }[],
+  ) {
+    let status = await orquestrator.cashFlowService.getBankAccountsStatus(
+      phoneNumber,
+      date,
+    );
+    for (let attempt = 0; attempt < 5; attempt++) {
+      if (
+        status.length === expected.length &&
+        status.every(
+          (item, index) =>
+            item.bankAccount === expected[index].bankAccount &&
+            Math.abs(item.balance - expected[index].balance) < 0.001,
+        )
+      ) {
+        return status;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      status = await orquestrator.cashFlowService.getBankAccountsStatus(
+        phoneNumber,
+        date,
+      );
+    }
+    return status;
+  }
+
+  function expectBankAccountsStatusToEqual(
+    actual: { bankAccount: string; balance: number }[],
+    expected: { bankAccount: string; balance: number }[],
+  ) {
+    expect(actual.map((item) => item.bankAccount)).toEqual(
+      expected.map((item) => item.bankAccount),
+    );
+    for (const [index, expectedItem] of expected.entries()) {
+      expect(actual[index].balance).toBeCloseTo(expectedItem.balance);
+    }
+  }
+
   test("addSpreadsheetUrl should validate url parsing", async () => {
     const phoneNumber = "5511980000000";
     await orquestrator.createUser({ phoneNumber });
@@ -218,6 +294,9 @@ describe("CashFlowService", () => {
         bankAccount: "Any",
       }),
     ).rejects.toThrow(ServiceException);
+    await expect(
+      orquestrator.cashFlowService.getBankAccountsStatus(phoneNumber),
+    ).rejects.toThrow(ServiceException);
   });
 
   test("getExpenseCategories should work", async () => {
@@ -263,6 +342,82 @@ describe("CashFlowService", () => {
     await expect(
       orquestrator.cashFlowService.getBankAccount(wrongPhone),
     ).rejects.toThrow(ServiceException);
+  });
+
+  test("getBankAccountsStatus should work from an empty spreadsheet", async () => {
+    const phoneNumber = "5511923333333";
+    await setupUserWithSpreadsheet(phoneNumber);
+
+    await withEmptySpreadsheet(phoneNumber, async () => {
+      await orquestrator.cashFlowService.addEarning({
+        phoneNumber,
+        date: new Date(2025, 10, 15),
+        value: 300,
+        category: "Salário",
+        description: "Banco Inter balance",
+        bankAccount: "Banco Inter",
+      });
+      await orquestrator.cashFlowService.addExpense({
+        phoneNumber,
+        date: new Date(2025, 10, 15),
+        value: 42.28,
+        category: "Delivery",
+        description: "NuConta balance",
+        bankAccount: "NuConta",
+      });
+      await orquestrator.cashFlowService.addEarning({
+        phoneNumber,
+        date: new Date(2025, 10, 15),
+        value: 10,
+        category: "Outras Receitas",
+        description: "Caju balance in",
+        bankAccount: "Caju",
+      });
+      await orquestrator.cashFlowService.addExpense({
+        phoneNumber,
+        date: new Date(2025, 10, 15),
+        value: 10,
+        category: "Delivery",
+        description: "Caju balance out",
+        bankAccount: "Caju",
+      });
+      await orquestrator.cashFlowService.addEarning({
+        phoneNumber,
+        date: new Date(2025, 11, 15),
+        value: 90,
+        category: "Salário",
+        description: "December balance",
+        bankAccount: "Banco Inter",
+      });
+
+      const expectedNovemberStatus = [
+        { bankAccount: "Banco Inter", balance: 300 },
+        { bankAccount: "NuConta", balance: -42.28 },
+      ];
+      const novemberStatus = await getBankAccountsStatusEventually(
+        phoneNumber,
+        new Date(2025, 10, 15),
+        expectedNovemberStatus,
+      );
+      expectBankAccountsStatusToEqual(novemberStatus, expectedNovemberStatus);
+
+      const expectedDecemberStatus = [
+        { bankAccount: "Banco Inter", balance: 90 },
+      ];
+      const decemberStatus = await getBankAccountsStatusEventually(
+        phoneNumber,
+        new Date(2025, 11, 15),
+        expectedDecemberStatus,
+      );
+      expectBankAccountsStatusToEqual(decemberStatus, expectedDecemberStatus);
+
+      const januaryStatus = await getBankAccountsStatusEventually(
+        phoneNumber,
+        new Date(2025, 0, 15),
+        [],
+      );
+      expect(januaryStatus).toEqual([]);
+    });
   });
 
   test("addSpreadsheetUrl rejects missing users and duplicate sheets", async () => {
@@ -340,6 +495,9 @@ describe("CashFlowService", () => {
 
     await expect(
       orquestrator.cashFlowService.getBankAccount(phoneWithoutSheet),
+    ).rejects.toThrow(ValidationException);
+    await expect(
+      orquestrator.cashFlowService.getBankAccountsStatus(phoneWithoutSheet),
     ).rejects.toThrow(ValidationException);
   });
 

@@ -7,6 +7,11 @@ export interface Transaction {
   bankAccount: string;
 }
 
+export interface BankAccountStatus {
+  bankAccount: string;
+  balance: number;
+}
+
 export interface AddTransactionDTO extends Transaction {
   sheetAccessToken: string;
 }
@@ -33,4 +38,8 @@ export interface ICashFlowSpreadsheetGateway {
   getExpenseCategories(sheetConfig: SheetConfigDTO): Promise<string[]>;
   getEarningCategories(sheetConfig: SheetConfigDTO): Promise<string[]>;
   getBankAccount(sheetConfig: SheetConfigDTO): Promise<string[]>;
+  getBankAccountsStatus(
+    sheetConfig: SheetConfigDTO,
+    date?: Date,
+  ): Promise<BankAccountStatus[]>;
 }

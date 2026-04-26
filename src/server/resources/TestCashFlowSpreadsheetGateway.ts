@@ -4,6 +4,7 @@ import type {
   AddEarningDTO,
   AddExpenseDTO,
   AddTransactionDTO,
+  BankAccountStatus,
   ICashFlowSpreadsheetGateway,
   SheetConfigDTO,
   Transaction,
@@ -149,6 +150,64 @@ export class TestCashFlowSpreadsheetGateway
       );
     }
     return ["NuConta", "Caju"];
+  }
+
+  async getBankAccountsStatus(
+    sheetConfig: SheetConfigDTO,
+    date = new Date(),
+  ): Promise<BankAccountStatus[]> {
+    TestCashFlowSpreadsheetGateway.validateAccessToken(
+      sheetConfig.sheetAccessToken,
+    );
+    if (sheetConfig.sheetId !== this.validSheetId) {
+      throw new ServiceException(
+        undefined,
+        "The provided sheet ID is not valid",
+      );
+    }
+    const balances = new Map<string, number>();
+    for (const transaction of TestCashFlowSpreadsheetGateway.transactions) {
+      if (
+        transaction.date.getFullYear() !== date.getFullYear() ||
+        transaction.date.getMonth() !== date.getMonth()
+      ) {
+        continue;
+      }
+      balances.set(
+        transaction.bankAccount,
+        (balances.get(transaction.bankAccount) ?? 0) + transaction.value,
+      );
+    }
+    const accountOrder = [
+      "Dinheiro",
+      "Banco do Brasil",
+      "Itaú",
+      "Bradesco",
+      "Santander",
+      "Banco Inter",
+      "NuConta",
+      "Corretora 1",
+      "Corretora 2",
+      "Corretora 3",
+      "Cartão de Crédito - NuBank",
+      "Cartão de Crédito - Banco do Brasil",
+      "Cartão de Crédito - Inter",
+      "Cartão de Crédito - Bradesco",
+      "Caixinha Nubank",
+      "Caju",
+    ];
+    const orderedAccounts = [
+      ...accountOrder,
+      ...[...balances.keys()].filter(
+        (account) => !accountOrder.includes(account),
+      ),
+    ];
+    return orderedAccounts
+      .map((bankAccount) => ({
+        bankAccount,
+        balance: balances.get(bankAccount) ?? 0,
+      }))
+      .filter((item) => item.balance !== 0);
   }
 
   getSpreadsheetIdByUrl(url: string): string {

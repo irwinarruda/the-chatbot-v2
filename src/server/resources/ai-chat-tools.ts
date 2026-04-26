@@ -160,6 +160,24 @@ export const toolDefinitions: ToolDefinition[] = [
     },
   },
   {
+    name: "get_bank_accounts_status",
+    description: `List bank accounts with nonzero balances for a month. If date is omitted, uses the current date. Returns { count, bank_accounts: [ { bank_account, balance } ] }. ${genericError}`,
+    parameters: {
+      type: "object",
+      properties: {
+        phone_number: {
+          type: "string",
+          description: "User phone number in E.164 format",
+        },
+        date: {
+          type: "string",
+          description: "Optional ISO-8601 date for the target month",
+        },
+      },
+      required: ["phone_number"],
+    },
+  },
+  {
     name: "delete_user_by_phone_number",
     description: `Delete a user and all related data. Returns { message }. ${genericError}`,
     parameters: {
@@ -331,6 +349,18 @@ export async function executeTool(
           args.phone_number as string,
         );
         return Printable.make({ count: banks.length, banks });
+      }
+      case "get_bank_accounts_status": {
+        const date =
+          typeof args.date === "string" ? new Date(args.date) : undefined;
+        const bankAccounts = await cashFlowService.getBankAccountsStatus(
+          args.phone_number as string,
+          date,
+        );
+        return Printable.make({
+          count: bankAccounts.length,
+          bankAccounts: bankAccounts,
+        });
       }
       case "delete_user_by_phone_number": {
         await authService.deleteUserByPhoneNumber(args.phone_number as string);

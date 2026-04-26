@@ -5,6 +5,7 @@ import type {
   AddEarningDTO,
   AddExpenseDTO,
   AddTransactionDTO,
+  BankAccountStatus,
   ICashFlowSpreadsheetGateway,
   SheetConfigDTO,
   Transaction,
@@ -241,6 +242,102 @@ export class GoogleCashFlowSpreadsheetGateway
     }
   }
 
+  async getBankAccountsStatus(
+    sheetConfig: SheetConfigDTO,
+    date = new Date(),
+  ): Promise<BankAccountStatus[]> {
+    try {
+      const sheetsService = this.getSheetsService(
+        sheetConfig.sheetId,
+        sheetConfig.sheetAccessToken,
+      );
+      const spreadsheet = await sheetsService.spreadsheets.get({
+        spreadsheetId: sheetConfig.sheetId,
+        fields: "sheets.properties.title",
+        includeGridData: false,
+      });
+      this.throwWrongSpreadsheetException(spreadsheet.data.sheets);
+      const candidateTitles = (spreadsheet.data.sheets ?? [])
+        .map((sheet) => sheet.properties?.title ?? "")
+        .filter((title) => /^Fluxo de Caixa(?: \d{4})?$/.test(title));
+      if (candidateTitles.length === 0) {
+        throw new ValidationException(
+          "There is something wrong with your spreadsheet",
+          "The cash flow sheet could not be found",
+        );
+      }
+
+      const yearRanges = candidateTitles.map(
+        (title) => `${this.quoteSheetName(title)}!B4`,
+      );
+      const yearResult = await sheetsService.spreadsheets.values.batchGet({
+        spreadsheetId: sheetConfig.sheetId,
+        ranges: yearRanges,
+        valueRenderOption: "UNFORMATTED_VALUE",
+      });
+      this.throwWrongSpreadsheetException(yearResult.data.valueRanges);
+      const expectedYear = date.getFullYear();
+      const sheetTitle = (yearResult.data.valueRanges ?? [])
+        .map((range, index) => ({
+          title: candidateTitles[index],
+          year: this.parseCellNumber(range.values?.[0]?.[0]),
+        }))
+        .find((item) => item.year === expectedYear)?.title;
+
+      if (!sheetTitle) {
+        throw new ValidationException(
+          "There is something wrong with your spreadsheet",
+          `The cash flow sheet for ${expectedYear} could not be found`,
+        );
+      }
+
+      const monthColumns = [
+        "C",
+        "E",
+        "G",
+        "I",
+        "K",
+        "M",
+        "O",
+        "Q",
+        "S",
+        "U",
+        "W",
+        "Y",
+      ];
+      const balanceColumn = monthColumns[date.getMonth()];
+      if (!balanceColumn) {
+        throw new ValidationException("Invalid date");
+      }
+
+      const quotedTitle = this.quoteSheetName(sheetTitle);
+      const statusResult = await sheetsService.spreadsheets.values.batchGet({
+        spreadsheetId: sheetConfig.sheetId,
+        ranges: [
+          `${quotedTitle}!B120:B135`,
+          `${quotedTitle}!${balanceColumn}120:${balanceColumn}135`,
+        ],
+        valueRenderOption: "UNFORMATTED_VALUE",
+      });
+      this.throwWrongSpreadsheetException(statusResult.data.valueRanges);
+      const accountRows = statusResult.data.valueRanges?.[0]?.values ?? [];
+      const balanceRows = statusResult.data.valueRanges?.[1]?.values ?? [];
+      return accountRows
+        .map((row, index) => ({
+          bankAccount: String(row[0] ?? "").trim(),
+          balance: this.parseCellNumber(balanceRows[index]?.[0]),
+        }))
+        .filter(
+          (item) =>
+            item.bankAccount.length > 0 &&
+            Number.isFinite(item.balance) &&
+            item.balance !== 0,
+        );
+    } catch (ex) {
+      throw this.handleError(ex);
+    }
+  }
+
   private getSheetsService(sheetId: string, accessToken: string) {
     if (sheetId === this.googleSheetsConfig.testSheetId) {
       const { JWT } = google.auth;
@@ -301,5 +398,14 @@ export class GoogleCashFlowSpreadsheetGateway
       value = value.replace(",", ".");
     }
     return parseFloat(value);
+  }
+
+  private parseCellNumber(value: unknown): number {
+    if (typeof value === "number") return value;
+    return this.parseDouble(String(value ?? ""));
+  }
+
+  private quoteSheetName(sheetName: string): string {
+    return `'${sheetName.replace(/'/g, "''")}'`;
   }
 }

@@ -1,6 +1,7 @@
 import type { Database } from "~/infra/database";
 import { NotFoundException, ValidationException } from "~/infra/exceptions";
 import type {
+  BankAccountStatus,
   ICashFlowSpreadsheetGateway,
   SheetConfigDTO,
   Transaction,
@@ -139,6 +140,17 @@ export class CashFlowService {
       sheetId: sheet.idSheet,
       sheetAccessToken: credential.accessToken,
     });
+  }
+
+  async getBankAccountsStatus(
+    phoneNumber: string,
+    date = new Date(),
+  ): Promise<BankAccountStatus[]> {
+    const { sheet, credential } = await this.getUserAndSheet(phoneNumber);
+    return await this.spreadsheetResource.getBankAccountsStatus(
+      { sheetId: sheet.idSheet, sheetAccessToken: credential.accessToken },
+      date,
+    );
   }
 
   async getCategoriesAndBankAccounts(
