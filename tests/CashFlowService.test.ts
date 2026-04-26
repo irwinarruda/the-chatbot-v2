@@ -402,7 +402,8 @@ describe("CashFlowService", () => {
       expectBankAccountsStatusToEqual(novemberStatus, expectedNovemberStatus);
 
       const expectedDecemberStatus = [
-        { bankAccount: "Banco Inter", balance: 90 },
+        { bankAccount: "Banco Inter", balance: 390 },
+        { bankAccount: "NuConta", balance: -42.28 },
       ];
       const decemberStatus = await getBankAccountsStatusEventually(
         phoneNumber,

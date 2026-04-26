@@ -169,7 +169,7 @@ export class TestCashFlowSpreadsheetGateway
     for (const transaction of TestCashFlowSpreadsheetGateway.transactions) {
       if (
         transaction.date.getFullYear() !== date.getFullYear() ||
-        transaction.date.getMonth() !== date.getMonth()
+        transaction.date.getMonth() > date.getMonth()
       ) {
         continue;
       }
