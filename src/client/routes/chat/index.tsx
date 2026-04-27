@@ -1,6 +1,6 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Mic, Send } from "lucide-react";
+import { Mic, Send, Trash2 } from "lucide-react";
 import {
   type ComponentProps,
   useCallback,
@@ -72,6 +72,7 @@ function ChatRoute() {
   const mediaRecorderRef = useRef<MediaRecorder | undefined>(undefined);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval>>(undefined);
+  const shouldSendRecordingRef = useRef(true);
   const composerRef = useRef<HTMLDivElement>(null);
 
   const parentRef = useRef<HTMLDivElement>(null);
@@ -421,6 +422,7 @@ function ChatRoute() {
           : new MediaRecorder(stream);
 
       audioChunksRef.current = [];
+      shouldSendRecordingRef.current = true;
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
@@ -431,12 +433,22 @@ function ChatRoute() {
           track.stop();
         }
 
+        const shouldSendRecording = shouldSendRecordingRef.current;
+        shouldSendRecordingRef.current = true;
+        mediaRecorderRef.current = undefined;
+
+        if (!shouldSendRecording) {
+          audioChunksRef.current = [];
+          return;
+        }
+
         const recordedBlob = WebAudioRecording.createRecordedBlob(
           audioChunksRef.current,
           mediaRecorder.mimeType,
         );
 
         if (recordedBlob.size === 0) {
+          audioChunksRef.current = [];
           setError(t.errorSending);
           return;
         }
@@ -468,6 +480,7 @@ function ChatRoute() {
         } catch {
           setError(t.errorSending);
         } finally {
+          audioChunksRef.current = [];
           setIsSending(false);
         }
       };
@@ -490,7 +503,9 @@ function ChatRoute() {
     setSelectedAudioInputId(event.target.value);
   }, []);
 
-  const stopRecording = useCallback(() => {
+  const stopRecording = useCallback((shouldSend: boolean) => {
+    shouldSendRecordingRef.current = shouldSend;
+
     if (mediaRecorderRef.current?.state === "recording") {
       mediaRecorderRef.current.stop();
     }
@@ -716,20 +731,32 @@ function ChatRoute() {
         className="shrink-0 border-term-border border-t bg-linear-to-b from-term-chrome to-term-chrome/80 px-4 py-3"
       >
         {isRecording ? (
-          <div className="flex items-center gap-2.5 py-1">
+          <div className="flex flex-wrap items-center gap-2.5 py-1">
             <span className="h-2 w-2 shrink-0 rounded-full bg-term-red motion-safe:animate-blink" />
-            <span className="flex-1 text-sm text-term-red">
+            <span className="min-w-32 flex-1 text-sm text-term-red">
               {t.recording} {formatTime(recordingDuration)}
             </span>
             <Button
               type="button"
-              onClick={stopRecording}
-              title={t.stopRecording}
+              onClick={() => stopRecording(false)}
+              title={t.cancelRecording}
+              variant="outline"
+              size="sm"
+              className="rounded-md border-term-border bg-transparent px-3 py-1.5 text-[0.8125rem] text-term-muted hover:border-term-red/35 hover:bg-term-red/10 hover:text-term-red"
+            >
+              <Trash2 className="mr-1.5 size-3.5" />
+              {t.cancelRecording}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => stopRecording(true)}
+              title={t.sendRecording}
               variant="destructive"
               size="sm"
               className="rounded-md border border-term-red/40 bg-term-red/8 px-3.5 py-1.5 text-[0.8125rem] text-term-red hover:border-term-red/60 hover:bg-term-red/15 hover:text-term-red"
             >
-              {t.stopRecording}
+              <Send className="mr-1.5 size-3.5" />
+              {t.sendRecording}
             </Button>
           </div>
         ) : (
@@ -791,7 +818,7 @@ function ChatRoute() {
               className="flex items-start gap-0 rounded-lg border border-term-border bg-term-bg pr-1.5 pl-3.5 transition-all duration-200 focus-within:border-term-green focus-within:shadow-[0_0_0_3px_rgba(80,223,170,0.12)] data-disabled:opacity-70"
             >
               <span
-                className="mr-3 inline-flex select-none items-center pt-2.5 font-mono font-semibold text-base text-term-green leading-none"
+                className="mr-3 inline-flex h-10 select-none items-center font-mono font-semibold text-base text-term-green leading-none"
                 style={{ textShadow: "0 0 8px rgba(80,223,170,0.35)" }}
               >
                 {">"}

@@ -84,6 +84,8 @@
     "startRecording": "Record audio",
     "recording": "Recording",
     "stopRecording": "Stop",
+    "cancelRecording": "Discard",
+    "sendRecording": "Send audio",
     "audioSent": "Audio message sent"
   },
   "chatLoginPage": {
