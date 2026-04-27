@@ -12,6 +12,15 @@ import type { Credential } from "~/shared/entities/Credentials";
 import { CashFlowSpreadsheetType } from "~/shared/entities/enums/CashFlowSpreadsheetType";
 import type { User } from "~/shared/entities/User";
 
+export interface CashFlowSyncBankAccountBalanceDTO {
+  phoneNumber: string;
+  bankAccount: string;
+  currentBalance: number;
+  category: string;
+  description: string;
+  date: Date;
+}
+
 export interface CashFlowAddExpenseDTO {
   phoneNumber: string;
   date: Date;
@@ -151,6 +160,52 @@ export class CashFlowService {
       { sheetId: sheet.idSheet, sheetAccessToken: credential.accessToken },
       date,
     );
+  }
+
+  async syncBankAccountBalance(
+    dto: CashFlowSyncBankAccountBalanceDTO,
+  ): Promise<void> {
+    const statuses = await this.getBankAccountsStatus(
+      dto.phoneNumber,
+      dto.date,
+    );
+    const accountStatus = statuses.find(
+      (s) => s.bankAccount === dto.bankAccount,
+    );
+    if (!accountStatus) {
+      throw new ValidationException(
+        `Bank account "${dto.bankAccount}" not found in the spreadsheet`,
+        "Available accounts: " +
+          statuses.map((s) => s.bankAccount).join(", ") +
+          ". Make sure the account name matches exactly.",
+      );
+    }
+    const difference = dto.currentBalance - accountStatus.balance;
+    if (difference === 0) {
+      throw new ValidationException(
+        `Bank account "${dto.bankAccount}" is already in sync`,
+        `The spreadsheet balance matches the reported balance of ${dto.currentBalance}. No adjustment needed.`,
+      );
+    }
+    if (difference > 0) {
+      await this.addEarning({
+        phoneNumber: dto.phoneNumber,
+        date: dto.date,
+        value: difference,
+        category: dto.category,
+        description: dto.description,
+        bankAccount: dto.bankAccount,
+      });
+    } else {
+      await this.addExpense({
+        phoneNumber: dto.phoneNumber,
+        date: dto.date,
+        value: Math.abs(difference),
+        category: dto.category,
+        description: dto.description,
+        bankAccount: dto.bankAccount,
+      });
+    }
   }
 
   async getCategoriesAndBankAccounts(

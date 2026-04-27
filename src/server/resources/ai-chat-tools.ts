@@ -178,6 +178,44 @@ export const toolDefinitions: ToolDefinition[] = [
     },
   },
   {
+    name: "sync_bank_account_balance",
+    description: `Reconcile a bank account's tracked balance with the real balance reported by the user. Automatically computes the difference and creates an earning (if money appeared, e.g. interest) or expense (if money disappeared) transaction to bring the spreadsheet in sync. Category and description are automatically resolved via classification. Returns { message }. ${genericError}`,
+    parameters: {
+      type: "object",
+      properties: {
+        phone_number: {
+          type: "string",
+          description: "User phone number in E.164 format",
+        },
+        user_message: {
+          type: "string",
+          description:
+            "Full original user message text with all context and nuances; pass exactly what the user sent",
+        },
+        bank_account: {
+          type: "string",
+          description: "Name of the bank account to sync",
+        },
+        current_balance: {
+          type: "number",
+          description:
+            "The real current balance of the bank account as reported by the user",
+        },
+        date: {
+          type: "string",
+          description:
+            "Optional ISO-8601 date (if not explicit, omit this field)",
+        },
+      },
+      required: [
+        "phone_number",
+        "user_message",
+        "bank_account",
+        "current_balance",
+      ],
+    },
+  },
+  {
     name: "delete_user_by_phone_number",
     description: `Delete a user and all related data. Returns { message }. ${genericError}`,
     parameters: {
@@ -360,6 +398,38 @@ export async function executeTool(
         return Printable.make({
           count: bankAccounts.length,
           bankAccounts: bankAccounts,
+        });
+      }
+      case "sync_bank_account_balance": {
+        const phoneNumber = args.phone_number as string;
+        const userMessage = args.user_message as string;
+        const bankAccount = args.bank_account as string;
+        const currentBalance = args.current_balance as number;
+        const date = args.date ? new Date(args.date as string) : new Date();
+
+        const { categories, bankAccounts } =
+          await cashFlowService.getCategoriesAndBankAccounts(phoneNumber);
+        const parsed = await classifyWithRetry(
+          aiChatGateway,
+          phoneNumber,
+          "Earning",
+          userMessage,
+          currentBalance,
+          categories,
+          bankAccounts,
+        );
+
+        await cashFlowService.syncBankAccountBalance({
+          phoneNumber,
+          bankAccount,
+          currentBalance,
+          category: parsed.category,
+          description: parsed.description,
+          date,
+        });
+
+        return Printable.make({
+          message: "Bank account balance synced successfully",
         });
       }
       case "delete_user_by_phone_number": {
