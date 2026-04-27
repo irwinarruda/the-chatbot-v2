@@ -1,4 +1,5 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { Mic, Send } from "lucide-react";
 import {
   type ComponentProps,
@@ -7,17 +8,17 @@ import {
   useRef,
   useState,
 } from "react";
-import { AudioWaveform } from "~/client/components/AudioWaveform";
+import { ChatMessage } from "~/client/components/ChatMessage";
 import { usePrefs } from "~/client/components/PrefsProvider";
 import { TerminalChromeButton } from "~/client/components/TerminalChromeButton";
 import { TerminalWindow } from "~/client/components/TerminalWindow";
 import { Alert, AlertDescription } from "~/client/components/ui/alert";
 import { Button } from "~/client/components/ui/button";
-import { Input } from "~/client/components/ui/input";
 import {
   NativeSelect,
   NativeSelectOption,
 } from "~/client/components/ui/native-select";
+import { Textarea } from "~/client/components/ui/textarea";
 import { getDictionary } from "~/client/i18n";
 import {
   AudioInputDevices,
@@ -25,11 +26,6 @@ import {
 } from "~/client/utils/AudioInputDevices";
 import { WebAudioRecording } from "~/client/utils/WebAudioRecording";
 import { WebChatApi } from "~/client/utils/WebChatApi";
-import {
-  type WhatsAppBlockNode,
-  type WhatsAppInlineNode,
-  WhatsAppMessageParser,
-} from "~/client/utils/WhatsAppMessageParser";
 import { requireChatAccess } from "~/server/tanstack/functions/require-chat-access";
 import type {
   SharedChatMessage,
@@ -70,19 +66,69 @@ function ChatRoute() {
   >([]);
   const [selectedAudioInputId, setSelectedAudioInputId] = useState("");
   const [error, setError] = useState<string | undefined>(undefined);
-  const [messagesEndEl, setMessagesEndEl] = useState<
-    HTMLDivElement | undefined
-  >(undefined);
-  const [inputEl, setInputEl] = useState<HTMLInputElement | undefined>(
+  const [inputEl, setInputEl] = useState<HTMLTextAreaElement | undefined>(
     undefined,
   );
   const mediaRecorderRef = useRef<MediaRecorder | undefined>(undefined);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval>>(undefined);
+  const composerRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = useCallback(() => {
-    messagesEndEl?.scrollIntoView({ behavior: "smooth" });
-  }, [messagesEndEl]);
+  const parentRef = useRef<HTMLDivElement>(null);
+  const isNearBottomRef = useRef(true);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const [composerHeight, setComposerHeight] = useState(0);
+
+  const virtualizer = useVirtualizer({
+    count: messages.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: (index) => {
+      const msg = messages[index];
+      if (msg.type === "audio" && msg.mediaUrl) return 90;
+      if (
+        msg.type === "interactive" &&
+        msg.userType === "bot" &&
+        msg.buttonReplyOptions
+      )
+        return 120;
+      return 60;
+    },
+    overscan: 5,
+  });
+
+  const handleScroll = useCallback(() => {
+    const el = parentRef.current;
+    if (!el) return;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+    isNearBottomRef.current = nearBottom;
+    setShowScrollBtn(!nearBottom);
+  }, []);
+
+  // Auto-scroll to bottom when new messages arrive and user is near the bottom
+  useEffect(() => {
+    if (isNearBottomRef.current && messages.length > 0) {
+      virtualizer.scrollToIndex(messages.length - 1, { align: "end" });
+    }
+  }, [messages.length, virtualizer]);
+
+  useEffect(() => {
+    const composer = composerRef.current;
+    if (!composer || typeof ResizeObserver === "undefined") return;
+
+    const observer = new ResizeObserver(([entry]) => {
+      setComposerHeight(entry.contentRect.height);
+
+      if (isNearBottomRef.current && messages.length > 0) {
+        requestAnimationFrame(() => {
+          virtualizer.scrollToIndex(messages.length - 1, { align: "end" });
+        });
+      }
+    });
+
+    observer.observe(composer);
+
+    return () => observer.disconnect();
+  }, [messages.length, virtualizer]);
 
   useEffect(() => {
     let cancelled = false;
@@ -130,11 +176,6 @@ function ChatRoute() {
       cancelled = true;
     };
   }, [navigate, t.errorLoading]);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: scroll on messages change
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, scrollToBottom]);
 
   useEffect(() => {
     if (!user) return;
@@ -280,6 +321,9 @@ function ChatRoute() {
 
       setIsSending(true);
       setInput("");
+      if (inputEl) {
+        inputEl.style.height = "auto";
+      }
 
       const optimistic: SharedChatMessage = {
         ...createChatMessage({
@@ -308,6 +352,11 @@ function ChatRoute() {
     },
     [inputEl, isSending, t.errorSending],
   );
+
+  const resizeInput = useCallback((element: HTMLTextAreaElement) => {
+    element.style.height = "auto";
+    element.style.height = `${Math.min(element.scrollHeight, 160)}px`;
+  }, []);
 
   const sendButtonReply = useCallback(
     async (buttonText: string) => {
@@ -458,6 +507,21 @@ function ChatRoute() {
     void sendMessage(input);
   };
 
+  const handleInputKeyDown: NonNullable<
+    ComponentProps<"textarea">["onKeyDown"]
+  > = (event) => {
+    if (
+      event.key !== "Enter" ||
+      event.shiftKey ||
+      event.nativeEvent.isComposing
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    void sendMessage(input);
+  };
+
   const handleLogout = async () => {
     await fetch("/api/v1/web/auth/logout", { method: "POST" });
     navigate({ to: "/chat/login" });
@@ -477,7 +541,7 @@ function ChatRoute() {
     ? "h-dvh sm:h-[calc(100dvh-3rem)] md:h-[calc(100dvh-5rem)]"
     : undefined;
   const windowClassName = [
-    "flex min-h-0 flex-1 flex-col overflow-hidden",
+    "relative flex min-h-0 flex-1 flex-col overflow-hidden",
     "p-0 sm:p-0 md:p-0",
   ].join(" ");
   const windowTitle = user ? `${t.windowTitle} - ${user.name}` : t.windowTitle;
@@ -556,9 +620,11 @@ function ChatRoute() {
       ) : null}
 
       <div
+        ref={parentRef}
+        onScroll={handleScroll}
         className={
           hasMessages
-            ? "flex flex-1 flex-col gap-2 overflow-y-auto p-4 sm:p-5"
+            ? "relative flex-1 overflow-y-auto p-4 sm:p-5"
             : "flex min-h-48 flex-col gap-2 p-4 sm:p-5"
         }
       >
@@ -568,90 +634,87 @@ function ChatRoute() {
             {t.emptyState}
             <span className="terminal-cursor" />
           </div>
-        ) : null}
-
-        {messages.map((message) => {
-          const isUser = message.userType === "user";
-
-          return (
-            <div
-              key={message.id}
-              className={`flex max-w-[85%] flex-col sm:max-w-[80%] ${
-                isUser ? "self-end" : "self-start"
-              }`}
-            >
-              <div
-                className={`mb-0.5 px-0.5 font-semibold text-2xs uppercase tracking-wider ${
-                  isUser
-                    ? "text-right text-term-cyan"
-                    : "text-left text-term-green"
-                }`}
-              >
-                {isUser ? t.you : t.bot}
-              </div>
-              <div
-                className={`rounded-lg border px-3.5 py-2.5 ${
-                  isUser
-                    ? "border-term-green/20 bg-term-green/8"
-                    : "border-term-border bg-term-bg"
-                }`}
-              >
-                {message.type === "audio" && message.mediaUrl ? (
-                  <div className="flex flex-col gap-2">
-                    <AudioWaveform src={message.mediaUrl} theme={theme} />
-                    {message.transcript ? (
-                      <div className="max-w-70 text-[0.8125rem] text-term-muted italic leading-snug">
-                        <FormattedChatText text={message.transcript} />
-                      </div>
-                    ) : null}
+        ) : (
+          <div
+            style={{
+              height: virtualizer.getTotalSize(),
+              width: "100%",
+              position: "relative",
+            }}
+          >
+            {virtualizer.getVirtualItems().map((virtualItem) => {
+              const message = messages[virtualItem.index];
+              return (
+                <div
+                  key={message.id}
+                  ref={virtualizer.measureElement}
+                  data-index={virtualItem.index}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    transform: `translateY(${virtualItem.start}px)`,
+                  }}
+                >
+                  <div className="pb-2">
+                    <ChatMessage
+                      message={message}
+                      theme={theme}
+                      locale={locale}
+                      isSending={isSending}
+                      youLabel={t.you}
+                      botLabel={t.bot}
+                      showMoreLabel={t.showMoreTranscript}
+                      showLessLabel={t.showLessTranscript}
+                      onButtonReply={sendButtonReply}
+                    />
                   </div>
-                ) : message.type === "interactive" &&
-                  message.userType === "bot" &&
-                  message.buttonReplyOptions ? (
-                  <div className="flex flex-col gap-2.5">
-                    <FormattedChatText text={message.text ?? ""} />
-                    <div className="flex flex-wrap gap-1.5">
-                      {message.buttonReplyOptions.map((option) => (
-                        <Button
-                          key={option}
-                          type="button"
-                          onClick={() => {
-                            void sendButtonReply(option);
-                          }}
-                          disabled={isSending}
-                          variant="outline"
-                          size="sm"
-                          className="rounded-md border-term-blue/30 bg-term-blue/8 text-[0.8125rem] text-term-blue hover:border-term-cyan/40 hover:bg-term-cyan/10 hover:text-term-cyan"
-                        >
-                          {option}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <FormattedChatText
-                    text={message.buttonReply ?? message.text ?? ""}
-                  />
-                )}
-              </div>
-              <div
-                className={`mt-0.5 px-0.5 text-2xs text-term-muted ${
-                  isUser ? "text-right" : "text-left"
-                }`}
-              >
-                {new Date(message.createdAt).toLocaleTimeString(locale, {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </div>
-            </div>
-          );
-        })}
-
-        <div ref={(node) => setMessagesEndEl(node ?? undefined)} />
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      <div className="shrink-0 border-term-border border-t bg-linear-to-b from-term-chrome to-term-chrome/80 px-4 py-3">
+      {showScrollBtn && hasMessages ? (
+        <div
+          className="pointer-events-none absolute right-6"
+          style={{ bottom: `${Math.max(composerHeight, 96) + 16}px` }}
+        >
+          <Button
+            type="button"
+            onClick={() => {
+              isNearBottomRef.current = true;
+              setShowScrollBtn(false);
+              virtualizer.scrollToIndex(messages.length - 1, {
+                align: "end",
+              });
+            }}
+            className="pointer-events-auto h-8 w-8 rounded-full border border-term-border bg-term-chrome p-0 shadow-lg hover:bg-term-green/10 hover:text-term-green"
+          >
+            <svg
+              aria-label="Scroll to bottom"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M12 5v14" />
+              <path d="m19 12-7 7-7-7" />
+            </svg>
+          </Button>
+        </div>
+      ) : null}
+
+      <div
+        ref={composerRef}
+        className="shrink-0 border-term-border border-t bg-linear-to-b from-term-chrome to-term-chrome/80 px-4 py-3"
+      >
         {isRecording ? (
           <div className="flex items-center gap-2.5 py-1">
             <span className="h-2 w-2 shrink-0 rounded-full bg-term-red motion-safe:animate-blink" />
@@ -725,25 +788,34 @@ function ChatRoute() {
 
             <div
               data-disabled={isSending || undefined}
-              className="flex items-stretch gap-0 rounded-lg border border-term-border bg-term-bg pr-1.5 pl-3.5 transition-all duration-200 focus-within:border-term-green focus-within:shadow-[0_0_0_3px_rgba(80,223,170,0.12)] data-disabled:opacity-70"
+              className="flex items-start gap-0 rounded-lg border border-term-border bg-term-bg pr-1.5 pl-3.5 transition-all duration-200 focus-within:border-term-green focus-within:shadow-[0_0_0_3px_rgba(80,223,170,0.12)] data-disabled:opacity-70"
             >
               <span
-                className="mr-3 inline-flex select-none items-center font-mono font-semibold text-base text-term-green leading-none"
+                className="mr-3 inline-flex select-none items-center pt-2.5 font-mono font-semibold text-base text-term-green leading-none"
                 style={{ textShadow: "0 0 8px rgba(80,223,170,0.35)" }}
               >
                 {">"}
               </span>
-              <Input
-                ref={(node) => setInputEl(node ?? undefined)}
-                type="text"
+              <Textarea
+                ref={(node) => {
+                  setInputEl(node ?? undefined);
+                  if (node) {
+                    resizeInput(node);
+                  }
+                }}
+                rows={1}
                 value={input}
-                onChange={(event) => setInput(event.target.value)}
+                onChange={(event) => {
+                  setInput(event.target.value);
+                  resizeInput(event.target);
+                }}
+                onKeyDown={handleInputKeyDown}
                 placeholder={t.placeholder}
                 disabled={isSending}
                 autoComplete="off"
-                className="h-auto min-w-0 flex-1 rounded-none border-0 bg-transparent px-1.5 py-2.5 font-mono text-sm text-term-text caret-term-green shadow-none ring-0 placeholder:text-term-muted/70 focus-visible:border-0 focus-visible:shadow-none focus-visible:outline-none focus-visible:ring-0 disabled:cursor-not-allowed disabled:bg-transparent"
+                className="max-h-40 min-h-10 min-w-0 flex-1 resize-none overflow-y-auto rounded-none border-0 bg-transparent px-1.5 py-2.5 font-mono text-sm text-term-text caret-term-green shadow-none ring-0 placeholder:text-term-muted/70 focus-visible:border-0 focus-visible:shadow-none focus-visible:outline-none focus-visible:ring-0 disabled:cursor-not-allowed disabled:bg-transparent"
               />
-              <div className="ml-1.5 inline-flex shrink-0 items-center gap-0.5 py-1">
+              <div className="ml-1.5 inline-flex shrink-0 items-center gap-0.5 self-end py-1">
                 <Button
                   type="button"
                   onClick={() => {
@@ -776,185 +848,6 @@ function ChatRoute() {
       </div>
     </TerminalWindow>
   );
-}
-
-function FormattedChatText({ text }: { text: string }) {
-  const { blocks } = WhatsAppMessageParser.parse(text);
-  const getBlockKey = createSiblingKeyFactory();
-
-  if (blocks.length === 0) {
-    return (
-      <p className="wrap-break-word m-0 whitespace-pre-wrap text-sm text-term-text leading-relaxed" />
-    );
-  }
-
-  return (
-    <div className="wrap-break-word flex flex-col gap-2 text-sm text-term-text leading-relaxed">
-      {blocks.map((block) => (
-        <MessageBlock key={getBlockKey(serializeBlock(block))} block={block} />
-      ))}
-    </div>
-  );
-}
-
-function MessageBlock({ block }: { block: WhatsAppBlockNode }) {
-  switch (block.type) {
-    case "paragraph": {
-      const getParagraphLineKey = createSiblingKeyFactory();
-
-      return (
-        <div className="flex flex-col gap-1 whitespace-pre-wrap">
-          {block.lines.map((line) => (
-            <p
-              key={getParagraphLineKey(serializeInlineNodes(line))}
-              className="m-0"
-            >
-              <InlineNodes nodes={line} />
-            </p>
-          ))}
-        </div>
-      );
-    }
-    case "bulletList": {
-      const getBulletKey = createSiblingKeyFactory();
-
-      return (
-        <ul className="m-0 list-none space-y-1 p-0">
-          {block.items.map((item) => (
-            <li
-              key={getBulletKey(serializeInlineNodes(item))}
-              className="relative pl-5 before:absolute before:left-0 before:font-mono before:font-semibold before:text-term-green before:content-['>']"
-            >
-              <InlineNodes nodes={item} />
-            </li>
-          ))}
-        </ul>
-      );
-    }
-    case "orderedList": {
-      const getOrderedKey = createSiblingKeyFactory();
-
-      return (
-        <ol
-          className="m-0 space-y-1 pl-5 marker:font-semibold marker:text-term-cyan/80"
-          start={block.start}
-        >
-          {block.items.map((item) => (
-            <li
-              key={getOrderedKey(serializeInlineNodes(item))}
-              className="pl-1"
-            >
-              <InlineNodes nodes={item} />
-            </li>
-          ))}
-        </ol>
-      );
-    }
-    case "quote": {
-      const getQuoteKey = createSiblingKeyFactory();
-
-      return (
-        <blockquote className="m-0 rounded-r-md border-term-cyan/45 border-l-2 bg-term-cyan/8 px-3 py-2 text-term-text/95 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-          <div className="flex flex-col gap-1">
-            {block.lines.map((line) => (
-              <p key={getQuoteKey(serializeInlineNodes(line))} className="m-0">
-                <InlineNodes nodes={line} />
-              </p>
-            ))}
-          </div>
-        </blockquote>
-      );
-    }
-  }
-}
-
-function InlineNodes({ nodes }: { nodes: WhatsAppInlineNode[] }) {
-  const getInlineKey = createSiblingKeyFactory();
-
-  return (
-    <>
-      {nodes.map((node) => (
-        <InlineNode key={getInlineKey(serializeInlineNode(node))} node={node} />
-      ))}
-    </>
-  );
-}
-
-function InlineNode({ node }: { node: WhatsAppInlineNode }) {
-  switch (node.type) {
-    case "text":
-      return <>{node.value}</>;
-    case "bold":
-      return (
-        <strong className="font-semibold text-term-bright">
-          <InlineNodes nodes={node.children} />
-        </strong>
-      );
-    case "italic":
-      return (
-        <em className="text-term-text/95 italic">
-          <InlineNodes nodes={node.children} />
-        </em>
-      );
-    case "strikethrough":
-      return (
-        <span className="text-term-muted line-through decoration-2 decoration-term-red/60">
-          <InlineNodes nodes={node.children} />
-        </span>
-      );
-    case "inlineCode":
-      return (
-        <code className="rounded border border-term-border bg-term-chrome px-1.5 py-0.5 font-mono text-[0.8125em] text-term-amber shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
-          {node.value}
-        </code>
-      );
-    case "monospace":
-      return (
-        <code className="rounded-md border border-term-green/20 bg-term-green/8 px-2 py-1 font-mono text-[0.8125em] text-term-green shadow-[0_0_18px_rgba(80,223,170,0.08)]">
-          {node.value}
-        </code>
-      );
-  }
-}
-
-function serializeBlock(block: WhatsAppBlockNode): string {
-  switch (block.type) {
-    case "paragraph":
-      return `paragraph:${block.lines.map(serializeInlineNodes).join("\\n")}`;
-    case "bulletList":
-      return `bullet:${block.items.map(serializeInlineNodes).join("|")}`;
-    case "orderedList":
-      return `ordered:${block.start}:${block.items.map(serializeInlineNodes).join("|")}`;
-    case "quote":
-      return `quote:${block.lines.map(serializeInlineNodes).join("\\n")}`;
-  }
-}
-
-function serializeInlineNodes(nodes: WhatsAppInlineNode[]): string {
-  return nodes.map(serializeInlineNode).join("");
-}
-
-function serializeInlineNode(node: WhatsAppInlineNode): string {
-  switch (node.type) {
-    case "text":
-    case "inlineCode":
-    case "monospace":
-      return `${node.type}:${node.value}`;
-    case "bold":
-    case "italic":
-    case "strikethrough":
-      return `${node.type}:(${serializeInlineNodes(node.children)})`;
-  }
-}
-
-function createSiblingKeyFactory(): (signature: string) => string {
-  const seen = new Map<string, number>();
-
-  return (signature: string) => {
-    const count = seen.get(signature) ?? 0;
-    seen.set(signature, count + 1);
-    return `${signature}:${count}`;
-  };
 }
 
 function createChatMessage(

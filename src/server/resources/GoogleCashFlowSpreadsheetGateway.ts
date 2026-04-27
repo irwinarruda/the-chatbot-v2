@@ -20,7 +20,7 @@ export class GoogleCashFlowSpreadsheetGateway
   ) {}
 
   async addTransaction(transaction: AddTransactionDTO): Promise<void> {
-    try {
+    return this.withRetry(async () => {
       const sheetsService = this.getSheetsService(
         transaction.sheetId,
         transaction.sheetAccessToken,
@@ -54,9 +54,7 @@ export class GoogleCashFlowSpreadsheetGateway
           valueInputOption: "USER_ENTERED",
         },
       });
-    } catch (ex) {
-      throw this.handleError(ex);
-    }
+    });
   }
 
   async addExpense(expense: AddExpenseDTO): Promise<void> {
@@ -70,7 +68,7 @@ export class GoogleCashFlowSpreadsheetGateway
   }
 
   async deleteLastTransaction(sheetConfig: SheetConfigDTO): Promise<void> {
-    try {
+    return this.withRetry(async () => {
       const sheetsService = this.getSheetsService(
         sheetConfig.sheetId,
         sheetConfig.sheetAccessToken,
@@ -101,37 +99,31 @@ export class GoogleCashFlowSpreadsheetGateway
           valueInputOption: "USER_ENTERED",
         },
       });
-    } catch (ex) {
-      throw this.handleError(ex);
-    }
+    });
   }
 
   getSpreadsheetIdByUrl(url: string): string {
-    try {
-      if (!url.includes("docs.google.com/spreadsheets")) {
-        throw new ValidationException(
-          "Invalid url",
-          "Please provide a valid Google Sheets URL",
-        );
-      }
-      const split = url.split("/");
-      const id = split[5];
-      if (!id) {
-        throw new ValidationException(
-          "Invalid url",
-          "Please provide a valid Google Sheets URL",
-        );
-      }
-      return id;
-    } catch (ex) {
-      throw this.handleError(ex);
+    if (!url.includes("docs.google.com/spreadsheets")) {
+      throw new ValidationException(
+        "Invalid url",
+        "Please provide a valid Google Sheets URL",
+      );
     }
+    const split = url.split("/");
+    const id = split[5];
+    if (!id) {
+      throw new ValidationException(
+        "Invalid url",
+        "Please provide a valid Google Sheets URL",
+      );
+    }
+    return id;
   }
 
   async getAllTransactions(
     sheetConfig: SheetConfigDTO,
   ): Promise<Transaction[]> {
-    try {
+    return this.withRetry(async () => {
       const sheetsService = this.getSheetsService(
         sheetConfig.sheetId,
         sheetConfig.sheetAccessToken,
@@ -155,9 +147,7 @@ export class GoogleCashFlowSpreadsheetGateway
           description: String(row[4] ?? ""),
           bankAccount: String(row[5] ?? ""),
         }));
-    } catch (ex) {
-      throw this.handleError(ex);
-    }
+    });
   }
 
   async getLastTransaction(
@@ -169,7 +159,7 @@ export class GoogleCashFlowSpreadsheetGateway
   }
 
   async getExpenseCategories(sheetConfig: SheetConfigDTO): Promise<string[]> {
-    try {
+    return this.withRetry(async () => {
       const sheetsService = this.getSheetsService(
         sheetConfig.sheetId,
         sheetConfig.sheetAccessToken,
@@ -192,13 +182,11 @@ export class GoogleCashFlowSpreadsheetGateway
         .flat()
         .map((item) => String(item ?? ""))
         .filter((s) => s.length > 0);
-    } catch (ex) {
-      throw this.handleError(ex);
-    }
+    });
   }
 
   async getEarningCategories(sheetConfig: SheetConfigDTO): Promise<string[]> {
-    try {
+    return this.withRetry(async () => {
       const sheetsService = this.getSheetsService(
         sheetConfig.sheetId,
         sheetConfig.sheetAccessToken,
@@ -217,13 +205,11 @@ export class GoogleCashFlowSpreadsheetGateway
         .flat()
         .map((item) => String(item ?? ""))
         .filter((s) => s.length > 0);
-    } catch (ex) {
-      throw this.handleError(ex);
-    }
+    });
   }
 
   async getBankAccount(sheetConfig: SheetConfigDTO): Promise<string[]> {
-    try {
+    return this.withRetry(async () => {
       const sheetsService = this.getSheetsService(
         sheetConfig.sheetId,
         sheetConfig.sheetAccessToken,
@@ -237,16 +223,14 @@ export class GoogleCashFlowSpreadsheetGateway
         .flat()
         .map((item) => String(item ?? ""))
         .filter((s) => s.length > 0);
-    } catch (ex) {
-      throw this.handleError(ex);
-    }
+    });
   }
 
   async getBankAccountsStatus(
     sheetConfig: SheetConfigDTO,
     date = new Date(),
   ): Promise<BankAccountStatus[]> {
-    try {
+    return this.withRetry(async () => {
       const sheetsService = this.getSheetsService(
         sheetConfig.sheetId,
         sheetConfig.sheetAccessToken,
@@ -333,9 +317,35 @@ export class GoogleCashFlowSpreadsheetGateway
             Number.isFinite(item.balance) &&
             item.balance !== 0,
         );
+    });
+  }
+
+  private async withRetry<T>(operation: () => Promise<T>): Promise<T> {
+    try {
+      return await operation();
     } catch (ex) {
+      if (this.isRateLimitError(ex)) {
+        await new Promise((resolve) => setTimeout(resolve, 60_000));
+        return operation();
+      }
       throw this.handleError(ex);
     }
+  }
+
+  private isRateLimitError(ex: unknown): boolean {
+    const cause =
+      ex instanceof ServiceException
+        ? (ex.cause as Error | undefined)
+        : ex instanceof Error
+          ? ex
+          : null;
+    if (!cause) return false;
+    const message = cause.message ?? "";
+    return (
+      message.includes("Quota exceeded") ||
+      message.includes("rateLimitExceeded") ||
+      message.includes("RESOURCE_EXHAUSTED")
+    );
   }
 
   private getSheetsService(sheetId: string, accessToken: string) {

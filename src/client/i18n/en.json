@@ -75,6 +75,8 @@
     "emptyState": "Send a message to start chatting",
     "you": "you",
     "bot": "bot",
+    "showMoreTranscript": "Show transcription",
+    "showLessTranscript": "Hide transcription",
     "placeholder": "Type a message...",
     "audioInputLabel": "Microphone",
     "audioInputUnavailable": "Default microphone",

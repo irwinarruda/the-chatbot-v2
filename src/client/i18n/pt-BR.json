@@ -75,6 +75,8 @@
     "emptyState": "Envie uma mensagem para começar a conversar",
     "you": "você",
     "bot": "bot",
+    "showMoreTranscript": "Mostrar transcrição",
+    "showLessTranscript": "Ocultar transcrição",
     "placeholder": "Digite uma mensagem...",
     "audioInputLabel": "Microfone",
     "audioInputUnavailable": "Microfone padrão",
