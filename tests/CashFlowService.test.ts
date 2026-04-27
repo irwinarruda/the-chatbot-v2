@@ -4,10 +4,7 @@ import {
   ServiceException,
   ValidationException,
 } from "~/infra/exceptions";
-import type {
-  CashFlowAddExpenseDTO,
-  CashFlowSyncBankAccountBalanceDTO,
-} from "~/server/services/CashFlowService";
+import type { CashFlowAddExpenseDTO } from "~/server/services/CashFlowService";
 import { User } from "~/shared/entities/User";
 import { orquestrator } from "./orquestrator";
 
@@ -547,12 +544,14 @@ describe("CashFlowService", () => {
     service.authService.getUserByPhoneNumber = getUserByPhoneNumber;
   });
 
-  test("syncBankAccountBalance should add earning when real balance is higher", async () => {
+  test("syncBankAccountBalance should handle all sync scenarios", async () => {
     const phoneNumber = "5511924444444";
     await setupUserWithSpreadsheet(phoneNumber);
 
     await withEmptySpreadsheet(phoneNumber, async () => {
       const date = new Date(2025, 10, 15);
+
+      // Setup: add initial earning of 100 to NuConta
       await orquestrator.cashFlowService.addEarning({
         phoneNumber,
         date,
@@ -566,117 +565,70 @@ describe("CashFlowService", () => {
         { bankAccount: "NuConta", balance: 100 },
       ]);
 
-      const syncDto: CashFlowSyncBankAccountBalanceDTO = {
+      // Scenario 1: earning adjustment (real balance higher)
+      await orquestrator.cashFlowService.syncBankAccountBalance({
         phoneNumber,
         bankAccount: "NuConta",
         currentBalance: 150,
         category: "Outras Receitas",
         description: "Rendimento NuConta",
         date,
-      };
-      await orquestrator.cashFlowService.syncBankAccountBalance(syncDto);
+      });
 
-      const status = await getBankAccountsStatusEventually(phoneNumber, date, [
+      let status = await getBankAccountsStatusEventually(phoneNumber, date, [
         { bankAccount: "NuConta", balance: 150 },
       ]);
       expectBankAccountsStatusToEqual(status, [
         { bankAccount: "NuConta", balance: 150 },
       ]);
-    });
-  });
 
-  test("syncBankAccountBalance should add expense when real balance is lower", async () => {
-    const phoneNumber = "5511925555555";
-    await setupUserWithSpreadsheet(phoneNumber);
-
-    await withEmptySpreadsheet(phoneNumber, async () => {
-      const date = new Date(2025, 10, 15);
-      await orquestrator.cashFlowService.addEarning({
-        phoneNumber,
-        date,
-        value: 100,
-        category: "Salário",
-        description: "Initial balance",
-        bankAccount: "NuConta",
-      });
-
-      await getBankAccountsStatusEventually(phoneNumber, date, [
-        { bankAccount: "NuConta", balance: 100 },
-      ]);
-
-      const syncDto: CashFlowSyncBankAccountBalanceDTO = {
+      // Scenario 2: expense adjustment (real balance lower)
+      await orquestrator.cashFlowService.syncBankAccountBalance({
         phoneNumber,
         bankAccount: "NuConta",
-        currentBalance: 80,
+        currentBalance: 120,
         category: "Outros",
         description: "Ajuste de saldo",
         date,
-      };
-      await orquestrator.cashFlowService.syncBankAccountBalance(syncDto);
-
-      const status = await getBankAccountsStatusEventually(phoneNumber, date, [
-        { bankAccount: "NuConta", balance: 80 },
-      ]);
-      expectBankAccountsStatusToEqual(status, [
-        { bankAccount: "NuConta", balance: 80 },
-      ]);
-    });
-  });
-
-  test("syncBankAccountBalance should throw when already in sync", async () => {
-    const phoneNumber = "5511926666666";
-    await setupUserWithSpreadsheet(phoneNumber);
-
-    await withEmptySpreadsheet(phoneNumber, async () => {
-      const date = new Date(2025, 10, 15);
-      await orquestrator.cashFlowService.addEarning({
-        phoneNumber,
-        date,
-        value: 100,
-        category: "Salário",
-        description: "Initial balance",
-        bankAccount: "NuConta",
       });
 
-      await getBankAccountsStatusEventually(phoneNumber, date, [
-        { bankAccount: "NuConta", balance: 100 },
+      status = await getBankAccountsStatusEventually(phoneNumber, date, [
+        { bankAccount: "NuConta", balance: 120 },
+      ]);
+      expectBankAccountsStatusToEqual(status, [
+        { bankAccount: "NuConta", balance: 120 },
       ]);
 
+      // Scenario 3: already in sync → should throw
       const transactionsBefore =
         await orquestrator.cashFlowService.getAllTransactions(phoneNumber);
 
-      const syncDto: CashFlowSyncBankAccountBalanceDTO = {
-        phoneNumber,
-        bankAccount: "NuConta",
-        currentBalance: 100,
-        category: "Outras Receitas",
-        description: "Ajuste",
-        date,
-      };
       await expect(
-        orquestrator.cashFlowService.syncBankAccountBalance(syncDto),
+        orquestrator.cashFlowService.syncBankAccountBalance({
+          phoneNumber,
+          bankAccount: "NuConta",
+          currentBalance: 120,
+          category: "Outras Receitas",
+          description: "Ajuste",
+          date,
+        }),
       ).rejects.toThrow(ValidationException);
 
       const transactionsAfter =
         await orquestrator.cashFlowService.getAllTransactions(phoneNumber);
       expect(transactionsAfter.length).toBe(transactionsBefore.length);
+
+      // Scenario 4: bank account not found → should throw
+      await expect(
+        orquestrator.cashFlowService.syncBankAccountBalance({
+          phoneNumber,
+          bankAccount: "NonExistentAccount",
+          currentBalance: 50,
+          category: "Outros",
+          description: "Ajuste",
+          date,
+        }),
+      ).rejects.toThrow(ValidationException);
     });
-  });
-
-  test("syncBankAccountBalance should throw when bank account not found", async () => {
-    const phoneNumber = "5511927777777";
-    await setupUserWithSpreadsheet(phoneNumber);
-
-    const syncDto: CashFlowSyncBankAccountBalanceDTO = {
-      phoneNumber,
-      bankAccount: "NonExistentAccount",
-      currentBalance: 50,
-      category: "Outros",
-      description: "Ajuste",
-      date: new Date(),
-    };
-    await expect(
-      orquestrator.cashFlowService.syncBankAccountBalance(syncDto),
-    ).rejects.toThrow(ValidationException);
   });
 });
