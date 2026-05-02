@@ -26,6 +26,11 @@ export class AiChatGateway implements IAiChatGateway {
   ) {
     if (config.provider === "openai") {
       this.openai = new OpenAI({ apiKey: config.apiKey });
+    } else if (config.provider === "glm") {
+      this.openai = new OpenAI({
+        apiKey: config.apiKey,
+        baseURL: config.baseUrl,
+      });
     } else {
       this.anthropic = new Anthropic({ apiKey: config.apiKey });
     }
@@ -100,7 +105,6 @@ export class AiChatGateway implements IAiChatGateway {
         allowTools,
       );
     }
-
     return this.parseResponse(raw);
   }
 

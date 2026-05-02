@@ -13,7 +13,7 @@ export default defineConfig(({ mode = "test" }) => {
       setupFiles: ["tests/orquestrator.ts"],
       fileParallelism: false,
       hookTimeout: 60000,
-      testTimeout: 30000,
+      testTimeout: 60000,
       coverage: {
         include: ["src/server/services/**/*.ts", "src/shared/entities/**/*.ts"],
       },

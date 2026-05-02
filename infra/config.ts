@@ -54,9 +54,10 @@ export const r2ConfigSchema = z.object({
 export type R2Config = z.infer<typeof r2ConfigSchema>;
 
 export const aiConfigSchema = z.object({
-  provider: z.enum(["openai", "anthropic"]),
+  provider: z.enum(["openai", "anthropic", "glm"]),
   apiKey: z.string().min(1),
   model: z.string().min(1),
+  baseUrl: z.string().default(""),
 });
 export type AiConfig = z.infer<typeof aiConfigSchema>;
 
@@ -153,6 +154,7 @@ export function loadConfig(): Config {
       provider: process.env.AI_PROVIDER,
       apiKey: process.env.AI_API_KEY,
       model: process.env.AI_MODEL,
+      baseUrl: process.env.AI_BASE_URL,
     },
     openAi: {
       apiKey: process.env.OPENAI_API_KEY,
