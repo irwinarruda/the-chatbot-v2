@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { usePrefs } from "~/client/components/PrefsProvider";
 import { TerminalWindow } from "~/client/components/TerminalWindow";
 import { getDictionary, type Locale } from "~/client/i18n";
+import { useApp } from "~/client/stores";
 import { loadPrivacyContent } from "~/server/tanstack/functions/load-privacy";
 
 export const Route = createFileRoute("/privacy")({
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/privacy")({
 
 function PrivacyRoute() {
   const contentHtml = Route.useLoaderData();
-  const { locale } = usePrefs();
+  const locale = useApp((state) => state.locale);
   const dictionary = getDictionary(locale);
   const t = dictionary.privacyPage;
 

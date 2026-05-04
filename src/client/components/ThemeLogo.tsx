@@ -1,7 +1,7 @@
-import { usePrefs } from "~/client/components/PrefsProvider";
+import { useApp } from "~/client/stores";
 
 export function ThemeLogo() {
-  const { theme } = usePrefs();
+  const theme = useApp((s) => s.theme);
   const src = theme === "dark" ? "/logo.svg" : "/logo-light.svg";
 
   return (

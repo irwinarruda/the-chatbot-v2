@@ -1,4 +1,9 @@
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  redirect,
+  useNavigate,
+  useRouter,
+} from "@tanstack/react-router";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Mic, Send, Trash2 } from "lucide-react";
 import {
@@ -9,7 +14,6 @@ import {
   useState,
 } from "react";
 import { ChatMessage } from "~/client/components/ChatMessage";
-import { usePrefs } from "~/client/components/PrefsProvider";
 import { TerminalChromeButton } from "~/client/components/TerminalChromeButton";
 import { TerminalWindow } from "~/client/components/TerminalWindow";
 import { Alert, AlertDescription } from "~/client/components/ui/alert";
@@ -20,26 +24,16 @@ import {
 } from "~/client/components/ui/native-select";
 import { Textarea } from "~/client/components/ui/textarea";
 import { getDictionary } from "~/client/i18n";
-import {
-  AudioInputDevices,
-  type AudioInputOption,
-} from "~/client/utils/AudioInputDevices";
-import { WebAudioRecording } from "~/client/utils/WebAudioRecording";
-import { WebChatApi } from "~/client/utils/WebChatApi";
+import { audioInputService } from "~/client/services/audioInputService";
+import { useApp } from "~/client/stores";
+import type { ChatErrorCode } from "~/client/stores/slices/chatSlice";
 import { requireChatAccess } from "~/server/tanstack/functions/require-chat-access";
-import type {
-  SharedChatMessage,
-  SharedCurrentUser,
-  WebChatEvent,
-} from "~/shared/types/web-chat";
 
 export const Route = createFileRoute("/chat/")({
   beforeLoad: async () => {
     const authResult = await requireChatAccess();
     if (!authResult.ok) {
-      throw redirect({
-        to: "/chat/login",
-      });
+      throw redirect({ to: "/chat/login" });
     }
   },
   component: ChatRoute,
@@ -49,42 +43,57 @@ export const Route = createFileRoute("/chat/")({
 });
 
 function ChatRoute() {
-  const { locale, theme, toggleTheme, toggleLocale } = usePrefs();
+  const navigate = useNavigate();
+  const router = useRouter();
+
+  const locale = useApp((s) => s.locale);
+  const theme = useApp((s) => s.theme);
+  const toggleTheme = useApp((s) => s.toggleTheme);
+  const toggleLocale = useApp((s) => s.toggleLocale);
+
+  const currentUser = useApp((s) => s.currentUser);
+  const chatMessages = useApp((s) => s.chatMessages);
+  const chatInput = useApp((s) => s.chatInput);
+  const chatError = useApp((s) => s.chatError);
+  const isChatBootstrapping = useApp((s) => s.isChatBootstrapping);
+  const isChatSubmitting = useApp((s) => s.isChatSubmitting);
+  const isChatStreamConnected = useApp((s) => s.isChatStreamConnected);
+  const audioInputOptions = useApp((s) => s.audioInputOptions);
+  const selectedAudioInputId = useApp((s) => s.selectedAudioInputId);
+  const isRecording = useApp((s) => s.isRecording);
+  const recordingDuration = useApp((s) => s.recordingDuration);
+  const hasChatMessages = useApp((s) => s.hasChatMessages);
+  const canSendChatInput = useApp((s) => s.canSendChatInput);
+  const canSelectAudioInput = useApp((s) => s.canSelectAudioInput);
+
+  const setChatInput = useApp((s) => s.setChatInput);
+  const clearChatError = useApp((s) => s.clearChatError);
+  const bootstrapChat = useApp((s) => s.bootstrapChat);
+  const startChatStream = useApp((s) => s.startChatStream);
+  const stopChatStream = useApp((s) => s.stopChatStream);
+  const syncAudioInputs = useApp((s) => s.syncAudioInputs);
+  const selectAudioInput = useApp((s) => s.selectAudioInput);
+  const sendChatInput = useApp((s) => s.sendChatInput);
+  const sendButtonReply = useApp((s) => s.sendButtonReply);
+  const startRecording = useApp((s) => s.startRecording);
+  const stopRecording = useApp((s) => s.stopRecording);
+  const logout = useApp((s) => s.logout);
+
   const dictionary = getDictionary(locale);
   const t = dictionary.chatPage;
-  const navigate = useNavigate();
-  const [user, setUser] = useState<SharedCurrentUser | undefined>(undefined);
-  const [messages, setMessages] = useState<SharedChatMessage[]>([]);
-  const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSending, setIsSending] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingDuration, setRecordingDuration] = useState(0);
-  const [sseConnected, setSseConnected] = useState(false);
-  const [audioInputOptions, setAudioInputOptions] = useState<
-    AudioInputOption[]
-  >([]);
-  const [selectedAudioInputId, setSelectedAudioInputId] = useState("");
-  const [error, setError] = useState<string | undefined>(undefined);
-  const [inputEl, setInputEl] = useState<HTMLTextAreaElement | undefined>(
-    undefined,
-  );
-  const mediaRecorderRef = useRef<MediaRecorder | undefined>(undefined);
-  const audioChunksRef = useRef<Blob[]>([]);
-  const recordingTimerRef = useRef<ReturnType<typeof setInterval>>(undefined);
-  const shouldSendRecordingRef = useRef(true);
-  const composerRef = useRef<HTMLDivElement>(null);
 
+  const inputElRef = useRef<HTMLTextAreaElement | null>(null);
+  const composerRef = useRef<HTMLDivElement>(null);
   const parentRef = useRef<HTMLDivElement>(null);
   const isNearBottomRef = useRef(true);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [composerHeight, setComposerHeight] = useState(0);
 
   const virtualizer = useVirtualizer({
-    count: messages.length,
+    count: chatMessages.length,
     getScrollElement: () => parentRef.current,
     estimateSize: (index) => {
-      const msg = messages[index];
+      const msg = chatMessages[index];
       if (msg.type === "audio" && msg.mediaUrl) return 90;
       if (
         msg.type === "interactive" &&
@@ -107,10 +116,10 @@ function ChatRoute() {
 
   // Auto-scroll to bottom when new messages arrive and user is near the bottom
   useEffect(() => {
-    if (isNearBottomRef.current && messages.length > 0) {
-      virtualizer.scrollToIndex(messages.length - 1, { align: "end" });
+    if (isNearBottomRef.current && chatMessages.length > 0) {
+      virtualizer.scrollToIndex(chatMessages.length - 1, { align: "end" });
     }
-  }, [messages.length, virtualizer]);
+  }, [chatMessages.length, virtualizer]);
 
   useEffect(() => {
     const composer = composerRef.current;
@@ -118,408 +127,62 @@ function ChatRoute() {
 
     const observer = new ResizeObserver(([entry]) => {
       setComposerHeight(entry.contentRect.height);
-
-      if (isNearBottomRef.current && messages.length > 0) {
+      if (isNearBottomRef.current && chatMessages.length > 0) {
         requestAnimationFrame(() => {
-          virtualizer.scrollToIndex(messages.length - 1, { align: "end" });
+          virtualizer.scrollToIndex(chatMessages.length - 1, { align: "end" });
         });
       }
     });
 
     observer.observe(composer);
-
     return () => observer.disconnect();
-  }, [messages.length, virtualizer]);
+  }, [chatMessages.length, virtualizer]);
 
+  // Bootstrap chat: auth check + load messages, then start SSE stream
   useEffect(() => {
     let cancelled = false;
 
-    (async () => {
-      try {
-        const res = await fetch("/api/v1/web/auth/me");
-        if (!res.ok) {
-          if (res.status === 401) {
-            navigate({ to: "/chat/login" });
-            return;
-          }
-          throw new Error("Authentication required");
-        }
-
-        const data = await res.json();
-        if (cancelled) return;
-
-        if (data.error) {
-          navigate({ to: "/chat/not-registered" });
-          return;
-        }
-
-        setUser(WebChatApi.parseCurrentUserResponse(data));
-
-        const msgRes = await fetch("/api/v1/web/messages");
-        if (msgRes.ok) {
-          const msgData = await msgRes.json();
-          if (!cancelled) {
-            setMessages(WebChatApi.parseWebMessagesResponse(msgData));
-          }
-        }
-      } catch {
-        if (!cancelled) {
-          setError(t.errorLoading);
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [navigate, t.errorLoading]);
-
-  useEffect(() => {
-    if (!user) return;
-
-    const abortController = new AbortController();
-    let retryTimeout: ReturnType<typeof setTimeout>;
-
-    function connect() {
-      const eventSource = new EventSource("/api/v1/web/stream");
-
-      eventSource.onopen = () => setSseConnected(true);
-      eventSource.onmessage = (eventMessage) => {
-        try {
-          const event: WebChatEvent = JSON.parse(eventMessage.data);
-          const now = new Date().toISOString();
-
-          if (event.type === "text") {
-            setMessages((prev) => [
-              ...prev,
-              createChatMessage({
-                id: crypto.randomUUID(),
-                type: "text",
-                userType: "bot",
-                text: event.data.text,
-                createdAt: now,
-              }),
-            ]);
-          } else if (event.type === "interactive_button") {
-            setMessages((prev) => [
-              ...prev,
-              createChatMessage({
-                id: crypto.randomUUID(),
-                type: "interactive",
-                userType: "bot",
-                text: event.data.text,
-                buttonReplyOptions: event.data.buttons,
-                createdAt: now,
-              }),
-            ]);
-          } else if (event.type === "audio") {
-            setMessages((prev) => {
-              let pendingAudioIndex = -1;
-
-              for (let i = prev.length - 1; i >= 0; i--) {
-                if (
-                  prev[i].type === "audio" &&
-                  prev[i].userType === "user" &&
-                  !prev[i].transcript
-                ) {
-                  pendingAudioIndex = i;
-                  break;
-                }
-              }
-
-              if (pendingAudioIndex < 0) {
-                return prev;
-              }
-
-              const updated = [...prev];
-              updated[pendingAudioIndex] = {
-                ...updated[pendingAudioIndex],
-                mediaUrl:
-                  updated[pendingAudioIndex].mediaUrl ?? event.data.mediaUrl,
-                mimeType:
-                  updated[pendingAudioIndex].mimeType ?? event.data.mimeType,
-                transcript: event.data.transcript,
-              };
-              return updated;
-            });
-          }
-        } catch {
-          // Ignore malformed event payloads.
-        }
-      };
-      eventSource.onerror = () => {
-        setSseConnected(false);
-        eventSource.close();
-        retryTimeout = setTimeout(connect, 3000);
-      };
-      abortController.signal.addEventListener("abort", () => {
-        eventSource.close();
-      });
-    }
-
-    connect();
-
-    return () => {
-      abortController.abort();
-      clearTimeout(retryTimeout);
-    };
-  }, [user]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    let cancelled = false;
-
-    const syncAudioInputs = async () => {
-      if (typeof navigator === "undefined" || !navigator.mediaDevices) return;
-
-      const devices = await navigator.mediaDevices.enumerateDevices();
+    bootstrapChat().then((result) => {
       if (cancelled) return;
-
-      const audioInputs = AudioInputDevices.listOptions(devices);
-      setAudioInputOptions(audioInputs);
-      setSelectedAudioInputId((current) => {
-        const storedDeviceId = AudioInputDevices.getStoredDeviceId({
-          getItem: (key) => window.localStorage.getItem(key) ?? undefined,
-        });
-
-        return AudioInputDevices.resolveSelected(
-          audioInputs,
-          current || storedDeviceId || undefined,
-        );
-      });
-    };
-
-    void syncAudioInputs();
-
-    const handleDeviceChange = () => {
-      void syncAudioInputs();
-    };
-
-    navigator.mediaDevices.addEventListener("devicechange", handleDeviceChange);
+      if (result === "unauthorized") {
+        navigate({ to: "/chat/login" });
+      } else if (result === "not_registered") {
+        navigate({ to: "/chat/not-registered" });
+      } else if (result === "ok") {
+        startChatStream();
+      }
+    });
 
     return () => {
       cancelled = true;
-      navigator.mediaDevices.removeEventListener(
-        "devicechange",
-        handleDeviceChange,
-      );
+      stopChatStream();
     };
-  }, []);
+  }, [bootstrapChat, startChatStream, stopChatStream, navigate]);
 
+  // Sync audio inputs on mount and whenever devices change
   useEffect(() => {
-    if (typeof window === "undefined" || !selectedAudioInputId) return;
-    AudioInputDevices.storeDeviceId(window.localStorage, selectedAudioInputId);
-  }, [selectedAudioInputId]);
-
-  const sendMessage = useCallback(
-    async (text: string) => {
-      if (!text.trim() || isSending) return;
-
-      setIsSending(true);
-      setInput("");
-      if (inputEl) {
-        inputEl.style.height = "auto";
-      }
-
-      const optimistic: SharedChatMessage = {
-        ...createChatMessage({
-          id: crypto.randomUUID(),
-          type: "text",
-          userType: "user",
-          text: text.trim(),
-          createdAt: new Date().toISOString(),
-        }),
-      };
-
-      setMessages((prev) => [...prev, optimistic]);
-
-      try {
-        await fetch("/api/v1/web/messages", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: text.trim() }),
-        });
-      } catch {
-        setError(t.errorSending);
-      } finally {
-        setIsSending(false);
-        inputEl?.focus();
-      }
-    },
-    [inputEl, isSending, t.errorSending],
-  );
+    void syncAudioInputs();
+    return audioInputService.subscribeToDeviceChanges(() => {
+      void syncAudioInputs();
+    });
+  }, [syncAudioInputs]);
 
   const resizeInput = useCallback((element: HTMLTextAreaElement) => {
     element.style.height = "auto";
     element.style.height = `${Math.min(element.scrollHeight, 160)}px`;
   }, []);
 
-  const sendButtonReply = useCallback(
-    async (buttonText: string) => {
-      if (isSending) return;
-
-      setIsSending(true);
-
-      const optimistic: SharedChatMessage = {
-        ...createChatMessage({
-          id: crypto.randomUUID(),
-          type: "interactive",
-          userType: "user",
-          buttonReply: buttonText,
-          createdAt: new Date().toISOString(),
-        }),
-      };
-
-      setMessages((prev) => [...prev, optimistic]);
-
-      try {
-        await fetch("/api/v1/web/messages", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ buttonReply: buttonText }),
-        });
-      } catch {
-        setError(t.errorSending);
-      } finally {
-        setIsSending(false);
-      }
-    },
-    [isSending, t.errorSending],
-  );
-
-  const startRecording = useCallback(async () => {
-    try {
-      const audioConstraint = selectedAudioInputId
-        ? {
-            deviceId: { exact: selectedAudioInputId },
-          }
-        : true;
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: audioConstraint,
-      });
-
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const audioInputs = AudioInputDevices.listOptions(devices);
-      setAudioInputOptions(audioInputs);
-      setSelectedAudioInputId((current) =>
-        AudioInputDevices.resolveSelected(
-          audioInputs,
-          current || selectedAudioInputId,
-        ),
-      );
-
-      const recordingMimeType = WebAudioRecording.pickSupportedMimeType(
-        MediaRecorder.isTypeSupported.bind(MediaRecorder),
-      );
-      const mediaRecorder =
-        recordingMimeType !== undefined
-          ? new MediaRecorder(stream, { mimeType: recordingMimeType })
-          : new MediaRecorder(stream);
-
-      audioChunksRef.current = [];
-      shouldSendRecordingRef.current = true;
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-      mediaRecorder.onstop = async () => {
-        for (const track of stream.getTracks()) {
-          track.stop();
-        }
-
-        const shouldSendRecording = shouldSendRecordingRef.current;
-        shouldSendRecordingRef.current = true;
-        mediaRecorderRef.current = undefined;
-
-        if (!shouldSendRecording) {
-          audioChunksRef.current = [];
-          return;
-        }
-
-        const recordedBlob = WebAudioRecording.createRecordedBlob(
-          audioChunksRef.current,
-          mediaRecorder.mimeType,
-        );
-
-        if (recordedBlob.size === 0) {
-          audioChunksRef.current = [];
-          setError(t.errorSending);
-          return;
-        }
-
-        setIsSending(true);
-
-        const localAudioUrl = URL.createObjectURL(recordedBlob);
-        const optimistic: SharedChatMessage = {
-          ...createChatMessage({
-            id: crypto.randomUUID(),
-            type: "audio",
-            userType: "user",
-            mediaUrl: localAudioUrl,
-            mimeType: recordedBlob.type,
-            createdAt: new Date().toISOString(),
-          }),
-        };
-
-        setMessages((prev) => [...prev, optimistic]);
-
-        try {
-          await fetch("/api/v1/web/audio", {
-            method: "POST",
-            headers: {
-              "Content-Type": recordedBlob.type,
-            },
-            body: recordedBlob,
-          });
-        } catch {
-          setError(t.errorSending);
-        } finally {
-          audioChunksRef.current = [];
-          setIsSending(false);
-        }
-      };
-
-      mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start();
-      setIsRecording(true);
-      setRecordingDuration(0);
-      recordingTimerRef.current = setInterval(() => {
-        setRecordingDuration((duration) => duration + 1);
-      }, 1000);
-    } catch {
-      setError(t.errorMicrophone);
-    }
-  }, [selectedAudioInputId, t.errorSending, t.errorMicrophone]);
-
-  const handleAudioInputChange = useCallback<
-    NonNullable<ComponentProps<"select">["onChange"]>
-  >((event) => {
-    setSelectedAudioInputId(event.target.value);
-  }, []);
-
-  const stopRecording = useCallback((shouldSend: boolean) => {
-    shouldSendRecordingRef.current = shouldSend;
-
-    if (mediaRecorderRef.current?.state === "recording") {
-      mediaRecorderRef.current.stop();
-    }
-
-    setIsRecording(false);
-    clearInterval(recordingTimerRef.current);
-    setRecordingDuration(0);
-  }, []);
+  const handleSend = useCallback(async () => {
+    if (inputElRef.current) inputElRef.current.style.height = "auto";
+    await sendChatInput();
+    inputElRef.current?.focus();
+  }, [sendChatInput]);
 
   const handleSubmit: NonNullable<ComponentProps<"form">["onSubmit"]> = (
     event,
   ) => {
     event.preventDefault();
-    void sendMessage(input);
+    void handleSend();
   };
 
   const handleInputKeyDown: NonNullable<
@@ -532,15 +195,35 @@ function ChatRoute() {
     ) {
       return;
     }
-
     event.preventDefault();
-    void sendMessage(input);
+    void handleSend();
   };
+
+  const handleAudioInputChange = useCallback<
+    NonNullable<ComponentProps<"select">["onChange"]>
+  >(
+    (event) => {
+      void selectAudioInput(event.target.value);
+    },
+    [selectAudioInput],
+  );
 
   const handleLogout = async () => {
-    await fetch("/api/v1/web/auth/logout", { method: "POST" });
+    await logout();
     navigate({ to: "/chat/login" });
   };
+
+  const handleToggleLocale = async () => {
+    await toggleLocale();
+    router.invalidate();
+  };
+
+  const chatErrorMessages: Record<ChatErrorCode, string> = {
+    microphone: t.errorMicrophone,
+    sending: t.errorSending,
+    loading: t.errorLoading,
+  };
+  const chatErrorMessage = chatError ? chatErrorMessages[chatError] : undefined;
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -548,20 +231,21 @@ function ChatRoute() {
     return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   };
 
-  const hasMessages = messages.length > 0;
-  const mainClassName = hasMessages
+  const mainClassName = hasChatMessages
     ? "items-stretch sm:items-center"
     : undefined;
-  const frameClassName = hasMessages
+  const frameClassName = hasChatMessages
     ? "h-dvh sm:h-[calc(100dvh-3rem)] md:h-[calc(100dvh-5rem)]"
     : undefined;
   const windowClassName = [
     "relative flex min-h-0 flex-1 flex-col overflow-hidden",
     "p-0 sm:p-0 md:p-0",
   ].join(" ");
-  const windowTitle = user ? `${t.windowTitle} - ${user.name}` : t.windowTitle;
+  const windowTitle = currentUser
+    ? `${t.windowTitle} - ${currentUser.name}`
+    : t.windowTitle;
 
-  if (isLoading) {
+  if (isChatBootstrapping) {
     return (
       <main className="flex min-h-dvh w-full items-stretch bg-term-bg">
         <div className="flex h-dvh w-full flex-col">
@@ -582,14 +266,14 @@ function ChatRoute() {
       chromeControls={
         <>
           <span
-            title={sseConnected ? t.connected : t.disconnected}
+            title={isChatStreamConnected ? t.connected : t.disconnected}
             className={`h-1.5 w-1.5 rounded-full transition-colors duration-300 ${
-              sseConnected
+              isChatStreamConnected
                 ? "bg-term-green-dot motion-safe:animate-glow-pulse"
                 : "bg-term-muted"
             }`}
           />
-          <TerminalChromeButton onClick={toggleLocale} title={locale}>
+          <TerminalChromeButton onClick={handleToggleLocale} title={locale}>
             {locale === "pt-BR" ? "PT" : "EN"}
           </TerminalChromeButton>
           <TerminalChromeButton
@@ -614,18 +298,18 @@ function ChatRoute() {
       frameClassName={frameClassName}
       windowClassName={windowClassName}
     >
-      {error ? (
+      {chatErrorMessage ? (
         <Alert
           variant="destructive"
           className="shrink-0 rounded-none border-term-red/25 border-x-0 border-t-0 border-b bg-term-red/12 px-4 py-2"
         >
           <AlertDescription className="flex items-center justify-between gap-3 text-[0.8125rem] text-term-red [&_p:not(:last-child)]:mb-0">
-            <span>{error}</span>
+            <span>{chatErrorMessage}</span>
             <Button
               type="button"
               variant="ghost"
               size="icon-xs"
-              onClick={() => setError(undefined)}
+              onClick={clearChatError}
               className="size-6 rounded border-0 p-0 text-term-red hover:bg-term-red/10 hover:text-term-red"
             >
               ×
@@ -638,12 +322,12 @@ function ChatRoute() {
         ref={parentRef}
         onScroll={handleScroll}
         className={
-          hasMessages
+          hasChatMessages
             ? "relative flex-1 overflow-y-auto p-4 sm:p-5"
             : "flex min-h-48 flex-col gap-2 p-4 sm:p-5"
         }
       >
-        {messages.length === 0 ? (
+        {chatMessages.length === 0 ? (
           <div className="flex flex-1 items-center justify-center text-sm text-term-muted">
             <span className="mr-1 font-semibold text-term-green">$</span>
             {t.emptyState}
@@ -658,7 +342,7 @@ function ChatRoute() {
             }}
           >
             {virtualizer.getVirtualItems().map((virtualItem) => {
-              const message = messages[virtualItem.index];
+              const message = chatMessages[virtualItem.index];
               return (
                 <div
                   key={message.id}
@@ -677,7 +361,7 @@ function ChatRoute() {
                       message={message}
                       theme={theme}
                       locale={locale}
-                      isSending={isSending}
+                      isSending={isChatSubmitting}
                       youLabel={t.you}
                       botLabel={t.bot}
                       showMoreLabel={t.showMoreTranscript}
@@ -692,7 +376,7 @@ function ChatRoute() {
         )}
       </div>
 
-      {showScrollBtn && hasMessages ? (
+      {showScrollBtn && hasChatMessages ? (
         <div
           className="pointer-events-none absolute right-6"
           style={{ bottom: `${Math.max(composerHeight, 96) + 16}px` }}
@@ -702,7 +386,7 @@ function ChatRoute() {
             onClick={() => {
               isNearBottomRef.current = true;
               setShowScrollBtn(false);
-              virtualizer.scrollToIndex(messages.length - 1, {
+              virtualizer.scrollToIndex(chatMessages.length - 1, {
                 align: "end",
               });
             }}
@@ -773,9 +457,7 @@ function ChatRoute() {
                 <span>{t.send}</span>
               </span>
               <div
-                data-disabled={
-                  audioInputOptions.length < 2 || isSending || isRecording
-                }
+                data-disabled={!canSelectAudioInput}
                 title={t.audioInputLabel}
                 className="relative w-full max-w-55 data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50"
               >
@@ -790,9 +472,7 @@ function ChatRoute() {
                   className="w-full **:data-[slot=native-select-icon]:right-2 **:data-[slot=native-select-icon]:size-3 **:data-[slot=native-select]:h-6 **:data-[slot=native-select-icon]:text-term-muted [&_[data-slot=native-select]]:rounded [&_[data-slot=native-select]]:border-transparent [&_[data-slot=native-select]]:bg-transparent [&_[data-slot=native-select]]:py-0.5 [&_[data-slot=native-select]]:pr-7 [&_[data-slot=native-select]]:pl-7 [&_[data-slot=native-select]]:text-2xs [&_[data-slot=native-select]]:text-term-muted [&_[data-slot=native-select]]:transition-colors [&_[data-slot=native-select]]:hover:border-term-amber/25 [&_[data-slot=native-select]]:hover:bg-term-amber/8 [&_[data-slot=native-select]]:hover:text-term-amber [&_[data-slot=native-select]]:focus-visible:border-term-amber/40 [&_[data-slot=native-select]]:focus-visible:ring-0"
                   value={selectedAudioInputId}
                   onChange={handleAudioInputChange}
-                  disabled={
-                    isSending || isRecording || audioInputOptions.length < 2
-                  }
+                  disabled={!canSelectAudioInput}
                   aria-label={t.audioInputLabel}
                 >
                   {audioInputOptions.length === 0 ? (
@@ -814,7 +494,7 @@ function ChatRoute() {
             </div>
 
             <div
-              data-disabled={isSending || undefined}
+              data-disabled={isChatSubmitting || undefined}
               className="flex items-start gap-0 rounded-lg border border-term-border bg-term-bg pr-1.5 pl-3.5 transition-all duration-200 focus-within:border-term-green focus-within:shadow-[0_0_0_3px_rgba(80,223,170,0.12)] data-disabled:opacity-70"
             >
               <span
@@ -825,20 +505,18 @@ function ChatRoute() {
               </span>
               <Textarea
                 ref={(node) => {
-                  setInputEl(node ?? undefined);
-                  if (node) {
-                    resizeInput(node);
-                  }
+                  inputElRef.current = node;
+                  if (node) resizeInput(node);
                 }}
                 rows={1}
-                value={input}
+                value={chatInput}
                 onChange={(event) => {
-                  setInput(event.target.value);
+                  setChatInput(event.target.value);
                   resizeInput(event.target);
                 }}
                 onKeyDown={handleInputKeyDown}
                 placeholder={t.placeholder}
-                disabled={isSending}
+                disabled={isChatSubmitting}
                 autoComplete="off"
                 className="max-h-40 min-h-10 min-w-0 flex-1 resize-none overflow-y-auto rounded-none border-0 bg-transparent px-1.5 py-2.5 font-mono text-sm text-term-text caret-term-green shadow-none ring-0 placeholder:text-term-muted/70 focus-visible:border-0 focus-visible:shadow-none focus-visible:outline-none focus-visible:ring-0 disabled:cursor-not-allowed disabled:bg-transparent"
               />
@@ -848,7 +526,7 @@ function ChatRoute() {
                   onClick={() => {
                     void startRecording();
                   }}
-                  disabled={isSending}
+                  disabled={isChatSubmitting}
                   title={t.startRecording}
                   aria-label={t.startRecording}
                   variant="ghost"
@@ -859,7 +537,7 @@ function ChatRoute() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={!input.trim() || isSending}
+                  disabled={!canSendChatInput}
                   title={t.send}
                   aria-label={t.send}
                   variant="ghost"
@@ -875,22 +553,4 @@ function ChatRoute() {
       </div>
     </TerminalWindow>
   );
-}
-
-function createChatMessage(
-  message: Pick<SharedChatMessage, "id" | "type" | "userType" | "createdAt"> &
-    Partial<SharedChatMessage>,
-): SharedChatMessage {
-  return {
-    id: message.id,
-    type: message.type,
-    userType: message.userType,
-    text: message.text,
-    buttonReply: message.buttonReply,
-    buttonReplyOptions: message.buttonReplyOptions,
-    mediaUrl: message.mediaUrl,
-    mimeType: message.mimeType,
-    transcript: message.transcript,
-    createdAt: message.createdAt,
-  };
 }

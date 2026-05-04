@@ -1,11 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { usePrefs } from "~/client/components/PrefsProvider";
 import { TerminalFooter } from "~/client/components/TerminalFooter";
 import { TerminalPageHeader } from "~/client/components/TerminalPageHeader";
 import { TerminalPanel } from "~/client/components/TerminalPanel";
 import { TerminalPanelText } from "~/client/components/TerminalPanelText";
 import { TerminalWindow } from "~/client/components/TerminalWindow";
 import { getDictionary } from "~/client/i18n";
+import { useApp } from "~/client/stores";
 
 export const Route = createFileRoute("/chat/not-registered")({
   component: NotRegisteredRoute,
@@ -15,7 +15,7 @@ export const Route = createFileRoute("/chat/not-registered")({
 });
 
 function NotRegisteredRoute() {
-  const { locale } = usePrefs();
+  const locale = useApp((state) => state.locale);
   const dictionary = getDictionary(locale);
   const t = dictionary.chatNotRegisteredPage;
   return (

@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { usePrefs } from "~/client/components/PrefsProvider";
 import { TerminalFooter } from "~/client/components/TerminalFooter";
 import { TerminalPageHeader } from "~/client/components/TerminalPageHeader";
 import { TerminalPrompt } from "~/client/components/TerminalPrompt";
 import { TerminalWindow } from "~/client/components/TerminalWindow";
 import { getDictionary, type Locale } from "~/client/i18n";
+import { useApp } from "~/client/stores";
 
 export const Route = createFileRoute("/")({
   component: IndexRoute,
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/")({
 });
 
 function IndexRoute() {
-  const { locale } = usePrefs();
+  const locale = useApp((state) => state.locale);
   const dictionary = getDictionary(locale);
   const t = dictionary.welcomePage;
 
