@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { usePrefs } from "~/client/components/PrefsProvider";
 import { TerminalFooter } from "~/client/components/TerminalFooter";
 import { TerminalPageHeader } from "~/client/components/TerminalPageHeader";
 import { TerminalPanel } from "~/client/components/TerminalPanel";
@@ -8,6 +7,7 @@ import { TerminalPrompt } from "~/client/components/TerminalPrompt";
 import { TerminalStatusBadge } from "~/client/components/TerminalStatusBadge";
 import { TerminalWindow } from "~/client/components/TerminalWindow";
 import { getDictionary, type Locale } from "~/client/i18n";
+import { useApp } from "~/client/stores";
 
 export const Route = createFileRoute("/google/already-signed-in")({
   component: AlreadySignedInRoute,
@@ -22,7 +22,7 @@ export const Route = createFileRoute("/google/already-signed-in")({
 });
 
 function AlreadySignedInRoute() {
-  const { locale } = usePrefs();
+  const locale = useApp((state) => state.locale);
   const dictionary = getDictionary(locale);
   const t = dictionary.alreadySignedInPage;
 

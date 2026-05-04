@@ -1,15 +1,15 @@
 import { memo, useMemo, useState } from "react";
+import type { ChatMessage as ChatMessageEntity } from "~/client/entities/ChatMessage";
 import {
   type WhatsAppBlockNode,
   type WhatsAppInlineNode,
   WhatsAppMessageParser,
 } from "~/client/utils/WhatsAppMessageParser";
-import type { SharedChatMessage } from "~/shared/types/web-chat";
 import { AudioWaveform } from "./AudioWaveform";
 import { Button } from "./ui/button";
 
 interface ChatMessageProps {
-  message: SharedChatMessage;
+  message: ChatMessageEntity;
   theme: "dark" | "light";
   locale: string;
   isSending: boolean;

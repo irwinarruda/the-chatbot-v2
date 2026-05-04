@@ -1,8 +1,8 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { usePrefs } from "~/client/components/PrefsProvider";
 import { cn } from "~/client/components/ui/lib";
 import type { Dictionary } from "~/client/i18n";
+import { useApp } from "~/client/stores";
 import { TerminalChromeButton } from "./TerminalChromeButton";
 
 type TerminalPath = "/" | "/privacy" | "/chat";
@@ -32,7 +32,16 @@ export function TerminalWindow({
   wide?: boolean;
   windowClassName?: string;
 }) {
-  const { locale, theme, toggleLocale, toggleTheme } = usePrefs();
+  const router = useRouter();
+  const locale = useApp((s) => s.locale);
+  const theme = useApp((s) => s.theme);
+  const toggleTheme = useApp((s) => s.toggleTheme);
+  const toggleLocale = useApp((s) => s.toggleLocale);
+
+  const handleToggleLocale = async () => {
+    await toggleLocale();
+    router.invalidate();
+  };
 
   const navLinks = dictionary
     ? [
@@ -65,7 +74,10 @@ export function TerminalWindow({
           <div className="flex shrink-0 items-center gap-1.5">
             {chromeControls ?? (
               <>
-                <TerminalChromeButton onClick={toggleLocale} title={locale}>
+                <TerminalChromeButton
+                  onClick={handleToggleLocale}
+                  title={locale}
+                >
                   {locale === "pt-BR" ? "PT" : "EN"}
                 </TerminalChromeButton>
                 <TerminalChromeButton

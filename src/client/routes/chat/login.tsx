@@ -1,6 +1,5 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { GoogleIcon } from "~/client/components/GoogleIcon";
-import { usePrefs } from "~/client/components/PrefsProvider";
 import { TerminalFooter } from "~/client/components/TerminalFooter";
 import { TerminalPageHeader } from "~/client/components/TerminalPageHeader";
 import { TerminalPanel } from "~/client/components/TerminalPanel";
@@ -9,6 +8,7 @@ import { TerminalPrompt } from "~/client/components/TerminalPrompt";
 import { TerminalWindow } from "~/client/components/TerminalWindow";
 import { Button } from "~/client/components/ui/button";
 import { getDictionary } from "~/client/i18n";
+import { useApp } from "~/client/stores";
 import { requireChatAccess } from "~/server/tanstack/functions/require-chat-access";
 
 export const Route = createFileRoute("/chat/login")({
@@ -25,7 +25,7 @@ export const Route = createFileRoute("/chat/login")({
 });
 
 function ChatLoginRoute() {
-  const { locale } = usePrefs();
+  const locale = useApp((state) => state.locale);
   const dictionary = getDictionary(locale);
   const t = dictionary.chatLoginPage;
 

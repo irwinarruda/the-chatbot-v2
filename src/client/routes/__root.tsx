@@ -6,7 +6,6 @@ import {
 } from "@tanstack/react-router";
 import { createIsomorphicFn } from "@tanstack/react-start";
 import type { ReactNode } from "react";
-import { PrefsProvider, type Theme } from "~/client/components/PrefsProvider";
 import { TerminalFooter } from "~/client/components/TerminalFooter";
 import { TerminalPageHeader } from "~/client/components/TerminalPageHeader";
 import { TerminalPanel } from "~/client/components/TerminalPanel";
@@ -19,6 +18,8 @@ import {
   isLocale,
   type Locale,
 } from "~/client/i18n";
+import type { Theme } from "~/client/services/prefsService";
+import { useApp } from "~/client/stores";
 import tailwindHref from "~/client/styles/tailwind.css?url";
 
 function parseCookies(header: string): Record<string, string> {
@@ -76,11 +77,11 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   const { locale, theme } = Route.useRouteContext();
-  return (
-    <PrefsProvider initialLocale={locale} initialTheme={theme}>
-      <Outlet />
-    </PrefsProvider>
-  );
+  const hydratePrefs = useApp((state) => state.hydratePrefs);
+
+  hydratePrefs({ locale, theme });
+
+  return <Outlet />;
 }
 
 function RootDocument({ children }: { children: ReactNode }) {
