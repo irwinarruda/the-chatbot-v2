@@ -1,5 +1,4 @@
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
-import { createIsomorphicFn } from "@tanstack/react-start";
 import type { ReactNode } from "react";
 import { TerminalFooter } from "~/client/components/TerminalFooter";
 import { TerminalPageHeader } from "~/client/components/TerminalPageHeader";
@@ -7,20 +6,28 @@ import { TerminalPanel } from "~/client/components/TerminalPanel";
 import { TerminalPanelText } from "~/client/components/TerminalPanelText";
 import { TerminalPrompt } from "~/client/components/TerminalPrompt";
 import { TerminalWindow } from "~/client/components/TerminalWindow";
+import type { Prefs } from "~/client/entities/Prefs";
 import { getDictionary } from "~/client/i18n";
-import { prefsService } from "~/client/services/prefsService";
+import { DEFAULT_PREFS, prefsService } from "~/client/services/prefsService";
 import { useApp } from "~/client/stores";
 import tailwindHref from "~/client/styles/tailwind.css?url";
 
-const getPrefs = createIsomorphicFn()
-  .server(async () => {
-    const { getRequestHeader } = await import("@tanstack/react-start/server");
-    return prefsService.resolvePrefs(getRequestHeader("cookie") ?? "");
-  })
-  .client(() => prefsService.resolvePrefs(document.cookie));
+type PrefsRouteContext = {
+  serverContext?: {
+    prefs?: Prefs;
+  };
+};
+
+function resolveRoutePrefs({ serverContext }: PrefsRouteContext): Prefs {
+  if (serverContext?.prefs) return serverContext.prefs;
+  if (typeof document !== "undefined") {
+    return prefsService.resolvePrefs(document.cookie);
+  }
+  return DEFAULT_PREFS;
+}
 
 export const Route = createRootRoute({
-  beforeLoad: getPrefs,
+  beforeLoad: resolveRoutePrefs,
   shellComponent: RootDocument,
   notFoundComponent: NotFoundRoute,
   head: () => ({
@@ -41,6 +48,7 @@ function RootDocument({ children }: { children: ReactNode }) {
   const suppressHydrationWarning = import.meta.env.DEV;
   const hydratePrefs = useApp((state) => state.hydratePrefs);
   hydratePrefs(prefs);
+
   return (
     <html lang={prefs.locale} data-theme={prefs.theme}>
       <head>

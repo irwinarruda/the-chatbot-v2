@@ -39,12 +39,10 @@ export const prefsService = {
     }
   },
 
-  applyTheme(theme: Theme): void {
-    if (typeof document === "undefined") return;
-    document.documentElement.dataset.theme = theme;
-  },
-
   persistPrefs(prefs: Prefs): void {
+    if (typeof document === "undefined") return;
+    document.documentElement.lang = prefs.locale;
+    document.documentElement.dataset.theme = prefs.theme;
     CookieParser.set(PREFS_COOKIE_NAME, JSON.stringify(prefs), {
       maxAge: PREFS_COOKIE_MAX_AGE_SECONDS,
     });

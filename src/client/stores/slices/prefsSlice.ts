@@ -28,7 +28,6 @@ export const prefsSlice: AppState<PrefsSlice> = (set, get) => ({
       ...prefs,
       theme: prefs.theme === "light" ? "dark" : "light",
     };
-    prefsService.applyTheme(next.theme);
     prefsService.persistPrefs(next);
     set({ prefs: next });
   },

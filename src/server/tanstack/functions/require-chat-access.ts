@@ -5,10 +5,9 @@ import { ServerBootstrap } from "~/infra/server-bootstrap";
 import type { AuthService } from "~/server/services/AuthService";
 
 export const requireChatAccess = createServerFn({ method: "GET" }).handler(
-  async () => {
-    const { getRequestHeader } = await import("@tanstack/react-start/server");
+  async ({ request }: any) => {
     const authService = ServerBootstrap.getService<AuthService>("AuthService");
-    const cookieHeader = getRequestHeader("cookie") ?? "";
+    const cookieHeader = request.headers.get("cookie") ?? "";
     const token = Cookie.get(cookieHeader, "web_auth_token") ?? "";
     try {
       await authService.authenticateWebUser(token);

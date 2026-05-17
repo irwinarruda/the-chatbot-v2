@@ -48,8 +48,6 @@ function ChatRoute() {
   const navigate = useNavigate();
   const router = useRouter();
   const prefs = usePrefs();
-  const toggleTheme = useApp((s) => s.toggleTheme);
-  const toggleLocale = useApp((s) => s.toggleLocale);
   const currentUser = useApp((s) => s.currentUser);
   const chatMessages = useApp((s) => s.chatMessages);
   const chatInput = useApp((s) => s.chatInput);
@@ -64,6 +62,8 @@ function ChatRoute() {
   const hasChatMessages = useApp((s) => s.hasChatMessages);
   const canSendChatInput = useApp((s) => s.canSendChatInput);
   const canSelectAudioInput = useApp((s) => s.canSelectAudioInput);
+  const toggleTheme = useApp((s) => s.toggleTheme);
+  const toggleLocale = useApp((s) => s.toggleLocale);
   const setChatInput = useApp((s) => s.setChatInput);
   const clearChatError = useApp((s) => s.clearChatError);
   const bootstrapChat = useApp((s) => s.bootstrapChat);
@@ -376,8 +376,7 @@ function ChatRoute() {
           </div>
         )}
       </div>
-
-      {showScrollBtn && hasChatMessages ? (
+      {showScrollBtn && hasChatMessages && (
         <div
           className="pointer-events-none absolute right-6"
           style={{ bottom: `${Math.max(composerHeight, 96) + 16}px` }}
@@ -392,8 +391,7 @@ function ChatRoute() {
             <ArrowDown className="size-4" />
           </Button>
         </div>
-      ) : null}
-
+      )}
       <div
         ref={composerRef}
         className="shrink-0 border-term-border border-t bg-linear-to-b from-term-chrome to-term-chrome/80 px-4 py-3"
