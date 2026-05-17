@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { TerminalWindow } from "~/client/components/TerminalWindow";
-import { getDictionary, type Locale } from "~/client/i18n";
-import { useApp } from "~/client/stores";
+import type { Prefs } from "~/client/entities/Prefs";
+import { getDictionary } from "~/client/i18n";
+import { useDictionary } from "~/client/providers/useDictionary";
 import { loadPrivacyContent } from "~/server/tanstack/functions/load-privacy";
 
 export const Route = createFileRoute("/privacy")({
@@ -9,7 +10,7 @@ export const Route = createFileRoute("/privacy")({
   head: ({ match }) => ({
     meta: [
       {
-        title: getDictionary((match.context as { locale?: Locale }).locale).meta
+        title: getDictionary((match.context as Partial<Prefs>).locale).meta
           .privacyTitle,
       },
     ],
@@ -19,10 +20,8 @@ export const Route = createFileRoute("/privacy")({
 
 function PrivacyRoute() {
   const contentHtml = Route.useLoaderData();
-  const locale = useApp((state) => state.locale);
-  const dictionary = getDictionary(locale);
+  const dictionary = useDictionary();
   const t = dictionary.privacyPage;
-
   return (
     <TerminalWindow
       title={t.windowTitle}

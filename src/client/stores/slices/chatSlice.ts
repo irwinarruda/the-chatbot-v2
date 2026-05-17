@@ -1,3 +1,4 @@
+import { compute } from "zustand-computed-state";
 import type { AudioInputOption } from "~/client/entities/AudioInputOption";
 import type { ChatMessage } from "~/client/entities/ChatMessage";
 import type { CurrentUser } from "~/client/entities/CurrentUser";
@@ -8,7 +9,7 @@ import {
   webChatService,
 } from "~/client/services/webChatService";
 import { webChatStreamService } from "~/client/services/webChatStreamService";
-import type { AppState } from "~/client/stores/types";
+import type { AppState } from "~/client/stores";
 
 export type ChatErrorCode = "loading" | "sending" | "microphone";
 
@@ -26,6 +27,10 @@ export type ChatSlice = {
   selectedAudioInputId: string;
   isRecording: boolean;
   recordingDuration: number;
+
+  hasChatMessages: boolean;
+  canSendChatInput: boolean;
+  canSelectAudioInput: boolean;
 
   setChatInput: (input: string) => void;
   clearChatError: () => void;
@@ -50,24 +55,28 @@ export const chatSlice: AppState<ChatSlice> = (set, get) => {
     chatMessages: [],
     chatInput: "",
     chatError: undefined,
-
     isChatBootstrapping: true,
     isChatSubmitting: false,
     isChatStreamConnected: false,
-
     audioInputOptions: [],
     selectedAudioInputId: "",
     isRecording: false,
     recordingDuration: 0,
-
+    ...compute(get, (state) => ({
+      hasChatMessages: state.chatMessages.length > 0,
+      canSendChatInput:
+        state.chatInput.trim().length > 0 && !state.isChatSubmitting,
+      canSelectAudioInput:
+        state.audioInputOptions.length >= 2 &&
+        !state.isChatSubmitting &&
+        !state.isRecording,
+    })),
     setChatInput(input) {
       set({ chatInput: input });
     },
-
     clearChatError() {
       set({ chatError: undefined });
     },
-
     async bootstrapChat() {
       set({ isChatBootstrapping: true, chatError: undefined });
       try {
@@ -88,13 +97,17 @@ export const chatSlice: AppState<ChatSlice> = (set, get) => {
         set({ isChatBootstrapping: false });
       }
     },
-
     startChatStream() {
-      if (!get().currentUser || stopStream) return;
-
+      const { currentUser } = get();
+      if (!currentUser || stopStream) return;
       stopStream = webChatStreamService.subscribe({
         onOpen: () => set({ isChatStreamConnected: true }),
-        onClose: () => set({ isChatStreamConnected: false }),
+        onClose: () => {
+          const stopCurrentStream = stopStream;
+          stopStream = undefined;
+          stopCurrentStream?.();
+          set({ isChatStreamConnected: false });
+        },
         onEvent: (event) => {
           const now = new Date().toISOString();
           switch (event.type) {
@@ -162,7 +175,6 @@ export const chatSlice: AppState<ChatSlice> = (set, get) => {
         },
       });
     },
-
     stopChatStream() {
       if (stopStream) {
         stopStream();
@@ -170,7 +182,6 @@ export const chatSlice: AppState<ChatSlice> = (set, get) => {
       }
       set({ isChatStreamConnected: false });
     },
-
     async syncAudioInputs() {
       const devices = await audioInputService.listAudioInputs();
       const storedDeviceId = audioInputService.getStoredDeviceId();
@@ -181,19 +192,15 @@ export const chatSlice: AppState<ChatSlice> = (set, get) => {
       );
       set({ audioInputOptions: devices, selectedAudioInputId: resolved });
     },
-
     async selectAudioInput(deviceId) {
       set({ selectedAudioInputId: deviceId });
       audioInputService.storeDeviceId(deviceId);
     },
-
     async sendChatInput() {
       const { chatInput, isChatSubmitting } = get();
       const text = chatInput.trim();
       if (!text || isChatSubmitting) return;
-
       set({ isChatSubmitting: true, chatInput: "" });
-
       const optimistic: ChatMessage = {
         id: crypto.randomUUID(),
         type: "text",
@@ -202,7 +209,6 @@ export const chatSlice: AppState<ChatSlice> = (set, get) => {
         createdAt: new Date().toISOString(),
       };
       set((state) => ({ chatMessages: [...state.chatMessages, optimistic] }));
-
       try {
         await webChatService.sendMessage({ text });
       } catch {
@@ -211,13 +217,10 @@ export const chatSlice: AppState<ChatSlice> = (set, get) => {
         set({ isChatSubmitting: false });
       }
     },
-
     async sendButtonReply(buttonReply) {
       const { isChatSubmitting } = get();
       if (isChatSubmitting) return;
-
       set({ isChatSubmitting: true });
-
       const optimistic: ChatMessage = {
         id: crypto.randomUUID(),
         type: "interactive",
@@ -226,7 +229,6 @@ export const chatSlice: AppState<ChatSlice> = (set, get) => {
         createdAt: new Date().toISOString(),
       };
       set((state) => ({ chatMessages: [...state.chatMessages, optimistic] }));
-
       try {
         await webChatService.sendMessage({ buttonReply });
       } catch {
@@ -235,17 +237,16 @@ export const chatSlice: AppState<ChatSlice> = (set, get) => {
         set({ isChatSubmitting: false });
       }
     },
-
     async startRecording() {
       try {
+        const { selectedAudioInputId } = get();
         await audioRecordingService.start({
-          audioInputDeviceId: get().selectedAudioInputId || undefined,
+          audioInputDeviceId: selectedAudioInputId || undefined,
           onTick: (duration) => {
             set({ recordingDuration: duration });
           },
           onRecorded: async ({ blob, url }) => {
             set({ isChatSubmitting: true });
-
             const optimistic: ChatMessage = {
               id: crypto.randomUUID(),
               type: "audio",
@@ -257,7 +258,6 @@ export const chatSlice: AppState<ChatSlice> = (set, get) => {
             set((state) => ({
               chatMessages: [...state.chatMessages, optimistic],
             }));
-
             try {
               await webChatService.sendAudio({ blob, mimeType: blob.type });
             } catch {
@@ -276,21 +276,21 @@ export const chatSlice: AppState<ChatSlice> = (set, get) => {
       }
       set({ isRecording: true, recordingDuration: 0 });
       try {
-        await get().syncAudioInputs();
+        const { syncAudioInputs } = get();
+        await syncAudioInputs();
       } catch {
         audioRecordingService.stop(false);
         set({ isRecording: false, recordingDuration: 0 });
       }
     },
-
     stopRecording(shouldSend) {
       audioRecordingService.stop(shouldSend);
       set({ isRecording: false, recordingDuration: 0 });
     },
-
     async logout() {
       await webChatService.logout();
-      get().stopChatStream();
+      const { stopChatStream } = get();
+      stopChatStream();
       set({
         currentUser: undefined,
         chatMessages: [],

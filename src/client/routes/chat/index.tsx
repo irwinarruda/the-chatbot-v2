@@ -5,10 +5,11 @@ import {
   useRouter,
 } from "@tanstack/react-router";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Mic, Send, Trash2 } from "lucide-react";
+import { ArrowDown, Mic, Send, Trash2 } from "lucide-react";
 import {
-  type ComponentProps,
-  useCallback,
+  type ChangeEvent,
+  type KeyboardEvent,
+  type SubmitEventHandler,
   useEffect,
   useRef,
   useState,
@@ -24,6 +25,7 @@ import {
 } from "~/client/components/ui/native-select";
 import { Textarea } from "~/client/components/ui/textarea";
 import { getDictionary } from "~/client/i18n";
+import { usePrefs } from "~/client/providers/usePrefs";
 import { audioInputService } from "~/client/services/audioInputService";
 import { useApp } from "~/client/stores";
 import type { ChatErrorCode } from "~/client/stores/slices/chatSlice";
@@ -45,12 +47,9 @@ export const Route = createFileRoute("/chat/")({
 function ChatRoute() {
   const navigate = useNavigate();
   const router = useRouter();
-
-  const locale = useApp((s) => s.locale);
-  const theme = useApp((s) => s.theme);
+  const prefs = usePrefs();
   const toggleTheme = useApp((s) => s.toggleTheme);
   const toggleLocale = useApp((s) => s.toggleLocale);
-
   const currentUser = useApp((s) => s.currentUser);
   const chatMessages = useApp((s) => s.chatMessages);
   const chatInput = useApp((s) => s.chatInput);
@@ -65,7 +64,6 @@ function ChatRoute() {
   const hasChatMessages = useApp((s) => s.hasChatMessages);
   const canSendChatInput = useApp((s) => s.canSendChatInput);
   const canSelectAudioInput = useApp((s) => s.canSelectAudioInput);
-
   const setChatInput = useApp((s) => s.setChatInput);
   const clearChatError = useApp((s) => s.clearChatError);
   const bootstrapChat = useApp((s) => s.bootstrapChat);
@@ -78,10 +76,8 @@ function ChatRoute() {
   const startRecording = useApp((s) => s.startRecording);
   const stopRecording = useApp((s) => s.stopRecording);
   const logout = useApp((s) => s.logout);
-
-  const dictionary = getDictionary(locale);
+  const dictionary = getDictionary(prefs.locale);
   const t = dictionary.chatPage;
-
   const inputElRef = useRef<HTMLTextAreaElement | null>(null);
   const composerRef = useRef<HTMLDivElement>(null);
   const parentRef = useRef<HTMLDivElement>(null);
@@ -105,132 +101,12 @@ function ChatRoute() {
     },
     overscan: 5,
   });
-
-  const handleScroll = useCallback(() => {
-    const el = parentRef.current;
-    if (!el) return;
-    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
-    isNearBottomRef.current = nearBottom;
-    setShowScrollBtn(!nearBottom);
-  }, []);
-
-  // Auto-scroll to bottom when new messages arrive and user is near the bottom
-  useEffect(() => {
-    if (isNearBottomRef.current && chatMessages.length > 0) {
-      virtualizer.scrollToIndex(chatMessages.length - 1, { align: "end" });
-    }
-  }, [chatMessages.length, virtualizer]);
-
-  useEffect(() => {
-    const composer = composerRef.current;
-    if (!composer || typeof ResizeObserver === "undefined") return;
-
-    const observer = new ResizeObserver(([entry]) => {
-      setComposerHeight(entry.contentRect.height);
-      if (isNearBottomRef.current && chatMessages.length > 0) {
-        requestAnimationFrame(() => {
-          virtualizer.scrollToIndex(chatMessages.length - 1, { align: "end" });
-        });
-      }
-    });
-
-    observer.observe(composer);
-    return () => observer.disconnect();
-  }, [chatMessages.length, virtualizer]);
-
-  // Bootstrap chat: auth check + load messages, then start SSE stream
-  useEffect(() => {
-    let cancelled = false;
-
-    bootstrapChat().then((result) => {
-      if (cancelled) return;
-      if (result === "unauthorized") {
-        navigate({ to: "/chat/login" });
-      } else if (result === "not_registered") {
-        navigate({ to: "/chat/not-registered" });
-      } else if (result === "ok") {
-        startChatStream();
-      }
-    });
-
-    return () => {
-      cancelled = true;
-      stopChatStream();
-    };
-  }, [bootstrapChat, startChatStream, stopChatStream, navigate]);
-
-  // Sync audio inputs on mount and whenever devices change
-  useEffect(() => {
-    void syncAudioInputs();
-    return audioInputService.subscribeToDeviceChanges(() => {
-      void syncAudioInputs();
-    });
-  }, [syncAudioInputs]);
-
-  const resizeInput = useCallback((element: HTMLTextAreaElement) => {
-    element.style.height = "auto";
-    element.style.height = `${Math.min(element.scrollHeight, 160)}px`;
-  }, []);
-
-  const handleSend = useCallback(async () => {
-    if (inputElRef.current) inputElRef.current.style.height = "auto";
-    await sendChatInput();
-    inputElRef.current?.focus();
-  }, [sendChatInput]);
-
-  const handleSubmit: NonNullable<ComponentProps<"form">["onSubmit"]> = (
-    event,
-  ) => {
-    event.preventDefault();
-    void handleSend();
-  };
-
-  const handleInputKeyDown: NonNullable<
-    ComponentProps<"textarea">["onKeyDown"]
-  > = (event) => {
-    if (
-      event.key !== "Enter" ||
-      event.shiftKey ||
-      event.nativeEvent.isComposing
-    ) {
-      return;
-    }
-    event.preventDefault();
-    void handleSend();
-  };
-
-  const handleAudioInputChange = useCallback<
-    NonNullable<ComponentProps<"select">["onChange"]>
-  >(
-    (event) => {
-      void selectAudioInput(event.target.value);
-    },
-    [selectAudioInput],
-  );
-
-  const handleLogout = async () => {
-    await logout();
-    navigate({ to: "/chat/login" });
-  };
-
-  const handleToggleLocale = async () => {
-    await toggleLocale();
-    router.invalidate();
-  };
-
   const chatErrorMessages: Record<ChatErrorCode, string> = {
     microphone: t.errorMicrophone,
     sending: t.errorSending,
     loading: t.errorLoading,
   };
   const chatErrorMessage = chatError ? chatErrorMessages[chatError] : undefined;
-
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
-  };
-
   const mainClassName = hasChatMessages
     ? "items-stretch sm:items-center"
     : undefined;
@@ -244,6 +120,131 @@ function ChatRoute() {
   const windowTitle = currentUser
     ? `${t.windowTitle} - ${currentUser.name}`
     : t.windowTitle;
+
+  const onScroll = () => {
+    const el = parentRef.current;
+    if (!el) return;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+    isNearBottomRef.current = nearBottom;
+    setShowScrollBtn(!nearBottom);
+  };
+
+  const resizeInput = (element: HTMLTextAreaElement) => {
+    element.style.height = "auto";
+    element.style.height = `${Math.min(element.scrollHeight, 160)}px`;
+  };
+
+  const onInputChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+    setChatInput(event.target.value);
+    resizeInput(event.target);
+  };
+
+  const onSend = async () => {
+    if (inputElRef.current) inputElRef.current.style.height = "auto";
+    await sendChatInput();
+    inputElRef.current?.focus();
+  };
+
+  const onAudioInputChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    void selectAudioInput(event.target.value);
+  };
+
+  const onSubmit: SubmitEventHandler<HTMLFormElement> = (event) => {
+    event.preventDefault();
+    void onSend();
+  };
+
+  const onInputKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (
+      event.key !== "Enter" ||
+      event.shiftKey ||
+      event.nativeEvent.isComposing
+    ) {
+      return;
+    }
+    event.preventDefault();
+    void onSend();
+  };
+
+  const onLogout = async () => {
+    await logout();
+    navigate({ to: "/chat/login" });
+  };
+
+  const onToggleLocale = async () => {
+    await toggleLocale();
+    router.invalidate();
+  };
+
+  const onScrollToBottom = () => {
+    isNearBottomRef.current = true;
+    setShowScrollBtn(false);
+    virtualizer.scrollToIndex(chatMessages.length - 1, { align: "end" });
+  };
+
+  const onCancelRecording = () => stopRecording(false);
+
+  const onSendRecording = () => stopRecording(true);
+
+  const onStartRecording = () => startRecording();
+
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+  };
+
+  useEffect(() => {
+    if (isNearBottomRef.current && chatMessages.length > 0) {
+      virtualizer.scrollToIndex(chatMessages.length - 1, { align: "end" });
+    }
+  }, [chatMessages.length, virtualizer]);
+
+  useEffect(() => {
+    const inputEl = inputElRef.current;
+    if (!inputEl) return;
+    resizeInput(inputEl);
+  }, [chatInput]);
+
+  useEffect(() => {
+    const composer = composerRef.current;
+    if (!composer || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(([entry]) => {
+      setComposerHeight(entry.contentRect.height);
+      if (isNearBottomRef.current && chatMessages.length > 0) {
+        requestAnimationFrame(() => {
+          virtualizer.scrollToIndex(chatMessages.length - 1, { align: "end" });
+        });
+      }
+    });
+    observer.observe(composer);
+    return () => observer.disconnect();
+  }, [chatMessages.length, virtualizer]);
+
+  useEffect(() => {
+    let cancelled = false;
+    bootstrapChat().then((result) => {
+      if (cancelled) return;
+      if (result === "unauthorized") {
+        navigate({ to: "/chat/login" });
+      } else if (result === "not_registered") {
+        navigate({ to: "/chat/not-registered" });
+      } else if (result === "ok") {
+        startChatStream();
+      }
+    });
+    return () => {
+      cancelled = true;
+      stopChatStream();
+    };
+  }, []);
+
+  useEffect(() => {
+    void syncAudioInputs();
+    return audioInputService.subscribeToDeviceChanges(() => {
+      void syncAudioInputs();
+    });
+  }, []);
 
   if (isChatBootstrapping) {
     return (
@@ -273,18 +274,18 @@ function ChatRoute() {
                 : "bg-term-muted"
             }`}
           />
-          <TerminalChromeButton onClick={handleToggleLocale} title={locale}>
-            {locale === "pt-BR" ? "PT" : "EN"}
+          <TerminalChromeButton onClick={onToggleLocale} title={prefs.locale}>
+            {prefs.locale === "pt-BR" ? "PT" : "EN"}
           </TerminalChromeButton>
           <TerminalChromeButton
             onClick={toggleTheme}
-            title={theme === "light" ? "dark" : "light"}
+            title={prefs.theme === "light" ? "dark" : "light"}
           >
-            {theme === "light" ? "\u2600" : "\u263D"}
+            {prefs.theme === "light" ? "\u2600" : "\u263D"}
           </TerminalChromeButton>
           <Button
             type="button"
-            onClick={handleLogout}
+            onClick={onLogout}
             title={t.logout}
             variant="ghost"
             size="xs"
@@ -320,7 +321,7 @@ function ChatRoute() {
 
       <div
         ref={parentRef}
-        onScroll={handleScroll}
+        onScroll={onScroll}
         className={
           hasChatMessages
             ? "relative flex-1 overflow-y-auto p-4 sm:p-5"
@@ -359,8 +360,8 @@ function ChatRoute() {
                   <div className="pb-2">
                     <ChatMessage
                       message={message}
-                      theme={theme}
-                      locale={locale}
+                      theme={prefs.theme}
+                      locale={prefs.locale}
                       isSending={isChatSubmitting}
                       youLabel={t.you}
                       botLabel={t.bot}
@@ -383,29 +384,12 @@ function ChatRoute() {
         >
           <Button
             type="button"
-            onClick={() => {
-              isNearBottomRef.current = true;
-              setShowScrollBtn(false);
-              virtualizer.scrollToIndex(chatMessages.length - 1, {
-                align: "end",
-              });
-            }}
+            onClick={onScrollToBottom}
+            title="Scroll to bottom"
+            aria-label="Scroll to bottom"
             className="pointer-events-auto h-8 w-8 rounded-full border border-term-border bg-term-chrome p-0 shadow-lg hover:bg-term-green/10 hover:text-term-green"
           >
-            <svg
-              aria-label="Scroll to bottom"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M12 5v14" />
-              <path d="m19 12-7 7-7-7" />
-            </svg>
+            <ArrowDown className="size-4" />
           </Button>
         </div>
       ) : null}
@@ -422,7 +406,7 @@ function ChatRoute() {
             </span>
             <Button
               type="button"
-              onClick={() => stopRecording(false)}
+              onClick={onCancelRecording}
               title={t.cancelRecording}
               variant="outline"
               size="sm"
@@ -433,7 +417,7 @@ function ChatRoute() {
             </Button>
             <Button
               type="button"
-              onClick={() => stopRecording(true)}
+              onClick={onSendRecording}
               title={t.sendRecording}
               variant="destructive"
               size="sm"
@@ -445,7 +429,7 @@ function ChatRoute() {
           </div>
         ) : (
           <form
-            onSubmit={handleSubmit}
+            onSubmit={onSubmit}
             className="group/form flex flex-col gap-1.5"
           >
             <div className="flex min-h-4.5 items-center justify-between gap-3 px-1 text-2xs text-term-muted opacity-75 transition-opacity duration-200 group-focus-within/form:opacity-100 group-hover/form:opacity-100">
@@ -471,7 +455,7 @@ function ChatRoute() {
                   size="sm"
                   className="w-full **:data-[slot=native-select-icon]:right-2 **:data-[slot=native-select-icon]:size-3 **:data-[slot=native-select]:h-6 **:data-[slot=native-select-icon]:text-term-muted [&_[data-slot=native-select]]:rounded [&_[data-slot=native-select]]:border-transparent [&_[data-slot=native-select]]:bg-transparent [&_[data-slot=native-select]]:py-0.5 [&_[data-slot=native-select]]:pr-7 [&_[data-slot=native-select]]:pl-7 [&_[data-slot=native-select]]:text-2xs [&_[data-slot=native-select]]:text-term-muted [&_[data-slot=native-select]]:transition-colors [&_[data-slot=native-select]]:hover:border-term-amber/25 [&_[data-slot=native-select]]:hover:bg-term-amber/8 [&_[data-slot=native-select]]:hover:text-term-amber [&_[data-slot=native-select]]:focus-visible:border-term-amber/40 [&_[data-slot=native-select]]:focus-visible:ring-0"
                   value={selectedAudioInputId}
-                  onChange={handleAudioInputChange}
+                  onChange={onAudioInputChange}
                   disabled={!canSelectAudioInput}
                   aria-label={t.audioInputLabel}
                 >
@@ -504,17 +488,11 @@ function ChatRoute() {
                 {">"}
               </span>
               <Textarea
-                ref={(node) => {
-                  inputElRef.current = node;
-                  if (node) resizeInput(node);
-                }}
+                ref={inputElRef}
                 rows={1}
                 value={chatInput}
-                onChange={(event) => {
-                  setChatInput(event.target.value);
-                  resizeInput(event.target);
-                }}
-                onKeyDown={handleInputKeyDown}
+                onChange={onInputChange}
+                onKeyDown={onInputKeyDown}
                 placeholder={t.placeholder}
                 disabled={isChatSubmitting}
                 autoComplete="off"
@@ -523,9 +501,7 @@ function ChatRoute() {
               <div className="ml-1.5 inline-flex shrink-0 items-center gap-0.5 self-end py-1">
                 <Button
                   type="button"
-                  onClick={() => {
-                    void startRecording();
-                  }}
+                  onClick={onStartRecording}
                   disabled={isChatSubmitting}
                   title={t.startRecording}
                   aria-label={t.startRecording}

@@ -5,15 +5,16 @@ import { TerminalPanel } from "~/client/components/TerminalPanel";
 import { TerminalPanelText } from "~/client/components/TerminalPanelText";
 import { TerminalPrompt } from "~/client/components/TerminalPrompt";
 import { TerminalWindow } from "~/client/components/TerminalWindow";
-import { getDictionary, type Locale } from "~/client/i18n";
-import { useApp } from "~/client/stores";
+import type { Prefs } from "~/client/entities/Prefs";
+import { getDictionary } from "~/client/i18n";
+import { useDictionary } from "~/client/providers/useDictionary";
 
 export const Route = createFileRoute("/google/thank-you")({
   component: ThankYouRoute,
   head: ({ match }) => ({
     meta: [
       {
-        title: getDictionary((match.context as { locale?: Locale }).locale).meta
+        title: getDictionary((match.context as Partial<Prefs>).locale).meta
           .thankYouTitle,
       },
     ],
@@ -21,10 +22,8 @@ export const Route = createFileRoute("/google/thank-you")({
 });
 
 function ThankYouRoute() {
-  const locale = useApp((state) => state.locale);
-  const dictionary = getDictionary(locale);
+  const dictionary = useDictionary();
   const t = dictionary.thankYouPage;
-
   return (
     <TerminalWindow title={t.windowTitle} dictionary={dictionary}>
       <TerminalPageHeader heading={t.heading} subtitle={t.subtitle} />

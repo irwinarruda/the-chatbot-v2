@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import WaveSurfer from "wavesurfer.js";
 
 interface AudioWaveformProps {
@@ -31,9 +31,17 @@ export function AudioWaveform({ src, theme = "dark" }: AudioWaveformProps) {
           cursorColor: "#50dfaa",
         };
 
+  const onTogglePlayPause = () => {
+    wavesurfer?.playPause();
+  };
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
+
   useEffect(() => {
     if (!container) return;
-
     const instance = WaveSurfer.create({
       container,
       url: src,
@@ -47,13 +55,11 @@ export function AudioWaveform({ src, theme = "dark" }: AudioWaveformProps) {
       barRadius: 2,
       normalize: true,
     });
-
     setWavesurfer(instance);
     setIsReady(false);
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(0);
-
     const unsubscribe = [
       instance.on("ready", () => {
         setDuration(instance.getDuration());
@@ -64,7 +70,6 @@ export function AudioWaveform({ src, theme = "dark" }: AudioWaveformProps) {
       instance.on("finish", () => setIsPlaying(false)),
       instance.on("timeupdate", (time) => setCurrentTime(time)),
     ];
-
     return () => {
       for (const off of unsubscribe) off();
       instance.destroy();
@@ -78,21 +83,11 @@ export function AudioWaveform({ src, theme = "dark" }: AudioWaveformProps) {
     colors.cursorColor,
   ]);
 
-  const togglePlayPause = useCallback(() => {
-    wavesurfer?.playPause();
-  }, [wavesurfer]);
-
-  const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = Math.floor(seconds % 60);
-    return `${m}:${s.toString().padStart(2, "0")}`;
-  };
-
   return (
     <div className="flex min-w-55 max-w-70 items-center gap-2">
       <button
         type="button"
-        onClick={togglePlayPause}
+        onClick={onTogglePlayPause}
         disabled={!isReady}
         aria-label={isPlaying ? "Pause" : "Play"}
         className="flex h-7.5 w-7.5 shrink-0 cursor-pointer items-center justify-center rounded-md border border-term-border bg-term-bg p-0 text-term-green transition-colors duration-200 hover:border-term-green/40 hover:bg-term-green/10 disabled:cursor-not-allowed disabled:opacity-40"

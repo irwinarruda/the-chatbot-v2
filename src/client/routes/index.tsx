@@ -3,26 +3,23 @@ import { TerminalFooter } from "~/client/components/TerminalFooter";
 import { TerminalPageHeader } from "~/client/components/TerminalPageHeader";
 import { TerminalPrompt } from "~/client/components/TerminalPrompt";
 import { TerminalWindow } from "~/client/components/TerminalWindow";
-import { getDictionary, type Locale } from "~/client/i18n";
-import { useApp } from "~/client/stores";
+import { getDictionary } from "~/client/i18n";
+import { useDictionary } from "~/client/providers/useDictionary";
 
 export const Route = createFileRoute("/")({
   component: IndexRoute,
   head: ({ match }) => ({
     meta: [
       {
-        title: getDictionary((match.context as { locale?: Locale }).locale).meta
-          .welcomeTitle,
+        title: getDictionary(match.context.locale).meta.welcomeTitle,
       },
     ],
   }),
 });
 
 function IndexRoute() {
-  const locale = useApp((state) => state.locale);
-  const dictionary = getDictionary(locale);
+  const dictionary = useDictionary();
   const t = dictionary.welcomePage;
-
   return (
     <TerminalWindow
       title={t.windowTitle}
