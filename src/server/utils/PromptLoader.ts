@@ -66,6 +66,11 @@ export class PromptLoader {
     return PromptLoader.readFile(fileBase);
   }
 
+  static getTransferClassification(locale: PromptLocale): string {
+    const fileBase = `transfer-classification${PromptLoader.localeToFileSuffix(locale)}`;
+    return PromptLoader.readFile(fileBase);
+  }
+
   static getSummarization(
     locale: PromptLocale,
     existingSummary: string | undefined,

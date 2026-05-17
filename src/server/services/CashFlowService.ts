@@ -39,6 +39,16 @@ export interface CashFlowAddEarningDTO {
   bankAccount: string;
 }
 
+export interface CashFlowTransferDTO {
+  phoneNumber: string;
+  date: Date;
+  value: number;
+  category: string;
+  description: string;
+  from: string;
+  to: string;
+}
+
 export class CashFlowService {
   private database: Database;
   private authService: AuthService;
@@ -124,6 +134,48 @@ export class CashFlowService {
       category: earning.category,
       description: earning.description,
       bankAccount: earning.bankAccount,
+    });
+  }
+
+  async transferBetweenBankAccounts(
+    transfer: CashFlowTransferDTO,
+  ): Promise<void> {
+    const { sheet, credential } = await this.getUserAndSheet(
+      transfer.phoneNumber,
+    );
+    const bankAccounts = await this.spreadsheetResource.getBankAccount({
+      sheetId: sheet.idSheet,
+      sheetAccessToken: credential.accessToken,
+    });
+    this.validateBankAccountExists(transfer.from, bankAccounts, "Source");
+    this.validateBankAccountExists(transfer.to, bankAccounts, "Destination");
+    if (transfer.from === transfer.to) {
+      throw new ValidationException(
+        "Source and destination bank accounts cannot be the same",
+        "The transfer must be between two different bank accounts.",
+      );
+    }
+    if (transfer.value <= 0) {
+      throw new ValidationException(
+        "Transfer value must be a positive number",
+        `Received: ${transfer.value}`,
+      );
+    }
+    await this.addExpense({
+      phoneNumber: transfer.phoneNumber,
+      date: transfer.date,
+      value: transfer.value,
+      category: transfer.category,
+      description: transfer.description,
+      bankAccount: transfer.from,
+    });
+    await this.addEarning({
+      phoneNumber: transfer.phoneNumber,
+      date: transfer.date,
+      value: transfer.value,
+      category: transfer.category,
+      description: transfer.description,
+      bankAccount: transfer.to,
     });
   }
 
@@ -226,6 +278,21 @@ export class CashFlowService {
       ...new Set([...expenseCategories, ...earningCategories]),
     ];
     return { categories, bankAccounts };
+  }
+
+  private validateBankAccountExists(
+    accountName: string,
+    existingAccounts: string[],
+    label: string,
+  ): void {
+    if (!existingAccounts.includes(accountName)) {
+      throw new ValidationException(
+        `${label} bank account "${accountName}" not found in the spreadsheet`,
+        "Available accounts: " +
+          existingAccounts.join(", ") +
+          ". Make sure the account name matches exactly.",
+      );
+    }
   }
 
   private async getUserAndSheet(phoneNumber: string): Promise<{

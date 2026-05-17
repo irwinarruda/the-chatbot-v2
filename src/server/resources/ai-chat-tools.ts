@@ -118,6 +118,34 @@ export const toolDefinitions: ToolDefinition[] = [
     },
   },
   {
+    name: "transfer_between_bank_accounts",
+    description: `Transfer a fixed amount from one bank account to another. Creates two entries: an expense on the source account and an earning on the destination account. Category and bank accounts are automatically resolved via classification using available bank accounts. Use this for credit card payments or any movement of money between accounts. Returns { message, from, to, category, description, date, value }. ${genericError}`,
+    parameters: {
+      type: "object",
+      properties: {
+        phone_number: {
+          type: "string",
+          description: "User phone number in E.164 format",
+        },
+        user_message: {
+          type: "string",
+          description:
+            "Full original user message text with all context and nuances; pass exactly what the user sent",
+        },
+        value: {
+          type: "number",
+          description: "Amount to transfer (positive number)",
+        },
+        date: {
+          type: "string",
+          description:
+            "Optional ISO-8601 date (if not explicit, omit this field)",
+        },
+      },
+      required: ["phone_number", "user_message", "value"],
+    },
+  },
+  {
     name: "get_expense_categories",
     description: `List expense categories. Returns { count, categories }. ${genericError}`,
     parameters: {
@@ -237,6 +265,13 @@ interface ClassificationResult {
   description: string;
 }
 
+interface TransferClassificationResult {
+  category: string;
+  from: string;
+  to: string;
+  description: string;
+}
+
 async function classifyWithRetry(
   aiChatGateway: IAiChatGateway,
   phoneNumber: string,
@@ -284,6 +319,56 @@ async function classifyWithRetry(
       userMessage,
       value,
       categories,
+      bankAccounts,
+      attempt + 1,
+    );
+  }
+}
+
+async function classifyTransferWithRetry(
+  aiChatGateway: IAiChatGateway,
+  phoneNumber: string,
+  userMessage: string,
+  value: number,
+  bankAccounts: string[],
+  attempt = 1,
+): Promise<TransferClassificationResult> {
+  try {
+    const prompt = PromptLoader.getTransferClassification(PromptLocale.PtBr);
+    const payload = Printable.make({
+      type: "Transfer",
+      description: userMessage,
+      value,
+      bankAccounts,
+    });
+    const messages: AiChatMessage[] = [
+      { role: AiChatRole.System, type: AiChatMessageType.Text, text: prompt },
+      { role: AiChatRole.User, type: AiChatMessageType.Text, text: payload },
+    ];
+    const response = await aiChatGateway.getResponse(
+      phoneNumber,
+      messages,
+      false,
+    );
+    const result = Printable.convert<TransferClassificationResult>(
+      response.text,
+    );
+    if (!result)
+      throw new ValidationException("Converted LLM response returned no value");
+    return result;
+  } catch (err) {
+    if (attempt > 5) {
+      const errMsg =
+        err instanceof Error ? err.message + (err.stack ?? "") : String(err);
+      throw new ValidationException(
+        `Could not determine transfer classification. ${errMsg}`,
+      );
+    }
+    return classifyTransferWithRetry(
+      aiChatGateway,
+      phoneNumber,
+      userMessage,
+      value,
       bankAccounts,
       attempt + 1,
     );
@@ -370,6 +455,39 @@ export async function executeTool(
           value,
         });
       }
+      case "transfer_between_bank_accounts": {
+        const phoneNumber = args.phone_number as string;
+        const userMessage = args.user_message as string;
+        const value = args.value as number;
+        const date = args.date ? new Date(args.date as string) : new Date();
+        const { bankAccounts } =
+          await cashFlowService.getCategoriesAndBankAccounts(phoneNumber);
+        const parsed = await classifyTransferWithRetry(
+          aiChatGateway,
+          phoneNumber,
+          userMessage,
+          value,
+          bankAccounts,
+        );
+        await cashFlowService.transferBetweenBankAccounts({
+          phoneNumber,
+          date,
+          value,
+          category: parsed.category,
+          description: parsed.description,
+          from: parsed.from,
+          to: parsed.to,
+        });
+        return Printable.make({
+          message: "Transfer completed successfully",
+          from: parsed.from,
+          to: parsed.to,
+          category: parsed.category,
+          description: parsed.description,
+          date,
+          value,
+        });
+      }
       case "get_expense_categories": {
         const categories = await cashFlowService.getExpenseCategories(
           args.phone_number as string,
@@ -406,7 +524,6 @@ export async function executeTool(
         const bankAccount = args.bank_account as string;
         const currentBalance = args.current_balance as number;
         const date = args.date ? new Date(args.date as string) : new Date();
-
         const { categories, bankAccounts } =
           await cashFlowService.getCategoriesAndBankAccounts(phoneNumber);
         const parsed = await classifyWithRetry(
@@ -418,7 +535,6 @@ export async function executeTool(
           categories,
           bankAccounts,
         );
-
         await cashFlowService.syncBankAccountBalance({
           phoneNumber,
           bankAccount,
@@ -427,7 +543,6 @@ export async function executeTool(
           description: parsed.description,
           date,
         });
-
         return Printable.make({
           message: "Bank account balance synced successfully",
         });

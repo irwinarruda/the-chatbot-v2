@@ -22,11 +22,15 @@ Use `bun` as the package manager (not npm or yarn).
 
 ## Architecture
 
-The codebase follows a Controller → Service → Entity layered pattern with a custom DI container (`infra/container.ts`). Dependency wiring for production lives in `infra/bootstrap.ts`.
+The codebase follows a Controller → Service → Entity layered pattern with gateway/resource adapters for external systems. Dependency wiring for production lives in `infra/bootstrap.ts` and uses the custom DI container (`infra/container.ts`).
+
+Controllers should stay thin. They translate HTTP/TanStack request and response concerns, validate transport-level inputs when needed, and delegate application work to services. Do not put business workflows, persistence rules, or external API orchestration in controllers.
+
+Services own application use cases and business workflows. They coordinate entities, repositories/persistence, gateway calls, validations, and multi-step operations. If a feature composes existing external commands into new behavior, that composition belongs in the service. For example, a cash-flow transfer between accounts should be implemented by `CashFlowService` calling the existing expense and earning operations, not by adding a transfer-specific spreadsheet gateway command.
+
+Resources/gateways should be minimal adapters around external capabilities such as Google Sheets, Google OAuth, WhatsApp, OpenAI, storage, or browser-provided APIs. Expose commands that the external system naturally supports and keep provider-specific formatting, parsing, retry, and error mapping there. Do not move application-level workflows into gateways just because they write to an external resource.
 
 For frontend state and UI orchestration, use a slice architecture as the application layer / view model layer. Slices should coordinate UI state, call services, shape data for consumption by components, and hold application-facing behavior.
-
-Services should act as repositories and integration boundaries. They are responsible for communicating with external resources such as APIs, persistence layers, and browser-provided resources when needed. Keep that infrastructure and resource access inside services rather than inside slices or components.
 
 - `src/entities/` — domain objects (User, Chat, Message, etc.)
 - `src/services/` — business logic
