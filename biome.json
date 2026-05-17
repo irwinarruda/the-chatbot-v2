@@ -34,6 +34,9 @@
         "noExplicitAny": "off",
         "noDeprecatedImports": "error"
       },
+      "correctness": {
+        "useExhaustiveDependencies": "off"
+      },
       "complexity": {
         "noStaticOnlyClass": "off"
       },

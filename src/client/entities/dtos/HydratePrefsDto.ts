@@ -1,6 +1,3 @@
-import type { Locale } from "~/client/i18n";
+import type { Prefs } from "~/client/entities/Prefs";
 
-export type HydratePrefsDto = {
-  locale: Locale;
-  theme: "light" | "dark";
-};
+export type HydratePrefsDto = Prefs;

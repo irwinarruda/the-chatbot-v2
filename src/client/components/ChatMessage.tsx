@@ -1,4 +1,4 @@
-import { memo, useMemo, useState } from "react";
+import { memo, useState } from "react";
 import type { ChatMessage as ChatMessageEntity } from "~/client/entities/ChatMessage";
 import {
   type WhatsAppBlockNode,
@@ -117,6 +117,7 @@ function AudioTranscript({
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const shouldCollapse = text.length > 420;
+  const onToggleExpanded = () => setIsExpanded((current) => !current);
 
   return (
     <div className="w-full text-[0.8125rem] text-term-muted italic leading-snug [&_*]:text-term-muted">
@@ -134,7 +135,7 @@ function AudioTranscript({
           type="button"
           variant="ghost"
           size="sm"
-          onClick={() => setIsExpanded((current) => !current)}
+          onClick={onToggleExpanded}
           className="mt-1 h-auto rounded border-0 px-0 py-0 font-semibold text-[0.75rem] text-term-cyan hover:bg-transparent hover:text-term-green"
         >
           {isExpanded ? showLessLabel : showMoreLabel}
@@ -145,8 +146,8 @@ function AudioTranscript({
 }
 
 function FormattedChatText({ text }: { text: string }) {
-  const { blocks } = useMemo(() => WhatsAppMessageParser.parse(text), [text]);
-  const getBlockKey = useMemo(() => createSiblingKeyFactory(), []);
+  const { blocks } = WhatsAppMessageParser.parse(text);
+  const getBlockKey = createSiblingKeyFactory();
 
   if (blocks.length === 0) {
     return (
@@ -167,7 +168,6 @@ function MessageBlock({ block }: { block: WhatsAppBlockNode }) {
   switch (block.type) {
     case "paragraph": {
       const getParagraphLineKey = createSiblingKeyFactory();
-
       return (
         <div className="flex flex-col gap-1 whitespace-pre-wrap">
           {block.lines.map((line) => (
@@ -183,7 +183,6 @@ function MessageBlock({ block }: { block: WhatsAppBlockNode }) {
     }
     case "bulletList": {
       const getBulletKey = createSiblingKeyFactory();
-
       return (
         <ul className="m-0 list-none space-y-1 p-0">
           {block.items.map((item) => (
@@ -199,7 +198,6 @@ function MessageBlock({ block }: { block: WhatsAppBlockNode }) {
     }
     case "orderedList": {
       const getOrderedKey = createSiblingKeyFactory();
-
       return (
         <ol
           className="m-0 space-y-1 pl-5 marker:font-semibold marker:text-term-cyan/80"
@@ -218,7 +216,6 @@ function MessageBlock({ block }: { block: WhatsAppBlockNode }) {
     }
     case "quote": {
       const getQuoteKey = createSiblingKeyFactory();
-
       return (
         <blockquote className="m-0 rounded-r-md border-term-cyan/45 border-l-2 bg-term-cyan/8 px-3 py-2 text-term-text/95 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
           <div className="flex flex-col gap-1">
@@ -236,7 +233,6 @@ function MessageBlock({ block }: { block: WhatsAppBlockNode }) {
 
 function InlineNodes({ nodes }: { nodes: WhatsAppInlineNode[] }) {
   const getInlineKey = createSiblingKeyFactory();
-
   return (
     <>
       {nodes.map((node) => (
@@ -315,7 +311,6 @@ function serializeInlineNode(node: WhatsAppInlineNode): string {
 
 function createSiblingKeyFactory(): (signature: string) => string {
   const seen = new Map<string, number>();
-
   return (signature: string) => {
     const count = seen.get(signature) ?? 0;
     seen.set(signature, count + 1);

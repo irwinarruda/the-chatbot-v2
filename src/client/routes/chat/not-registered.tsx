@@ -4,8 +4,7 @@ import { TerminalPageHeader } from "~/client/components/TerminalPageHeader";
 import { TerminalPanel } from "~/client/components/TerminalPanel";
 import { TerminalPanelText } from "~/client/components/TerminalPanelText";
 import { TerminalWindow } from "~/client/components/TerminalWindow";
-import { getDictionary } from "~/client/i18n";
-import { useApp } from "~/client/stores";
+import { useDictionary } from "~/client/providers/useDictionary";
 
 export const Route = createFileRoute("/chat/not-registered")({
   component: NotRegisteredRoute,
@@ -15,8 +14,7 @@ export const Route = createFileRoute("/chat/not-registered")({
 });
 
 function NotRegisteredRoute() {
-  const locale = useApp((state) => state.locale);
-  const dictionary = getDictionary(locale);
+  const dictionary = useDictionary();
   const t = dictionary.chatNotRegisteredPage;
   return (
     <TerminalWindow

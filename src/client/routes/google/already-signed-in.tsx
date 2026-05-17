@@ -6,15 +6,16 @@ import { TerminalPanelText } from "~/client/components/TerminalPanelText";
 import { TerminalPrompt } from "~/client/components/TerminalPrompt";
 import { TerminalStatusBadge } from "~/client/components/TerminalStatusBadge";
 import { TerminalWindow } from "~/client/components/TerminalWindow";
-import { getDictionary, type Locale } from "~/client/i18n";
-import { useApp } from "~/client/stores";
+import type { Prefs } from "~/client/entities/Prefs";
+import { getDictionary } from "~/client/i18n";
+import { useDictionary } from "~/client/providers/useDictionary";
 
 export const Route = createFileRoute("/google/already-signed-in")({
   component: AlreadySignedInRoute,
   head: ({ match }) => ({
     meta: [
       {
-        title: getDictionary((match.context as { locale?: Locale }).locale).meta
+        title: getDictionary((match.context as Partial<Prefs>).locale).meta
           .connectedTitle,
       },
     ],
@@ -22,10 +23,8 @@ export const Route = createFileRoute("/google/already-signed-in")({
 });
 
 function AlreadySignedInRoute() {
-  const locale = useApp((state) => state.locale);
-  const dictionary = getDictionary(locale);
+  const dictionary = useDictionary();
   const t = dictionary.alreadySignedInPage;
-
   return (
     <TerminalWindow title={t.windowTitle} dictionary={dictionary}>
       <TerminalPageHeader

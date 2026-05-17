@@ -2,6 +2,7 @@ import { Link, useRouter } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { cn } from "~/client/components/ui/lib";
 import type { Dictionary } from "~/client/i18n";
+import { usePrefs } from "~/client/providers/usePrefs";
 import { useApp } from "~/client/stores";
 import { TerminalChromeButton } from "./TerminalChromeButton";
 
@@ -33,16 +34,9 @@ export function TerminalWindow({
   windowClassName?: string;
 }) {
   const router = useRouter();
-  const locale = useApp((s) => s.locale);
-  const theme = useApp((s) => s.theme);
+  const prefs = usePrefs();
   const toggleTheme = useApp((s) => s.toggleTheme);
   const toggleLocale = useApp((s) => s.toggleLocale);
-
-  const handleToggleLocale = async () => {
-    await toggleLocale();
-    router.invalidate();
-  };
-
   const navLinks = dictionary
     ? [
         { label: dictionary.nav.home, href: "/" as const },
@@ -51,7 +45,11 @@ export function TerminalWindow({
       ]
     : [];
   const shouldShowNavigation = showNavigation ?? dictionary !== undefined;
-  const widthClass = wide ? "max-w-4xl" : "max-w-xl";
+
+  const onToggleLocale = async () => {
+    await toggleLocale();
+    router.invalidate();
+  };
 
   return (
     <main
@@ -61,7 +59,13 @@ export function TerminalWindow({
         mainClassName,
       )}
     >
-      <div className={cn(`flex w-full ${widthClass} flex-col`, frameClassName)}>
+      <div
+        className={cn(
+          "flex w-full flex-col",
+          wide ? "max-w-4xl" : "max-w-xl",
+          frameClassName,
+        )}
+      >
         <div className="flex items-center gap-3 border-b-0 bg-term-chrome px-3 py-2 sm:rounded-t-xl sm:border sm:border-term-border sm:px-4">
           <div className="flex shrink-0 gap-2" aria-hidden="true">
             <span className="h-3 w-3 rounded-full bg-term-red" />
@@ -75,16 +79,16 @@ export function TerminalWindow({
             {chromeControls ?? (
               <>
                 <TerminalChromeButton
-                  onClick={handleToggleLocale}
-                  title={locale}
+                  onClick={onToggleLocale}
+                  title={prefs.locale}
                 >
-                  {locale === "pt-BR" ? "PT" : "EN"}
+                  {prefs.locale === "pt-BR" ? "PT" : "EN"}
                 </TerminalChromeButton>
                 <TerminalChromeButton
                   onClick={toggleTheme}
-                  title={theme === "light" ? "dark" : "light"}
+                  title={prefs.theme === "light" ? "dark" : "light"}
                 >
-                  {theme === "light" ? "\u2600" : "\u263D"}
+                  {prefs.theme === "light" ? "\u2600" : "\u263D"}
                 </TerminalChromeButton>
               </>
             )}

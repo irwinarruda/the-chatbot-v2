@@ -1,9 +1,4 @@
-import {
-  createRootRoute,
-  HeadContent,
-  Outlet,
-  Scripts,
-} from "@tanstack/react-router";
+import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { createIsomorphicFn } from "@tanstack/react-start";
 import type { ReactNode } from "react";
 import { TerminalFooter } from "~/client/components/TerminalFooter";
@@ -12,55 +7,21 @@ import { TerminalPanel } from "~/client/components/TerminalPanel";
 import { TerminalPanelText } from "~/client/components/TerminalPanelText";
 import { TerminalPrompt } from "~/client/components/TerminalPrompt";
 import { TerminalWindow } from "~/client/components/TerminalWindow";
-import {
-  DEFAULT_LOCALE,
-  getDictionary,
-  isLocale,
-  type Locale,
-} from "~/client/i18n";
-import type { Theme } from "~/client/services/prefsService";
+import { getDictionary } from "~/client/i18n";
+import { prefsService } from "~/client/services/prefsService";
 import { useApp } from "~/client/stores";
 import tailwindHref from "~/client/styles/tailwind.css?url";
-
-function parseCookies(header: string): Record<string, string> {
-  if (!header) return {};
-  return Object.fromEntries(
-    header.split(";").map((cookie) => {
-      const idx = cookie.indexOf("=");
-      if (idx === -1) return [cookie.trim(), ""];
-      return [
-        cookie.slice(0, idx).trim(),
-        decodeURIComponent(cookie.slice(idx + 1).trim()),
-      ];
-    }),
-  );
-}
-
-function resolvePrefs(cookieHeader: string): {
-  locale: Locale;
-  theme: Theme;
-} {
-  const cookies = parseCookies(cookieHeader);
-  const locale: Locale = isLocale(cookies.locale)
-    ? cookies.locale
-    : DEFAULT_LOCALE;
-  const theme: Theme = cookies.theme === "light" ? "light" : "dark";
-  return { locale, theme };
-}
 
 const getPrefs = createIsomorphicFn()
   .server(async () => {
     const { getRequestHeader } = await import("@tanstack/react-start/server");
-    return resolvePrefs(getRequestHeader("cookie") ?? "");
+    return prefsService.resolvePrefs(getRequestHeader("cookie") ?? "");
   })
-  .client(() => resolvePrefs(document.cookie));
+  .client(() => prefsService.resolvePrefs(document.cookie));
 
 export const Route = createRootRoute({
-  beforeLoad: async () => {
-    return await getPrefs();
-  },
+  beforeLoad: getPrefs,
   shellComponent: RootDocument,
-  component: RootComponent,
   notFoundComponent: NotFoundRoute,
   head: () => ({
     meta: [
@@ -75,35 +36,21 @@ export const Route = createRootRoute({
   }),
 });
 
-function RootComponent() {
-  const { locale, theme } = Route.useRouteContext();
-  const hydratePrefs = useApp((state) => state.hydratePrefs);
-
-  hydratePrefs({ locale, theme });
-
-  return <Outlet />;
-}
-
 function RootDocument({ children }: { children: ReactNode }) {
-  const { locale, theme } = Route.useRouteContext();
+  const prefs = Route.useRouteContext();
   const suppressHydrationWarning = import.meta.env.DEV;
+  const hydratePrefs = useApp((state) => state.hydratePrefs);
+  hydratePrefs(prefs);
   return (
-    <html
-      lang={locale}
-      data-theme={theme}
-      className={theme === "dark" ? "dark" : undefined}
-    >
+    <html lang={prefs.locale} data-theme={prefs.theme}>
       <head>
         <HeadContent />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
+          rel="preload"
+          href="/fonts/jetbrains-mono-latin.woff2"
+          as="font"
+          type="font/woff2"
           crossOrigin=""
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap"
-          rel="stylesheet"
         />
       </head>
       <body suppressHydrationWarning={suppressHydrationWarning}>
@@ -118,7 +65,6 @@ function NotFoundRoute() {
   const { locale } = Route.useRouteContext();
   const dictionary = getDictionary(locale);
   const t = dictionary.notFoundPage;
-
   return (
     <TerminalWindow title={t.windowTitle} dictionary={dictionary}>
       <TerminalPageHeader heading={t.heading} subtitle={t.subtitle} />

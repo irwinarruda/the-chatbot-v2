@@ -7,8 +7,7 @@ import { TerminalPanelText } from "~/client/components/TerminalPanelText";
 import { TerminalPrompt } from "~/client/components/TerminalPrompt";
 import { TerminalWindow } from "~/client/components/TerminalWindow";
 import { Button } from "~/client/components/ui/button";
-import { getDictionary } from "~/client/i18n";
-import { useApp } from "~/client/stores";
+import { useDictionary } from "~/client/providers/useDictionary";
 import { requireChatAccess } from "~/server/tanstack/functions/require-chat-access";
 
 export const Route = createFileRoute("/chat/login")({
@@ -25,10 +24,8 @@ export const Route = createFileRoute("/chat/login")({
 });
 
 function ChatLoginRoute() {
-  const locale = useApp((state) => state.locale);
-  const dictionary = getDictionary(locale);
+  const dictionary = useDictionary();
   const t = dictionary.chatLoginPage;
-
   return (
     <TerminalWindow
       title={t.windowTitle}
