@@ -5,11 +5,11 @@ import {
   useRouter,
 } from "@tanstack/react-router";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ArrowDown, Mic, Send, Trash2 } from "lucide-react";
+import { ArrowDown, ListTodo, Mic, Send, Trash2 } from "lucide-react";
 import {
   type ChangeEvent,
   type KeyboardEvent,
-  type SubmitEventHandler,
+  type SubmitEvent,
   useEffect,
   useRef,
   useState,
@@ -29,11 +29,11 @@ import { usePrefs } from "~/client/providers/usePrefs";
 import { audioInputService } from "~/client/services/audioInputService";
 import { useApp } from "~/client/stores";
 import type { ChatErrorCode } from "~/client/stores/slices/chatSlice";
-import { requireChatAccess } from "~/server/tanstack/functions/require-chat-access";
+import { requireWebAccess } from "~/server/tanstack/functions/require-web-access";
 
 export const Route = createFileRoute("/chat/")({
   beforeLoad: async () => {
-    const authResult = await requireChatAccess();
+    const authResult = await requireWebAccess();
     if (!authResult.ok) {
       throw redirect({ to: "/chat/login" });
     }
@@ -45,6 +45,8 @@ export const Route = createFileRoute("/chat/")({
 });
 
 function ChatRoute() {
+  "use no memo";
+  // TanStack Virtual reads mutable virtualizer state during render.
   const navigate = useNavigate();
   const router = useRouter();
   const prefs = usePrefs();
@@ -59,7 +61,6 @@ function ChatRoute() {
   const selectedAudioInputId = useApp((s) => s.selectedAudioInputId);
   const isRecording = useApp((s) => s.isRecording);
   const recordingDuration = useApp((s) => s.recordingDuration);
-  const hasChatMessages = useApp((s) => s.hasChatMessages);
   const canSendChatInput = useApp((s) => s.canSendChatInput);
   const canSelectAudioInput = useApp((s) => s.canSelectAudioInput);
   const toggleTheme = useApp((s) => s.toggleTheme);
@@ -84,7 +85,6 @@ function ChatRoute() {
   const isNearBottomRef = useRef(true);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [composerHeight, setComposerHeight] = useState(0);
-
   const virtualizer = useVirtualizer({
     count: chatMessages.length,
     getScrollElement: () => parentRef.current,
@@ -107,54 +107,44 @@ function ChatRoute() {
     loading: t.errorLoading,
   };
   const chatErrorMessage = chatError ? chatErrorMessages[chatError] : undefined;
-  const mainClassName = hasChatMessages
-    ? "items-stretch sm:items-center"
-    : undefined;
-  const frameClassName = hasChatMessages
-    ? "h-dvh sm:h-[calc(100dvh-3rem)] md:h-[calc(100dvh-5rem)]"
-    : undefined;
-  const windowClassName = [
-    "relative flex min-h-0 flex-1 flex-col overflow-hidden",
-    "p-0 sm:p-0 md:p-0",
-  ].join(" ");
   const windowTitle = currentUser
     ? `${t.windowTitle} - ${currentUser.name}`
     : t.windowTitle;
 
-  const onScroll = () => {
+  function onScroll() {
     const el = parentRef.current;
     if (!el) return;
     const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
     isNearBottomRef.current = nearBottom;
     setShowScrollBtn(!nearBottom);
-  };
+  }
 
-  const resizeInput = (element: HTMLTextAreaElement) => {
+  function resizeInput(element: HTMLTextAreaElement) {
     element.style.height = "auto";
     element.style.height = `${Math.min(element.scrollHeight, 160)}px`;
-  };
+  }
 
-  const onInputChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+  function onInputChange(event: ChangeEvent<HTMLTextAreaElement>) {
     setChatInput(event.target.value);
     resizeInput(event.target);
-  };
+  }
 
-  const onSend = async () => {
+  async function onSend() {
     if (inputElRef.current) inputElRef.current.style.height = "auto";
     await sendChatInput();
     inputElRef.current?.focus();
-  };
+  }
 
-  const onAudioInputChange = (event: ChangeEvent<HTMLSelectElement>) => {
+  function onAudioInputChange(event: ChangeEvent<HTMLSelectElement>) {
     void selectAudioInput(event.target.value);
-  };
+  }
 
-  const onSubmit: SubmitEventHandler<HTMLFormElement> = (event) => {
+  function onSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     void onSend();
-  };
+  }
 
-  const onInputKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+  function onInputKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (
       event.key !== "Enter" ||
       event.shiftKey ||
@@ -164,35 +154,45 @@ function ChatRoute() {
     }
     event.preventDefault();
     void onSend();
-  };
+  }
 
-  const onLogout = async () => {
+  async function onLogout() {
     await logout();
     navigate({ to: "/chat/login" });
-  };
+  }
 
-  const onToggleLocale = async () => {
+  function onOpenTodos() {
+    navigate({ to: "/todo" });
+  }
+
+  async function onToggleLocale() {
     await toggleLocale();
     router.invalidate();
-  };
+  }
 
-  const onScrollToBottom = () => {
+  function onScrollToBottom() {
     isNearBottomRef.current = true;
     setShowScrollBtn(false);
     virtualizer.scrollToIndex(chatMessages.length - 1, { align: "end" });
-  };
+  }
 
-  const onCancelRecording = () => stopRecording(false);
+  function onCancelRecording() {
+    stopRecording(false);
+  }
 
-  const onSendRecording = () => stopRecording(true);
+  function onSendRecording() {
+    stopRecording(true);
+  }
 
-  const onStartRecording = () => startRecording();
+  function onStartRecording() {
+    startRecording();
+  }
 
-  const formatTime = (seconds: number) => {
+  function formatTime(seconds: number) {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
-  };
+  }
 
   useEffect(() => {
     if (isNearBottomRef.current && chatMessages.length > 0) {
@@ -277,6 +277,9 @@ function ChatRoute() {
           <TerminalChromeButton onClick={onToggleLocale} title={prefs.locale}>
             {prefs.locale === "pt-BR" ? "PT" : "EN"}
           </TerminalChromeButton>
+          <TerminalChromeButton onClick={onOpenTodos} title={t.todoAction}>
+            <ListTodo className="size-3" />
+          </TerminalChromeButton>
           <TerminalChromeButton
             onClick={toggleTheme}
             title={prefs.theme === "light" ? "dark" : "light"}
@@ -295,9 +298,10 @@ function ChatRoute() {
           </Button>
         </>
       }
-      mainClassName={mainClassName}
-      frameClassName={frameClassName}
-      windowClassName={windowClassName}
+      mainClassName="items-stretch sm:items-center"
+      frameClassName="h-dvh sm:h-[calc(100dvh-3rem)] md:h-[calc(100dvh-5rem)]"
+      windowClassName="relative flex min-h-0 flex-1 flex-col overflow-hidden p-0 sm:p-0 md:p-0"
+      showShadow={false}
     >
       {chatErrorMessage ? (
         <Alert
@@ -322,14 +326,10 @@ function ChatRoute() {
       <div
         ref={parentRef}
         onScroll={onScroll}
-        className={
-          hasChatMessages
-            ? "relative flex-1 overflow-y-auto p-4 sm:p-5"
-            : "flex min-h-48 flex-col gap-2 p-4 sm:p-5"
-        }
+        className="relative flex-1 overflow-y-auto p-4 sm:p-5"
       >
         {chatMessages.length === 0 ? (
-          <div className="flex flex-1 items-center justify-center text-sm text-term-muted">
+          <div className="flex h-full items-center justify-center text-sm text-term-muted">
             <span className="mr-1 font-semibold text-term-green">$</span>
             {t.emptyState}
             <span className="terminal-cursor" />
@@ -376,7 +376,8 @@ function ChatRoute() {
           </div>
         )}
       </div>
-      {showScrollBtn && hasChatMessages && (
+
+      {showScrollBtn && chatMessages.length > 0 && (
         <div
           className="pointer-events-none absolute right-6"
           style={{ bottom: `${Math.max(composerHeight, 96) + 16}px` }}
@@ -392,6 +393,7 @@ function ChatRoute() {
           </Button>
         </div>
       )}
+
       <div
         ref={composerRef}
         className="shrink-0 border-term-border border-t bg-linear-to-b from-term-chrome to-term-chrome/80 px-4 py-3"

@@ -1,9 +1,16 @@
 import type { ReactNode } from "react";
+import { cn } from "~/client/components/ui/lib";
 import { Separator } from "~/client/components/ui/separator";
 
-export function TerminalFooter({ children }: { children: ReactNode }) {
+export function TerminalFooter({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   return (
-    <div className="text-[0.8125rem] text-term-muted">
+    <div className={cn("text-[0.8125rem] text-term-muted", className)}>
       <Separator className="mb-5 bg-term-border" />
       {children}
     </div>

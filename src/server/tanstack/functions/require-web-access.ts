@@ -4,7 +4,7 @@ import { UnauthorizedException } from "~/infra/exceptions";
 import { ServerBootstrap } from "~/infra/server-bootstrap";
 import type { AuthService } from "~/server/services/AuthService";
 
-export const requireChatAccess = createServerFn({ method: "GET" }).handler(
+export const requireWebAccess = createServerFn({ method: "GET" }).handler(
   async ({ request }: any) => {
     const authService = ServerBootstrap.getService<AuthService>("AuthService");
     const cookieHeader = request.headers.get("cookie") ?? "";

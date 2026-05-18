@@ -21,6 +21,8 @@ function NotRegisteredRoute() {
       title={t.windowTitle}
       activePath="/chat"
       dictionary={dictionary}
+      mainClassName="items-stretch sm:items-start"
+      windowClassName="flex flex-col"
     >
       <TerminalPageHeader
         heading={t.heading}
@@ -30,7 +32,7 @@ function NotRegisteredRoute() {
       <TerminalPanel>
         <TerminalPanelText>{t.body}</TerminalPanelText>
       </TerminalPanel>
-      <TerminalFooter>
+      <TerminalFooter className="mt-auto pt-6 sm:mt-0">
         <span className="font-semibold text-term-green">$</span>{" "}
         <Link
           to="/"

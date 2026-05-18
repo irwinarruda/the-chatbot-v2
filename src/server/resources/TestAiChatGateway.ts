@@ -1,4 +1,5 @@
 import type {
+  AiChatContext,
   AiChatMessage,
   AiChatResponse,
   IAiChatGateway,
@@ -9,11 +10,15 @@ import {
 } from "~/server/resources/IAiChatGateway";
 
 export class TestAiChatGateway implements IAiChatGateway {
+  lastContext?: AiChatContext;
+
   async getResponse(
     _phoneNumber: string,
     messages: AiChatMessage[],
     _allowTools?: boolean,
+    context?: AiChatContext,
   ): Promise<AiChatResponse> {
+    this.lastContext = context;
     const lastMessage =
       [...messages]
         .reverse()

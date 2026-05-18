@@ -28,7 +28,6 @@ export type ChatSlice = {
   isRecording: boolean;
   recordingDuration: number;
 
-  hasChatMessages: boolean;
   canSendChatInput: boolean;
   canSelectAudioInput: boolean;
 
@@ -62,8 +61,7 @@ export const chatSlice: AppState<ChatSlice> = (set, get) => {
     selectedAudioInputId: "",
     isRecording: false,
     recordingDuration: 0,
-    ...compute(get, (state) => ({
-      hasChatMessages: state.chatMessages.length > 0,
+    ...compute("chat", get, (state) => ({
       canSendChatInput:
         state.chatInput.trim().length > 0 && !state.isChatSubmitting,
       canSelectAudioInput:

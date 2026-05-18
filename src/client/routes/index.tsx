@@ -25,6 +25,8 @@ function IndexRoute() {
       title={t.windowTitle}
       activePath="/"
       dictionary={dictionary}
+      mainClassName="items-stretch sm:items-start"
+      windowClassName="flex flex-col"
     >
       <TerminalPageHeader heading={t.heading} subtitle={t.subtitle} />
       <p className="mb-6 text-sm text-term-text leading-relaxed">
@@ -46,7 +48,7 @@ function IndexRoute() {
           </li>
         ))}
       </ul>
-      <TerminalFooter>
+      <TerminalFooter className="mt-auto pt-6 sm:mt-0">
         <TerminalPrompt text={t.footerPrompt} />
       </TerminalFooter>
     </TerminalWindow>

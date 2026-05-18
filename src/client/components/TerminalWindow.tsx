@@ -6,7 +6,7 @@ import { usePrefs } from "~/client/providers/usePrefs";
 import { useApp } from "~/client/stores";
 import { TerminalChromeButton } from "./TerminalChromeButton";
 
-type TerminalPath = "/" | "/privacy" | "/chat";
+type TerminalPath = "/" | "/privacy" | "/chat" | "/todo";
 
 export function TerminalWindow({
   activePath = "/",
@@ -42,6 +42,7 @@ export function TerminalWindow({
         { label: dictionary.nav.home, href: "/" as const },
         { label: dictionary.nav.privacy, href: "/privacy" as const },
         { label: dictionary.nav.chat, href: "/chat" as const },
+        { label: dictionary.nav.todo, href: "/todo" as const },
       ]
     : [];
   const shouldShowNavigation = showNavigation ?? dictionary !== undefined;
@@ -51,11 +52,14 @@ export function TerminalWindow({
     router.invalidate();
   };
 
+  const onGoHome = () => {
+    router.navigate({ to: "/" });
+  };
+
   return (
     <main
       className={cn(
-        "flex min-h-dvh items-start justify-center bg-term-bg p-0",
-        "sm:p-6 md:p-10",
+        "flex min-h-dvh items-start justify-center bg-term-bg p-0 sm:p-6 md:p-10",
         mainClassName,
       )}
     >
@@ -67,10 +71,28 @@ export function TerminalWindow({
         )}
       >
         <div className="flex items-center gap-3 border-b-0 bg-term-chrome px-3 py-2 sm:rounded-t-xl sm:border sm:border-term-border sm:px-4">
-          <div className="flex shrink-0 gap-2" aria-hidden="true">
-            <span className="h-3 w-3 rounded-full bg-term-red" />
-            <span className="h-3 w-3 rounded-full bg-term-yellow" />
-            <span className="h-3 w-3 rounded-full bg-term-green-dot" />
+          <div className="flex shrink-0 gap-2">
+            <button
+              type="button"
+              onClick={onGoHome}
+              title="close"
+              aria-label="close"
+              className="h-3 w-3 rounded-full bg-term-red transition-opacity hover:opacity-80"
+            />
+            <button
+              type="button"
+              onClick={onGoHome}
+              title="minimize"
+              aria-label="minimize"
+              className="h-3 w-3 rounded-full bg-term-yellow transition-opacity hover:opacity-80"
+            />
+            <button
+              type="button"
+              onClick={onGoHome}
+              title="resize"
+              aria-label="resize"
+              className="h-3 w-3 rounded-full bg-term-green-dot transition-opacity hover:opacity-80"
+            />
           </div>
           <span className="mx-auto min-w-0 select-none truncate px-2 text-term-muted text-xs tracking-wide">
             {title}

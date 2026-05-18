@@ -8,11 +8,11 @@ import { TerminalPrompt } from "~/client/components/TerminalPrompt";
 import { TerminalWindow } from "~/client/components/TerminalWindow";
 import { Button } from "~/client/components/ui/button";
 import { useDictionary } from "~/client/providers/useDictionary";
-import { requireChatAccess } from "~/server/tanstack/functions/require-chat-access";
+import { requireWebAccess } from "~/server/tanstack/functions/require-web-access";
 
 export const Route = createFileRoute("/chat/login")({
   beforeLoad: async () => {
-    const authResult = await requireChatAccess();
+    const authResult = await requireWebAccess();
     if (authResult.ok) {
       throw redirect({ to: "/chat" });
     }
@@ -31,6 +31,8 @@ function ChatLoginRoute() {
       title={t.windowTitle}
       activePath="/chat"
       dictionary={dictionary}
+      mainClassName="items-stretch sm:items-start"
+      windowClassName="flex flex-col"
     >
       <TerminalPageHeader
         heading={t.heading}
@@ -49,7 +51,7 @@ function ChatLoginRoute() {
           </Button>
         </form>
       </TerminalPanel>
-      <TerminalFooter>
+      <TerminalFooter className="mt-auto pt-6 sm:mt-0">
         <TerminalPrompt text={t.footerPrompt} />
       </TerminalFooter>
     </TerminalWindow>

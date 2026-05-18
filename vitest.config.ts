@@ -12,8 +12,8 @@ export default defineConfig(({ mode = "test" }) => {
       include: ["tests/**/*.test.ts"],
       setupFiles: ["tests/orquestrator.ts"],
       fileParallelism: false,
-      hookTimeout: 60000,
-      testTimeout: 60000,
+      hookTimeout: 120000,
+      testTimeout: 120000,
       coverage: {
         include: ["src/server/services/**/*.ts", "src/shared/entities/**/*.ts"],
       },

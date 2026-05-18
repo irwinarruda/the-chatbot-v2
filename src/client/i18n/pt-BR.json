@@ -9,7 +9,8 @@
   "nav": {
     "home": "home",
     "privacy": "privacy",
-    "chat": "chat"
+    "chat": "chat",
+    "todo": "tarefas"
   },
   "welcomePage": {
     "windowTitle": "the-chatbot: ~/welcome",
@@ -86,7 +87,39 @@
     "stopRecording": "Parar",
     "cancelRecording": "Descartar",
     "sendRecording": "Enviar áudio",
-    "audioSent": "Mensagem de áudio enviada"
+    "audioSent": "Mensagem de áudio enviada",
+    "todoAction": "Abrir tarefas"
+  },
+  "todoPage": {
+    "windowTitle": "the-chatbot: ~/todo",
+    "heading": "Terminal Todos",
+    "subtitle": "Revise tarefas capturadas no chat e mantenha sua fila em movimento.",
+    "loading": "Carregando...",
+    "listLabel": "buffer de tarefas",
+    "detailTitle": "Detalhe da tarefa",
+    "chatAction": "chat",
+    "searchPlaceholder": "buscar tarefas...",
+    "clearFilters": "limpar",
+    "statusAll": "Todos os status",
+    "statusPending": "Pendente",
+    "statusCompleted": "Concluída",
+    "dueAll": "Todos os prazos",
+    "dueWithDueDate": "Com prazo",
+    "dueWithoutDueDate": "Sem prazo",
+    "noDueDate": "sem prazo",
+    "createPrompt": "nova tarefa",
+    "createNamePlaceholder": "Nome da tarefa",
+    "createDescriptionPlaceholder": "Detalhes, contexto ou notas",
+    "createAction": "Criar",
+    "saveAction": "Salvar",
+    "deleteAction": "Excluir",
+    "cancelAction": "Cancelar",
+    "emptyState": "Nenhuma tarefa combina com esta consulta.",
+    "audioLabel": "audio de origem",
+    "transcriptLabel": "transcrição",
+    "errorLoading": "Falha ao carregar tarefas. Tente novamente.",
+    "errorSaving": "Falha ao salvar tarefa. Tente novamente.",
+    "errorDeleting": "Falha ao excluir tarefa. Tente novamente."
   },
   "chatLoginPage": {
     "windowTitle": "the-chatbot: ~/chat/login",

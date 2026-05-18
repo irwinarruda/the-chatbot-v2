@@ -24,11 +24,17 @@ export interface AiChatResponse {
   buttons: string[];
 }
 
+export interface AiChatContext {
+  idSourceMessage?: string;
+  [key: string]: unknown;
+}
+
 export interface IAiChatGateway {
   getResponse(
     phoneNumber: string,
     messages: AiChatMessage[],
     allowTools?: boolean,
+    context?: AiChatContext,
   ): Promise<AiChatResponse>;
   generateSummary(
     messages: AiChatMessage[],

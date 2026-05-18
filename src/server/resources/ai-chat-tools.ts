@@ -1,5 +1,6 @@
 import { ExceptionResponse, ValidationException } from "~/infra/exceptions";
 import type {
+  AiChatContext,
   AiChatMessage,
   IAiChatGateway,
 } from "~/server/resources/IAiChatGateway";
@@ -9,26 +10,116 @@ import {
 } from "~/server/resources/IAiChatGateway";
 import type { AuthService } from "~/server/services/AuthService";
 import type { CashFlowService } from "~/server/services/CashFlowService";
+import type { TodoService } from "~/server/services/TodoService";
 import { Printable } from "~/server/utils/Printable";
 import { PromptLoader, PromptLocale } from "~/server/utils/PromptLoader";
+import { TodoStatus } from "~/shared/entities/enums/TodoStatus";
 
 const genericError =
   "There can be a generic error response: { message, action, name, status_code }";
+
+type ToolParameterSchema = {
+  type: string;
+  description?: string;
+  enum?: string[];
+  items?: ToolParameterSchema;
+  properties?: Record<string, ToolParameterSchema>;
+  required?: string[];
+};
 
 export interface ToolDefinition {
   name: string;
   description: string;
   parameters: {
     type: "object";
-    properties: Record<
-      string,
-      { type: string; description: string; nullable?: boolean }
-    >;
+    properties: Record<string, ToolParameterSchema>;
     required: string[];
   };
 }
 
 export const toolDefinitions: ToolDefinition[] = [
+  {
+    name: "create_todos",
+    description: [
+      "Create one or more todos for the authenticated user.",
+      "Use this when the user asks to remember, note, create a task, save",
+      "something to do later, or when an audio transcription contains clear",
+      "tasks.",
+      "",
+      "One message may contain multiple todos. Extract each actionable item.",
+      "Prefer one call with multiple todo objects when there is more than one.",
+      "Use a short, clear, action-oriented name.",
+      "Add description only when important details would be lost from the name.",
+      "If the name is enough, leave description empty.",
+      "Set dueDate only when the user explicitly gives or clearly implies a",
+      "date. Do not invent today's date for undated tasks.",
+      "If the message came from audio, create todos normally; the system will",
+      "bind them to the source message.",
+      "Do not create todos for casual conversation unless the intent to save an",
+      "action is clear.",
+      "",
+      `Returns { message, todos }. ${genericError}`,
+    ].join("\n"),
+    parameters: {
+      type: "object",
+      properties: {
+        phone_number: {
+          type: "string",
+          description: "User phone number in E.164 format",
+        },
+        todos: {
+          type: "array",
+          description:
+            "Todos extracted from the user message or recent context",
+          items: {
+            type: "object",
+            properties: {
+              name: {
+                type: "string",
+                description: "Short actionable todo title",
+              },
+              description: {
+                type: "string",
+                description:
+                  "Optional detail. Leave empty when the title captures the whole request",
+              },
+              dueDate: {
+                type: "string",
+                description:
+                  "Optional ISO-8601 due date. Omit when the user does not provide a due date",
+              },
+              status: {
+                type: "string",
+                enum: [TodoStatus.Pending, TodoStatus.Completed],
+                description: "Initial todo status, normally Pending",
+              },
+            },
+            required: ["name", "status"],
+          },
+        },
+      },
+      required: ["phone_number", "todos"],
+    },
+  },
+  {
+    name: "list_todos",
+    description: `List todos for the user filtered by status. Returns { count, todos }. ${genericError}`,
+    parameters: {
+      type: "object",
+      properties: {
+        phone_number: {
+          type: "string",
+          description: "User phone number in E.164 format",
+        },
+        status: {
+          type: "string",
+          enum: [TodoStatus.Pending, TodoStatus.Completed],
+          description: "Filter todos by status",
+        },
+      },
+      required: ["phone_number", "status"],
+    },
+  },
   {
     name: "add_cash_flow_spreadsheet_url",
     description: `Associate a Google financial planning spreadsheet with a user. Fails if user not found, already has a sheet, or URL invalid. Returns { message }. ${genericError}`,
@@ -380,10 +471,63 @@ export async function executeTool(
   args: Record<string, unknown>,
   cashFlowService: CashFlowService,
   authService: AuthService,
+  todoService: TodoService,
   aiChatGateway: IAiChatGateway,
+  context?: AiChatContext,
 ): Promise<string> {
   try {
     switch (name) {
+      case "create_todos": {
+        const phoneNumber = args.phone_number as string;
+        const user = await authService.getUserByPhoneNumber(phoneNumber);
+        if (!user) throw new ValidationException("User not found");
+        const idSourceMessage =
+          typeof context?.idSourceMessage === "string"
+            ? context.idSourceMessage
+            : undefined;
+        const todos = Array.isArray(args.todos) ? args.todos : [];
+        const created = await todoService.createTodos(
+          todos.map((todo) => {
+            const item = todo as Record<string, unknown>;
+            const dueDate =
+              typeof item.dueDate === "string" && item.dueDate
+                ? new Date(item.dueDate)
+                : undefined;
+            return {
+              idUser: user.id,
+              idSourceMessage,
+              name: item.name as string,
+              description:
+                typeof item.description === "string"
+                  ? item.description
+                  : undefined,
+              dueDate,
+              status:
+                item.status === TodoStatus.Completed
+                  ? TodoStatus.Completed
+                  : TodoStatus.Pending,
+            };
+          }),
+        );
+        return Printable.make({
+          message: "Todos created",
+          todos: created.map((todo) => todo.toJSON()),
+        });
+      }
+      case "list_todos": {
+        const phoneNumber = args.phone_number as string;
+        const user = await authService.getUserByPhoneNumber(phoneNumber);
+        if (!user) throw new ValidationException("User not found");
+        const status =
+          args.status === TodoStatus.Completed
+            ? TodoStatus.Completed
+            : TodoStatus.Pending;
+        const todos = await todoService.listTodos(user.id, { status });
+        return Printable.make({
+          count: todos.length,
+          todos: todos.map((t) => t.toJSON()),
+        });
+      }
       case "add_cash_flow_spreadsheet_url": {
         await cashFlowService.addSpreadsheetUrl(
           args.phone_number as string,
