@@ -14,6 +14,7 @@ import {
 } from "~/server/services/MessagingService";
 import { MigrationService } from "~/server/services/MigrationService";
 import { StatusService } from "~/server/services/StatusService";
+import { TodoService } from "~/server/services/TodoService";
 import type { Config } from "./config";
 import { container } from "./container";
 import { Database } from "./database";
@@ -109,12 +110,18 @@ export function registerDependencies(config: Config) {
     "singleton",
   );
   container.register(
+    "TodoService",
+    () => new TodoService(database),
+    "singleton",
+  );
+  container.register(
     "IAiChatGateway",
     () =>
       new AiChatGateway(
         config.ai,
         container.resolve("CashFlowService"),
         container.resolve("AuthService"),
+        container.resolve("TodoService"),
       ),
     "singleton",
   );

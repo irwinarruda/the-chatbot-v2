@@ -6,7 +6,7 @@ import { usePrefs } from "~/client/providers/usePrefs";
 import { useApp } from "~/client/stores";
 import { TerminalChromeButton } from "./TerminalChromeButton";
 
-type TerminalPath = "/" | "/privacy" | "/chat";
+type TerminalPath = "/" | "/privacy" | "/chat" | "/todo";
 
 export function TerminalWindow({
   activePath = "/",
@@ -42,6 +42,7 @@ export function TerminalWindow({
         { label: dictionary.nav.home, href: "/" as const },
         { label: dictionary.nav.privacy, href: "/privacy" as const },
         { label: dictionary.nav.chat, href: "/chat" as const },
+        { label: dictionary.nav.todo, href: "/todo" as const },
       ]
     : [];
   const shouldShowNavigation = showNavigation ?? dictionary !== undefined;
@@ -54,8 +55,7 @@ export function TerminalWindow({
   return (
     <main
       className={cn(
-        "flex min-h-dvh items-start justify-center bg-term-bg p-0",
-        "sm:p-6 md:p-10",
+        "flex min-h-dvh items-start justify-center bg-term-bg p-0 sm:p-6 md:p-10",
         mainClassName,
       )}
     >
@@ -97,9 +97,7 @@ export function TerminalWindow({
 
         <div
           className={cn(
-            "flex-1 bg-term-window p-6 sm:rounded-b-xl sm:border",
-            "sm:border-term-border sm:border-t-0 sm:p-9",
-            "sm:shadow-2xl sm:shadow-black/10 md:p-10",
+            "flex-1 bg-term-window p-6 sm:rounded-b-xl sm:border sm:border-term-border sm:border-t-0 sm:p-9 md:p-10",
             windowClassName,
           )}
         >
@@ -127,13 +125,6 @@ export function TerminalWindow({
 
           {children}
         </div>
-
-        {showShadow ? (
-          <div
-            className="mx-4 hidden h-2 rounded-b-xl bg-black/20 blur-sm sm:block"
-            aria-hidden="true"
-          />
-        ) : null}
       </div>
     </main>
   );

@@ -8,11 +8,11 @@ import { TerminalPrompt } from "~/client/components/TerminalPrompt";
 import { TerminalWindow } from "~/client/components/TerminalWindow";
 import { Button } from "~/client/components/ui/button";
 import { useDictionary } from "~/client/providers/useDictionary";
-import { requireChatAccess } from "~/server/tanstack/functions/require-chat-access";
+import { requireWebAccess } from "~/server/tanstack/functions/require-web-access";
 
 export const Route = createFileRoute("/chat/login")({
   beforeLoad: async () => {
-    const authResult = await requireChatAccess();
+    const authResult = await requireWebAccess();
     if (authResult.ok) {
       throw redirect({ to: "/chat" });
     }

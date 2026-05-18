@@ -9,7 +9,8 @@
   "nav": {
     "home": "home",
     "privacy": "privacy",
-    "chat": "chat"
+    "chat": "chat",
+    "todo": "todo"
   },
   "welcomePage": {
     "windowTitle": "the-chatbot: ~/welcome",
@@ -86,7 +87,39 @@
     "stopRecording": "Stop",
     "cancelRecording": "Discard",
     "sendRecording": "Send audio",
-    "audioSent": "Audio message sent"
+    "audioSent": "Audio message sent",
+    "todoAction": "Open todos"
+  },
+  "todoPage": {
+    "windowTitle": "the-chatbot: ~/todo",
+    "heading": "Terminal Todos",
+    "subtitle": "Review tasks captured from chat and keep your queue moving.",
+    "loading": "Loading...",
+    "listLabel": "task buffer",
+    "detailTitle": "Todo detail",
+    "chatAction": "chat",
+    "searchPlaceholder": "search tasks...",
+    "clearFilters": "clear",
+    "statusAll": "All status",
+    "statusPending": "Pending",
+    "statusCompleted": "Completed",
+    "dueAll": "All due dates",
+    "dueWithDueDate": "With due date",
+    "dueWithoutDueDate": "Without due date",
+    "noDueDate": "no due date",
+    "createPrompt": "new task",
+    "createNamePlaceholder": "Task name",
+    "createDescriptionPlaceholder": "Details, context, or notes",
+    "createAction": "Create",
+    "saveAction": "Save",
+    "deleteAction": "Delete",
+    "cancelAction": "Cancel",
+    "emptyState": "No todos match this terminal query.",
+    "audioLabel": "source audio",
+    "transcriptLabel": "transcript",
+    "errorLoading": "Failed to load todos. Please try again.",
+    "errorSaving": "Failed to save todo. Please try again.",
+    "errorDeleting": "Failed to delete todo. Please try again."
   },
   "chatLoginPage": {
     "windowTitle": "the-chatbot: ~/chat/login",

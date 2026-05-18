@@ -31,6 +31,7 @@ import {
 } from "~/server/services/MessagingService";
 import { MigrationService } from "~/server/services/MigrationService";
 import { StatusService } from "~/server/services/StatusService";
+import { TodoService } from "~/server/services/TodoService";
 import { User } from "~/shared/entities/User";
 
 export class Orquestrator {
@@ -53,6 +54,7 @@ export class Orquestrator {
   messagingService: MessagingService;
   statusService: StatusService;
   cashFlowService: CashFlowService;
+  todoService: TodoService;
   migrationService: MigrationService;
 
   constructor() {
@@ -196,6 +198,11 @@ export class Orquestrator {
       "singleton",
     );
     this.container.register(
+      "TodoService",
+      () => new TodoService(this.database),
+      "singleton",
+    );
+    this.container.register(
       "MessagingService",
       () =>
         new MessagingService(
@@ -218,6 +225,7 @@ export class Orquestrator {
     this.statusService = this.container.resolve<StatusService>("StatusService");
     this.cashFlowService =
       this.container.resolve<CashFlowService>("CashFlowService");
+    this.todoService = this.container.resolve<TodoService>("TodoService");
     this.migrationService =
       this.container.resolve<MigrationService>("MigrationService");
 

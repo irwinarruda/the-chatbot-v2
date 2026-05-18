@@ -3,6 +3,7 @@ import OpenAI from "openai";
 import type { AiConfig } from "~/infra/config";
 import { executeTool, toolDefinitions } from "~/server/resources/ai-chat-tools";
 import type {
+  AiChatContext,
   AiChatMessage,
   AiChatResponse,
   IAiChatGateway,
@@ -13,6 +14,7 @@ import {
 } from "~/server/resources/IAiChatGateway";
 import type { AuthService } from "~/server/services/AuthService";
 import type { CashFlowService } from "~/server/services/CashFlowService";
+import type { TodoService } from "~/server/services/TodoService";
 import { PromptLoader, PromptLocale } from "~/server/utils/PromptLoader";
 
 export class AiChatGateway implements IAiChatGateway {
@@ -23,6 +25,7 @@ export class AiChatGateway implements IAiChatGateway {
     private config: AiConfig,
     private cashFlowService: CashFlowService,
     private authService: AuthService,
+    private todoService: TodoService,
   ) {
     if (config.provider === "openai") {
       this.openai = new OpenAI({ apiKey: config.apiKey });
@@ -85,6 +88,7 @@ export class AiChatGateway implements IAiChatGateway {
     phoneNumber: string,
     messages: AiChatMessage[],
     allowTools = true,
+    context?: AiChatContext,
   ): Promise<AiChatResponse> {
     const systemPrompt = PromptLoader.getAiChatGateway(PromptLocale.PtBr, {
       phoneNumber,
@@ -97,12 +101,14 @@ export class AiChatGateway implements IAiChatGateway {
         systemPrompt,
         formattedMessages,
         allowTools,
+        context,
       );
     } else if (this.anthropic) {
       raw = await this.getAnthropicResponse(
         systemPrompt,
         formattedMessages,
         allowTools,
+        context,
       );
     }
     return this.parseResponse(raw);
@@ -112,6 +118,7 @@ export class AiChatGateway implements IAiChatGateway {
     systemPrompt: string,
     formattedMessages: { role: string; content: string }[],
     allowTools: boolean,
+    context?: AiChatContext,
   ): Promise<string> {
     const openaiTools = allowTools
       ? toolDefinitions.map((t) => ({
@@ -169,7 +176,9 @@ export class AiChatGateway implements IAiChatGateway {
           args,
           this.cashFlowService,
           this.authService,
+          this.todoService,
           this,
+          context,
         );
         chatMessages.push({
           role: "tool",
@@ -184,6 +193,7 @@ export class AiChatGateway implements IAiChatGateway {
     systemPrompt: string,
     formattedMessages: { role: string; content: string }[],
     allowTools: boolean,
+    context?: AiChatContext,
   ): Promise<string> {
     const anthropicTools = allowTools
       ? toolDefinitions.map((t) => ({
@@ -238,7 +248,9 @@ export class AiChatGateway implements IAiChatGateway {
           args,
           this.cashFlowService,
           this.authService,
+          this.todoService,
           this,
+          context,
         );
         toolResults.push({
           type: "tool_result",

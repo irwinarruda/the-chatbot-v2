@@ -8,6 +8,10 @@ export const routes = rootRoute("client/routes/__root.tsx", [
     route("/login", "client/routes/chat/login.tsx"),
     route("/not-registered", "client/routes/chat/not-registered.tsx"),
   ]),
+  route("/todo", "client/routes/todo.tsx", [
+    index("client/routes/todo/index.tsx"),
+    route("/$todoId", "client/routes/todo/$todoId.tsx"),
+  ]),
   route("/google", [
     route("/already-signed-in", "client/routes/google/already-signed-in.tsx"),
     route("/thank-you", "client/routes/google/thank-you.tsx"),
@@ -39,6 +43,8 @@ export const routes = rootRoute("client/routes/__root.tsx", [
   route("/api/v1/web/messages", "server/tanstack/controllers/web-messages.ts"),
   route("/api/v1/web/audio", "server/tanstack/controllers/web-audio.ts"),
   route("/api/v1/web/stream", "server/tanstack/controllers/web-stream.ts"),
+  route("/api/v1/web/todos", "server/tanstack/controllers/web-todos.ts"),
+  route("/api/v1/web/todos/$todoId", "server/tanstack/controllers/web-todo.ts"),
 ]);
 
 export default routes;

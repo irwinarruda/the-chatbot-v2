@@ -5,7 +5,7 @@ import {
   useRouter,
 } from "@tanstack/react-router";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ArrowDown, Mic, Send, Trash2 } from "lucide-react";
+import { ArrowDown, ListTodo, Mic, Send, Trash2 } from "lucide-react";
 import {
   type ChangeEvent,
   type KeyboardEvent,
@@ -29,11 +29,11 @@ import { usePrefs } from "~/client/providers/usePrefs";
 import { audioInputService } from "~/client/services/audioInputService";
 import { useApp } from "~/client/stores";
 import type { ChatErrorCode } from "~/client/stores/slices/chatSlice";
-import { requireChatAccess } from "~/server/tanstack/functions/require-chat-access";
+import { requireWebAccess } from "~/server/tanstack/functions/require-web-access";
 
 export const Route = createFileRoute("/chat/")({
   beforeLoad: async () => {
-    const authResult = await requireChatAccess();
+    const authResult = await requireWebAccess();
     if (!authResult.ok) {
       throw redirect({ to: "/chat/login" });
     }
@@ -107,16 +107,6 @@ function ChatRoute() {
     loading: t.errorLoading,
   };
   const chatErrorMessage = chatError ? chatErrorMessages[chatError] : undefined;
-  const mainClassName = hasChatMessages
-    ? "items-stretch sm:items-center"
-    : undefined;
-  const frameClassName = hasChatMessages
-    ? "h-dvh sm:h-[calc(100dvh-3rem)] md:h-[calc(100dvh-5rem)]"
-    : undefined;
-  const windowClassName = [
-    "relative flex min-h-0 flex-1 flex-col overflow-hidden",
-    "p-0 sm:p-0 md:p-0",
-  ].join(" ");
   const windowTitle = currentUser
     ? `${t.windowTitle} - ${currentUser.name}`
     : t.windowTitle;
@@ -169,6 +159,10 @@ function ChatRoute() {
   const onLogout = async () => {
     await logout();
     navigate({ to: "/chat/login" });
+  };
+
+  const onOpenTodos = () => {
+    navigate({ to: "/todo" });
   };
 
   const onToggleLocale = async () => {
@@ -277,6 +271,9 @@ function ChatRoute() {
           <TerminalChromeButton onClick={onToggleLocale} title={prefs.locale}>
             {prefs.locale === "pt-BR" ? "PT" : "EN"}
           </TerminalChromeButton>
+          <TerminalChromeButton onClick={onOpenTodos} title={t.todoAction}>
+            <ListTodo className="size-3" />
+          </TerminalChromeButton>
           <TerminalChromeButton
             onClick={toggleTheme}
             title={prefs.theme === "light" ? "dark" : "light"}
@@ -295,9 +292,10 @@ function ChatRoute() {
           </Button>
         </>
       }
-      mainClassName={mainClassName}
-      frameClassName={frameClassName}
-      windowClassName={windowClassName}
+      mainClassName="h-dvh items-stretch overflow-hidden sm:items-center"
+      frameClassName="overflow-hidden h-full sm:h-[calc(100dvh-3rem)] md:h-[calc(100dvh-5rem)]"
+      windowClassName="relative flex min-h-0 flex-1 flex-col p-0 sm:p-0 md:p-0"
+      showShadow={!hasChatMessages}
     >
       {chatErrorMessage ? (
         <Alert
@@ -322,11 +320,7 @@ function ChatRoute() {
       <div
         ref={parentRef}
         onScroll={onScroll}
-        className={
-          hasChatMessages
-            ? "relative flex-1 overflow-y-auto p-4 sm:p-5"
-            : "flex min-h-48 flex-col gap-2 p-4 sm:p-5"
-        }
+        className="flex min-h-48 flex-1 flex-col gap-2 overflow-auto p-4 sm:p-5"
       >
         {chatMessages.length === 0 ? (
           <div className="flex flex-1 items-center justify-center text-sm text-term-muted">
@@ -394,7 +388,7 @@ function ChatRoute() {
       )}
       <div
         ref={composerRef}
-        className="shrink-0 border-term-border border-t bg-linear-to-b from-term-chrome to-term-chrome/80 px-4 py-3"
+        className="shrink-0 border-term-border border-t bg-linear-to-b from-term-chrome to-term-chrome/80 px-4 py-3 sm:rounded-b-xl"
       >
         {isRecording ? (
           <div className="flex flex-wrap items-center gap-2.5 py-1">

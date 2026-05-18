@@ -70,6 +70,8 @@ In React components, keep the order `variables -> functions -> useEffect` whenev
 
 For conditional JSX, prefer `{condition && <Component />}` over `{condition ? <Component /> : null}` when there is no meaningful else branch. Make sure the condition resolves to a boolean so React does not render unintended values such as `0` or a string.
 
+Do not use `null` in application types, DTOs, interfaces, or component props. Use `undefined` or optional (`?`) properties instead. The only exception is SQL parameter binding where the `postgres` driver requires JavaScript `null` to produce SQL `NULL` — in those cases, convert from `undefined` to `null` as close to the query as possible using `?? null`.
+
 In Zustand stores, never access state with `get().someVariable`. Always destructure the value from `get()` first.
 
 ## Generated Files

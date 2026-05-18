@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { UnauthorizedException, ValidationException } from "~/infra/exceptions";
 import { AiChatMessageType } from "~/server/resources/IAiChatGateway";
+import type { TestAiChatGateway } from "~/server/resources/TestAiChatGateway";
 import type { TestWebMessagingGateway } from "~/server/resources/TestWebMessagingGateway";
 import { TestWhatsAppMessagingGateway } from "~/server/resources/TestWhatsAppMessagingGateway";
 import { Chat } from "~/shared/entities/Chat";
@@ -726,6 +727,25 @@ describe("MessagingService", () => {
     });
 
     service.aiChatGateway.getResponse = getResponse;
+  });
+
+  test("respondToMessage passes idSourceMessage in AI context", async () => {
+    await orquestrator.clearDatabase();
+    const phoneNumber = "5511912345678";
+    await orquestrator.messagingService.addAllowedNumber(phoneNumber);
+    await orquestrator.createUser({ phoneNumber });
+
+    const aiGateway =
+      orquestrator.container.resolve<TestAiChatGateway>("IAiChatGateway");
+
+    await orquestrator.messagingService.receiveWebMessage(phoneNumber, {
+      text: "remember this",
+    });
+    await new Promise((r) => setTimeout(r, delay));
+
+    const chat =
+      await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber);
+    expect(aiGateway.lastContext?.idSourceMessage).toBe(chat?.messages[0]?.id);
   });
 
   test("listenToMessage falls back to an empty text payload for unknown shapes", async () => {

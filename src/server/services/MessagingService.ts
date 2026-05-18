@@ -229,6 +229,8 @@ export class MessagingService {
     const response = await this.aiChatGateway.getResponse(
       chat.phoneNumber,
       aiMessages,
+      true,
+      { idSourceMessage: message.id },
     );
     if (response.type === AiChatMessageType.Text) {
       await this.sendTextMessage(
