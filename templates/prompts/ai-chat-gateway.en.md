@@ -221,4 +221,4 @@ Your highest priority is never violating these guardrails.
 
 ## Phone Instruction
 
-The end user's phone number is {{PhoneNumber}}. When calling any tool that accepts a phone number, pass this exact string verbatim: {{PhoneNumber}}. Do not reformat, add, or remove characters. Use it as‑is. Always include this phone number whenever a tool requires identifying the user.
+The end user's channel address is {{ChannelAddress}}. When calling any tool that asks for a user identifier, pass this exact string verbatim: {{ChannelAddress}}. Do not reformat, add, or remove characters. Use it as-is. Always include this channel address whenever a tool requires identifying the user.

@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import { ValidationException } from "~/infra/exceptions";
-import { ChatType } from "~/shared/entities/enums/ChatType";
+import { ChatChannel } from "~/shared/entities/enums/ChatChannel";
 import { MessageType } from "~/shared/entities/enums/MessageType";
 import { MessageUserType } from "~/shared/entities/enums/MessageUserType";
 import { Message } from "~/shared/entities/Message";
@@ -8,8 +8,9 @@ import { Message } from "~/shared/entities/Message";
 export class Chat {
   id: string;
   idUser?: string;
-  phoneNumber: string;
-  type: ChatType;
+  whatsAppAddress?: string;
+  webAddress?: string;
+  channel: ChatChannel;
   messages: Message[];
   summary?: string;
   summarizedUntilId?: string;
@@ -20,14 +21,15 @@ export class Chat {
   constructor() {
     this.id = uuidv4();
     this.idUser = undefined;
-    this.type = ChatType.WhatsApp;
-    this.phoneNumber = "";
+    this.whatsAppAddress = undefined;
+    this.webAddress = undefined;
+    this.channel = ChatChannel.WhatsApp;
     this.messages = [];
     this.summary = undefined;
     this.summarizedUntilId = undefined;
-    this.isDeleted = false;
     this.createdAt = new Date();
     this.updatedAt = new Date();
+    this.isDeleted = false;
   }
 
   get effectiveMessages(): Message[] {
@@ -49,6 +51,31 @@ export class Chat {
     this.updatedAt = new Date();
   }
 
+  setChannelAddress(channel: ChatChannel, channelAddress: string): void {
+    if (!channelAddress) {
+      throw new ValidationException("Channel address is required");
+    }
+    this.channel = channel;
+    if (channel === ChatChannel.WhatsApp) {
+      this.whatsAppAddress = channelAddress;
+    } else if (channel === ChatChannel.Web) {
+      this.webAddress = channelAddress.toLowerCase();
+    } else {
+      throw new ValidationException("Unsupported chat channel");
+    }
+    this.updatedAt = new Date();
+  }
+
+  getChannelAddress(): string {
+    if (this.channel === ChatChannel.WhatsApp && this.whatsAppAddress) {
+      return this.whatsAppAddress;
+    }
+    if (this.channel === ChatChannel.Web && this.webAddress) {
+      return this.webAddress;
+    }
+    throw new ValidationException("Chat channel address is required");
+  }
+
   addUser(idUser: string): void {
     if (this.idUser) {
       throw new ValidationException("There already is a user ID for this chat");
@@ -65,10 +92,10 @@ export class Chat {
     this.updatedAt = new Date();
   }
 
-  addUserTextMessage(text: string, idProvider?: string): Message {
+  addUserTextMessage(text: string, channelMessageId?: string): Message {
     const message = new Message({
       idChat: this.id,
-      idProvider,
+      channelMessageId,
       type: MessageType.Text,
       userType: MessageUserType.User,
       text,
@@ -77,10 +104,10 @@ export class Chat {
     return message;
   }
 
-  addBotTextMessage(text: string, idProvider?: string): Message {
+  addBotTextMessage(text: string, channelMessageId?: string): Message {
     const message = new Message({
       idChat: this.id,
-      idProvider,
+      channelMessageId,
       type: MessageType.Text,
       userType: MessageUserType.Bot,
       text,
@@ -89,10 +116,10 @@ export class Chat {
     return message;
   }
 
-  addUserButtonReply(reply: string, idProvider?: string): Message {
+  addUserButtonReply(reply: string, channelMessageId?: string): Message {
     const message = new Message({
       idChat: this.id,
-      idProvider,
+      channelMessageId,
       type: MessageType.ButtonReply,
       userType: MessageUserType.User,
       buttonReply: reply,
@@ -104,11 +131,11 @@ export class Chat {
   addBotButtonReply(
     replyText: string,
     buttons: string[],
-    idProvider?: string,
+    channelMessageId?: string,
   ): Message {
     const message = new Message({
       idChat: this.id,
-      idProvider,
+      channelMessageId,
       type: MessageType.ButtonReply,
       userType: MessageUserType.Bot,
       text: replyText,
@@ -121,11 +148,11 @@ export class Chat {
   addUserAudioMessage(
     mediaId: string,
     mimeType: string,
-    idProvider?: string,
+    channelMessageId?: string,
   ): Message {
     const message = new Message({
       idChat: this.id,
-      idProvider,
+      channelMessageId,
       type: MessageType.Audio,
       userType: MessageUserType.User,
       mediaId,
@@ -138,8 +165,9 @@ export class Chat {
   toJSON() {
     return {
       id: this.id,
-      phoneNumber: this.phoneNumber,
-      type: this.type.toLowerCase(),
+      whatsAppAddress: this.whatsAppAddress,
+      webAddress: this.webAddress,
+      channel: this.channel.toLowerCase(),
       messages: this.messages.map((m) => m.toJSON()),
       summary: this.summary,
       createdAt: this.createdAt.toISOString(),

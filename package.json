@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite dev",
     "dev:ngrok": "ngrok http --url=parrot-fun-nicely.ngrok-free.app --region us 3000",
-    "dev:local": "MODE=development bun run services:ready && MODE=development bun infra/scripts/seed-allowed-number.ts && concurrently -n vite,ngrok -c red,blue -k \"bun run dev\" \"bun run dev:ngrok\"",
+    "dev:local": "MODE=development bun run services:ready && MODE=development bun infra/scripts/seed-allowed-entries.ts && concurrently -n vite,ngrok -c red,blue -k \"bun run dev\" \"bun run dev:ngrok\"",
+    "dev:debug": "NODE_OPTIONS='--inspect=localhost:9230/the-chatbot-v2' vite dev",
+    "dev:local:debug": "MODE=development bun run services:ready && MODE=development bun infra/scripts/seed-allowed-entries.ts && concurrently -n vite,ngrok -c red,blue -k \"bun run dev:debug\" \"bun run dev:ngrok\"",
     "build:local": "vite build --mode development && vite preview --mode development",
     "build": "vite build",
     "start": "vite preview",

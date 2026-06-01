@@ -9,14 +9,14 @@ export type WebChatEvent =
   | {
       type: "text";
       data: {
-        to?: string;
+        toAddress?: string;
         text?: string;
       };
     }
   | {
       type: "interactive_button";
       data: {
-        to?: string;
+        toAddress?: string;
         text?: string;
         buttons?: string[];
       };

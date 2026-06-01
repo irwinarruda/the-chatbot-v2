@@ -150,18 +150,21 @@ export function registerDependencies(config: Config) {
       await messagingService.sendSignedInMessage(phoneNumber);
     },
   );
-  mediator.register<string>("DeleteUserByPhoneNumber", async (phoneNumber) => {
-    const messagingService =
-      container.resolve<MessagingService>("MessagingService");
-    await messagingService.deleteChat(phoneNumber);
-  });
+  mediator.register<string>(
+    "DeleteUserByChatChannelAddress",
+    async (channelAddress) => {
+      const messagingService =
+        container.resolve<MessagingService>("MessagingService");
+      await messagingService.deleteChat(channelAddress);
+    },
+  );
   mediator.register<RespondToMessageEvent>("RespondToMessage", async (data) => {
     const messagingService =
       container.resolve<MessagingService>("MessagingService");
     await messagingService.respondToMessage(
       data.chat,
       data.message,
-      data.chatType,
+      data.channel,
     );
   });
 }

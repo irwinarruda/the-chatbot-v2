@@ -85,7 +85,7 @@ export class TodoService {
         t.*,
         m.id AS source_message_id,
         m.id_chat AS source_message_chat_id,
-        m.id_provider AS source_message_provider_id,
+        m.channel_message_id AS source_message_channel_message_id,
         m.type AS source_message_type,
         m.user_type AS source_message_user_type,
         m.text AS source_message_text,
@@ -126,7 +126,7 @@ export class TodoService {
         t.*,
         m.id AS source_message_id,
         m.id_chat AS source_message_chat_id,
-        m.id_provider AS source_message_provider_id,
+        m.channel_message_id AS source_message_channel_message_id,
         m.type AS source_message_type,
         m.user_type AS source_message_user_type,
         m.text AS source_message_text,
@@ -254,7 +254,8 @@ export class TodoService {
     const message = new Message();
     message.id = row.source_message_id;
     message.idChat = row.source_message_chat_id ?? "";
-    message.idProvider = row.source_message_provider_id ?? undefined;
+    message.channelMessageId =
+      row.source_message_channel_message_id ?? undefined;
     message.type = (row.source_message_type as MessageType) ?? MessageType.Text;
     message.userType =
       (row.source_message_user_type as MessageUserType) ?? MessageUserType.User;
@@ -289,7 +290,7 @@ interface DbTodo {
 interface DbSourceMessage {
   source_message_id: string | null;
   source_message_chat_id: string | null;
-  source_message_provider_id: string | null;
+  source_message_channel_message_id: string | null;
   source_message_type: string | null;
   source_message_user_type: string | null;
   source_message_text: string | null;

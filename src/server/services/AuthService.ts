@@ -21,7 +21,7 @@ import { User } from "~/shared/entities/User";
 export interface WebAuthTokenPayload {
   userId: string;
   email: string;
-  phoneNumber: string;
+  phoneNumber?: string;
 }
 
 export type GoogleLoginResult =
@@ -57,17 +57,23 @@ export class AuthService {
     this.mediator = mediator;
   }
 
-  getAppLoginUrl(phoneNumber: string): string {
-    return this.googleAuthGateway.getAppLoginUrl(phoneNumber);
+  getAppLoginUrl(bsuid: string): string {
+    if (!bsuid) {
+      throw new ValidationException("Login provider ID is required");
+    }
+    return this.googleAuthGateway.getAppLoginUrl(bsuid);
   }
 
-  async handleGoogleLogin(phoneNumber: string): Promise<GoogleLoginResult> {
-    const user = await this.getUserByPhoneNumber(phoneNumber);
+  async handleGoogleLogin(bsuid: string): Promise<GoogleLoginResult> {
+    if (!bsuid) {
+      throw new ValidationException("Login provider ID is required");
+    }
+    const user = await this.getUserByBsuid(bsuid);
     if (user?.googleCredential) {
       await this.refreshGoogleCredential(user);
       return { type: "alreadySignedIn" };
     }
-    const state = this.encryptPhoneNumber(phoneNumber);
+    const state = this.encryptAppBsuid(bsuid);
     const url = this.googleAuthGateway.createAuthorizationCodeUrl(state);
     return { type: "redirect", url };
   }
@@ -76,7 +82,7 @@ export class AuthService {
     state: string,
     code: string,
   ): Promise<GoogleRedirectResult> {
-    const phoneNumber = this.decryptPhoneNumber(state);
+    const bsuid = this.decryptAppBsuid(state);
     const userToken = await this.googleAuthGateway.exchangeCodeForTokens(
       code,
       "app",
@@ -84,7 +90,7 @@ export class AuthService {
     const userinfo = await this.googleAuthGateway.getUserInfo(
       userToken.accessToken,
     );
-    await this.saveUserFromGoogleAuth(phoneNumber, userToken, userinfo, "app");
+    await this.saveUserFromGoogleAuth(bsuid, userToken, userinfo, "app");
     return { type: "success" };
   }
 
@@ -163,7 +169,7 @@ export class AuthService {
         "Please log in again.",
       );
     }
-    if (!payload.userId || !payload.email || !payload.phoneNumber) {
+    if (!payload.userId || !payload.email) {
       throw new UnauthorizedException(
         "Invalid authentication token",
         "Please log in again.",
@@ -188,29 +194,52 @@ export class AuthService {
     });
   }
 
-  private encryptPhoneNumber(phoneNumber: string): string {
-    if (!phoneNumber) {
-      throw new ValidationException("Phone number has no length");
+  private encryptAppBsuid(bsuid: string): string {
+    if (!bsuid) {
+      throw new ValidationException("Login provider ID is required");
     }
     const encryption = new Encryption(this.encryptionConfig);
-    return encryption.encrypt(phoneNumber);
+    return encryption.encrypt(bsuid);
   }
 
-  private decryptPhoneNumber(state: string): string {
+  private decryptAppBsuid(state: string): string {
     if (!state) {
-      throw new ValidationException("Phone number has no length");
+      throw new ValidationException("Login provider ID is required");
     }
     const encryption = new Encryption(this.encryptionConfig);
-    return encryption.decrypt(state);
+    const decrypted = encryption.decrypt(state);
+    try {
+      const parsed: unknown = JSON.parse(decrypted);
+      if (typeof parsed === "object" && parsed !== null) {
+        const { id } = parsed as { id?: string };
+        if (id) return id;
+      }
+    } catch {}
+    return decrypted;
   }
 
-  private async saveUserFromGoogleAuth(
-    phoneNumber: string,
+  async saveUserFromGoogleAuth(
+    bsuid: string,
     userToken: GoogleTokens,
     userinfo: GoogleUserInfo,
     target: GoogleAuthTarget = "app",
   ): Promise<User> {
-    let user = await this.getUserByPhoneNumber(phoneNumber);
+    const email = userinfo.email.toLowerCase();
+    const userByEmail = await this.getUserByEmail(email);
+    const aliasUser = await this.getUserByBsuid(bsuid);
+    if (userByEmail && aliasUser && userByEmail.id !== aliasUser.id) {
+      throw new UnauthorizedException(
+        "The logged in Google account does not match this WhatsApp identity.",
+        "Log in with the correct Google account and try again.",
+      );
+    }
+    let user = userByEmail ?? aliasUser;
+    if (user?.email && user.email !== email) {
+      throw new UnauthorizedException(
+        "The logged in Google account does not match this WhatsApp identity.",
+        "Log in with the correct Google account and try again.",
+      );
+    }
     if (!user) {
       if (target === "web") {
         throw new NotFoundException(
@@ -218,22 +247,19 @@ export class AuthService {
           "Register this phone number in the app before signing in on the web.",
         );
       }
-      user = new User(userinfo.name, phoneNumber, userinfo.email);
+      user = new User(userinfo.name, undefined, email);
+      user.bsuid = bsuid;
       user.createGoogleCredential(
         userToken.accessToken,
         userToken.refreshToken,
         userToken.expiresInSeconds,
       );
       await this.createUser(user);
-      await this.mediator.send("SaveUserByGoogleCredential", user.phoneNumber);
+      await this.mediator.send("SaveUserByGoogleCredential", bsuid);
       return user;
     }
-    if (user.email && user.email !== userinfo.email) {
-      throw new UnauthorizedException(
-        "The logged in Google account does not match this phone number.",
-        "Log in with the correct Google account and try again.",
-      );
-    }
+    user.email ??= email;
+    user.bsuid = bsuid;
     if (!user.googleCredential) {
       user.createGoogleCredential(
         userToken.accessToken,
@@ -254,18 +280,20 @@ export class AuthService {
       );
       await this.saveGoogleCredential(user.googleCredential);
     }
-    if (userinfo.email && !user.email) {
-      user.updateEmail(userinfo.email);
-      await this.saveUser(user);
+    if (!user.email) {
+      user.updateEmail(email);
     }
+    await this.saveUser(user);
     return user;
   }
 
   async createUser(user: User): Promise<User> {
     const email = user.email ?? null;
+    const phoneNumber = user.phoneNumber ?? null;
+    const bsuid = user.bsuid ?? null;
     await this.database.sql`
-      INSERT INTO users (id, name, phone_number, email, created_at, updated_at)
-      VALUES (${user.id}, ${user.name}, ${user.phoneNumber}, ${email}, ${user.createdAt}, ${user.updatedAt})
+      INSERT INTO users (id, name, phone_number, email, bsuid, created_at, updated_at)
+      VALUES (${user.id}, ${user.name}, ${phoneNumber}, ${email}, ${bsuid}, ${user.createdAt}, ${user.updatedAt})
     `;
     if (user.googleCredential) {
       const credential = user.googleCredential;
@@ -279,10 +307,33 @@ export class AuthService {
     return user;
   }
 
+  async getUserByBsuidOrPhoneNumber(id: string): Promise<User | undefined> {
+    const dbUsers = await this.database.sql<DbUser[]>`
+      SELECT * FROM users
+      WHERE bsuid = ${id}
+        OR phone_number = ${id}
+        OR lower(email) = ${id.toLowerCase()}
+      LIMIT 1
+    `;
+    const dbUser = dbUsers[0];
+    if (!dbUser) return undefined;
+    return this.hydrateUser(dbUser);
+  }
+
   async getUserByPhoneNumber(phoneNumber: string): Promise<User | undefined> {
     const dbUsers = await this.database.sql<DbUser[]>`
       SELECT * FROM users
       WHERE phone_number = ${phoneNumber}
+    `;
+    const dbUser = dbUsers[0];
+    if (!dbUser) return undefined;
+    return this.hydrateUser(dbUser);
+  }
+
+  async getUserByBsuid(bsuid: string): Promise<User | undefined> {
+    const dbUsers = await this.database.sql<DbUser[]>`
+      SELECT * FROM users
+      WHERE bsuid = ${bsuid}
     `;
     const dbUser = dbUsers[0];
     if (!dbUser) return undefined;
@@ -299,6 +350,16 @@ export class AuthService {
     return this.hydrateUser(dbUser);
   }
 
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const dbUsers = await this.database.sql<DbUser[]>`
+      SELECT * FROM users
+      WHERE lower(email) = ${email.toLowerCase()}
+    `;
+    const dbUser = dbUsers[0];
+    if (!dbUser) return undefined;
+    return this.hydrateUser(dbUser);
+  }
+
   async getUsers(): Promise<User[]> {
     const dbUsers = await this.database.sql<DbUser[]>`SELECT * FROM users`;
     const users: User[] = [];
@@ -309,20 +370,35 @@ export class AuthService {
     return users;
   }
 
-  async getUserByEmail(email: string): Promise<User | undefined> {
-    const dbUsers = await this.database.sql<DbUser[]>`
-      SELECT * FROM users
-      WHERE email = ${email}
+  async deleteUserByChatChannelAddress(channelAddress: string): Promise<void> {
+    await this.database.sql`
+      DELETE FROM users
+      WHERE id = (
+        SELECT id FROM users
+        WHERE bsuid = ${channelAddress}
+          OR phone_number = ${channelAddress}
+          OR lower(email) = ${channelAddress.toLowerCase()}
+        LIMIT 1
+      );
     `;
-    const dbUser = dbUsers[0];
-    if (!dbUser) return undefined;
-    return this.hydrateUser(dbUser);
+    await this.mediator.send("DeleteUserByChatChannelAddress", channelAddress);
   }
 
-  async deleteUserByPhoneNumber(phoneNumber: string): Promise<void> {
-    await this.database
-      .sql`DELETE FROM users WHERE phone_number = ${phoneNumber}`;
-    await this.mediator.send("DeleteUserByPhoneNumber", phoneNumber);
+  async saveUser(user: User): Promise<void> {
+    const email = user.email ?? null;
+    const phoneNumber = user.phoneNumber ?? null;
+    const bsuid = user.bsuid ?? null;
+    await this.database.sql`
+      UPDATE users
+      SET
+        name = ${user.name},
+        email = ${email},
+        phone_number = ${phoneNumber},
+        bsuid = ${bsuid},
+        is_inactive = ${user.isInactive},
+        updated_at = ${user.updatedAt}
+      WHERE id = ${user.id}
+    `;
   }
 
   private async saveGoogleCredential(
@@ -357,12 +433,12 @@ export class AuthService {
     const user = new User();
     user.id = dbUser.id;
     user.name = dbUser.name;
-    user.phoneNumber = dbUser.phone_number;
+    user.phoneNumber = dbUser.phone_number ?? undefined;
     user.email = dbUser.email ?? undefined;
+    user.bsuid = dbUser.bsuid ?? undefined;
     user.isInactive = dbUser.is_inactive;
     user.createdAt = dbUser.created_at;
     user.updatedAt = dbUser.updated_at;
-
     const dbCredentials = await this.database.sql<DbGoogleCredential[]>`
       SELECT * FROM google_credentials
       WHERE id_user = ${user.id}
@@ -383,27 +459,14 @@ export class AuthService {
     }
     return user;
   }
-
-  private async saveUser(user: User): Promise<void> {
-    const email = user.email ?? null;
-    await this.database.sql`
-      UPDATE users
-      SET
-        name = ${user.name},
-        email = ${email},
-        phone_number = ${user.phoneNumber},
-        is_inactive = ${user.isInactive},
-        updated_at = ${user.updatedAt}
-      WHERE id = ${user.id}
-    `;
-  }
 }
 
 interface DbUser {
   id: string;
   name: string;
-  phone_number: string;
+  phone_number: string | null;
   email: string | null;
+  bsuid: string | null;
   is_inactive: boolean;
   created_at: Date;
   updated_at: Date;

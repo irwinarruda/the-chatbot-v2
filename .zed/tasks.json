@@ -1,0 +1,9 @@
+[
+  {
+    "label": "dev:local:debug",
+    "command": "bun",
+    "args": ["run", "dev:local:debug"],
+    "tags": ["dev", "debug"],
+    "use_new_terminal": true
+  }
+]

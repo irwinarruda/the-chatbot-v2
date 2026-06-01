@@ -12,7 +12,7 @@ import type {
   WebChatEvent,
   WebIncomingMessageBody,
 } from "~/server/resources/IWebMessagingGateway";
-import { ChatType } from "~/shared/entities/enums/ChatType";
+import { ChatChannel } from "~/shared/entities/enums/ChatChannel";
 
 export class WebMessagingGateway implements IWebMessagingGateway {
   private readonly mediaById = new Map<string, Buffer>();
@@ -20,27 +20,27 @@ export class WebMessagingGateway implements IWebMessagingGateway {
   private readonly queues = new Map<string, WebChatEvent[]>();
 
   async receiveWebMessage(
-    phoneNumber: string,
+    webAddress: string,
     body: unknown,
   ): Promise<ReceiveMessageDTO | undefined> {
     const parsedBody = this.parseIncomingMessageBody(body);
     if ("audioBuffer" in parsedBody) {
-      return this.createAudioMessage(phoneNumber, parsedBody);
+      return this.createAudioMessage(webAddress, parsedBody);
     }
     if ("buttonReply" in parsedBody) {
-      return this.createButtonReplyMessage(phoneNumber, parsedBody.buttonReply);
+      return this.createButtonReplyMessage(webAddress, parsedBody.buttonReply);
     }
-    return this.createTextMessage(phoneNumber, parsedBody.text);
+    return this.createTextMessage(webAddress, parsedBody.text);
   }
 
   async sendTextMessage(dto: SendTextMessageDTO): Promise<void> {
-    this.enqueue(dto.to, { type: "text", data: dto });
+    this.enqueue(dto.toAddress, { type: "text", data: dto });
   }
 
   async sendInteractiveReplyButtonMessage(
     dto: SendInteractiveButtonMessageDTO,
   ): Promise<void> {
-    this.enqueue(dto.to, { type: "interactive_button", data: dto });
+    this.enqueue(dto.toAddress, { type: "interactive_button", data: dto });
   }
 
   async downloadMediaAsync(mediaId: string): Promise<Buffer> {
@@ -53,10 +53,10 @@ export class WebMessagingGateway implements IWebMessagingGateway {
     return mediaBytes;
   }
 
-  enqueue(phoneNumber: string, event: WebChatEvent): void {
-    const subscribers = this.subscribers.get(phoneNumber);
+  enqueue(webAddress: string, event: WebChatEvent): void {
+    const subscribers = this.subscribers.get(webAddress);
     if (!subscribers?.size) {
-      this.getOrCreateQueue(phoneNumber).push(event);
+      this.getOrCreateQueue(webAddress).push(event);
       return;
     }
     for (const subscriber of subscribers) {
@@ -71,10 +71,10 @@ export class WebMessagingGateway implements IWebMessagingGateway {
   }
 
   async *subscribe(
-    phoneNumber: string,
+    webAddress: string,
     signal: AbortSignal,
   ): AsyncGenerator<WebChatEvent> {
-    const subscriber = this.addSubscriber(phoneNumber);
+    const subscriber = this.addSubscriber(webAddress);
     try {
       while (!signal.aborted) {
         const event = await this.nextEvent(subscriber, signal);
@@ -82,48 +82,48 @@ export class WebMessagingGateway implements IWebMessagingGateway {
         yield event;
       }
     } finally {
-      this.removeSubscriber(phoneNumber, subscriber);
+      this.removeSubscriber(webAddress, subscriber);
     }
   }
 
   private createTextMessage(
-    phoneNumber: string,
+    webAddress: string,
     text: string,
   ): ReceiveTextMessageDTO {
     return {
-      ...this.createBaseReceiveMessage(phoneNumber),
+      ...this.createBaseReceiveMessage(webAddress),
       text,
     };
   }
 
   private createButtonReplyMessage(
-    phoneNumber: string,
+    webAddress: string,
     buttonReply: string,
   ): ReceiveInteractiveButtonMessageDTO {
     return {
-      ...this.createBaseReceiveMessage(phoneNumber),
+      ...this.createBaseReceiveMessage(webAddress),
       buttonReply,
     };
   }
 
   private createAudioMessage(
-    phoneNumber: string,
+    webAddress: string,
     body: Extract<WebIncomingMessageBody, { audioBuffer: Buffer }>,
   ): ReceiveAudioMessageDTO {
     const mediaId = crypto.randomUUID();
     this.mediaById.set(mediaId, body.audioBuffer);
     return {
-      ...this.createBaseReceiveMessage(phoneNumber),
+      ...this.createBaseReceiveMessage(webAddress),
       mediaId,
       mimeType: body.mimeType,
     };
   }
 
-  private createBaseReceiveMessage(phoneNumber: string): ReceiveMessageDTO {
+  private createBaseReceiveMessage(webAddress: string): ReceiveMessageDTO {
     return {
-      from: phoneNumber,
-      chatType: ChatType.Web,
-      idProvider: crypto.randomUUID(),
+      fromAddress: webAddress.toLowerCase(),
+      channel: ChatChannel.Web,
+      channelMessageId: crypto.randomUUID(),
     };
   }
 
@@ -162,24 +162,24 @@ export class WebMessagingGateway implements IWebMessagingGateway {
     );
   }
 
-  private addSubscriber(phoneNumber: string): WebEventSubscriber {
+  private addSubscriber(webAddress: string): WebEventSubscriber {
     const subscriber: WebEventSubscriber = {
-      queue: this.takeQueuedEvents(phoneNumber),
+      queue: this.takeQueuedEvents(webAddress),
     };
-    this.getOrCreateSubscribers(phoneNumber).add(subscriber);
+    this.getOrCreateSubscribers(webAddress).add(subscriber);
     return subscriber;
   }
 
   private removeSubscriber(
-    phoneNumber: string,
+    webAddress: string,
     subscriber: WebEventSubscriber,
   ): void {
     subscriber.pending?.cancel();
-    const subscribers = this.subscribers.get(phoneNumber);
+    const subscribers = this.subscribers.get(webAddress);
     if (!subscribers) return;
     subscribers.delete(subscriber);
     if (subscribers.size === 0) {
-      this.subscribers.delete(phoneNumber);
+      this.subscribers.delete(webAddress);
     }
   }
 
@@ -224,29 +224,27 @@ export class WebMessagingGateway implements IWebMessagingGateway {
     });
   }
 
-  private getOrCreateQueue(phoneNumber: string): WebChatEvent[] {
-    let queue = this.queues.get(phoneNumber);
+  private getOrCreateQueue(webAddress: string): WebChatEvent[] {
+    let queue = this.queues.get(webAddress);
     if (!queue) {
       queue = [];
-      this.queues.set(phoneNumber, queue);
+      this.queues.set(webAddress, queue);
     }
-
     return queue;
   }
 
-  private takeQueuedEvents(phoneNumber: string): WebChatEvent[] {
-    const queue = this.queues.get(phoneNumber) ?? [];
-    this.queues.delete(phoneNumber);
+  private takeQueuedEvents(webAddress: string): WebChatEvent[] {
+    const queue = this.queues.get(webAddress) ?? [];
+    this.queues.delete(webAddress);
     return queue;
   }
 
-  private getOrCreateSubscribers(phoneNumber: string): Set<WebEventSubscriber> {
-    let subscribers = this.subscribers.get(phoneNumber);
+  private getOrCreateSubscribers(webAddress: string): Set<WebEventSubscriber> {
+    let subscribers = this.subscribers.get(webAddress);
     if (!subscribers) {
       subscribers = new Set();
-      this.subscribers.set(phoneNumber, subscribers);
+      this.subscribers.set(webAddress, subscribers);
     }
-
     return subscribers;
   }
 }

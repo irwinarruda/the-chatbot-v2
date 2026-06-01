@@ -14,6 +14,12 @@ export class TestGoogleAuthGateway implements IGoogleAuthGateway {
     this.googleConfig = googleConfig;
   }
 
+  getAppLoginUrl(id: string): string {
+    const url = new URL(this.googleConfig.loginUri);
+    url.searchParams.set("id", id);
+    return url.toString();
+  }
+
   createAuthorizationCodeUrl(
     state?: string,
     redirectTarget: "app" | "web" = "app",
@@ -78,11 +84,5 @@ export class TestGoogleAuthGateway implements IGoogleAuthGateway {
       refreshToken: "1//0G_refresh_token_refreshed_abcdefghijklmnopqrstuvwxyz",
       expiresInSeconds: 3600,
     };
-  }
-
-  getAppLoginUrl(phoneNumber: string): string {
-    const url = new URL(this.googleConfig.loginUri);
-    url.searchParams.set("phone_number", phoneNumber);
-    return url.toString();
   }
 }

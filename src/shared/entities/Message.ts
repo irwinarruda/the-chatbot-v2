@@ -6,7 +6,7 @@ export interface MessageConfig {
   idChat: string;
   type: MessageType;
   userType: MessageUserType;
-  idProvider?: string;
+  channelMessageId?: string;
   text?: string;
   buttonReply?: string;
   buttonReplyOptions?: string[];
@@ -18,7 +18,7 @@ export interface MessageConfig {
 export class Message {
   id: string;
   idChat: string;
-  idProvider?: string;
+  channelMessageId?: string;
   type: MessageType;
   userType: MessageUserType;
   text?: string;
@@ -34,7 +34,7 @@ export class Message {
   constructor(config?: MessageConfig) {
     this.id = uuidv4();
     this.idChat = config?.idChat ?? "";
-    this.idProvider = config?.idProvider ?? undefined;
+    this.channelMessageId = config?.channelMessageId ?? undefined;
     this.type = config?.type ?? MessageType.Text;
     this.userType = config?.userType ?? MessageUserType.User;
     this.text = config?.text ?? undefined;

@@ -1,0 +1,12 @@
+[
+  {
+    "label": "dev:local:debug",
+    "adapter": "JavaScript",
+    "type": "node",
+    "request": "attach",
+    "port": 9230,
+    "address": "localhost",
+    "restart": true,
+    "skipFiles": ["<node_internals>/**", "**/node_modules/vite/**"]
+  }
+]

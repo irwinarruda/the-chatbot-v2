@@ -7,8 +7,9 @@ import { PhoneNumberUtils } from "~/shared/entities/PhoneNumberUtils";
 export class User {
   id: string;
   name: string;
-  phoneNumber: string;
+  phoneNumber?: string;
   email?: string;
+  bsuid?: string;
   isInactive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -18,19 +19,20 @@ export class User {
     this.id = uuidv4();
     this.isInactive = false;
     this.name = "";
-    this.phoneNumber = "";
     this.email = email;
     this.googleCredential = undefined;
     this.createdAt = new Date();
     this.updatedAt = new Date();
-
-    if (name !== undefined && phoneNumber !== undefined) {
+    if (name !== undefined) {
       if (name.length >= 30) {
         throw new ValidationException(
           "User name cannot have more than 29 characters",
           "Chose another name and continue",
         );
       }
+      this.name = name;
+    }
+    if (phoneNumber !== undefined && phoneNumber !== "") {
       const sanitized = PhoneNumberUtils.sanitize(phoneNumber);
       if (!PhoneNumberUtils.isValid(sanitized)) {
         throw new ValidationException(
@@ -38,7 +40,6 @@ export class User {
           "Chose another phone number and continue",
         );
       }
-      this.name = name;
       this.phoneNumber = sanitized;
     }
   }
@@ -89,6 +90,7 @@ export class User {
       name: this.name,
       email: this.email,
       phoneNumber: this.phoneNumber,
+      bsuid: this.bsuid,
     };
   }
 }

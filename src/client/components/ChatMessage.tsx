@@ -4,7 +4,7 @@ import {
   type WhatsAppBlockNode,
   type WhatsAppInlineNode,
   WhatsAppMessageParser,
-} from "~/client/utils/WhatsAppMessageParser";
+} from "~/client/utils/whatsAppMessageParser";
 import { AudioWaveform } from "./AudioWaveform";
 import { Button } from "./ui/button";
 

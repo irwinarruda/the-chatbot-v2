@@ -20,12 +20,12 @@ export type WebIncomingMessageBody =
 
 export interface IWebMessagingGateway extends IMessagingGateway {
   receiveWebMessage(
-    phoneNumber: string,
+    webAddress: string,
     body: unknown,
   ): Promise<ReceiveMessageDTO | undefined>;
-  enqueue(phoneNumber: string, event: WebChatEvent): void;
+  enqueue(webAddress: string, event: WebChatEvent): void;
   subscribe(
-    phoneNumber: string,
+    webAddress: string,
     signal: AbortSignal,
   ): AsyncGenerator<WebChatEvent>;
 }

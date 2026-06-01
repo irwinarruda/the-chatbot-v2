@@ -23,7 +23,7 @@ A permanent, unique identifier for each WhatsApp user, scoped to a specific busi
 
 - **Format**: `CC.XXXXXXXXXX` — ISO 3166-1 alpha-2 country code, a period, then up to 128 alphanumeric characters. Example: `BR.13491208655302741918`.
 - **Uniqueness**: Each BSUID is unique within a business portfolio. A user who interacts with multiple businesses gets a different BSUID for each.
-- **Stability**: The BSUID is stable for the lifetime of the user-portfolio relationship. It only changes when the user changes their phone number (a `user_changed_user_id` system webhook fires in that case).
+- **Stability**: The BSUID is stable for the lifetime of the user-portfolio relationship.
 - **Parent BSUID**: For managed businesses with multiple portfolios under one umbrella, a `parent_bsuid` field may appear. This is the same BSUID across all child portfolios, enabling cross-portfolio identity matching. This is optional and only relevant for multi-portfolio setups.
 
 ### WhatsApp Usernames
@@ -47,10 +47,6 @@ When none of these conditions apply, `wa_id` is **omitted** from the payload.
 ### New Template Button: `REQUEST_CONTACT_INFO`
 
 A new interactive button type (`URL` button with `request_contact_info` subtype) that businesses can send in templates. When tapped, the user's phone number is shared with the business. This is the proactive way to obtain a phone number when `wa_id` is missing.
-
-### System Webhooks
-
-A new system event type `user_changed_user_id` fires when a user changes their phone number. The payload includes both the old and new BSUIDs. The business must update its records to map to the new BSUID.
 
 ---
 
@@ -102,25 +98,6 @@ A new system event type `user_changed_user_id` fires when a user changes their p
 }
 ```
 
-### System Event: User Changed Phone Number
-
-```jsonc
-{
-  "entry": [{
-    "changes": [{
-      "value": {
-        "event": "user_changed_user_id",
-        "user_id_event": {
-          "old_user_id": "BR.13491208655302741918",
-          "new_user_id": "BR.98765432109876543210",
-          "phone_number": "5511988887777"
-        }
-      }
-    }]
-  }]
-}
-```
-
 ## Send Message API Changes
 
 ### Sending to a Phone Number (current, still supported)
@@ -141,7 +118,7 @@ POST /v22.0/{phone_number_id}/messages
 POST /v22.0/{phone_number_id}/messages
 {
   "messaging_product": "whatsapp",
-  "recipient": { "user_id": "BR.13491208655302741918" },
+  "recipient": "BR.13491208655302741918",
   "type": "text",
   "text": { "body": "Hello" }
 }
@@ -194,7 +171,7 @@ Lines 21–50 and 52–89 — `sendTextMessage()` and `sendInteractiveReplyButto
 ```ts
 body: JSON.stringify({
   messaging_product: "whatsapp",
-  to: dto.to,
+  to: dto.toId,
   // ...
 })
 ```
@@ -478,22 +455,15 @@ const bsuid = message.from_user_id ?? contact?.user_id ?? undefined;
 // Return both in the DTO
 ```
 
-**`sendTextMessage()` and `sendInteractiveReplyButtonMessage()`** — support the `recipient` field:
+**`sendTextMessage()` and `sendInteractiveReplyButtonMessage()`**:
 ```ts
-// Determine the recipient format
-const recipientBody = dto.bsuid
-  ? { recipient: { user_id: dto.bsuid } }
-  : { to: dto.to };
-
 body: JSON.stringify({
   messaging_product: "whatsapp",
-  ...recipientBody,
+  to: dto.toId,
   type: "text",
   text: { body: chunk },
 })
 ```
-
-**New handler** — `receiveWhatsAppSystemEvent()` to process `user_changed_user_id` events and update stored BSUID mappings.
 
 ### 5. Messaging Service — `MessagingService.ts`
 
@@ -525,15 +495,7 @@ This is the largest area of change. The core `listenToMessage()` flow needs to s
 **JWT payload**:
 - Consider including `bsuid` in the JWT payload for future-proofing
 
-### 7. System Webhook Handler
-
-A new handler for `user_changed_user_id` system events:
-
-- Listen for system events in the webhook route (currently only message webhooks are processed)
-- When received, find all entities (users, chats) with the old BSUID and update them to the new BSUID
-- The event payload includes the new phone number — update that as well if the user exists
-
-### 8. REQUEST_CONTACT_INFO Button Support
+### 7. REQUEST_CONTACT_INFO Button Support
 
 When a message arrives with only a BSUID (no phone number) and the user is not recognized:
 
@@ -564,10 +526,9 @@ This phase is safe because BSUIDs are already appearing in webhooks (since March
 
 ### Phase 3 — Full BSUID Support
 
-1. Handle `user_changed_user_id` system webhooks
-2. Add `REQUEST_CONTACT_INFO` template button for users without phone numbers
-3. Update auth flow to handle BSUID-only users (no phone number for OAuth)
-4. Consider making `bsuid` NOT NULL in a future migration once all active users have been mapped
+1. Add `REQUEST_CONTACT_INFO` template button for users without phone numbers
+2. Update auth flow to handle BSUID-only users (no phone number for OAuth)
+3. Consider making `bsuid` NOT NULL in a future migration once all active users have been mapped
 
 ### Phase 4 — Phone Number Deprecation (future)
 
