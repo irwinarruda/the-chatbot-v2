@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ServerBootstrap } from "~/infra/server-bootstrap";
 import type { MessagingService } from "~/server/services/MessagingService";
 import { Http } from "~/server/utils/Http";
+import { ChatChannel } from "~/shared/entities/enums/ChatChannel";
 import type { SharedChatMessage } from "~/shared/types/web-chat";
 
 export const Route = createFileRoute("/api/v1/web/messages")({
@@ -10,8 +11,9 @@ export const Route = createFileRoute("/api/v1/web/messages")({
       async GET({ context }) {
         const messagingService =
           ServerBootstrap.getService<MessagingService>("MessagingService");
-        const chat = await messagingService.getChatByPhoneNumber(
-          context.webAuth.phoneNumber,
+        const chat = await messagingService.getChatByChannelAddress(
+          context.webAuth.email,
+          ChatChannel.Web,
         );
         if (!chat) {
           return Http.json({ messages: [] });
@@ -25,7 +27,7 @@ export const Route = createFileRoute("/api/v1/web/messages")({
         const messagingService =
           ServerBootstrap.getService<MessagingService>("MessagingService");
         await messagingService.receiveWebMessage(
-          context.webAuth.phoneNumber,
+          context.webAuth.email,
           await request.json(),
         );
         return Http.ok();

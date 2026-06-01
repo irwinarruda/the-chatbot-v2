@@ -14,7 +14,9 @@ describe("CashFlowService", () => {
   });
 
   async function createGoogleConnectedUser(phoneNumber: string) {
-    await orquestrator.createUser({ phoneNumber });
+    const user = new User("Test User", phoneNumber);
+    user.bsuid = phoneNumber;
+    await orquestrator.authService.createUser(user);
     const encryption = new Encryption(orquestrator.encryptionConfig);
     await orquestrator.authService.handleGoogleRedirect(
       encryption.encrypt(phoneNumber),
@@ -306,7 +308,9 @@ describe("CashFlowService", () => {
     const expenseCategories =
       await orquestrator.cashFlowService.getExpenseCategories(okPhone);
     expect(expenseCategories.length).toBeGreaterThan(0);
+  });
 
+  test("getExpenseCategories rejects wrong spreadsheet", async () => {
     const wrongPhone = "5511955555555";
     await setupUserWithSpreadsheet(wrongPhone, "WrongSheet");
     await expect(
@@ -321,7 +325,9 @@ describe("CashFlowService", () => {
     const earningCategories =
       await orquestrator.cashFlowService.getEarningCategories(okPhone);
     expect(earningCategories.length).toBeGreaterThan(0);
+  });
 
+  test("getEarningCategories rejects wrong spreadsheet", async () => {
     const wrongPhone = "5511933333333";
     await setupUserWithSpreadsheet(wrongPhone, "WrongSheet");
     await expect(
@@ -336,7 +342,9 @@ describe("CashFlowService", () => {
     const bankAccounts =
       await orquestrator.cashFlowService.getBankAccount(okPhone);
     expect(bankAccounts.length).toBeGreaterThan(0);
+  });
 
+  test("getBankAccount rejects wrong spreadsheet", async () => {
     const wrongPhone = "5511911111111";
     await setupUserWithSpreadsheet(wrongPhone, "WrongSheet");
     await expect(
@@ -537,9 +545,9 @@ describe("CashFlowService", () => {
       .mockResolvedValue(userWithoutCredential);
     vi.spyOn(service, "ensureSpreadsheetAccess").mockResolvedValue(undefined);
 
-    await expect(
-      service.getUserAndSheet(userWithoutCredential.phoneNumber),
-    ).rejects.toThrow("User is not connected to Google");
+    await expect(service.getUserAndSheet("5511986666666")).rejects.toThrow(
+      "User is not connected to Google",
+    );
 
     service.authService.getUserByPhoneNumber = getUserByPhoneNumber;
   });

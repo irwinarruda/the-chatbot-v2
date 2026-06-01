@@ -85,19 +85,20 @@ export class AiChatGateway implements IAiChatGateway {
   }
 
   async getResponse(
-    phoneNumber: string,
+    channelAddress: string,
     messages: AiChatMessage[],
     allowTools = true,
     context?: AiChatContext,
   ): Promise<AiChatResponse> {
     const systemPrompt = PromptLoader.getAiChatGateway(PromptLocale.PtBr, {
-      phoneNumber,
+      channelAddress,
     });
     const formattedMessages = this.formatMessages(messages);
 
     let raw = "";
     if (this.openai) {
       raw = await this.getOpenAiResponse(
+        channelAddress,
         systemPrompt,
         formattedMessages,
         allowTools,
@@ -105,6 +106,7 @@ export class AiChatGateway implements IAiChatGateway {
       );
     } else if (this.anthropic) {
       raw = await this.getAnthropicResponse(
+        channelAddress,
         systemPrompt,
         formattedMessages,
         allowTools,
@@ -115,6 +117,7 @@ export class AiChatGateway implements IAiChatGateway {
   }
 
   private async getOpenAiResponse(
+    channelAddress: string,
     systemPrompt: string,
     formattedMessages: { role: string; content: string }[],
     allowTools: boolean,
@@ -178,6 +181,7 @@ export class AiChatGateway implements IAiChatGateway {
           this.authService,
           this.todoService,
           this,
+          channelAddress,
           context,
         );
         chatMessages.push({
@@ -190,6 +194,7 @@ export class AiChatGateway implements IAiChatGateway {
   }
 
   private async getAnthropicResponse(
+    channelAddress: string,
     systemPrompt: string,
     formattedMessages: { role: string; content: string }[],
     allowTools: boolean,
@@ -250,6 +255,7 @@ export class AiChatGateway implements IAiChatGateway {
           this.authService,
           this.todoService,
           this,
+          channelAddress,
           context,
         );
         toolResults.push({

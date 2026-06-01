@@ -10,7 +10,7 @@ export const PromptLocale = {
 export type PromptLocale = ValueOf<typeof PromptLocale>;
 
 export interface AiChatGatewayParams {
-  phoneNumber: string;
+  channelAddress: string;
 }
 
 export class PromptLoader {
@@ -56,7 +56,8 @@ export class PromptLoader {
     const fileBase = `ai-chat-gateway${PromptLoader.localeToFileSuffix(locale)}`;
     const text = PromptLoader.readFile(fileBase);
     const dict: Record<string, string> = {
-      PhoneNumber: data.phoneNumber,
+      PhoneNumber: data.channelAddress,
+      ChannelAddress: data.channelAddress,
     };
     return PromptLoader.applyTemplate(text, dict);
   }

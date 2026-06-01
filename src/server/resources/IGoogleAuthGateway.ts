@@ -10,6 +10,7 @@ export interface GoogleUserInfo {
 }
 
 export interface IGoogleAuthGateway {
+  getAppLoginUrl(id: string): string;
   createAuthorizationCodeUrl(
     state?: string,
     redirectTarget?: "app" | "web",
@@ -23,5 +24,4 @@ export interface IGoogleAuthGateway {
     accessToken: string,
     refreshToken: string,
   ): Promise<GoogleTokens>;
-  getAppLoginUrl(phoneNumber: string): string;
 }

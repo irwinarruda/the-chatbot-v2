@@ -14,6 +14,7 @@ import type { TodoService } from "~/server/services/TodoService";
 import { Printable } from "~/server/utils/Printable";
 import { PromptLoader, PromptLocale } from "~/server/utils/PromptLoader";
 import { TodoStatus } from "~/shared/entities/enums/TodoStatus";
+import type { User } from "~/shared/entities/User";
 
 const genericError =
   "There can be a generic error response: { message, action, name, status_code }";
@@ -335,17 +336,12 @@ export const toolDefinitions: ToolDefinition[] = [
     },
   },
   {
-    name: "delete_user_by_phone_number",
-    description: `Delete a user and all related data. Returns { message }. ${genericError}`,
+    name: "delete_user_by_chat_channel_address",
+    description: `Delete the current user and all related data. Returns { message }. ${genericError}`,
     parameters: {
       type: "object",
-      properties: {
-        phone_number: {
-          type: "string",
-          description: "User phone number in E.164 format",
-        },
-      },
-      required: ["phone_number"],
+      properties: {},
+      required: [],
     },
   },
 ];
@@ -466,6 +462,34 @@ async function classifyTransferWithRetry(
   }
 }
 
+async function resolveToolUser(
+  args: Record<string, unknown>,
+  authService: AuthService,
+  channelAddress: string,
+): Promise<User> {
+  const userByEmail = await authService.getUserByEmail(
+    channelAddress.toLowerCase(),
+  );
+  if (userByEmail) return userByEmail;
+  const userByChannelAddress =
+    await authService.getUserByBsuidOrPhoneNumber(channelAddress);
+  if (userByChannelAddress) return userByChannelAddress;
+  const phoneNumber = args.phone_number as string;
+  const user = await authService.getUserByPhoneNumber(phoneNumber);
+  if (!user) throw new ValidationException("User not found");
+  return user;
+}
+
+function requireCashFlowPhone(user: User): string {
+  if (!user.phoneNumber) {
+    throw new ValidationException(
+      "User phone number is required for cash-flow tools",
+      "Share your phone number before using spreadsheet-backed financial tools.",
+    );
+  }
+  return user.phoneNumber;
+}
+
 export async function executeTool(
   name: string,
   args: Record<string, unknown>,
@@ -473,14 +497,13 @@ export async function executeTool(
   authService: AuthService,
   todoService: TodoService,
   aiChatGateway: IAiChatGateway,
+  channelAddress: string,
   context?: AiChatContext,
 ): Promise<string> {
   try {
     switch (name) {
       case "create_todos": {
-        const phoneNumber = args.phone_number as string;
-        const user = await authService.getUserByPhoneNumber(phoneNumber);
-        if (!user) throw new ValidationException("User not found");
+        const user = await resolveToolUser(args, authService, channelAddress);
         const idSourceMessage =
           typeof context?.idSourceMessage === "string"
             ? context.idSourceMessage
@@ -515,9 +538,7 @@ export async function executeTool(
         });
       }
       case "list_todos": {
-        const phoneNumber = args.phone_number as string;
-        const user = await authService.getUserByPhoneNumber(phoneNumber);
-        if (!user) throw new ValidationException("User not found");
+        const user = await resolveToolUser(args, authService, channelAddress);
         const status =
           args.status === TodoStatus.Completed
             ? TodoStatus.Completed
@@ -529,32 +550,35 @@ export async function executeTool(
         });
       }
       case "add_cash_flow_spreadsheet_url": {
+        const user = await resolveToolUser(args, authService, channelAddress);
         await cashFlowService.addSpreadsheetUrl(
-          args.phone_number as string,
+          requireCashFlowPhone(user),
           args.url as string,
         );
         return Printable.make({ message: "Spreadsheet linked successfully" });
       }
       case "get_all_transactions": {
+        const user = await resolveToolUser(args, authService, channelAddress);
         const transactions = await cashFlowService.getAllTransactions(
-          args.phone_number as string,
+          requireCashFlowPhone(user),
         );
         return Printable.make({ count: transactions.length, transactions });
       }
       case "get_last_transaction": {
+        const user = await resolveToolUser(args, authService, channelAddress);
         const transaction = await cashFlowService.getLastTransaction(
-          args.phone_number as string,
+          requireCashFlowPhone(user),
         );
         return Printable.make(transaction === undefined ? {} : { transaction });
       }
       case "delete_last_transaction": {
-        await cashFlowService.deleteLastTransaction(
-          args.phone_number as string,
-        );
+        const user = await resolveToolUser(args, authService, channelAddress);
+        await cashFlowService.deleteLastTransaction(requireCashFlowPhone(user));
         return Printable.make({ message: "Last transaction deleted" });
       }
       case "add_transaction": {
-        const phoneNumber = args.phone_number as string;
+        const user = await resolveToolUser(args, authService, channelAddress);
+        const phoneNumber = requireCashFlowPhone(user);
         const type = args.type as string;
         const userMessage = args.user_message as string;
         const value = args.value as number;
@@ -600,7 +624,8 @@ export async function executeTool(
         });
       }
       case "transfer_between_bank_accounts": {
-        const phoneNumber = args.phone_number as string;
+        const user = await resolveToolUser(args, authService, channelAddress);
+        const phoneNumber = requireCashFlowPhone(user);
         const userMessage = args.user_message as string;
         const value = args.value as number;
         const date = args.date ? new Date(args.date as string) : new Date();
@@ -633,28 +658,32 @@ export async function executeTool(
         });
       }
       case "get_expense_categories": {
+        const user = await resolveToolUser(args, authService, channelAddress);
         const categories = await cashFlowService.getExpenseCategories(
-          args.phone_number as string,
+          requireCashFlowPhone(user),
         );
         return Printable.make({ count: categories.length, categories });
       }
       case "get_earning_categories": {
+        const user = await resolveToolUser(args, authService, channelAddress);
         const categories = await cashFlowService.getEarningCategories(
-          args.phone_number as string,
+          requireCashFlowPhone(user),
         );
         return Printable.make({ count: categories.length, categories });
       }
       case "get_bank_accounts": {
+        const user = await resolveToolUser(args, authService, channelAddress);
         const banks = await cashFlowService.getBankAccount(
-          args.phone_number as string,
+          requireCashFlowPhone(user),
         );
         return Printable.make({ count: banks.length, banks });
       }
       case "get_bank_accounts_status": {
+        const user = await resolveToolUser(args, authService, channelAddress);
         const date =
           typeof args.date === "string" ? new Date(args.date) : undefined;
         const bankAccounts = await cashFlowService.getBankAccountsStatus(
-          args.phone_number as string,
+          requireCashFlowPhone(user),
           date,
         );
         return Printable.make({
@@ -663,7 +692,8 @@ export async function executeTool(
         });
       }
       case "sync_bank_account_balance": {
-        const phoneNumber = args.phone_number as string;
+        const user = await resolveToolUser(args, authService, channelAddress);
+        const phoneNumber = requireCashFlowPhone(user);
         const userMessage = args.user_message as string;
         const bankAccount = args.bank_account as string;
         const currentBalance = args.current_balance as number;
@@ -691,8 +721,8 @@ export async function executeTool(
           message: "Bank account balance synced successfully",
         });
       }
-      case "delete_user_by_phone_number": {
-        await authService.deleteUserByPhoneNumber(args.phone_number as string);
+      case "delete_user_by_chat_channel_address": {
+        await authService.deleteUserByChatChannelAddress(channelAddress);
         return Printable.make({
           message: "The account was deleted successfully",
         });

@@ -27,25 +27,23 @@ import type {
 import type { IWhatsAppMessagingGateway } from "~/server/resources/IWhatsAppMessagingGateway";
 import type { AuthService } from "~/server/services/AuthService";
 import { MessageLoader, MessageTemplate } from "~/server/utils/MessageLoader";
-import { AllowedNumber } from "~/shared/entities/AllowedNumber";
+import { BsuidUtils } from "~/shared/entities/BsuidUtils";
 import { Chat } from "~/shared/entities/Chat";
-import { ChatType } from "~/shared/entities/enums/ChatType";
+import { ChatChannel } from "~/shared/entities/enums/ChatChannel";
 import { MessageType } from "~/shared/entities/enums/MessageType";
 import { MessageUserType } from "~/shared/entities/enums/MessageUserType";
 import { Message } from "~/shared/entities/Message";
-
-export interface TranscriptDTO {
-  id: string;
-  transcript: string;
-  mediaUrl?: string;
-  mimeType?: string;
-  createdAt: Date;
-}
+import { PhoneNumberUtils } from "~/shared/entities/PhoneNumberUtils";
 
 export interface RespondToMessageEvent {
   chat: Chat;
   message: Message;
-  chatType: ChatType;
+  channel: ChatChannel;
+}
+
+export interface SendMessageRecipient {
+  channel: ChatChannel;
+  toAddress: string;
 }
 
 export class MessagingService {
@@ -81,17 +79,6 @@ export class MessagingService {
     this.summarizationConfig = summarizationConfig;
   }
 
-  private getMessagingGatewayByChatType(chatType: ChatType): IMessagingGateway {
-    switch (chatType) {
-      case ChatType.WhatsApp:
-        return this.whatsAppMessagingGateway;
-      case ChatType.Web:
-        return this.webMessagingGateway;
-      default:
-        throw new ValidationException("Unsupported chat type");
-    }
-  }
-
   async receiveWhatsAppMessage(
     rawBody: string,
     signature?: string,
@@ -108,14 +95,14 @@ export class MessagingService {
     const data = JSON.parse(rawBody);
     const receiveMessage =
       this.whatsAppMessagingGateway.receiveWhatsAppMessage(data);
-    if (receiveMessage) {
-      await this.listenToMessage(receiveMessage);
-    }
+    if (!receiveMessage) return;
+    await this.promoteWhatsAppIdIfNeeded(receiveMessage);
+    await this.listenToMessage(receiveMessage);
   }
 
-  async receiveWebMessage(phoneNumber: string, body: unknown): Promise<void> {
+  async receiveWebMessage(webAddress: string, body: unknown): Promise<void> {
     const receiveMessage = await this.webMessagingGateway.receiveWebMessage(
-      phoneNumber,
+      webAddress,
       body,
     );
     if (receiveMessage) {
@@ -124,48 +111,54 @@ export class MessagingService {
   }
 
   async listenToMessage(receiveMessage: ReceiveMessageDTO): Promise<void> {
-    if (await this.isMessageDuplicate(receiveMessage.idProvider)) return;
-    if (!(await this.isAllowedNumber(receiveMessage.from))) return;
-    let chat = await this.getChatByPhoneNumber(receiveMessage.from);
+    if (await this.isMessageDuplicate(receiveMessage.channelMessageId)) return;
+    if (!(await this.isAllowedChannelAddress(receiveMessage))) return;
+    let chat = await this.getChatByChannelAddress(
+      receiveMessage.fromAddress,
+      receiveMessage.channel,
+    );
     if (!chat) {
       chat = new Chat();
-      chat.phoneNumber = receiveMessage.from;
-      chat.type = receiveMessage.chatType;
+      chat.setChannelAddress(
+        receiveMessage.channel,
+        receiveMessage.fromAddress,
+      );
       await this.createChat(chat);
     }
     let message: Message;
     if ("text" in receiveMessage) {
+      const textMsg = receiveMessage as ReceiveTextMessageDTO;
       message = chat.addUserTextMessage(
-        (receiveMessage as ReceiveTextMessageDTO).text,
-        receiveMessage.idProvider,
+        textMsg.text,
+        receiveMessage.channelMessageId,
       );
     } else if ("buttonReply" in receiveMessage) {
+      const buttonMsg = receiveMessage as ReceiveInteractiveButtonMessageDTO;
       message = chat.addUserButtonReply(
-        (receiveMessage as ReceiveInteractiveButtonMessageDTO).buttonReply,
-        receiveMessage.idProvider,
+        buttonMsg.buttonReply,
+        receiveMessage.channelMessageId,
       );
     } else if ("mediaId" in receiveMessage) {
       const audioMsg = receiveMessage as ReceiveAudioMessageDTO;
       message = chat.addUserAudioMessage(
         audioMsg.mediaId,
         audioMsg.mimeType,
-        receiveMessage.idProvider,
+        receiveMessage.channelMessageId,
       );
     } else {
-      message = chat.addUserTextMessage("", "");
+      message = chat.addUserTextMessage("", receiveMessage.channelMessageId);
     }
     if (!(await this.createMessage(message))) return;
     if (!chat.idUser) {
-      const user = await this.authService.getUserByPhoneNumber(
-        chat.phoneNumber,
-      );
+      const user =
+        chat.channel === ChatChannel.Web
+          ? await this.authService.getUserByEmail(receiveMessage.fromAddress)
+          : await this.authService.getUserByBsuidOrPhoneNumber(
+              receiveMessage.fromAddress,
+            );
       if (!user) {
-        await this.sendTextMessage(
-          chat.phoneNumber,
-          MessageLoader.getMessage(MessageTemplate.ThankYou, {
-            loginUrl: this.authService.getAppLoginUrl(chat.phoneNumber),
-          }),
-        );
+        if (chat.channel === ChatChannel.Web) return;
+        await this.sendLoginMessage(chat, receiveMessage);
         return;
       }
       chat.addUser(user.id);
@@ -174,23 +167,27 @@ export class MessagingService {
     await this.mediator.send("RespondToMessage", {
       chat,
       message,
-      chatType: receiveMessage.chatType,
-    } as RespondToMessageEvent);
+      channel: receiveMessage.channel,
+    });
   }
 
   async respondToMessage(
     chat: Chat,
     message: Message,
-    chatType: ChatType,
+    channel: ChatChannel,
   ): Promise<void> {
-    const gateway = this.getMessagingGatewayByChatType(chatType);
+    const channelAddress = chat.getChannelAddress();
+    const recipient: SendMessageRecipient = {
+      channel,
+      toAddress: channelAddress,
+    };
+    const gateway = this.getMessagingGatewayByChannel(channel);
     if (message.type === MessageType.Audio) {
       if (!message.mediaId || !message.mimeType) return;
       await this.sendTextMessage(
-        chat.phoneNumber,
+        recipient,
         MessageLoader.getMessage(MessageTemplate.ProcessingAudio),
         chat,
-        chatType,
       );
       const mediaContent = await gateway.downloadMediaAsync(message.mediaId);
       const baseMimeType = message.mimeType.split(";")[0].trim().toLowerCase();
@@ -206,8 +203,8 @@ export class MessagingService {
       });
       message.addAudioTranscriptAndUrl(transcript, permanentUrl);
       await this.saveMessage(message);
-      if (chatType === ChatType.Web) {
-        this.webMessagingGateway.enqueue(chat.phoneNumber, {
+      if (channel === ChatChannel.Web) {
+        this.webMessagingGateway.enqueue(channelAddress, {
           type: "audio",
           data: {
             mediaUrl: permanentUrl,
@@ -227,88 +224,85 @@ export class MessagingService {
     }
     aiMessages.push(...this.parseMessagesToAi(chat.effectiveMessages));
     const response = await this.aiChatGateway.getResponse(
-      chat.phoneNumber,
+      channelAddress,
       aiMessages,
       true,
       { idSourceMessage: message.id },
     );
     if (response.type === AiChatMessageType.Text) {
-      await this.sendTextMessage(
-        chat.phoneNumber,
-        response.text,
-        chat,
-        chatType,
-      );
+      await this.sendTextMessage(recipient, response.text, chat);
     } else if (response.type === AiChatMessageType.Button) {
       await this.sendButtonReplyMessage(
-        chat.phoneNumber,
+        recipient,
         response.text,
         [...response.buttons],
         chat,
-        chatType,
       );
     }
     await this.triggerSummarization(chat);
   }
 
   async sendTextMessage(
-    phoneNumber: string,
+    recipient: string | SendMessageRecipient,
     text: string,
     chat?: Chat,
-    chatType?: ChatType,
   ): Promise<void> {
-    chat ??= await this.getChatByPhoneNumber(phoneNumber);
+    const dto =
+      typeof recipient === "string"
+        ? { channel: ChatChannel.WhatsApp, toAddress: recipient }
+        : recipient;
+    chat ??= await this.getChatByChannelAddress(dto.toAddress, dto.channel);
     if (!chat) {
       throw new ValidationException(
         "The user does not have an open chat",
         "Please create a chat first before continuing",
       );
     }
-    const gateway = this.getMessagingGatewayByChatType(chatType ?? chat.type);
+    const gateway = this.getMessagingGatewayByChannel(dto.channel);
     const message = chat.addBotTextMessage(text);
     await this.createMessage(message);
-    await gateway.sendTextMessage({
-      to: phoneNumber,
-      text,
-    });
+    await gateway.sendTextMessage({ toAddress: dto.toAddress, text });
   }
 
   async sendButtonReplyMessage(
-    phoneNumber: string,
+    recipient: string | SendMessageRecipient,
     text: string,
     options: string[],
     chat?: Chat,
-    chatType?: ChatType,
   ): Promise<void> {
-    chat ??= await this.getChatByPhoneNumber(phoneNumber);
+    const dto =
+      typeof recipient === "string"
+        ? { channel: ChatChannel.WhatsApp, toAddress: recipient }
+        : recipient;
+    chat ??= await this.getChatByChannelAddress(dto.toAddress, dto.channel);
     if (!chat) {
       throw new ValidationException(
         "The user does not have an open chat",
         "Please create a chat first before continuing",
       );
     }
-    const gateway = this.getMessagingGatewayByChatType(chatType ?? chat.type);
+    const gateway = this.getMessagingGatewayByChannel(dto.channel);
     const message = chat.addBotButtonReply(text, options);
     await this.createMessage(message);
     await gateway.sendInteractiveReplyButtonMessage({
-      to: chat.phoneNumber,
+      toAddress: dto.toAddress,
       text,
       buttons: options,
     });
   }
 
-  async sendSignedInMessage(phoneNumber: string): Promise<void> {
+  async sendSignedInMessage(channelAddress: string): Promise<void> {
     await this.sendTextMessage(
-      phoneNumber,
+      channelAddress,
       MessageLoader.getMessage(MessageTemplate.SignedIn),
     );
   }
 
   async subscribeToWebEvents(
-    phoneNumber: string,
+    webAddress: string,
     signal: AbortSignal,
   ): Promise<AsyncGenerator<WebChatEvent>> {
-    return this.webMessagingGateway.subscribe(phoneNumber, signal);
+    return this.webMessagingGateway.subscribe(webAddress, signal);
   }
 
   private async triggerSummarization(chat: Chat): Promise<void> {
@@ -331,8 +325,8 @@ export class MessagingService {
     } catch {}
   }
 
-  async deleteChat(phoneNumber: string): Promise<void> {
-    const chat = await this.getChatByPhoneNumber(phoneNumber);
+  async deleteChat(channelAddress: string): Promise<void> {
+    const chat = await this.getChatByChannelAddress(channelAddress);
     if (!chat) {
       throw new ValidationException(
         "The user does not have an open chat",
@@ -343,14 +337,6 @@ export class MessagingService {
     await this.saveChat(chat);
   }
 
-  async addAllowedNumber(phoneNumber: string): Promise<void> {
-    const allowedNumber = new AllowedNumber(phoneNumber);
-    await this.database.sql`
-      INSERT INTO allowed_numbers (id, phone_number, created_at)
-      VALUES (${allowedNumber.id}, ${allowedNumber.phoneNumber}, ${allowedNumber.createdAt})
-    `;
-  }
-
   validateWebhook(hubMode: string, hubVerifyToken: string): void {
     if (
       !this.whatsAppMessagingGateway.validateWebhook(hubMode, hubVerifyToken)
@@ -359,165 +345,40 @@ export class MessagingService {
     }
   }
 
-  async getTranscripts(phoneNumber: string): Promise<TranscriptDTO[]> {
-    const dbMessages = await this.database.sql<DbMessage[]>`
-      SELECT m.* FROM messages m
-      INNER JOIN chats c ON c.id = m.id_chat
-      WHERE c.phone_number = ${phoneNumber}
-      AND c.is_deleted = false
-      AND m.type = ${MessageType.Audio}
-      AND m.transcript IS NOT NULL
-      ORDER BY m.created_at DESC
-    `;
-    return dbMessages.map((m) => ({
-      id: m.id,
-      transcript: m.transcript ?? "",
-      mediaUrl: m.media_url ?? undefined,
-      mimeType: m.mime_type ?? undefined,
-      createdAt: m.created_at,
-    }));
+  async getChatByChannelAddress(
+    channelAddress: string,
+    channel?: ChatChannel,
+  ): Promise<Chat | undefined> {
+    if (channel === ChatChannel.WhatsApp) {
+      return this.getWhatsAppChatByChannelAddress(channelAddress);
+    }
+    if (channel === ChatChannel.Web) {
+      return this.getWebChatByChannelAddress(channelAddress);
+    }
+    if (channel !== undefined) {
+      throw new ValidationException("Unsupported chat channel");
+    }
+    return this.getChatByGenericChannelAddress(channelAddress);
   }
 
   async getChatByPhoneNumber(phoneNumber: string): Promise<Chat | undefined> {
-    const dbChats = await this.database.sql<DbChat[]>`
-      SELECT * FROM chats
-      WHERE phone_number = ${phoneNumber}
-      AND is_deleted = false
-      ORDER BY created_at DESC
-    `;
-    const dbChat = dbChats[0];
-    if (!dbChat) return undefined;
-    const dbMessages = await this.database.sql<DbMessage[]>`
-      SELECT * FROM messages
-      WHERE id_chat = ${dbChat.id}
-      ORDER BY created_at ASC
-    `;
-    const chat = new Chat();
-    chat.id = dbChat.id;
-    chat.idUser = dbChat.id_user ?? undefined;
-    chat.type = dbChat.type as ChatType;
-    chat.phoneNumber = dbChat.phone_number;
-    chat.summary = dbChat.summary ?? undefined;
-    chat.summarizedUntilId = dbChat.summarized_until_id ?? undefined;
-    chat.messages = dbMessages.map((m) => {
-      const message = new Message();
-      message.id = m.id;
-      message.idChat = m.id_chat;
-      message.text = m.text ?? undefined;
-      message.type = m.type as MessageType;
-      message.buttonReply = m.button_reply ?? undefined;
-      message.buttonReplyOptions =
-        typeof m.button_reply_options === "string"
-          ? m.button_reply_options.split(",")
-          : undefined;
-      message.mediaId = m.media_id ?? undefined;
-      message.mediaUrl = m.media_url ?? undefined;
-      message.mimeType = m.mime_type ?? undefined;
-      message.transcript = m.transcript ?? undefined;
-      message.userType = m.user_type as MessageUserType;
-      message.idProvider = m.id_provider ?? undefined;
-      message.createdAt = m.created_at;
-      message.updatedAt = m.updated_at;
-      return message;
-    });
-    chat.createdAt = dbChat.created_at;
-    chat.updatedAt = dbChat.updated_at;
-    chat.isDeleted = dbChat.is_deleted;
-    return chat;
+    return this.getChatByChannelAddress(
+      PhoneNumberUtils.addDigitNine(phoneNumber),
+      ChatChannel.WhatsApp,
+    );
   }
 
-  private async createChat(chat: Chat): Promise<void> {
-    const idUser = chat.idUser ?? null;
-    await this.database.sql`
-      INSERT INTO chats (id, id_user, type, phone_number, created_at, updated_at, is_deleted)
-      VALUES (${chat.id}, ${idUser}, ${chat.type}, ${chat.phoneNumber}, ${chat.createdAt}, ${chat.updatedAt}, ${chat.isDeleted})
-    `;
-    if (chat.messages.length === 0) return;
-    for (const message of chat.messages) {
-      await this.createMessage(message);
+  private getMessagingGatewayByChannel(
+    channel: ChatChannel,
+  ): IMessagingGateway {
+    switch (channel) {
+      case ChatChannel.WhatsApp:
+        return this.whatsAppMessagingGateway;
+      case ChatChannel.Web:
+        return this.webMessagingGateway;
+      default:
+        throw new ValidationException("Unsupported chat channel");
     }
-  }
-
-  private async createMessage(message: Message): Promise<boolean> {
-    const buttonOptions = message.buttonReplyOptions
-      ? message.buttonReplyOptions.join(",")
-      : undefined;
-    const text = message.text ?? null;
-    const buttonReply = message.buttonReply ?? null;
-    const serializedButtonOptions = buttonOptions ?? null;
-    const mediaId = message.mediaId ?? null;
-    const mediaUrl = message.mediaUrl ?? null;
-    const mimeType = message.mimeType ?? null;
-    const transcript = message.transcript ?? null;
-    const idProvider = message.idProvider ?? null;
-    const result = await this.database.sql`
-      INSERT INTO messages (id, id_chat, type, user_type, text, button_reply, button_reply_options, media_id, media_url, mime_type, transcript, id_provider, created_at, updated_at)
-      VALUES (${message.id}, ${message.idChat}, ${message.type}, ${message.userType}, ${text}, ${buttonReply}, ${serializedButtonOptions}, ${mediaId}, ${mediaUrl}, ${mimeType}, ${transcript}, ${idProvider}, ${message.createdAt}, ${message.updatedAt})
-      ON CONFLICT (id_provider) WHERE id_provider IS NOT NULL DO NOTHING
-    `;
-    return result.count > 0;
-  }
-
-  private async saveMessage(message: Message): Promise<void> {
-    const buttonOptions = message.buttonReplyOptions
-      ? message.buttonReplyOptions.join(",")
-      : undefined;
-    const text = message.text ?? null;
-    const buttonReply = message.buttonReply ?? null;
-    const serializedButtonOptions = buttonOptions ?? null;
-    const mediaId = message.mediaId ?? null;
-    const mediaUrl = message.mediaUrl ?? null;
-    const mimeType = message.mimeType ?? null;
-    const transcript = message.transcript ?? null;
-    await this.database.sql`
-      UPDATE messages SET
-        text = ${text},
-        button_reply = ${buttonReply},
-        button_reply_options = ${serializedButtonOptions},
-        media_id = ${mediaId},
-        media_url = ${mediaUrl},
-        mime_type = ${mimeType},
-        transcript = ${transcript},
-        updated_at = ${message.updatedAt}
-      WHERE id = ${message.id}
-    `;
-  }
-
-  private async saveChat(chat: Chat): Promise<void> {
-    const idUser = chat.idUser ?? null;
-    const summary = chat.summary ?? null;
-    const summarizedUntilId = chat.summarizedUntilId ?? null;
-    await this.database.sql`
-      UPDATE chats SET
-        id_user = ${idUser},
-        type = ${chat.type},
-        phone_number = ${chat.phoneNumber},
-        updated_at = ${chat.updatedAt},
-        summary = ${summary},
-        summarized_until_id = ${summarizedUntilId},
-        is_deleted = ${chat.isDeleted}
-      WHERE id = ${chat.id}
-    `;
-  }
-
-  private async isMessageDuplicate(idProvider: string): Promise<boolean> {
-    const result = await this.database.sql<{ exists: boolean }[]>`
-      SELECT EXISTS(
-        SELECT 1 FROM messages
-        WHERE id_provider = ${idProvider}
-      )
-    `;
-    return result[0]?.exists ?? false;
-  }
-
-  private async isAllowedNumber(phoneNumber: string): Promise<boolean> {
-    const result = await this.database.sql<{ exists: boolean }[]>`
-      SELECT EXISTS(
-        SELECT 1 FROM allowed_numbers
-        WHERE phone_number = ${phoneNumber}
-      )
-    `;
-    return result[0]?.exists ?? false;
   }
 
   private parseMessagesToAi(messages: Message[]): AiChatMessage[] {
@@ -561,18 +422,307 @@ export class MessagingService {
         return ".bin";
     }
   }
+
+  private async getChatByGenericChannelAddress(
+    channelAddress: string,
+  ): Promise<Chat | undefined> {
+    const normalizedWhatsAppAddress = BsuidUtils.isValid(channelAddress)
+      ? channelAddress
+      : PhoneNumberUtils.addDigitNine(channelAddress);
+    const dbChats = await this.database.sql<DbChat[]>`
+      SELECT * FROM chats
+      WHERE is_deleted = false
+      AND (
+        whatsapp_address = ${channelAddress}
+        OR web_address = ${channelAddress}
+        OR whatsapp_address = ${normalizedWhatsAppAddress}
+      )
+      ORDER BY created_at DESC
+      LIMIT 1
+    `;
+    const dbChat = dbChats[0];
+    if (!dbChat) return undefined;
+    return this.hydrateChat(dbChat);
+  }
+
+  private async getWhatsAppChatByChannelAddress(
+    whatsAppAddress: string,
+  ): Promise<Chat | undefined> {
+    const dbChats = await this.database.sql<DbChat[]>`
+      SELECT * FROM chats
+      WHERE whatsapp_address = ${whatsAppAddress}
+      AND channel = ${ChatChannel.WhatsApp}
+      AND is_deleted = false
+      ORDER BY created_at DESC
+    `;
+    const dbChat = dbChats[0];
+    if (!dbChat) return undefined;
+    return this.hydrateChat(dbChat);
+  }
+
+  private async getWebChatByChannelAddress(
+    webAddress: string,
+  ): Promise<Chat | undefined> {
+    const dbChats = await this.database.sql<DbChat[]>`
+      SELECT * FROM chats
+      WHERE web_address = ${webAddress}
+      AND channel = ${ChatChannel.Web}
+      AND is_deleted = false
+      ORDER BY created_at DESC
+    `;
+    const dbChat = dbChats[0];
+    if (!dbChat) return undefined;
+    return this.hydrateChat(dbChat);
+  }
+
+  private async hydrateChat(dbChat: DbChat): Promise<Chat> {
+    const dbMessages = await this.database.sql<DbMessage[]>`
+      SELECT * FROM messages
+      WHERE id_chat = ${dbChat.id}
+      ORDER BY created_at ASC
+    `;
+    const chat = new Chat();
+    chat.id = dbChat.id;
+    chat.idUser = dbChat.id_user ?? undefined;
+    chat.channel = dbChat.channel as ChatChannel;
+    chat.whatsAppAddress = dbChat.whatsapp_address ?? undefined;
+    chat.webAddress = dbChat.web_address ?? undefined;
+    chat.summary = dbChat.summary ?? undefined;
+    chat.summarizedUntilId = dbChat.summarized_until_id ?? undefined;
+    chat.messages = dbMessages.map((m) => {
+      const message = new Message();
+      message.id = m.id;
+      message.idChat = m.id_chat;
+      message.text = m.text ?? undefined;
+      message.type = m.type as MessageType;
+      message.buttonReply = m.button_reply ?? undefined;
+      message.buttonReplyOptions =
+        typeof m.button_reply_options === "string"
+          ? m.button_reply_options.split(",")
+          : undefined;
+      message.mediaId = m.media_id ?? undefined;
+      message.mediaUrl = m.media_url ?? undefined;
+      message.mimeType = m.mime_type ?? undefined;
+      message.transcript = m.transcript ?? undefined;
+      message.userType = m.user_type as MessageUserType;
+      message.channelMessageId = m.channel_message_id ?? undefined;
+      message.createdAt = m.created_at;
+      message.updatedAt = m.updated_at;
+      return message;
+    });
+    chat.createdAt = dbChat.created_at;
+    chat.updatedAt = dbChat.updated_at;
+    chat.isDeleted = dbChat.is_deleted;
+    return chat;
+  }
+
+  private async sendLoginMessage(
+    chat: Chat,
+    receiveMessage: ReceiveMessageDTO,
+  ): Promise<void> {
+    await this.sendTextMessage(
+      { channel: ChatChannel.WhatsApp, toAddress: receiveMessage.fromAddress },
+      MessageLoader.getMessage(MessageTemplate.ThankYou, {
+        loginUrl: this.authService.getAppLoginUrl(receiveMessage.fromAddress),
+      }),
+      chat,
+    );
+  }
+
+  private async createChat(chat: Chat): Promise<void> {
+    const idUser = chat.idUser ?? null;
+    const whatsAppAddress = chat.whatsAppAddress ?? null;
+    const webAddress = chat.webAddress ?? null;
+    await this.database.sql`
+      INSERT INTO chats (
+        id,
+        id_user,
+        channel,
+        whatsapp_address,
+        web_address,
+        created_at,
+        updated_at,
+        is_deleted
+      )
+      VALUES (
+        ${chat.id},
+        ${idUser},
+        ${chat.channel},
+        ${whatsAppAddress},
+        ${webAddress},
+        ${chat.createdAt},
+        ${chat.updatedAt},
+        ${chat.isDeleted}
+      )
+    `;
+    if (chat.messages.length === 0) return;
+    for (const message of chat.messages) {
+      await this.createMessage(message);
+    }
+  }
+
+  private async createMessage(message: Message): Promise<boolean> {
+    const buttonReplyOptions = message.buttonReplyOptions
+      ? message.buttonReplyOptions.join(",")
+      : undefined;
+    const result = await this.database.sql`
+      INSERT INTO messages (
+        id,
+        id_chat,
+        type,
+        user_type,
+        text,
+        button_reply,
+        button_reply_options,
+        media_id,
+        media_url,
+        mime_type,
+        transcript,
+        channel_message_id,
+        created_at,
+        updated_at
+      )
+      VALUES (
+        ${message.id},
+        ${message.idChat},
+        ${message.type},
+        ${message.userType},
+        ${message.text ?? null},
+        ${message.buttonReply ?? null},
+        ${buttonReplyOptions ?? null},
+        ${message.mediaId ?? null},
+        ${message.mediaUrl ?? null},
+        ${message.mimeType ?? null},
+        ${message.transcript ?? null},
+        ${message.channelMessageId ?? null},
+        ${message.createdAt},
+        ${message.updatedAt}
+      )
+      ON CONFLICT (channel_message_id) WHERE channel_message_id IS NOT NULL DO NOTHING
+    `;
+    return result.count > 0;
+  }
+
+  private async saveMessage(message: Message): Promise<void> {
+    const buttonReplyOptions = message.buttonReplyOptions
+      ? message.buttonReplyOptions.join(",")
+      : undefined;
+    await this.database.sql`
+      UPDATE messages SET
+        text = ${message.text ?? null},
+        button_reply = ${message.buttonReply ?? null},
+        button_reply_options = ${buttonReplyOptions ?? null},
+        media_id = ${message.mediaId ?? null},
+        media_url = ${message.mediaUrl ?? null},
+        mime_type = ${message.mimeType ?? null},
+        transcript = ${message.transcript ?? null},
+        updated_at = ${message.updatedAt}
+      WHERE id = ${message.id}
+    `;
+  }
+
+  private async saveChat(chat: Chat): Promise<void> {
+    await this.database.sql`
+      UPDATE chats SET
+        id_user = ${chat.idUser ?? null},
+        channel = ${chat.channel},
+        whatsapp_address = ${chat.whatsAppAddress ?? null},
+        web_address = ${chat.webAddress ?? null},
+        updated_at = ${chat.updatedAt},
+        summary = ${chat.summary ?? null},
+        summarized_until_id = ${chat.summarizedUntilId ?? null},
+        is_deleted = ${chat.isDeleted}
+      WHERE id = ${chat.id}
+    `;
+  }
+
+  private async isMessageDuplicate(channelMessageId: string): Promise<boolean> {
+    const result = await this.database.sql<{ exists: boolean }[]>`
+      SELECT EXISTS(
+        SELECT 1 FROM messages
+        WHERE channel_message_id = ${channelMessageId}
+      )
+    `;
+    return result[0]?.exists ?? false;
+  }
+
+  private async isAllowedChannelAddress(
+    receiveMessage: ReceiveMessageDTO,
+  ): Promise<boolean> {
+    if (receiveMessage.channel === ChatChannel.WhatsApp) {
+      const result = await this.database.sql<{ exists: boolean }[]>`
+        SELECT EXISTS(
+          SELECT 1 FROM allowed_entries
+          WHERE whatsapp_address = ${receiveMessage.fromAddress}
+        )
+      `;
+      return result[0]?.exists ?? false;
+    }
+    if (receiveMessage.channel === ChatChannel.Web) {
+      const result = await this.database.sql<{ exists: boolean }[]>`
+        SELECT EXISTS(
+          SELECT 1 FROM allowed_entries
+          WHERE web_address = ${receiveMessage.fromAddress}
+        )
+      `;
+      return result[0]?.exists ?? false;
+    }
+    throw new ValidationException("Unsupported chat channel");
+  }
+
+  private async promoteWhatsAppIdIfNeeded(
+    receiveMessage: ReceiveMessageDTO,
+  ): Promise<void> {
+    if (receiveMessage.channel !== ChatChannel.WhatsApp) return;
+    if (!receiveMessage.whatsAppPhoneNumber) return;
+    if (receiveMessage.fromAddress === receiveMessage.whatsAppPhoneNumber)
+      return;
+    const oldWhatsAppAddress = receiveMessage.whatsAppPhoneNumber;
+    const newWhatsAppAddress = receiveMessage.fromAddress;
+    const phoneNumber = PhoneNumberUtils.addDigitNine(
+      receiveMessage.whatsAppPhoneNumber,
+    );
+    const now = new Date();
+    await this.database.transaction(async (sql) => {
+      await sql`
+          UPDATE chats
+          SET
+            whatsapp_address = ${newWhatsAppAddress},
+            updated_at = ${now}
+          WHERE whatsapp_address = ${oldWhatsAppAddress}
+          AND channel = ${ChatChannel.WhatsApp}
+        `;
+      await sql`
+          UPDATE allowed_entries
+          SET
+            whatsapp_address = ${newWhatsAppAddress}
+          WHERE whatsapp_address = ${oldWhatsAppAddress}
+        `;
+      await sql`
+          UPDATE users u
+          SET
+            bsuid = ${newWhatsAppAddress},
+            phone_number = ${phoneNumber},
+            updated_at = ${now}
+          WHERE u.phone_number = ${phoneNumber}
+          AND u.bsuid IS NULL
+        `;
+    });
+  }
 }
 
 interface DbChat {
   id: string;
   id_user: string | null;
-  type: string;
-  phone_number: string;
+  phone_number: string | null;
+  whatsapp_address: string | null;
+  web_address: string | null;
+  channel: string;
   summary: string | null;
   summarized_until_id: string | null;
+  is_deleted: boolean;
   created_at: Date;
   updated_at: Date;
-  is_deleted: boolean;
 }
 
 interface DbMessage {
@@ -587,7 +737,7 @@ interface DbMessage {
   media_url: string | null;
   mime_type: string | null;
   transcript: string | null;
-  id_provider: string | null;
+  channel_message_id: string | null;
   created_at: Date;
   updated_at: Date;
 }

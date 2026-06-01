@@ -1,4 +1,5 @@
 import { NotFoundException, ValidationException } from "~/infra/exceptions";
+import { ChatChannel } from "~/shared/entities/enums/ChatChannel";
 import { TodoStatus } from "~/shared/entities/enums/TodoStatus";
 import { orquestrator } from "./orquestrator";
 
@@ -112,17 +113,21 @@ describe("TodoService", () => {
   });
 
   test("hydrates source message and serializes through todo entity", async () => {
-    const phoneNumber = "5511912345678";
-    await orquestrator.messagingService.addAllowedNumber(phoneNumber);
-    const user = await orquestrator.createUser({ phoneNumber });
+    const user = await orquestrator.createUser({
+      phoneNumber: "5511912345678",
+    });
+    const webAddress = user.email ?? "";
+    await orquestrator.addAllowedWebId(webAddress);
 
-    await orquestrator.messagingService.receiveWebMessage(phoneNumber, {
+    await orquestrator.messagingService.receiveWebMessage(webAddress, {
       audioBuffer: Buffer.from("audio-content"),
       mimeType: "audio/mp4; codecs=mp4a.40.2",
     });
 
-    const chat =
-      await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber);
+    const chat = await orquestrator.messagingService.getChatByChannelAddress(
+      webAddress,
+      ChatChannel.Web,
+    );
     const sourceMessage = chat?.messages[0];
     expect(sourceMessage).toBeDefined();
 

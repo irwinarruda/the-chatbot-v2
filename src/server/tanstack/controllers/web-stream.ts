@@ -19,7 +19,7 @@ export const Route = createFileRoute("/api/v1/web/stream")({
           ServerBootstrap.getService<MessagingService>("MessagingService");
         const streamAbort = createStreamAbortSignal(request.signal);
         const events = await messagingService.subscribeToWebEvents(
-          context.webAuth.phoneNumber,
+          context.webAuth.email,
           streamAbort.signal,
         );
         const stream = new ReadableStream<Uint8Array>({

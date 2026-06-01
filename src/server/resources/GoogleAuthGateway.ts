@@ -8,10 +8,12 @@ import type {
 } from "~/server/resources/IGoogleAuthGateway";
 
 export class GoogleAuthGateway implements IGoogleAuthGateway {
+  private loginUri: string;
   private oauth2Client: InstanceType<typeof google.auth.OAuth2>;
   private webOAuth2Client: InstanceType<typeof google.auth.OAuth2>;
 
-  constructor(private config: GoogleConfig) {
+  constructor(config: GoogleConfig) {
+    this.loginUri = config.loginUri;
     this.oauth2Client = new google.auth.OAuth2(
       config.clientId,
       config.secretClientKey,
@@ -22,6 +24,12 @@ export class GoogleAuthGateway implements IGoogleAuthGateway {
       config.secretClientKey,
       config.webRedirectUri || config.redirectUri,
     );
+  }
+
+  getAppLoginUrl(id: string): string {
+    const url = new URL(this.loginUri);
+    url.searchParams.set("id", id);
+    return url.toString();
   }
 
   createAuthorizationCodeUrl(
@@ -84,12 +92,6 @@ export class GoogleAuthGateway implements IGoogleAuthGateway {
         ? Math.floor((credentials.expiry_date - Date.now()) / 1000)
         : 3600,
     };
-  }
-
-  getAppLoginUrl(phoneNumber: string): string {
-    const url = new URL(this.config.loginUri);
-    url.searchParams.set("phone_number", phoneNumber);
-    return url.toString();
   }
 
   private getOAuth2Client(redirectTarget: "app" | "web") {

@@ -1,4 +1,5 @@
 import { faker } from "@faker-js/faker";
+import { v4 as uuidv4 } from "uuid";
 import type {
   AiConfig,
   AuthConfig,
@@ -14,6 +15,7 @@ import type {
 import { loadConfig } from "~/infra/config";
 import { Container } from "~/infra/container";
 import { Database } from "~/infra/database";
+import { ValidationException } from "~/infra/exceptions";
 import { Mediator } from "~/infra/mediator";
 import { GoogleCashFlowSpreadsheetGateway } from "~/server/resources/GoogleCashFlowSpreadsheetGateway";
 import { TestAiChatGateway } from "~/server/resources/TestAiChatGateway";
@@ -32,7 +34,18 @@ import {
 import { MigrationService } from "~/server/services/MigrationService";
 import { StatusService } from "~/server/services/StatusService";
 import { TodoService } from "~/server/services/TodoService";
+import { BsuidUtils } from "~/shared/entities/BsuidUtils";
+import { MessageType } from "~/shared/entities/enums/MessageType";
+import { PhoneNumberUtils } from "~/shared/entities/PhoneNumberUtils";
 import { User } from "~/shared/entities/User";
+
+export interface TranscriptDTO {
+  id: string;
+  transcript: string;
+  mediaUrl?: string;
+  mimeType?: string;
+  createdAt: Date;
+}
 
 export class Orquestrator {
   config: Config;
@@ -230,11 +243,11 @@ export class Orquestrator {
       this.container.resolve<MigrationService>("MigrationService");
 
     this.mediator.register<string>(
-      "DeleteUserByPhoneNumber",
-      async (phoneNumber) => {
+      "DeleteUserByChatChannelAddress",
+      async (channelAddress) => {
         const svc =
           this.container.resolve<MessagingService>("MessagingService");
-        await svc.deleteChat(phoneNumber);
+        await svc.deleteChat(channelAddress);
       },
     );
     this.mediator.register<RespondToMessageEvent>(
@@ -242,7 +255,7 @@ export class Orquestrator {
       async (data) => {
         const svc =
           this.container.resolve<MessagingService>("MessagingService");
-        await svc.respondToMessage(data.chat, data.message, data.chatType);
+        await svc.respondToMessage(data.chat, data.message, data.channel);
       },
     );
   }
@@ -262,26 +275,112 @@ export class Orquestrator {
   async createUser(options?: {
     name?: string;
     phoneNumber?: string;
+    email?: string;
+    bsuid?: string;
   }): Promise<User> {
+    const name = options?.name ?? faker.person.fullName().slice(0, 29);
     const user = new User(
-      options?.name ?? faker.person.fullName(),
+      name,
       options?.phoneNumber ??
         faker.phone
           .number({ style: "national" })
           .replace(/\D/g, "")
           .padStart(13, "55"),
+      options?.email ?? faker.internet.email().toLowerCase(),
     );
+    if (options?.bsuid) {
+      user.bsuid = options.bsuid;
+    }
     await this.authService.createUser(user);
     return user;
   }
 
-  async deleteUser(phoneNumber: string): Promise<void> {
-    await this.authService.deleteUserByPhoneNumber(phoneNumber);
+  async deleteUser(channelAddress: string): Promise<void> {
+    await this.authService.deleteUserByChatChannelAddress(channelAddress);
+  }
+
+  async addAllowedNumber(phoneNumber: string): Promise<void> {
+    await this.addAllowedWhatsAppId(PhoneNumberUtils.addDigitNine(phoneNumber));
+  }
+
+  async addAllowedWhatsAppId(whatsAppAddress: string): Promise<void> {
+    await this.insertAllowedChannelAddress({
+      whatsAppAddress: this.normalizeWhatsAppChannelAddress(whatsAppAddress),
+    });
+  }
+
+  async addAllowedWebId(webAddress: string): Promise<void> {
+    const normalizedWebAddress = webAddress.trim().toLowerCase();
+    await this.insertAllowedChannelAddress({
+      webAddress: normalizedWebAddress,
+    });
+  }
+
+  private async insertAllowedChannelAddress(dto: {
+    whatsAppAddress?: string;
+    webAddress?: string;
+  }): Promise<void> {
+    if (!dto.whatsAppAddress && !dto.webAddress) {
+      throw new ValidationException(
+        "Allowed entry requires a WhatsApp address or Web address",
+      );
+    }
+    await this.database.sql`
+      INSERT INTO allowed_entries (id, whatsapp_address, web_address, created_at)
+      VALUES (
+        ${uuidv4()},
+        ${dto.whatsAppAddress ?? null},
+        ${dto.webAddress ?? null},
+        ${new Date()}
+      )
+      ON CONFLICT DO NOTHING
+    `;
+  }
+
+  async getTranscripts(channelAddress: string): Promise<TranscriptDTO[]> {
+    const normalizedId = this.normalizeWhatsAppChannelAddress(channelAddress);
+    const dbMessages = await this.database.sql<TestDbMessage[]>`
+      SELECT m.* FROM messages m
+      INNER JOIN chats c ON c.id = m.id_chat
+      WHERE (
+        c.whatsapp_address = ${channelAddress}
+        OR c.whatsapp_address = ${normalizedId}
+        OR c.phone_number = ${normalizedId}
+        OR c.web_address = ${channelAddress}
+      )
+      AND c.is_deleted = false
+      AND m.type = ${MessageType.Audio}
+      AND m.transcript IS NOT NULL
+      ORDER BY m.created_at DESC
+    `;
+    return dbMessages.map((m) => ({
+      id: m.id,
+      transcript: m.transcript ?? "",
+      mediaUrl: m.media_url ?? undefined,
+      mimeType: m.mime_type ?? undefined,
+      createdAt: m.created_at,
+    }));
+  }
+
+  private normalizeWhatsAppChannelAddress(channelAddress: string): string {
+    const trimmedChannelAddress = channelAddress.trim();
+    if (BsuidUtils.isValid(trimmedChannelAddress)) {
+      return trimmedChannelAddress;
+    }
+    return PhoneNumberUtils.addDigitNine(trimmedChannelAddress);
   }
 
   async close(): Promise<void> {
     await this.database.close();
   }
+}
+
+interface TestDbMessage {
+  id: string;
+  transcript?: string;
+  media_url?: string;
+  mime_type?: string;
+  created_at: Date;
 }
 
 export let orquestrator: Orquestrator;

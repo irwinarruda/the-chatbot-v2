@@ -1,20 +1,22 @@
-import type { ChatType } from "~/shared/entities/enums/ChatType";
+import type { ChatChannel } from "~/shared/entities/enums/ChatChannel";
 
 export interface SendTextMessageDTO {
-  to: string;
+  toAddress: string;
   text: string;
 }
 
 export interface SendInteractiveButtonMessageDTO {
-  to: string;
+  toAddress: string;
   text: string;
   buttons: string[];
 }
 
 export interface ReceiveMessageDTO {
-  from: string;
-  idProvider: string;
-  chatType: ChatType;
+  fromAddress: string;
+  /** @deprecated WhatsApp-only fallback while phone-based identities are migrated. */
+  whatsAppPhoneNumber?: string;
+  channelMessageId: string;
+  channel: ChatChannel;
 }
 
 export interface ReceiveTextMessageDTO extends ReceiveMessageDTO {

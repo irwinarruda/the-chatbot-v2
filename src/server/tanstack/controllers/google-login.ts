@@ -10,8 +10,8 @@ export const Route = createFileRoute("/api/v1/google/login")({
         const authService =
           ServerBootstrap.getService<AuthService>("AuthService");
         const url = new URL(request.url);
-        const phoneNumber = url.searchParams.get("phone_number") ?? "";
-        const result = await authService.handleGoogleLogin(phoneNumber);
+        const id = url.searchParams.get("id") ?? "";
+        const result = await authService.handleGoogleLogin(id);
         if (result.type === "redirect") {
           return Http.redirect(result.url);
         }

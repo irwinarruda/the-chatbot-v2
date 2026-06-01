@@ -10,7 +10,8 @@ import type {
 } from "~/server/resources/IMessagingGateway";
 import type { IWhatsAppMessagingGateway } from "~/server/resources/IWhatsAppMessagingGateway";
 import { WhatsAppTextChunker } from "~/server/utils/WhatsAppTextChunker";
-import { ChatType } from "~/shared/entities/enums/ChatType";
+import { BsuidUtils } from "~/shared/entities/BsuidUtils";
+import { ChatChannel } from "~/shared/entities/enums/ChatChannel";
 import { PhoneNumberUtils } from "~/shared/entities/PhoneNumberUtils";
 
 export class WhatsAppMessagingGateway implements IWhatsAppMessagingGateway {
@@ -30,8 +31,8 @@ export class WhatsAppMessagingGateway implements IWhatsAppMessagingGateway {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
+            ...this.getRecipientPayload(dto.toAddress),
             messaging_product: "whatsapp",
-            to: dto.to,
             type: "text",
             text: { body: chunk },
           }),
@@ -61,8 +62,8 @@ export class WhatsAppMessagingGateway implements IWhatsAppMessagingGateway {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          ...this.getRecipientPayload(dto.toAddress),
           messaging_product: "whatsapp",
-          to: dto.to,
           type: "interactive",
           interactive: {
             type: "button",
@@ -112,42 +113,68 @@ export class WhatsAppMessagingGateway implements IWhatsAppMessagingGateway {
 
   receiveWhatsAppMessage(data: unknown): ReceiveMessageDTO | undefined {
     try {
-      const root = data as any;
-      const entry = root?.entry?.[0];
-      const change = entry?.changes?.[0];
-      const value = change?.value;
-      const phoneNumberId = value?.metadata?.phone_number_id;
-      if (phoneNumberId !== this.config.phoneNumberId) return undefined;
-      const messages = value?.messages;
+      const root = data as Record<string, unknown>;
+      const entry = (root?.entry as Record<string, unknown>[])?.[0];
+      const change = (entry?.changes as Record<string, unknown>[])?.[0];
+      const value = change?.value as Record<string, unknown> | undefined;
+      const metadataPhoneNumberId = (
+        value?.metadata as Record<string, unknown> | undefined
+      )?.phone_number_id;
+      if (metadataPhoneNumberId !== this.config.phoneNumberId) {
+        return undefined;
+      }
+      const messages = value?.messages as Record<string, unknown>[] | undefined;
       if (!messages || messages.length === 0) return undefined;
       const message = messages[0];
-      const contact = value?.contacts?.[0];
-      const from = PhoneNumberUtils.addDigitNine(contact?.wa_id ?? "");
-      const idProvider = message.id;
-      const chatType = ChatType.WhatsApp;
+      const contact = (value?.contacts as Record<string, unknown>[])?.[0];
+      const bsuid =
+        (message.from_user_id as string | undefined) ??
+        (contact?.user_id as string | undefined) ??
+        undefined;
+      const waId = contact?.wa_id as string | undefined;
+      const phoneNumber = waId
+        ? PhoneNumberUtils.addDigitNine(waId)
+        : undefined;
+      const fromAddress = bsuid ?? phoneNumber;
+      if (!fromAddress) return undefined;
+      const channelMessageId = message.id as string;
+      const channel = ChatChannel.WhatsApp;
       if (message.audio) {
+        const audio = message.audio as Record<string, unknown>;
         return {
-          from,
-          idProvider,
-          chatType,
-          mediaId: message.audio.id,
-          mimeType: message.audio.mime_type,
+          fromAddress,
+          whatsAppPhoneNumber: phoneNumber,
+          channelMessageId,
+          channel,
+          mediaId: audio.id as string,
+          mimeType: audio.mime_type as string,
         } as ReceiveAudioMessageDTO;
       }
-      if (message.interactive?.button_reply) {
+      if (
+        (message.interactive as Record<string, unknown> | undefined)
+          ?.button_reply
+      ) {
+        const buttonReply = (
+          (message.interactive as Record<string, unknown>)
+            .button_reply as Record<string, unknown>
+        ).title as string;
         return {
-          from,
-          idProvider,
-          chatType,
-          buttonReply: message.interactive.button_reply.title,
+          fromAddress,
+          whatsAppPhoneNumber: phoneNumber,
+          channelMessageId,
+          channel,
+          buttonReply,
         } as ReceiveInteractiveButtonMessageDTO;
       }
       if (message.text) {
+        const textBody = (message.text as Record<string, unknown>)
+          .body as string;
         return {
-          from,
-          idProvider,
-          chatType,
-          text: message.text.body,
+          fromAddress,
+          whatsAppPhoneNumber: phoneNumber,
+          channelMessageId,
+          channel,
+          text: textBody,
         } as ReceiveTextMessageDTO;
       }
       return undefined;
@@ -174,8 +201,11 @@ export class WhatsAppMessagingGateway implements IWhatsAppMessagingGateway {
         `WhatsApp media metadata request failed with status ${mediaUrlResponse.status}`,
       );
     }
-    const mediaData = (await mediaUrlResponse.json()) as any;
-    const mediaUrl = mediaData.url;
+    const mediaData = (await mediaUrlResponse.json()) as Record<
+      string,
+      unknown
+    >;
+    const mediaUrl = mediaData.url as string | undefined;
     if (!mediaUrl) {
       throw new Error(
         `WhatsApp media metadata response missing 'url' for mediaId ${mediaId}`,
@@ -196,5 +226,15 @@ export class WhatsAppMessagingGateway implements IWhatsAppMessagingGateway {
     }
     const arrayBuffer = await response.arrayBuffer();
     return Buffer.from(arrayBuffer);
+  }
+
+  private getRecipientPayload(toAddress: string) {
+    if (BsuidUtils.isValid(toAddress)) {
+      return {
+        recipient_type: "individual",
+        recipient: toAddress,
+      };
+    }
+    return { to: toAddress };
   }
 }

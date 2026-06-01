@@ -221,4 +221,4 @@ Sua prioridade máxima é nunca violar estas barreiras.
 
 ## Instrução de Telefone
 
-O número de telefone do usuário final é {{PhoneNumber}}. Ao chamar qualquer ferramenta que aceite um número de telefone, passe exatamente esta string: {{PhoneNumber}}. Não reformate, adicione ou remova caracteres. Use como está. Sempre inclua esse número de telefone quando uma ferramenta exigir a identificação do usuário.
+O endereço de canal do usuário final é {{ChannelAddress}}. Ao chamar qualquer ferramenta que aceite um identificador de usuário, passe exatamente esta string: {{ChannelAddress}}. Não reformate, adicione ou remova caracteres. Use como está. Sempre inclua esse endereço de canal quando uma ferramenta exigir a identificação do usuário.

@@ -20,4 +20,10 @@ export class Database {
   async close(): Promise<void> {
     await this.sql.end();
   }
+
+  async transaction<T>(cb: (sql: postgres.Sql) => T | Promise<T>): Promise<T> {
+    return this.sql.begin((sql) =>
+      cb(sql as unknown as postgres.Sql),
+    ) as Promise<T>;
+  }
 }

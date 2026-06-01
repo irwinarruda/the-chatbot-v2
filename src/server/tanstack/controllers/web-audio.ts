@@ -18,7 +18,7 @@ export const Route = createFileRoute("/api/v1/web/audio")({
         const buffer = Buffer.from(await request.arrayBuffer());
         const messagingService =
           ServerBootstrap.getService<MessagingService>("MessagingService");
-        await messagingService.receiveWebMessage(context.webAuth.phoneNumber, {
+        await messagingService.receiveWebMessage(context.webAuth.email, {
           audioBuffer: buffer,
           mimeType: contentType,
         });

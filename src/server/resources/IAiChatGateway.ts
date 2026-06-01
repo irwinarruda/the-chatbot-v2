@@ -31,7 +31,7 @@ export interface AiChatContext {
 
 export interface IAiChatGateway {
   getResponse(
-    phoneNumber: string,
+    channelAddress: string,
     messages: AiChatMessage[],
     allowTools?: boolean,
     context?: AiChatContext,

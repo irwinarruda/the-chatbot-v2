@@ -1,10 +1,10 @@
 import { ValidationException } from "~/infra/exceptions";
-import { AllowedNumber } from "~/shared/entities/AllowedNumber";
+import { BsuidUtils } from "~/shared/entities/BsuidUtils";
 import { CashFlowSpreadsheet } from "~/shared/entities/CashFlowSpreadsheet";
 import { Chat } from "~/shared/entities/Chat";
 import { Credential } from "~/shared/entities/Credentials";
 import { CashFlowSpreadsheetType } from "~/shared/entities/enums/CashFlowSpreadsheetType";
-import { ChatType } from "~/shared/entities/enums/ChatType";
+import { ChatChannel } from "~/shared/entities/enums/ChatChannel";
 import { CredentialType } from "~/shared/entities/enums/CredentialType";
 import { MessageType } from "~/shared/entities/enums/MessageType";
 import { MessageUserType } from "~/shared/entities/enums/MessageUserType";
@@ -13,10 +13,16 @@ import { PhoneNumberUtils } from "~/shared/entities/PhoneNumberUtils";
 import { User } from "~/shared/entities/User";
 
 describe("shared entities", () => {
-  test("Chat handles effective messages, summarization, validation, and serialization", () => {
+  test("Chat handles provider IDs, summarization, validation, and serialization", () => {
     const chat = new Chat();
-    chat.phoneNumber = "5511984444444";
-    chat.type = ChatType.Web;
+    chat.setChannelAddress(ChatChannel.WhatsApp, "5511984444444");
+    expect(chat.whatsAppAddress).toBe("5511984444444");
+    expect(chat.webAddress).toBeUndefined();
+    chat.setChannelAddress(ChatChannel.Web, "User@Example.com");
+    expect(chat.webAddress).toBe("user@example.com");
+    expect(() => chat.setChannelAddress(ChatChannel.WhatsApp, "")).toThrow(
+      ValidationException,
+    );
 
     const firstUserMessage = chat.addUserTextMessage("hello", "provider-1");
     const botMessage = chat.addBotTextMessage("hi", "provider-2");
@@ -35,6 +41,7 @@ describe("shared entities", () => {
     expect(chat.effectiveMessages).toHaveLength(5);
     expect(chat.shouldSummarize(10)).toBe(false);
     expect(chat.shouldSummarize(5)).toBe(true);
+    expect(chat.getChannelAddress()).toBe("user@example.com");
 
     chat.summarizedUntilId = buttonMessage.id;
     expect(chat.effectiveMessages).toEqual(chat.messages);
@@ -59,7 +66,9 @@ describe("shared entities", () => {
     expect(() => chat.addUser("user-2")).toThrow(ValidationException);
 
     const serialized = chat.toJSON();
-    expect(serialized.type).toBe("web");
+    expect(serialized.channel).toBe("web");
+    expect(serialized.whatsAppAddress).toBe("5511984444444");
+    expect(serialized.webAddress).toBe("user@example.com");
     expect(serialized.messages).toHaveLength(5);
 
     chat.deleteChat();
@@ -79,6 +88,12 @@ describe("shared entities", () => {
       "user@example.com",
     );
     expect(user.phoneNumber).toBe("5511984444444");
+    user.bsuid = "BR.13491208655302741918";
+    expect(user.toJSON().bsuid).toBe("BR.13491208655302741918");
+
+    const emailOnlyUser = new User("Irwin", undefined, "only@example.com");
+    expect(emailOnlyUser.phoneNumber).toBeUndefined();
+    expect(emailOnlyUser.email).toBe("only@example.com");
 
     user.updateEmail("updated@example.com");
     expect(user.email).toBe("updated@example.com");
@@ -112,6 +127,7 @@ describe("shared entities", () => {
       name: "Irwin",
       email: "updated@example.com",
       phoneNumber: "5511984444444",
+      bsuid: "BR.13491208655302741918",
     });
   });
 
@@ -160,13 +176,10 @@ describe("shared entities", () => {
     });
   });
 
-  test("AllowedNumber, CashFlowSpreadsheet, and PhoneNumberUtils cover their branches", () => {
-    const allowedNumber = new AllowedNumber("(11) 8444-4444");
-    expect(allowedNumber.phoneNumber).toBe("1184444444");
-    expect(allowedNumber.toJSON()).toMatchObject({
-      phoneNumber: "1184444444",
-    });
-
+  test("CashFlowSpreadsheet, PhoneNumberUtils, and BsuidUtils cover their branches", () => {
+    expect(BsuidUtils.isValid("BR.13491208655302741918")).toBe(true);
+    expect(BsuidUtils.isValid("user.98765432109876543210")).toBe(true);
+    expect(BsuidUtils.isValid("5511984444444")).toBe(false);
     const brazilianWithoutNine = "551184444444";
     expect(PhoneNumberUtils.addDigitNine(brazilianWithoutNine)).toBe(
       "5511984444444",
