@@ -135,7 +135,7 @@ export class WhatsAppMessagingGateway implements IWhatsAppMessagingGateway {
       const phoneNumber = waId
         ? PhoneNumberUtils.addDigitNine(waId)
         : undefined;
-      const fromAddress = bsuid ?? phoneNumber;
+      const fromAddress = phoneNumber ?? bsuid;
       if (!fromAddress) return undefined;
       const channelMessageId = message.id as string;
       const channel = ChatChannel.WhatsApp;
@@ -143,7 +143,7 @@ export class WhatsAppMessagingGateway implements IWhatsAppMessagingGateway {
         const audio = message.audio as Record<string, unknown>;
         return {
           fromAddress,
-          whatsAppPhoneNumber: phoneNumber,
+          whatsAppBsuid: bsuid,
           channelMessageId,
           channel,
           mediaId: audio.id as string,
@@ -160,7 +160,7 @@ export class WhatsAppMessagingGateway implements IWhatsAppMessagingGateway {
         ).title as string;
         return {
           fromAddress,
-          whatsAppPhoneNumber: phoneNumber,
+          whatsAppBsuid: bsuid,
           channelMessageId,
           channel,
           buttonReply,
@@ -171,7 +171,7 @@ export class WhatsAppMessagingGateway implements IWhatsAppMessagingGateway {
           .body as string;
         return {
           fromAddress,
-          whatsAppPhoneNumber: phoneNumber,
+          whatsAppBsuid: bsuid,
           channelMessageId,
           channel,
           text: textBody,
@@ -229,7 +229,7 @@ export class WhatsAppMessagingGateway implements IWhatsAppMessagingGateway {
   }
 
   private getRecipientPayload(toAddress: string) {
-    if (BsuidUtils.isValid(toAddress)) {
+    if (BsuidUtils.containsLetter(toAddress)) {
       return {
         recipient_type: "individual",
         recipient: toAddress,

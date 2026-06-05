@@ -640,6 +640,28 @@ describe("CashFlowService", () => {
     });
   });
 
+  test("syncBankAccountBalance should sync an account with zero balance", async () => {
+    const phoneNumber = "5511924555555";
+    await setupUserWithSpreadsheet(phoneNumber);
+    await withEmptySpreadsheet(phoneNumber, async () => {
+      const date = new Date(2025, 10, 15);
+      await orquestrator.cashFlowService.syncBankAccountBalance({
+        phoneNumber,
+        bankAccount: "Caju",
+        currentBalance: 75,
+        category: "Outras Receitas",
+        description: "Ajuste Caju",
+        date,
+      });
+      const status = await getBankAccountsStatusEventually(phoneNumber, date, [
+        { bankAccount: "Caju", balance: 75 },
+      ]);
+      expectBankAccountsStatusToEqual(status, [
+        { bankAccount: "Caju", balance: 75 },
+      ]);
+    });
+  });
+
   test("transferBetweenBankAccounts should create expense and earning entries", async () => {
     const phoneNumber = "5511910000001";
     await setupUserWithSpreadsheet(phoneNumber);

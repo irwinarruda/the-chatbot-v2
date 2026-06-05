@@ -1,5 +1,5 @@
 export class BsuidUtils {
-  static isValid(value: string): boolean {
+  static containsLetter(value: string): boolean {
     return /[A-Za-z]/.test(value);
   }
 }

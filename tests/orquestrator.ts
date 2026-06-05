@@ -25,7 +25,10 @@ import { TestSpeechToTextGateway } from "~/server/resources/TestSpeechToTextGate
 import { TestStorageGateway } from "~/server/resources/TestStorageGateway";
 import { TestWebMessagingGateway } from "~/server/resources/TestWebMessagingGateway";
 import { TestWhatsAppMessagingGateway } from "~/server/resources/TestWhatsAppMessagingGateway";
-import { AuthService } from "~/server/services/AuthService";
+import {
+  AuthService,
+  type SyncUserChatAddressesEvent,
+} from "~/server/services/AuthService";
 import { CashFlowService } from "~/server/services/CashFlowService";
 import {
   MessagingService,
@@ -35,6 +38,7 @@ import { MigrationService } from "~/server/services/MigrationService";
 import { StatusService } from "~/server/services/StatusService";
 import { TodoService } from "~/server/services/TodoService";
 import { BsuidUtils } from "~/shared/entities/BsuidUtils";
+import { ChatChannel } from "~/shared/entities/enums/ChatChannel";
 import { MessageType } from "~/shared/entities/enums/MessageType";
 import { PhoneNumberUtils } from "~/shared/entities/PhoneNumberUtils";
 import { User } from "~/shared/entities/User";
@@ -250,6 +254,14 @@ export class Orquestrator {
         await svc.deleteChat(channelAddress);
       },
     );
+    this.mediator.register<SyncUserChatAddressesEvent>(
+      "SyncUserChatAddresses",
+      async (data) => {
+        const svc =
+          this.container.resolve<MessagingService>("MessagingService");
+        await svc.syncUserChatAddresses(data);
+      },
+    );
     this.mediator.register<RespondToMessageEvent>(
       "RespondToMessage",
       async (data) => {
@@ -305,32 +317,31 @@ export class Orquestrator {
 
   async addAllowedWhatsAppId(whatsAppAddress: string): Promise<void> {
     await this.insertAllowedChannelAddress({
-      whatsAppAddress: this.normalizeWhatsAppChannelAddress(whatsAppAddress),
+      channel: ChatChannel.WhatsApp,
+      channelAddress: this.normalizeWhatsAppChannelAddress(whatsAppAddress),
     });
   }
 
   async addAllowedWebId(webAddress: string): Promise<void> {
-    const normalizedWebAddress = webAddress.trim().toLowerCase();
     await this.insertAllowedChannelAddress({
-      webAddress: normalizedWebAddress,
+      channel: ChatChannel.Web,
+      channelAddress: webAddress.trim().toLowerCase(),
     });
   }
 
   private async insertAllowedChannelAddress(dto: {
-    whatsAppAddress?: string;
-    webAddress?: string;
+    channel: ChatChannel;
+    channelAddress: string;
   }): Promise<void> {
-    if (!dto.whatsAppAddress && !dto.webAddress) {
-      throw new ValidationException(
-        "Allowed entry requires a WhatsApp address or Web address",
-      );
+    if (!dto.channelAddress) {
+      throw new ValidationException("Allowed entry requires a channel address");
     }
     await this.database.sql`
-      INSERT INTO allowed_entries (id, whatsapp_address, web_address, created_at)
+      INSERT INTO allowed_entries (id, channel, channel_address, created_at)
       VALUES (
         ${uuidv4()},
-        ${dto.whatsAppAddress ?? null},
-        ${dto.webAddress ?? null},
+        ${dto.channel},
+        ${dto.channelAddress},
         ${new Date()}
       )
       ON CONFLICT DO NOTHING
@@ -364,7 +375,7 @@ export class Orquestrator {
 
   private normalizeWhatsAppChannelAddress(channelAddress: string): string {
     const trimmedChannelAddress = channelAddress.trim();
-    if (BsuidUtils.isValid(trimmedChannelAddress)) {
+    if (BsuidUtils.containsLetter(trimmedChannelAddress)) {
       return trimmedChannelAddress;
     }
     return PhoneNumberUtils.addDigitNine(trimmedChannelAddress);

@@ -217,22 +217,15 @@ export class CashFlowService {
   async syncBankAccountBalance(
     dto: CashFlowSyncBankAccountBalanceDTO,
   ): Promise<void> {
-    const statuses = await this.getBankAccountsStatus(
-      dto.phoneNumber,
-      dto.date,
-    );
+    const [bankAccounts, statuses] = await Promise.all([
+      this.getBankAccount(dto.phoneNumber),
+      this.getBankAccountsStatus(dto.phoneNumber, dto.date),
+    ]);
+    this.validateBankAccountExists(dto.bankAccount, bankAccounts, "Target");
     const accountStatus = statuses.find(
       (s) => s.bankAccount === dto.bankAccount,
     );
-    if (!accountStatus) {
-      throw new ValidationException(
-        `Bank account "${dto.bankAccount}" not found in the spreadsheet`,
-        "Available accounts: " +
-          statuses.map((s) => s.bankAccount).join(", ") +
-          ". Make sure the account name matches exactly.",
-      );
-    }
-    const difference = dto.currentBalance - accountStatus.balance;
+    const difference = dto.currentBalance - (accountStatus?.balance ?? 0);
     if (difference === 0) {
       throw new ValidationException(
         `Bank account "${dto.bankAccount}" is already in sync`,

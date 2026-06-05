@@ -14,14 +14,23 @@ import type {
   GoogleUserInfo,
   IGoogleAuthGateway,
 } from "~/server/resources/IGoogleAuthGateway";
+import { BsuidUtils } from "~/shared/entities/BsuidUtils";
 import { Credential } from "~/shared/entities/Credentials";
 import { CredentialType } from "~/shared/entities/enums/CredentialType";
+import { PhoneNumberUtils } from "~/shared/entities/PhoneNumberUtils";
 import { User } from "~/shared/entities/User";
 
 export interface WebAuthTokenPayload {
   userId: string;
   email: string;
   phoneNumber?: string;
+}
+
+export interface SyncUserChatAddressesEvent {
+  idUser: string;
+  email?: string;
+  phoneNumber?: string;
+  bsuid?: string;
 }
 
 export type GoogleLoginResult =
@@ -57,23 +66,29 @@ export class AuthService {
     this.mediator = mediator;
   }
 
-  getAppLoginUrl(bsuid: string): string {
-    if (!bsuid) {
+  getAppLoginUrl(appAddress: string): string {
+    if (!appAddress) {
       throw new ValidationException("Login provider ID is required");
     }
-    return this.googleAuthGateway.getAppLoginUrl(bsuid);
+    return this.googleAuthGateway.getAppLoginUrl(appAddress);
   }
 
-  async handleGoogleLogin(bsuid: string): Promise<GoogleLoginResult> {
-    if (!bsuid) {
+  async handleGoogleLogin(appAddress: string): Promise<GoogleLoginResult> {
+    if (!appAddress) {
       throw new ValidationException("Login provider ID is required");
     }
-    const user = await this.getUserByBsuid(bsuid);
+    const user = await this.getUserByChatChannelAddress(appAddress);
     if (user?.googleCredential) {
       await this.refreshGoogleCredential(user);
+      await this.mediator.send("SyncUserChatAddresses", {
+        idUser: user.id,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        bsuid: user.bsuid,
+      });
       return { type: "alreadySignedIn" };
     }
-    const state = this.encryptAppBsuid(bsuid);
+    const state = this.encryptAppAddress(appAddress);
     const url = this.googleAuthGateway.createAuthorizationCodeUrl(state);
     return { type: "redirect", url };
   }
@@ -82,7 +97,7 @@ export class AuthService {
     state: string,
     code: string,
   ): Promise<GoogleRedirectResult> {
-    const bsuid = this.decryptAppBsuid(state);
+    const appAddress = this.decryptAppAddress(state);
     const userToken = await this.googleAuthGateway.exchangeCodeForTokens(
       code,
       "app",
@@ -90,7 +105,7 @@ export class AuthService {
     const userinfo = await this.googleAuthGateway.getUserInfo(
       userToken.accessToken,
     );
-    await this.saveUserFromGoogleAuth(bsuid, userToken, userinfo, "app");
+    await this.saveUserFromGoogleAuth(appAddress, userToken, userinfo, "app");
     return { type: "success" };
   }
 
@@ -131,6 +146,12 @@ export class AuthService {
       userToken.expiresInSeconds,
     );
     await this.saveGoogleCredential(user.googleCredential);
+    await this.mediator.send("SyncUserChatAddresses", {
+      idUser: user.id,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      bsuid: user.bsuid,
+    });
     return this.createWebToken(user);
   }
 
@@ -194,15 +215,15 @@ export class AuthService {
     });
   }
 
-  private encryptAppBsuid(bsuid: string): string {
-    if (!bsuid) {
+  private encryptAppAddress(appAddress: string): string {
+    if (!appAddress) {
       throw new ValidationException("Login provider ID is required");
     }
     const encryption = new Encryption(this.encryptionConfig);
-    return encryption.encrypt(bsuid);
+    return encryption.encrypt(appAddress);
   }
 
-  private decryptAppBsuid(state: string): string {
+  private decryptAppAddress(state: string): string {
     if (!state) {
       throw new ValidationException("Login provider ID is required");
     }
@@ -219,14 +240,14 @@ export class AuthService {
   }
 
   async saveUserFromGoogleAuth(
-    bsuid: string,
+    appAddress: string,
     userToken: GoogleTokens,
     userinfo: GoogleUserInfo,
     target: GoogleAuthTarget = "app",
   ): Promise<User> {
     const email = userinfo.email.toLowerCase();
     const userByEmail = await this.getUserByEmail(email);
-    const aliasUser = await this.getUserByBsuid(bsuid);
+    const aliasUser = await this.getUserByChatChannelAddress(appAddress);
     if (userByEmail && aliasUser && userByEmail.id !== aliasUser.id) {
       throw new UnauthorizedException(
         "The logged in Google account does not match this WhatsApp identity.",
@@ -247,19 +268,33 @@ export class AuthService {
           "Register this phone number in the app before signing in on the web.",
         );
       }
-      user = new User(userinfo.name, undefined, email);
-      user.bsuid = bsuid;
+      const phoneNumber = BsuidUtils.containsLetter(appAddress)
+        ? undefined
+        : PhoneNumberUtils.addDigitNine(appAddress);
+      user = new User(userinfo.name, phoneNumber, email);
+      if (BsuidUtils.containsLetter(appAddress)) {
+        user.bsuid = appAddress;
+      }
       user.createGoogleCredential(
         userToken.accessToken,
         userToken.refreshToken,
         userToken.expiresInSeconds,
       );
       await this.createUser(user);
-      await this.mediator.send("SaveUserByGoogleCredential", bsuid);
+      await this.mediator.send("SyncUserChatAddresses", {
+        idUser: user.id,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        bsuid: user.bsuid,
+      });
+      await this.mediator.send("SaveUserByGoogleCredential", appAddress);
       return user;
     }
-    user.email ??= email;
-    user.bsuid = bsuid;
+    if (BsuidUtils.containsLetter(appAddress)) {
+      user.bsuid = appAddress;
+    } else {
+      user.phoneNumber ??= PhoneNumberUtils.addDigitNine(appAddress);
+    }
     if (!user.googleCredential) {
       user.createGoogleCredential(
         userToken.accessToken,
@@ -284,6 +319,12 @@ export class AuthService {
       user.updateEmail(email);
     }
     await this.saveUser(user);
+    await this.mediator.send("SyncUserChatAddresses", {
+      idUser: user.id,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      bsuid: user.bsuid,
+    });
     return user;
   }
 
@@ -307,7 +348,7 @@ export class AuthService {
     return user;
   }
 
-  async getUserByBsuidOrPhoneNumber(id: string): Promise<User | undefined> {
+  async getUserByChatChannelAddress(id: string): Promise<User | undefined> {
     const dbUsers = await this.database.sql<DbUser[]>`
       SELECT * FROM users
       WHERE bsuid = ${id}

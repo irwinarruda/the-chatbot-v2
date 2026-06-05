@@ -6,7 +6,10 @@ import { OpenAiSpeechToTextGateway } from "~/server/resources/OpenAiSpeechToText
 import { R2StorageGateway } from "~/server/resources/R2StorageGateway";
 import { WebMessagingGateway } from "~/server/resources/WebMessagingGateway";
 import { WhatsAppMessagingGateway } from "~/server/resources/WhatsAppMessagingGateway";
-import { AuthService } from "~/server/services/AuthService";
+import {
+  AuthService,
+  type SyncUserChatAddressesEvent,
+} from "~/server/services/AuthService";
 import { CashFlowService } from "~/server/services/CashFlowService";
 import {
   MessagingService,
@@ -148,6 +151,14 @@ export function registerDependencies(config: Config) {
       const messagingService =
         container.resolve<MessagingService>("MessagingService");
       await messagingService.sendSignedInMessage(phoneNumber);
+    },
+  );
+  mediator.register<SyncUserChatAddressesEvent>(
+    "SyncUserChatAddresses",
+    async (data) => {
+      const messagingService =
+        container.resolve<MessagingService>("MessagingService");
+      await messagingService.syncUserChatAddresses(data);
     },
   );
   mediator.register<string>(

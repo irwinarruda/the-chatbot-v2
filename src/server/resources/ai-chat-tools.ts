@@ -16,9 +16,6 @@ import { PromptLoader, PromptLocale } from "~/server/utils/PromptLoader";
 import { TodoStatus } from "~/shared/entities/enums/TodoStatus";
 import type { User } from "~/shared/entities/User";
 
-const genericError =
-  "There can be a generic error response: { message, action, name, status_code }";
-
 type ToolParameterSchema = {
   type: string;
   description?: string;
@@ -43,23 +40,16 @@ export const toolDefinitions: ToolDefinition[] = [
     name: "create_todos",
     description: [
       "Create one or more todos for the authenticated user.",
-      "Use this when the user asks to remember, note, create a task, save",
-      "something to do later, or when an audio transcription contains clear",
-      "tasks.",
-      "",
+      "Use this when the user asks to remember, note, create a task, save something to do later, or when an audio transcription contains clear tasks.",
       "One message may contain multiple todos. Extract each actionable item.",
       "Prefer one call with multiple todo objects when there is more than one.",
       "Use a short, clear, action-oriented name.",
       "Add description only when important details would be lost from the name.",
       "If the name is enough, leave description empty.",
-      "Set dueDate only when the user explicitly gives or clearly implies a",
-      "date. Do not invent today's date for undated tasks.",
-      "If the message came from audio, create todos normally; the system will",
-      "bind them to the source message.",
-      "Do not create todos for casual conversation unless the intent to save an",
-      "action is clear.",
-      "",
-      `Returns { message, todos }. ${genericError}`,
+      "Set dueDate only when the user explicitly gives or clearly implies a date. Do not invent today's date for undated tasks.",
+      "If the message came from audio, create todos normally; the system will bind them to the source message.",
+      "Do not create todos for casual conversation unless the intent to save an action is clear.",
+      "Returns { message, todos }.",
     ].join("\n"),
     parameters: {
       type: "object",
@@ -104,7 +94,8 @@ export const toolDefinitions: ToolDefinition[] = [
   },
   {
     name: "list_todos",
-    description: `List todos for the user filtered by status. Returns { count, todos }. ${genericError}`,
+    description:
+      "List todos for the user filtered by status. Returns { count, todos }.",
     parameters: {
       type: "object",
       properties: {
@@ -123,7 +114,8 @@ export const toolDefinitions: ToolDefinition[] = [
   },
   {
     name: "add_cash_flow_spreadsheet_url",
-    description: `Associate a Google financial planning spreadsheet with a user. Fails if user not found, already has a sheet, or URL invalid. Returns { message }. ${genericError}`,
+    description:
+      "Associate a Google financial planning spreadsheet with a user. Fails if user not found, already has a sheet, or URL invalid. Returns { message }.",
     parameters: {
       type: "object",
       properties: {
@@ -138,7 +130,8 @@ export const toolDefinitions: ToolDefinition[] = [
   },
   {
     name: "get_all_transactions",
-    description: `Fetch all transactions for the user. Returns { count, transactions: [ { sheet_id, date, value, category, description, bank_account } ] }. ${genericError}`,
+    description:
+      "Fetch all transactions for the user. Returns { count, transactions: [ { sheet_id, date, value, category, description, bank_account } ] }.",
     parameters: {
       type: "object",
       properties: {
@@ -152,7 +145,8 @@ export const toolDefinitions: ToolDefinition[] = [
   },
   {
     name: "get_last_transaction",
-    description: `Get the most recently appended transaction. Returns { transaction? }. ${genericError}`,
+    description:
+      "Get the most recently appended transaction. Returns { transaction? }.",
     parameters: {
       type: "object",
       properties: {
@@ -166,7 +160,8 @@ export const toolDefinitions: ToolDefinition[] = [
   },
   {
     name: "delete_last_transaction",
-    description: `Delete the last (most recent) transaction. Returns { message }. ${genericError}`,
+    description:
+      "Delete the last (most recent) transaction. Returns { message }.",
     parameters: {
       type: "object",
       properties: {
@@ -180,7 +175,8 @@ export const toolDefinitions: ToolDefinition[] = [
   },
   {
     name: "add_transaction",
-    description: `Append a transaction specifying its type. Category and bank_account are automatically resolved via classification using available categories and bank accounts. Returns { message, type, category, bank_account, date, value }. ${genericError}`,
+    description:
+      "Append a transaction specifying its type. Category and bank_account are automatically resolved via classification using available categories and bank accounts. Returns { message, type, category, bank_account, date, value }.",
     parameters: {
       type: "object",
       properties: {
@@ -211,7 +207,8 @@ export const toolDefinitions: ToolDefinition[] = [
   },
   {
     name: "transfer_between_bank_accounts",
-    description: `Transfer a fixed amount from one bank account to another. Creates two entries: an expense on the source account and an earning on the destination account. Category and bank accounts are automatically resolved via classification using available bank accounts. Use this for credit card payments or any movement of money between accounts. Returns { message, from, to, category, description, date, value }. ${genericError}`,
+    description:
+      "Transfer a fixed amount from one bank account to another. Creates two entries: an expense on the source account and an earning on the destination account. Category and bank accounts are automatically resolved via classification using available bank accounts. Use this for credit card payments or any movement of money between accounts. Returns { message, from, to, category, description, date, value }.",
     parameters: {
       type: "object",
       properties: {
@@ -239,7 +236,7 @@ export const toolDefinitions: ToolDefinition[] = [
   },
   {
     name: "get_expense_categories",
-    description: `List expense categories. Returns { count, categories }. ${genericError}`,
+    description: "List expense categories. Returns { count, categories }.",
     parameters: {
       type: "object",
       properties: {
@@ -253,7 +250,7 @@ export const toolDefinitions: ToolDefinition[] = [
   },
   {
     name: "get_earning_categories",
-    description: `List earning categories. Returns { count, categories }. ${genericError}`,
+    description: "List earning categories. Returns { count, categories }.",
     parameters: {
       type: "object",
       properties: {
@@ -267,7 +264,8 @@ export const toolDefinitions: ToolDefinition[] = [
   },
   {
     name: "get_bank_accounts",
-    description: `List bank accounts referenced. Returns { count, bank_accounts }. ${genericError}`,
+    description:
+      "List bank accounts referenced. Returns { count, bank_accounts }.",
     parameters: {
       type: "object",
       properties: {
@@ -281,7 +279,8 @@ export const toolDefinitions: ToolDefinition[] = [
   },
   {
     name: "get_bank_accounts_status",
-    description: `List bank accounts with nonzero balances for a month. If date is omitted, uses the current date. Returns { count, bank_accounts: [ { bank_account, balance } ] }. ${genericError}`,
+    description:
+      "List bank accounts with nonzero balances for a month. If date is omitted, uses the current date. Returns { count, bank_accounts: [ { bank_account, balance } ] }.",
     parameters: {
       type: "object",
       properties: {
@@ -299,7 +298,8 @@ export const toolDefinitions: ToolDefinition[] = [
   },
   {
     name: "sync_bank_account_balance",
-    description: `Reconcile a bank account's tracked balance with the real balance reported by the user. Automatically computes the difference and creates an earning (if money appeared, e.g. interest) or expense (if money disappeared) transaction to bring the spreadsheet in sync. Category and description are automatically resolved via classification. Returns { message }. ${genericError}`,
+    description:
+      "Reconcile a bank account's tracked balance with the real balance reported by the user. Automatically computes the difference and creates an earning (if money appeared, e.g. interest) or expense (if money disappeared) transaction to bring the spreadsheet in sync. Bank account, category, and description are automatically resolved via classification. Returns { message }.",
     parameters: {
       type: "object",
       properties: {
@@ -312,10 +312,6 @@ export const toolDefinitions: ToolDefinition[] = [
           description:
             "Full original user message text with all context and nuances; pass exactly what the user sent",
         },
-        bank_account: {
-          type: "string",
-          description: "Name of the bank account to sync",
-        },
         current_balance: {
           type: "number",
           description:
@@ -327,17 +323,13 @@ export const toolDefinitions: ToolDefinition[] = [
             "Optional ISO-8601 date (if not explicit, omit this field)",
         },
       },
-      required: [
-        "phone_number",
-        "user_message",
-        "bank_account",
-        "current_balance",
-      ],
+      required: ["phone_number", "user_message", "current_balance"],
     },
   },
   {
     name: "delete_user_by_chat_channel_address",
-    description: `Delete the current user and all related data. Returns { message }. ${genericError}`,
+    description:
+      "Delete the current user and all related data. Returns { message }.",
     parameters: {
       type: "object",
       properties: {},
@@ -472,7 +464,7 @@ async function resolveToolUser(
   );
   if (userByEmail) return userByEmail;
   const userByChannelAddress =
-    await authService.getUserByBsuidOrPhoneNumber(channelAddress);
+    await authService.getUserByChatChannelAddress(channelAddress);
   if (userByChannelAddress) return userByChannelAddress;
   const phoneNumber = args.phone_number as string;
   const user = await authService.getUserByPhoneNumber(phoneNumber);
@@ -695,7 +687,6 @@ export async function executeTool(
         const user = await resolveToolUser(args, authService, channelAddress);
         const phoneNumber = requireCashFlowPhone(user);
         const userMessage = args.user_message as string;
-        const bankAccount = args.bank_account as string;
         const currentBalance = args.current_balance as number;
         const date = args.date ? new Date(args.date as string) : new Date();
         const { categories, bankAccounts } =
@@ -711,7 +702,7 @@ export async function executeTool(
         );
         await cashFlowService.syncBankAccountBalance({
           phoneNumber,
-          bankAccount,
+          bankAccount: parsed.bank_account,
           currentBalance,
           category: parsed.category,
           description: parsed.description,
