@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { WhatsAppMessageParser } from "~/client/utils/whatsAppMessageParser";
+import { WhatsAppMessageParser } from "~/client/utils/WhatsAppMessageParser";
 
 describe("whatsAppMessageParser", () => {
   test("strips message envelopes and parses inline WhatsApp styles", () => {

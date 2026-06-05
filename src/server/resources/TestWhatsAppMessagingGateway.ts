@@ -20,8 +20,8 @@ export class TestWhatsAppMessagingGateway implements IWhatsAppMessagingGateway {
       const payload = data as Record<string, unknown>;
       if (payload.dualIdWebhook) {
         return {
-          fromAddress: TestWhatsAppMessagingGateway.bsuid,
-          whatsAppPhoneNumber: TestWhatsAppMessagingGateway.phoneNumber,
+          fromAddress: TestWhatsAppMessagingGateway.phoneNumber,
+          whatsAppBsuid: TestWhatsAppMessagingGateway.bsuid,
           text: "dual id message",
           channel: ChatChannel.WhatsApp,
           channelMessageId: randomUUID(),
@@ -39,7 +39,6 @@ export class TestWhatsAppMessagingGateway implements IWhatsAppMessagingGateway {
     const text = typeof data === "string" ? data : JSON.stringify(data);
     const receiveTextMessage: ReceiveTextMessageDTO = {
       fromAddress: TestWhatsAppMessagingGateway.phoneNumber,
-      whatsAppPhoneNumber: TestWhatsAppMessagingGateway.phoneNumber,
       text: text,
       channel: ChatChannel.WhatsApp,
       channelMessageId: text.includes("Second duplicate")

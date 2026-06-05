@@ -177,9 +177,9 @@ describe("shared entities", () => {
   });
 
   test("CashFlowSpreadsheet, PhoneNumberUtils, and BsuidUtils cover their branches", () => {
-    expect(BsuidUtils.isValid("BR.13491208655302741918")).toBe(true);
-    expect(BsuidUtils.isValid("user.98765432109876543210")).toBe(true);
-    expect(BsuidUtils.isValid("5511984444444")).toBe(false);
+    expect(BsuidUtils.containsLetter("BR.13491208655302741918")).toBe(true);
+    expect(BsuidUtils.containsLetter("user.98765432109876543210")).toBe(true);
+    expect(BsuidUtils.containsLetter("5511984444444")).toBe(false);
     const brazilianWithoutNine = "551184444444";
     expect(PhoneNumberUtils.addDigitNine(brazilianWithoutNine)).toBe(
       "5511984444444",

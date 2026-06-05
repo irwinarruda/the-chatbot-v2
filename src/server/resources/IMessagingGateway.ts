@@ -13,8 +13,7 @@ export interface SendInteractiveButtonMessageDTO {
 
 export interface ReceiveMessageDTO {
   fromAddress: string;
-  /** @deprecated WhatsApp-only fallback while phone-based identities are migrated. */
-  whatsAppPhoneNumber?: string;
+  whatsAppBsuid?: string;
   channelMessageId: string;
   channel: ChatChannel;
 }

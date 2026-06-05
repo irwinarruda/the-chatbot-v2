@@ -92,8 +92,8 @@ describe("AuthService", () => {
     const users = await orquestrator.authService.getUsers();
     expect(users.length).toBe(1);
     expect(users[0]?.name).toBe("Save Google Credentials User");
-    expect(users[0]?.bsuid).toBe("5511984444444");
-    expect(users[0]?.phoneNumber).toBeUndefined();
+    expect(users[0]?.phoneNumber).toBe("5511984444444");
+    expect(users[0]?.bsuid).toBeUndefined();
     expect(users[0]?.googleCredential).toBeDefined();
     expect(users[0]?.googleCredential?.accessToken).toBe(
       "ya29.a0ARrdaM9test_access_token_123456789",
@@ -110,7 +110,7 @@ describe("AuthService", () => {
         encryption.encrypt(phoneNumber),
         "rightCode",
       ),
-    ).resolves.not.toThrow();
+    ).resolves.toEqual({ type: "success" });
   });
 
   test("handleGoogleRedirect exchanges code with the app redirect target", async () => {
@@ -243,20 +243,20 @@ describe("AuthService", () => {
       encryption.encrypt(id),
       "rightCode",
     );
-    let user = await orquestrator.authService.getUserByBsuid(id);
+    let user = await orquestrator.authService.getUserByPhoneNumber(id);
     expect(user?.email).toBe("savegooglecredentials@example.com");
 
     // Simulate a legacy user that was stored without an email.
     await orquestrator.database
-      .sql`UPDATE users SET email = NULL WHERE bsuid = ${id}`;
-    user = await orquestrator.authService.getUserByBsuid(id);
+      .sql`UPDATE users SET email = NULL WHERE phone_number = ${id}`;
+    user = await orquestrator.authService.getUserByPhoneNumber(id);
     expect(user?.email).toBeUndefined();
 
     await orquestrator.authService.handleGoogleRedirect(
       encryption.encrypt(id),
       "rightCode",
     );
-    user = await orquestrator.authService.getUserByBsuid(id);
+    user = await orquestrator.authService.getUserByPhoneNumber(id);
     expect(user?.email).toBe("savegooglecredentials@example.com");
   });
 
@@ -264,9 +264,8 @@ describe("AuthService", () => {
     await orquestrator.clearDatabase();
     const encryption = new Encryption(orquestrator.encryptionConfig);
     const id = "5511984444444";
-    const user = new User("Irwin Arruda");
+    const user = new User("Irwin Arruda", id);
     user.email = "another@example.com";
-    user.bsuid = id;
     await orquestrator.authService.createUser(user);
 
     await expect(
@@ -276,7 +275,8 @@ describe("AuthService", () => {
       ),
     ).rejects.toBeInstanceOf(UnauthorizedException);
 
-    const unchangedUser = await orquestrator.authService.getUserByBsuid(id);
+    const unchangedUser =
+      await orquestrator.authService.getUserByPhoneNumber(id);
     expect(unchangedUser?.email).toBe("another@example.com");
     expect(unchangedUser?.googleCredential).toBeUndefined();
   });
@@ -330,7 +330,7 @@ describe("AuthService", () => {
       encryption.encrypt(id),
       "rightCode",
     );
-    const user = await orquestrator.authService.getUserByBsuid(id);
+    const user = await orquestrator.authService.getUserByPhoneNumber(id);
     expect(user).toBeDefined();
 
     const token =
@@ -338,7 +338,7 @@ describe("AuthService", () => {
     const authenticatedUser =
       await orquestrator.authService.authenticateWebUser(token);
 
-    expect(authenticatedUser.bsuid).toBe(id);
+    expect(authenticatedUser.phoneNumber).toBe(id);
     expect(authenticatedUser.email).toBe("savegooglecredentials@example.com");
   });
 
@@ -400,9 +400,10 @@ describe("AuthService", () => {
       await orquestrator.authService.handleWebGoogleRedirect("rightCode");
     const authenticatedUser =
       await orquestrator.authService.authenticateWebUser(token);
-    expect(authenticatedUser.bsuid).toBe(id);
+    expect(authenticatedUser.phoneNumber).toBe(id);
 
-    const persistedUser = await orquestrator.authService.getUserByBsuid(id);
+    const persistedUser =
+      await orquestrator.authService.getUserByPhoneNumber(id);
     expect(persistedUser?.googleCredential).toBeDefined();
     expect(persistedUser?.email).toBe("savegooglecredentials@example.com");
   });
@@ -416,7 +417,7 @@ describe("AuthService", () => {
       encryption.encrypt(id),
       "rightCode",
     );
-    const user = await orquestrator.authService.getUserByBsuid(id);
+    const user = await orquestrator.authService.getUserByPhoneNumber(id);
     expect(user).toBeDefined();
 
     const token =
@@ -436,7 +437,7 @@ describe("AuthService", () => {
       encryption.encrypt(id),
       "rightCode",
     );
-    const user = await orquestrator.authService.getUserByBsuid(id);
+    const user = await orquestrator.authService.getUserByPhoneNumber(id);
     expect(user).toBeDefined();
 
     const result =
@@ -447,7 +448,7 @@ describe("AuthService", () => {
       await orquestrator.authService.authenticateWebUser(result);
     expect(authenticatedUser.id).toBe(user?.id);
     expect(authenticatedUser.email).toBe(user?.email);
-    expect(authenticatedUser.bsuid).toBe(user?.bsuid);
+    expect(authenticatedUser.phoneNumber).toBe(user?.phoneNumber);
   });
 
   test("handleWebGoogleRedirect rejects matching email users without Google credentials", async () => {
@@ -610,14 +611,16 @@ describe("AuthService", () => {
         userinfo: { name: string; email: string },
       ) => Promise<User>;
       getUserByEmail: (email: string) => Promise<User | undefined>;
-      getUserByBsuid: (bsuid: string) => Promise<User | undefined>;
+      getUserByChatChannelAddress: (
+        providerId: string,
+      ) => Promise<User | undefined>;
     };
     const createGoogleCredential = user.createGoogleCredential.bind(user);
     const getUserByEmail = service.getUserByEmail;
-    const getUserByBsuid = service.getUserByBsuid;
+    const getUserByChatChannelAddress = service.getUserByChatChannelAddress;
     user.createGoogleCredential = () => {};
     service.getUserByEmail = vi.fn().mockResolvedValue(undefined);
-    service.getUserByBsuid = vi.fn().mockResolvedValue(user);
+    service.getUserByChatChannelAddress = vi.fn().mockResolvedValue(user);
 
     await expect(
       service.saveUserFromGoogleAuth(
@@ -636,7 +639,7 @@ describe("AuthService", () => {
 
     user.createGoogleCredential = createGoogleCredential;
     service.getUserByEmail = getUserByEmail;
-    service.getUserByBsuid = getUserByBsuid;
+    service.getUserByChatChannelAddress = getUserByChatChannelAddress;
   });
 
   test("deleteUserByChatChannelAddress deletes user by phone number", async () => {
@@ -667,7 +670,9 @@ describe("AuthService", () => {
       .spyOn(orquestrator.mediator, "send")
       .mockResolvedValue(undefined);
     await orquestrator.authService.deleteUserByChatChannelAddress(bsuid);
-    expect(await orquestrator.authService.getUserByBsuid(bsuid)).toBeUndefined();
+    expect(
+      await orquestrator.authService.getUserByBsuid(bsuid),
+    ).toBeUndefined();
     expect(sendSpy).toHaveBeenCalledWith(
       "DeleteUserByChatChannelAddress",
       bsuid,
@@ -683,7 +688,9 @@ describe("AuthService", () => {
       .spyOn(orquestrator.mediator, "send")
       .mockResolvedValue(undefined);
     await orquestrator.authService.deleteUserByChatChannelAddress(email);
-    expect(await orquestrator.authService.getUserByEmail(email)).toBeUndefined();
+    expect(
+      await orquestrator.authService.getUserByEmail(email),
+    ).toBeUndefined();
     expect(sendSpy).toHaveBeenCalledWith(
       "DeleteUserByChatChannelAddress",
       email,

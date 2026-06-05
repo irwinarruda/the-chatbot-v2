@@ -18,8 +18,8 @@ if (!address) {
 }
 const sql = postgres(connectionString);
 await sql`
-  INSERT INTO allowed_entries (whatsapp_address)
-  VALUES (${address})
+  INSERT INTO allowed_entries (channel, channel_address)
+  VALUES (${"WhatsApp"}, ${address})
   ON CONFLICT DO NOTHING
 `;
 console.log(`Seeded allowed entry WhatsApp ID: ${address}`);

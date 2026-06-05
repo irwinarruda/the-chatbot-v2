@@ -25,7 +25,10 @@ import type {
   WebChatEvent,
 } from "~/server/resources/IWebMessagingGateway";
 import type { IWhatsAppMessagingGateway } from "~/server/resources/IWhatsAppMessagingGateway";
-import type { AuthService } from "~/server/services/AuthService";
+import type {
+  AuthService,
+  SyncUserChatAddressesEvent,
+} from "~/server/services/AuthService";
 import { MessageLoader, MessageTemplate } from "~/server/utils/MessageLoader";
 import { BsuidUtils } from "~/shared/entities/BsuidUtils";
 import { Chat } from "~/shared/entities/Chat";
@@ -96,7 +99,6 @@ export class MessagingService {
     const receiveMessage =
       this.whatsAppMessagingGateway.receiveWhatsAppMessage(data);
     if (!receiveMessage) return;
-    await this.promoteWhatsAppIdIfNeeded(receiveMessage);
     await this.listenToMessage(receiveMessage);
   }
 
@@ -124,6 +126,12 @@ export class MessagingService {
         receiveMessage.fromAddress,
       );
       await this.createChat(chat);
+    } else {
+      chat.setChannelAddress(
+        receiveMessage.channel,
+        receiveMessage.fromAddress,
+      );
+      await this.saveChat(chat);
     }
     let message: Message;
     if ("text" in receiveMessage) {
@@ -153,7 +161,7 @@ export class MessagingService {
       const user =
         chat.channel === ChatChannel.Web
           ? await this.authService.getUserByEmail(receiveMessage.fromAddress)
-          : await this.authService.getUserByBsuidOrPhoneNumber(
+          : await this.authService.getUserByChatChannelAddress(
               receiveMessage.fromAddress,
             );
       if (!user) {
@@ -368,6 +376,26 @@ export class MessagingService {
     );
   }
 
+  async syncUserChatAddresses(dto: SyncUserChatAddressesEvent): Promise<void> {
+    const phoneNumber = dto.phoneNumber
+      ? PhoneNumberUtils.addDigitNine(dto.phoneNumber)
+      : null;
+    await this.database.sql`
+      UPDATE chats
+      SET
+        id_user = ${dto.idUser},
+        web_address = COALESCE(${dto.email ?? null}, web_address),
+        updated_at = ${new Date()}
+      WHERE is_deleted = false
+      AND (
+        id_user = ${dto.idUser}
+        OR web_address = ${dto.email ?? null}
+        OR whatsapp_address = ${dto.bsuid ?? null}
+        OR whatsapp_address = ${phoneNumber}
+      )
+    `;
+  }
+
   private getMessagingGatewayByChannel(
     channel: ChatChannel,
   ): IMessagingGateway {
@@ -426,7 +454,7 @@ export class MessagingService {
   private async getChatByGenericChannelAddress(
     channelAddress: string,
   ): Promise<Chat | undefined> {
-    const normalizedWhatsAppAddress = BsuidUtils.isValid(channelAddress)
+    const normalizedWhatsAppAddress = BsuidUtils.containsLetter(channelAddress)
       ? channelAddress
       : PhoneNumberUtils.addDigitNine(channelAddress);
     const dbChats = await this.database.sql<DbChat[]>`
@@ -451,9 +479,9 @@ export class MessagingService {
     const dbChats = await this.database.sql<DbChat[]>`
       SELECT * FROM chats
       WHERE whatsapp_address = ${whatsAppAddress}
-      AND channel = ${ChatChannel.WhatsApp}
       AND is_deleted = false
       ORDER BY created_at DESC
+      LIMIT 1
     `;
     const dbChat = dbChats[0];
     if (!dbChat) return undefined;
@@ -466,9 +494,9 @@ export class MessagingService {
     const dbChats = await this.database.sql<DbChat[]>`
       SELECT * FROM chats
       WHERE web_address = ${webAddress}
-      AND channel = ${ChatChannel.Web}
       AND is_deleted = false
       ORDER BY created_at DESC
+      LIMIT 1
     `;
     const dbChat = dbChats[0];
     if (!dbChat) return undefined;
@@ -489,31 +517,33 @@ export class MessagingService {
     chat.webAddress = dbChat.web_address ?? undefined;
     chat.summary = dbChat.summary ?? undefined;
     chat.summarizedUntilId = dbChat.summarized_until_id ?? undefined;
-    chat.messages = dbMessages.map((m) => {
-      const message = new Message();
-      message.id = m.id;
-      message.idChat = m.id_chat;
-      message.text = m.text ?? undefined;
-      message.type = m.type as MessageType;
-      message.buttonReply = m.button_reply ?? undefined;
-      message.buttonReplyOptions =
-        typeof m.button_reply_options === "string"
-          ? m.button_reply_options.split(",")
-          : undefined;
-      message.mediaId = m.media_id ?? undefined;
-      message.mediaUrl = m.media_url ?? undefined;
-      message.mimeType = m.mime_type ?? undefined;
-      message.transcript = m.transcript ?? undefined;
-      message.userType = m.user_type as MessageUserType;
-      message.channelMessageId = m.channel_message_id ?? undefined;
-      message.createdAt = m.created_at;
-      message.updatedAt = m.updated_at;
-      return message;
-    });
+    chat.messages = dbMessages.map((message) => this.hydrateMessage(message));
     chat.createdAt = dbChat.created_at;
     chat.updatedAt = dbChat.updated_at;
     chat.isDeleted = dbChat.is_deleted;
     return chat;
+  }
+
+  private hydrateMessage(dbMessage: DbMessage): Message {
+    const message = new Message();
+    message.id = dbMessage.id;
+    message.idChat = dbMessage.id_chat;
+    message.text = dbMessage.text ?? undefined;
+    message.type = dbMessage.type as MessageType;
+    message.buttonReply = dbMessage.button_reply ?? undefined;
+    message.buttonReplyOptions =
+      typeof dbMessage.button_reply_options === "string"
+        ? dbMessage.button_reply_options.split(",")
+        : undefined;
+    message.mediaId = dbMessage.media_id ?? undefined;
+    message.mediaUrl = dbMessage.media_url ?? undefined;
+    message.mimeType = dbMessage.mime_type ?? undefined;
+    message.transcript = dbMessage.transcript ?? undefined;
+    message.userType = dbMessage.user_type as MessageUserType;
+    message.channelMessageId = dbMessage.channel_message_id ?? undefined;
+    message.createdAt = dbMessage.created_at;
+    message.updatedAt = dbMessage.updated_at;
+    return message;
   }
 
   private async sendLoginMessage(
@@ -649,65 +679,15 @@ export class MessagingService {
   private async isAllowedChannelAddress(
     receiveMessage: ReceiveMessageDTO,
   ): Promise<boolean> {
-    if (receiveMessage.channel === ChatChannel.WhatsApp) {
-      const result = await this.database.sql<{ exists: boolean }[]>`
-        SELECT EXISTS(
-          SELECT 1 FROM allowed_entries
-          WHERE whatsapp_address = ${receiveMessage.fromAddress}
-        )
-      `;
-      return result[0]?.exists ?? false;
-    }
-    if (receiveMessage.channel === ChatChannel.Web) {
-      const result = await this.database.sql<{ exists: boolean }[]>`
-        SELECT EXISTS(
-          SELECT 1 FROM allowed_entries
-          WHERE web_address = ${receiveMessage.fromAddress}
-        )
-      `;
-      return result[0]?.exists ?? false;
-    }
-    throw new ValidationException("Unsupported chat channel");
-  }
-
-  private async promoteWhatsAppIdIfNeeded(
-    receiveMessage: ReceiveMessageDTO,
-  ): Promise<void> {
-    if (receiveMessage.channel !== ChatChannel.WhatsApp) return;
-    if (!receiveMessage.whatsAppPhoneNumber) return;
-    if (receiveMessage.fromAddress === receiveMessage.whatsAppPhoneNumber)
-      return;
-    const oldWhatsAppAddress = receiveMessage.whatsAppPhoneNumber;
-    const newWhatsAppAddress = receiveMessage.fromAddress;
-    const phoneNumber = PhoneNumberUtils.addDigitNine(
-      receiveMessage.whatsAppPhoneNumber,
-    );
-    const now = new Date();
-    await this.database.transaction(async (sql) => {
-      await sql`
-          UPDATE chats
-          SET
-            whatsapp_address = ${newWhatsAppAddress},
-            updated_at = ${now}
-          WHERE whatsapp_address = ${oldWhatsAppAddress}
-          AND channel = ${ChatChannel.WhatsApp}
-        `;
-      await sql`
-          UPDATE allowed_entries
-          SET
-            whatsapp_address = ${newWhatsAppAddress}
-          WHERE whatsapp_address = ${oldWhatsAppAddress}
-        `;
-      await sql`
-          UPDATE users u
-          SET
-            bsuid = ${newWhatsAppAddress},
-            phone_number = ${phoneNumber},
-            updated_at = ${now}
-          WHERE u.phone_number = ${phoneNumber}
-          AND u.bsuid IS NULL
-        `;
-    });
+    if (receiveMessage.channel === ChatChannel.Web) return true;
+    const result = await this.database.sql<{ exists: boolean }[]>`
+      SELECT EXISTS(
+        SELECT 1 FROM allowed_entries
+        WHERE channel = ${receiveMessage.channel}
+        AND channel_address = ${receiveMessage.fromAddress}
+      )
+    `;
+    return result[0]?.exists ?? false;
   }
 }
 

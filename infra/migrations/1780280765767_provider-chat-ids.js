@@ -54,36 +54,33 @@ export function up(pgm) {
     ON chats (id_user, channel, created_at DESC)
     WHERE id_user IS NOT NULL AND is_deleted = false
   `);
+  pgm.sql(`
+    CREATE INDEX "IX_messages_id_chat_created_at"
+    ON messages (id_chat, created_at)
+  `);
   pgm.sql(
     `CREATE TABLE allowed_entries (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      whatsapp_address VARCHAR(255),
-      web_address VARCHAR(255),
+      channel VARCHAR(20) NOT NULL,
+      channel_address VARCHAR(255) NOT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now()),
-      CONSTRAINT ck_allowed_entries_channel_address
-        CHECK (whatsapp_address IS NOT NULL OR web_address IS NOT NULL)
+      CONSTRAINT ck_allowed_entries_channel
+        CHECK (channel IN ('WhatsApp', 'Web'))
     )`,
   );
   pgm.sql(`
-    INSERT INTO allowed_entries (id, whatsapp_address, web_address, created_at)
+    INSERT INTO allowed_entries (id, channel, channel_address, created_at)
     SELECT
       allowed_numbers.id,
+      'WhatsApp',
       allowed_numbers.phone_number,
-      lower(users.email),
       allowed_numbers.created_at
     FROM allowed_numbers
-    LEFT JOIN users ON users.phone_number = allowed_numbers.phone_number
     WHERE allowed_numbers.phone_number IS NOT NULL
   `);
   pgm.sql(`
-    CREATE UNIQUE INDEX "UX_allowed_entries_whatsapp_address"
-    ON allowed_entries (whatsapp_address)
-    WHERE whatsapp_address IS NOT NULL
-  `);
-  pgm.sql(`
-    CREATE UNIQUE INDEX "UX_allowed_entries_web_address"
-    ON allowed_entries (web_address)
-    WHERE web_address IS NOT NULL
+    CREATE UNIQUE INDEX "UX_allowed_entries_channel_address"
+    ON allowed_entries (channel, channel_address)
   `);
   pgm.sql(`DROP TABLE allowed_numbers`);
 }
@@ -100,16 +97,16 @@ export function down(pgm) {
   `);
   pgm.sql(`
     INSERT INTO allowed_numbers (id, phone_number, created_at)
-    SELECT id, whatsapp_address, created_at
+    SELECT id, channel_address, created_at
     FROM allowed_entries
-    WHERE whatsapp_address IS NOT NULL
+    WHERE channel = 'WhatsApp'
   `);
-  pgm.sql(`DROP INDEX "UX_allowed_entries_web_address"`);
-  pgm.sql(`DROP INDEX "UX_allowed_entries_whatsapp_address"`);
+  pgm.sql(`DROP INDEX "UX_allowed_entries_channel_address"`);
   pgm.sql(`DROP TABLE allowed_entries`);
   pgm.sql(`DROP INDEX "IX_chats_user_channel_active"`);
   pgm.sql(`DROP INDEX "IX_chats_web_address_active"`);
   pgm.sql(`DROP INDEX "IX_chats_whatsapp_address_active"`);
+  pgm.sql(`DROP INDEX "IX_messages_id_chat_created_at"`);
   pgm.sql(`ALTER TABLE chats DROP COLUMN web_address`);
   pgm.sql(`ALTER TABLE chats DROP COLUMN whatsapp_address`);
   pgm.sql(`
