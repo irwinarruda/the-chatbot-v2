@@ -199,14 +199,11 @@ export class TodoService {
   }
 
   private validateFilters(filters: TodoFiltersDTO): void {
-    if (
-      !!filters.status &&
-      !Object.values(TodoStatus).includes(filters.status)
-    ) {
+    if (filters.status && !Object.values(TodoStatus).includes(filters.status)) {
       throw new ValidationException("Todo status is invalid");
     }
     if (
-      !!filters.due &&
+      filters.due &&
       !["all", "with_due_date", "without_due_date"].includes(filters.due)
     ) {
       throw new ValidationException("Todo due filter is invalid");
