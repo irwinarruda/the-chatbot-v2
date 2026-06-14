@@ -29,7 +29,7 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "suspicious": {
         "noExplicitAny": "off",
         "noDeprecatedImports": "error"
@@ -61,7 +61,7 @@
     "enabled": true,
     "actions": {
       "source": {
-        "recommended": true
+        "preset": "recommended"
       }
     }
   },
