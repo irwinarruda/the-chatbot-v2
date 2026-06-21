@@ -34,7 +34,7 @@
     "services:ready": "bun run services:up && bun infra/scripts/wait-for-postgres.ts && bun run migrate:up"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.104.1",
+    "@anthropic-ai/sdk": "^0.105.0",
     "@aws-sdk/client-s3": "^3.1024.0",
     "@base-ui/react": "^1.4.0",
     "@tanstack/react-router": "^1.168.18",
@@ -72,12 +72,12 @@
     "@tanstack/router-generator": "^1.166.32",
     "@tanstack/virtual-file-routes": "^1.161.7",
     "@types/crypto-js": "^4.2.2",
-    "@types/node": "^25.5.2",
+    "@types/node": "^26.0.0",
     "@types/pg": "^8.20.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
-    "@vitest/coverage-v8": "4.1.8",
+    "@vitest/coverage-v8": "4.1.9",
     "babel-plugin-react-compiler": "^1.0.0",
     "concurrently": "^10.0.3",
     "dotenv": "^17.4.0",
@@ -85,7 +85,7 @@
     "tsx": "^4.21.0",
     "typescript": "^6.0.2",
     "vite": "^8.0.3",
-    "vitest": "4.1.8"
+    "vitest": "4.1.9"
   },
   "overrides": {
     "@smithy/util-retry": "4.3.6"
