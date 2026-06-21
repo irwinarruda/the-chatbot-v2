@@ -1,5 +1,5 @@
 ---
-name: application-design-styleguide
+name: design-guide
 description: Preserve and extend The Chatbot application's terminal aesthetic design system. Use this skill whenever creating, editing, reviewing, or refactoring UI, React components, Tailwind classes, theme tokens, shadcn/ui primitives, pages, layouts, chat UI, todo UI, prose/markdown rendering, icons, logos, focus states, responsive behavior, or any visual/UX detail in this project, even if the user only says "make a screen", "add a component", "style this", "clean up the UI", or "match the app".
 ---
 

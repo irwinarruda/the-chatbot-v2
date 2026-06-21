@@ -96,9 +96,10 @@ export class TestCashFlowSpreadsheetGateway
     return TestCashFlowSpreadsheetGateway.transactions;
   }
 
-  async getLastTransaction(
+  async getLatestTransactions(
     sheetConfig: SheetConfigDTO,
-  ): Promise<Transaction | undefined> {
+    limit: number,
+  ): Promise<Transaction[]> {
     TestCashFlowSpreadsheetGateway.validateAccessToken(
       sheetConfig.sheetAccessToken,
     );
@@ -108,9 +109,17 @@ export class TestCashFlowSpreadsheetGateway
         "The provided sheet ID is not valid",
       );
     }
-    if (TestCashFlowSpreadsheetGateway.transactions.length === 0)
-      return undefined;
-    return TestCashFlowSpreadsheetGateway.transactions.at(-1);
+    const transactions = TestCashFlowSpreadsheetGateway.transactions;
+    const safeLimit = Math.max(0, Math.floor(limit));
+    if (safeLimit === 0 || transactions.length === 0) return [];
+    return transactions.slice(Math.max(0, transactions.length - safeLimit));
+  }
+
+  async getLastTransaction(
+    sheetConfig: SheetConfigDTO,
+  ): Promise<Transaction | undefined> {
+    const [last] = await this.getLatestTransactions(sheetConfig, 1);
+    return last;
   }
 
   async getExpenseCategories(sheetConfig: SheetConfigDTO): Promise<string[]> {

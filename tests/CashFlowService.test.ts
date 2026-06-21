@@ -273,6 +273,55 @@ describe("CashFlowService", () => {
     });
   });
 
+  test("getLatestTransactions should return the most recent N", async () => {
+    const phoneNumber = "5511984444010";
+    await setupUserWithSpreadsheet(phoneNumber);
+
+    await withEmptySpreadsheet(phoneNumber, async () => {
+      const descriptions = ["First", "Second", "Third", "Fourth", "Fifth"];
+      for (const [index, description] of descriptions.entries()) {
+        await orquestrator.cashFlowService.addExpense({
+          phoneNumber,
+          date: new Date(2025, 0, 1 + index),
+          value: 10 + index,
+          category: "Delivery",
+          description,
+          bankAccount: "NuConta",
+        });
+      }
+
+      const latestThree =
+        await orquestrator.cashFlowService.getLatestTransactions(
+          phoneNumber,
+          3,
+        );
+      expect(latestThree).toHaveLength(3);
+      expect(latestThree.map((tx) => tx.description)).toEqual([
+        "Third",
+        "Fourth",
+        "Fifth",
+      ]);
+
+      const latestOversize =
+        await orquestrator.cashFlowService.getLatestTransactions(
+          phoneNumber,
+          100,
+        );
+      expect(latestOversize).toHaveLength(5);
+
+      const latestDefault =
+        await orquestrator.cashFlowService.getLatestTransactions(phoneNumber);
+      expect(latestDefault).toHaveLength(5);
+
+      const latestCapped =
+        await orquestrator.cashFlowService.getLatestTransactions(
+          phoneNumber,
+          9999,
+        );
+      expect(latestCapped).toHaveLength(5);
+    });
+  });
+
   test("getWrongSheetId should not work", async () => {
     const phoneNumber = "5511977777777";
     await createGoogleConnectedUser(phoneNumber);

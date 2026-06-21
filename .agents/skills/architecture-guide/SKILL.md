@@ -1,5 +1,5 @@
 ---
-name: arquitecture-guide
+name: architecture-guide
 description: Preserve this project's application architecture and design when planning, creating, editing, reviewing, or refactoring code. Use this skill whenever the user asks where code should live, adds a server/client feature, creates or changes a Service, Resource/Gateway, Entity, controller, SQL persistence method, dependency wiring, or questions layering, DDD-style entities, dependency inversion, DRY, or repositories. This skill should trigger even when the user does not explicitly say "architecture".
 ---
 

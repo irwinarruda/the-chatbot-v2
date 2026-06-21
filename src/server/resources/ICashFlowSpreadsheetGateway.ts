@@ -32,6 +32,10 @@ export interface ICashFlowSpreadsheetGateway {
   deleteLastTransaction(sheetConfig: SheetConfigDTO): Promise<void>;
   getSpreadsheetIdByUrl(url: string): string;
   getAllTransactions(sheetConfig: SheetConfigDTO): Promise<Transaction[]>;
+  getLatestTransactions(
+    sheetConfig: SheetConfigDTO,
+    limit: number,
+  ): Promise<Transaction[]>;
   getLastTransaction(
     sheetConfig: SheetConfigDTO,
   ): Promise<Transaction | undefined>;
