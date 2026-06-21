@@ -150,12 +150,21 @@ export class GoogleCashFlowSpreadsheetGateway
     });
   }
 
+  async getLatestTransactions(
+    sheetConfig: SheetConfigDTO,
+    limit: number,
+  ): Promise<Transaction[]> {
+    const transactions = await this.getAllTransactions(sheetConfig);
+    const safeLimit = Math.max(0, Math.floor(limit));
+    if (safeLimit === 0 || transactions.length === 0) return [];
+    return transactions.slice(Math.max(0, transactions.length - safeLimit));
+  }
+
   async getLastTransaction(
     sheetConfig: SheetConfigDTO,
   ): Promise<Transaction | undefined> {
-    const transactions = await this.getAllTransactions(sheetConfig);
-    if (transactions.length === 0) return undefined;
-    return transactions[transactions.length - 1];
+    const [last] = await this.getLatestTransactions(sheetConfig, 1);
+    return last;
   }
 
   async getExpenseCategories(sheetConfig: SheetConfigDTO): Promise<string[]> {

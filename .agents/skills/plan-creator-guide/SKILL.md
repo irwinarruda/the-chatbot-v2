@@ -1,5 +1,5 @@
 ---
-name: planning-document-creator
+name: plan-creator-guide
 description: Create new project planning documents plans, specs, and prompts using numbered filenames under .agents/plans, .agents/specs, and .agents/promts. Use this skill whenever the user asks to create, draft, add, or start a plan, spec, or prompt document, even casually ("make a spec for...", "write a plan", "new prompt"). Always use the bundled deterministic script to choose the next xxx number instead of guessing or manually counting.
 ---
 
@@ -24,7 +24,7 @@ The prompt directory is intentionally `.agents/promts` because that is the proje
 3. Run the bundled script from the project root so numbering is deterministic:
 
    ```bash
-   bun .agents/skills/planning-document-creator/scripts/create-document.mjs --type plan --name "project setup"
+   bun .agents/skills/plan-creator-guide/scripts/create-document.mjs --type plan --name "project setup"
    ```
 
 4. Use the path printed by the script for any follow-up edits.
@@ -37,8 +37,8 @@ Do not guess or manually count existing files. The script scans the target direc
 ## Script usage
 
 ```bash
-bun .agents/skills/planning-document-creator/scripts/create-document.mjs --type spec --name "billing retry behavior"
-bun .agents/skills/planning-document-creator/scripts/create-document.mjs --type prompt --name "support triage"
+bun .agents/skills/plan-creator-guide/scripts/create-document.mjs --type spec --name "billing retry behavior"
+bun .agents/skills/plan-creator-guide/scripts/create-document.mjs --type prompt --name "support triage"
 ```
 
 Optional flags:

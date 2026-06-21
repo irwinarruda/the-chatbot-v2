@@ -49,6 +49,9 @@ export interface CashFlowTransferDTO {
   to: string;
 }
 
+export const DEFAULT_LATEST_TRANSACTIONS_LIMIT = 10;
+export const MAX_LATEST_TRANSACTIONS_LIMIT = 50;
+
 export class CashFlowService {
   private database: Database;
   private authService: AuthService;
@@ -87,6 +90,21 @@ export class CashFlowService {
       sheetId: sheet.idSheet,
       sheetAccessToken: credential.accessToken,
     });
+  }
+
+  async getLatestTransactions(
+    phoneNumber: string,
+    limit?: number,
+  ): Promise<Transaction[]> {
+    const { sheet, credential } = await this.getUserAndSheet(phoneNumber);
+    const normalizedLimit =
+      typeof limit !== "number" || !Number.isFinite(limit) || limit <= 0
+        ? DEFAULT_LATEST_TRANSACTIONS_LIMIT
+        : Math.min(Math.floor(limit), MAX_LATEST_TRANSACTIONS_LIMIT);
+    return await this.spreadsheetResource.getLatestTransactions(
+      { sheetId: sheet.idSheet, sheetAccessToken: credential.accessToken },
+      normalizedLimit,
+    );
   }
 
   async getLastTransaction(

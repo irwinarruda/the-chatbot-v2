@@ -129,15 +129,25 @@ export const toolDefinitions: ToolDefinition[] = [
     },
   },
   {
-    name: "get_all_transactions",
-    description:
-      "Fetch all transactions for the user. Returns { count, transactions: [ { sheet_id, date, value, category, description, bank_account } ] }.",
+    name: "get_latest_transactions",
+    description: [
+      "Get the most recent N transactions for the user.",
+      "Use this for any recent-activity question; the bounded result keeps the response small.",
+      "limit defaults to 10 and is capped at 50.",
+      "Items are returned oldest-first within the result; the last item is the newest.",
+      "Returns { count, transactions: [ { sheet_id, date, value, category, description, bank_account } ] }.",
+    ].join("\n"),
     parameters: {
       type: "object",
       properties: {
         phone_number: {
           type: "string",
           description: "User phone number in E.164 format",
+        },
+        limit: {
+          type: "number",
+          description:
+            "Number of most recent transactions to return (default 10, max 50)",
         },
       },
       required: ["phone_number"],
@@ -549,10 +559,12 @@ export async function executeTool(
         );
         return Printable.make({ message: "Spreadsheet linked successfully" });
       }
-      case "get_all_transactions": {
+      case "get_latest_transactions": {
         const user = await resolveToolUser(args, authService, channelAddress);
-        const transactions = await cashFlowService.getAllTransactions(
+        const limit = typeof args.limit === "number" ? args.limit : undefined;
+        const transactions = await cashFlowService.getLatestTransactions(
           requireCashFlowPhone(user),
+          limit,
         );
         return Printable.make({ count: transactions.length, transactions });
       }

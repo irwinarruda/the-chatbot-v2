@@ -1,5 +1,5 @@
 ---
-name: coding-styleguide
+name: code-guide
 description: Apply the user's preferred TypeScript, JavaScript, React, Zustand, import, whitespace, and code organization style. Use this skill whenever creating, editing, reviewing, or refactoring code, especially when style choices are not already dictated by a stricter local convention.
 ---
 
@@ -37,7 +37,9 @@ Prefer code that is direct, local, and easy to scan.
 
 ## Class and Function Organization
 
-Keep class logic inline by default. Do not split logic into private helpers only to make a class look smaller. Extract a separate method when the same logic is reused more than once in that class, or when the extraction gives the code a genuinely clearer concept.
+Keep class logic inline by default. Do not split logic into private helpers only to make a class look smaller. Extract a separate method only when the same logic is reused more than once in that class, or when the extraction gives the code a genuinely clearer concept that a named local variable or short comment cannot convey.
+
+A private method with a single caller is usually a missed inline. Prefer a well-named local variable, or a short comment, over a one-use helper. If a calculation fits in one expression, keep it where it is used rather than hiding it behind a call.
 
 When a function needs `try`/`catch` or `try`/`finally`, prefer wrapping the whole function body in the `try` block. This keeps guards, reads, state updates, and cleanup in one protected linear flow. A narrower `try` is acceptable only when the function truly has independent phases and only one phase needs protection.
 
