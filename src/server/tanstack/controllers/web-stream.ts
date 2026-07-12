@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ServerBootstrap } from "~/infra/server-bootstrap";
-import type { WebChatEvent } from "~/server/resources/IWebMessagingGateway";
 import type { MessagingService } from "~/server/services/MessagingService";
 import { Http } from "~/server/utils/Http";
+import type { WebChatEvent } from "~/shared/entities/events/WebChatEvent";
 
 const encoder = new TextEncoder();
 const SSE_HEADERS = {

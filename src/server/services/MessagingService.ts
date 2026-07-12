@@ -1,15 +1,16 @@
 import { v4 as uuidv4 } from "uuid";
-import type { SummarizationConfig } from "~/infra/config";
+import type { AiConfig } from "~/infra/config";
 import type { Database } from "~/infra/database";
-import { UnauthorizedException, ValidationException } from "~/infra/exceptions";
+import {
+  AppError,
+  UnauthorizedException,
+  ValidationException,
+} from "~/infra/exceptions";
 import type { IMediator } from "~/infra/mediator";
 import type {
-  AiChatMessage,
+  AiChatContextMessage,
+  AiToolDefinition,
   IAiChatGateway,
-} from "~/server/resources/IAiChatGateway";
-import {
-  AiChatMessageType,
-  AiChatRole,
 } from "~/server/resources/IAiChatGateway";
 import type {
   IMessagingGateway,
@@ -20,21 +21,25 @@ import type {
 } from "~/server/resources/IMessagingGateway";
 import type { ISpeechToTextGateway } from "~/server/resources/ISpeechToTextGateway";
 import type { IStorageGateway } from "~/server/resources/IStorageGateway";
-import type {
-  IWebMessagingGateway,
-  WebChatEvent,
-} from "~/server/resources/IWebMessagingGateway";
+import type { IWebMessagingGateway } from "~/server/resources/IWebMessagingGateway";
 import type { IWhatsAppMessagingGateway } from "~/server/resources/IWhatsAppMessagingGateway";
+import type { AiToolService } from "~/server/services/AiToolService";
 import type {
   AuthService,
   SyncUserChatAddressesEvent,
 } from "~/server/services/AuthService";
 import { MessageLoader, MessageTemplate } from "~/server/utils/MessageLoader";
 import { BsuidUtils } from "~/shared/entities/BsuidUtils";
+import type { AssistantMessageOptions } from "~/shared/entities/Chat";
 import { Chat } from "~/shared/entities/Chat";
+import { ConversationSummary } from "~/shared/entities/ConversationSummary";
 import { ChatChannel } from "~/shared/entities/enums/ChatChannel";
-import { MessageType } from "~/shared/entities/enums/MessageType";
-import { MessageUserType } from "~/shared/entities/enums/MessageUserType";
+import { MessageAudience } from "~/shared/entities/enums/MessageAudience";
+import { MessageContentType } from "~/shared/entities/enums/MessageContentType";
+import { MessageRole } from "~/shared/entities/enums/MessageRole";
+import { ToolResultStatus } from "~/shared/entities/enums/ToolResultStatus";
+import type { WebChatEvent } from "~/shared/entities/events/WebChatEvent";
+import type { MessageContent } from "~/shared/entities/Message";
 import { Message } from "~/shared/entities/Message";
 import { PhoneNumberUtils } from "~/shared/entities/PhoneNumberUtils";
 
@@ -56,9 +61,10 @@ export class MessagingService {
   private whatsAppMessagingGateway: IWhatsAppMessagingGateway;
   private webMessagingGateway: IWebMessagingGateway;
   private aiChatGateway: IAiChatGateway;
+  private aiToolService: AiToolService;
   private storageGateway: IStorageGateway;
   private speechToTextGateway: ISpeechToTextGateway;
-  private summarizationConfig: SummarizationConfig;
+  private aiConfig: AiConfig;
 
   constructor(
     database: Database,
@@ -67,9 +73,10 @@ export class MessagingService {
     whatsAppMessagingGateway: IWhatsAppMessagingGateway,
     webMessagingGateway: IWebMessagingGateway,
     aiChatGateway: IAiChatGateway,
+    aiToolService: AiToolService,
     storageGateway: IStorageGateway,
     speechToTextGateway: ISpeechToTextGateway,
-    summarizationConfig: SummarizationConfig,
+    aiConfig: AiConfig,
   ) {
     this.database = database;
     this.authService = authService;
@@ -77,9 +84,10 @@ export class MessagingService {
     this.whatsAppMessagingGateway = whatsAppMessagingGateway;
     this.webMessagingGateway = webMessagingGateway;
     this.aiChatGateway = aiChatGateway;
+    this.aiToolService = aiToolService;
     this.storageGateway = storageGateway;
     this.speechToTextGateway = speechToTextGateway;
-    this.summarizationConfig = summarizationConfig;
+    this.aiConfig = aiConfig;
   }
 
   async receiveWhatsAppMessage(
@@ -142,7 +150,7 @@ export class MessagingService {
       );
     } else if ("buttonReply" in receiveMessage) {
       const buttonMsg = receiveMessage as ReceiveInteractiveButtonMessageDTO;
-      message = chat.addUserButtonReply(
+      message = chat.addUserButtonMessage(
         buttonMsg.buttonReply,
         receiveMessage.channelMessageId,
       );
@@ -184,76 +192,71 @@ export class MessagingService {
     message: Message,
     channel: ChatChannel,
   ): Promise<void> {
-    const channelAddress = chat.getChannelAddress();
     const recipient: SendMessageRecipient = {
       channel,
-      toAddress: channelAddress,
+      toAddress: chat.getChannelAddress(),
     };
-    const gateway = this.getMessagingGatewayByChannel(channel);
-    if (message.type === MessageType.Audio) {
-      if (!message.mediaId || !message.mimeType) return;
-      await this.sendTextMessage(
-        recipient,
-        MessageLoader.getMessage(MessageTemplate.ProcessingAudio),
-        chat,
-      );
-      const mediaContent = await gateway.downloadMediaAsync(message.mediaId);
-      const baseMimeType = message.mimeType.split(";")[0].trim().toLowerCase();
-      const key = `audio/${chat.id}/${uuidv4()}${this.getExtension(baseMimeType)}`;
-      const permanentUrl = await this.storageGateway.uploadFileAsync({
-        key,
-        content: mediaContent,
-        contentType: baseMimeType,
-      });
-      const transcript = await this.speechToTextGateway.transcribeAsync({
-        audioStream: mediaContent,
-        mimeType: baseMimeType,
-      });
-      message.addAudioTranscriptAndUrl(transcript, permanentUrl);
-      await this.saveMessage(message);
-      if (channel === ChatChannel.Web) {
-        this.webMessagingGateway.enqueue(channelAddress, {
-          type: "audio",
-          data: {
-            mediaUrl: permanentUrl,
-            mimeType: baseMimeType,
-            transcript,
-          },
+    try {
+      if (message.content.type === MessageContentType.Audio) {
+        const { mediaId, mimeType } = message.content;
+        if (!mediaId || !mimeType) return;
+        await this.sendTextMessage(
+          recipient,
+          MessageLoader.getMessage(MessageTemplate.ProcessingAudio),
+          chat,
+          { turnId: message.turnId, audience: MessageAudience.Channel },
+        );
+        const gateway = this.getMessagingGatewayByChannel(recipient.channel);
+        const mediaContent = await gateway.downloadMediaAsync(mediaId);
+        const baseMimeType = mimeType.split(";")[0].trim().toLowerCase();
+        const key = `audio/${chat.id}/${uuidv4()}${this.getExtension(baseMimeType)}`;
+        const permanentUrl = await this.storageGateway.uploadFileAsync({
+          key,
+          content: mediaContent,
+          contentType: baseMimeType,
         });
+        const transcript = await this.speechToTextGateway.transcribeAsync({
+          audioStream: mediaContent,
+          mimeType: baseMimeType,
+        });
+        message.addAudioTranscriptAndUrl(transcript, permanentUrl);
+        await this.saveMessage(message);
+        if (recipient.channel === ChatChannel.Web) {
+          this.webMessagingGateway.enqueue(recipient.toAddress, {
+            type: "audio",
+            data: {
+              mediaUrl: permanentUrl,
+              mimeType: baseMimeType,
+              transcript,
+            },
+          });
+        }
       }
-    }
-    const aiMessages: AiChatMessage[] = [];
-    if (chat.summary) {
-      aiMessages.push({
-        role: AiChatRole.System,
-        type: AiChatMessageType.Text,
-        text: chat.summary,
+      await this.runAiAgent(chat, message, recipient);
+    } catch (ex) {
+      let text =
+        ex instanceof AppError
+          ? `⚠️ ${ex.message}\n${ex.action}`
+          : MessageLoader.getMessage(MessageTemplate.UnexpectedError);
+      if (import.meta.env.DEV) {
+        const detail =
+          ex instanceof Error
+            ? `${ex.message}${ex.stack ? `\n${ex.stack}` : ""}`
+            : String(ex);
+        text = `${text}\n\n${detail}`;
+      }
+      await this.sendTextMessage(recipient, text, chat, {
+        turnId: message.turnId,
+        audience: MessageAudience.Both,
       });
     }
-    aiMessages.push(...this.parseMessagesToAi(chat.effectiveMessages));
-    const response = await this.aiChatGateway.getResponse(
-      channelAddress,
-      aiMessages,
-      true,
-      { idSourceMessage: message.id },
-    );
-    if (response.type === AiChatMessageType.Text) {
-      await this.sendTextMessage(recipient, response.text, chat);
-    } else if (response.type === AiChatMessageType.Button) {
-      await this.sendButtonReplyMessage(
-        recipient,
-        response.text,
-        [...response.buttons],
-        chat,
-      );
-    }
-    await this.triggerSummarization(chat);
   }
 
   async sendTextMessage(
     recipient: string | SendMessageRecipient,
     text: string,
     chat?: Chat,
+    options?: AssistantMessageOptions,
   ): Promise<void> {
     const dto =
       typeof recipient === "string"
@@ -267,7 +270,7 @@ export class MessagingService {
       );
     }
     const gateway = this.getMessagingGatewayByChannel(dto.channel);
-    const message = chat.addBotTextMessage(text);
+    const message = chat.addAssistantTextMessage(text, options);
     await this.createMessage(message);
     await gateway.sendTextMessage({ toAddress: dto.toAddress, text });
   }
@@ -277,6 +280,7 @@ export class MessagingService {
     text: string,
     options: string[],
     chat?: Chat,
+    messageOptions?: AssistantMessageOptions,
   ): Promise<void> {
     const dto =
       typeof recipient === "string"
@@ -290,7 +294,11 @@ export class MessagingService {
       );
     }
     const gateway = this.getMessagingGatewayByChannel(dto.channel);
-    const message = chat.addBotButtonReply(text, options);
+    const message = chat.addAssistantButtonMessage(
+      text,
+      options,
+      messageOptions,
+    );
     await this.createMessage(message);
     await gateway.sendInteractiveReplyButtonMessage({
       toAddress: dto.toAddress,
@@ -311,26 +319,6 @@ export class MessagingService {
     signal: AbortSignal,
   ): Promise<AsyncGenerator<WebChatEvent>> {
     return this.webMessagingGateway.subscribe(webAddress, signal);
-  }
-
-  private async triggerSummarization(chat: Chat): Promise<void> {
-    try {
-      if (!chat.shouldSummarize(this.summarizationConfig.messageCountThreshold))
-        return;
-      const messagesToSummarize = this.parseMessagesToAi(
-        chat.effectiveMessages,
-      );
-      const lastMessage =
-        chat.effectiveMessages[chat.effectiveMessages.length - 1];
-      if (!lastMessage) return;
-      const lastMessageId = lastMessage.id;
-      const summary = await this.aiChatGateway.generateSummary(
-        messagesToSummarize,
-        chat.summary,
-      );
-      chat.setSummary(summary, lastMessageId);
-      await this.saveChat(chat);
-    } catch {}
   }
 
   async deleteChat(channelAddress: string): Promise<void> {
@@ -396,6 +384,199 @@ export class MessagingService {
     `;
   }
 
+  private async runAiAgent(
+    chat: Chat,
+    sourceMessage: Message,
+    recipient: SendMessageRecipient,
+  ): Promise<void> {
+    for (const message of chat.messages) {
+      if (
+        message.content.type !== MessageContentType.ToolCall ||
+        chat.getToolResult(message.turnId, message.content.callId)
+      ) {
+        continue;
+      }
+      const result = chat.addToolResult(message.turnId, {
+        type: MessageContentType.ToolResult,
+        callId: message.content.callId,
+        outcome: {
+          status: ToolResultStatus.Unknown,
+          code: "UnconfirmedOutcome",
+          message:
+            "The previous operation may have completed, but its outcome could not be confirmed.",
+        },
+      });
+      await this.createMessage(result);
+    }
+    const tools = this.aiToolService.getDefinitions();
+    const contextMessages = await this.buildModelContext(
+      chat,
+      recipient.toAddress,
+      tools,
+    );
+    const response = await this.aiChatGateway.runAgent({
+      channelAddress: recipient.toAddress,
+      messages: contextMessages,
+      tools,
+      memory: chat.summary,
+      maxToolRounds: this.aiConfig.maxToolRounds,
+      onToolCalls: async (calls, content) => {
+        if (content) {
+          const contentMessage =
+            content.type === MessageContentType.Button
+              ? chat.addAssistantButtonMessage(
+                  content.text,
+                  content.options ?? [],
+                  {
+                    turnId: sourceMessage.turnId,
+                    audience: MessageAudience.Model,
+                  },
+                )
+              : chat.addAssistantTextMessage(content.text, {
+                  turnId: sourceMessage.turnId,
+                  audience: MessageAudience.Model,
+                });
+          await this.createMessage(contentMessage);
+        }
+        for (const call of calls) {
+          const existing = chat.getToolCall(sourceMessage.turnId, call.callId);
+          if (existing) {
+            if (
+              existing.content.type !== MessageContentType.ToolCall ||
+              existing.content.name !== call.name ||
+              JSON.stringify(existing.content.arguments) !==
+                JSON.stringify(call.arguments)
+            ) {
+              throw new ValidationException(
+                "A tool call ID was reused with different arguments",
+              );
+            }
+            continue;
+          }
+          const callMessage = chat.addAssistantToolCall(
+            sourceMessage.turnId,
+            call,
+          );
+          await this.createMessage(callMessage);
+        }
+      },
+      executeTool: async (call) => {
+        const existing = chat.getToolResult(sourceMessage.turnId, call.callId);
+        if (existing?.content.type === MessageContentType.ToolResult) {
+          return existing.content;
+        }
+        const result = await this.aiToolService.execute(call, {
+          chat,
+          sourceMessage,
+        });
+        const resultMessage = chat.addToolResult(sourceMessage.turnId, result);
+        await this.createMessage(resultMessage);
+        return resultMessage.content as typeof result;
+      },
+    });
+    if (
+      !response.content &&
+      response.toolRounds >= this.aiConfig.maxToolRounds
+    ) {
+      await this.sendTextMessage(
+        recipient,
+        MessageLoader.getMessage(MessageTemplate.ToolRoundsExceeded),
+        chat,
+        { turnId: sourceMessage.turnId },
+      );
+      return;
+    }
+    const content = response.content;
+    if (content?.type === MessageContentType.Button) {
+      await this.sendButtonReplyMessage(
+        recipient,
+        content.text,
+        [...(content.options ?? [])],
+        chat,
+        { turnId: sourceMessage.turnId },
+      );
+      return;
+    }
+    await this.sendTextMessage(recipient, content?.text ?? "", chat, {
+      turnId: sourceMessage.turnId,
+    });
+  }
+
+  private async buildModelContext(
+    chat: Chat,
+    channelAddress: string,
+    tools: AiToolDefinition[],
+  ): Promise<AiChatContextMessage[]> {
+    const inputBudget =
+      this.aiChatGateway.getContextWindowTokens() -
+      this.aiConfig.maxOutputTokens -
+      this.aiConfig.safetyMarginTokens;
+    for (let attempt = 0; attempt <= chat.messages.length + 1; attempt++) {
+      const messages = chat.getModelMessages().map((message) => ({
+        role: message.role,
+        content: message.content,
+      }));
+      const requestTokens = this.aiChatGateway.estimateInputTokens({
+        channelAddress,
+        messages,
+        tools,
+        memory: chat.summary,
+      });
+      if (requestTokens <= inputBudget) return messages;
+      const turns = chat.getUncompactedTurns();
+      const protectedCount = Math.min(
+        this.aiConfig.minRecentTurns,
+        turns.length,
+      );
+      const oldestTurn = turns[0];
+      if (
+        !oldestTurn ||
+        turns.length <= protectedCount ||
+        !Chat.isTurnComplete(oldestTurn)
+      ) {
+        break;
+      }
+      await this.compactChat(chat, [oldestTurn]);
+    }
+    throw new ValidationException(
+      "The protected recent turns exceed the configured AI context budget",
+      "Use a model with a larger context window or reduce AI_MIN_RECENT_TURNS.",
+    );
+  }
+
+  private async compactChat(chat: Chat, turns: Message[][]): Promise<void> {
+    const messages = turns.flat();
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage?.sequence === undefined) {
+      throw new ValidationException(
+        "Cannot compact messages without a persisted sequence",
+      );
+    }
+    const previousSummary = chat.summary;
+    const previousUpdatedAt = chat.updatedAt;
+    const candidate = await this.aiChatGateway.generateSummary(
+      messages.map((message) => ({
+        role: message.role,
+        content: message.content,
+      })),
+      previousSummary,
+    );
+    chat.setSummary(
+      new ConversationSummary({
+        userProfile: candidate.userProfile,
+        durableFacts: candidate.durableFacts,
+        compactedThroughSequence: lastMessage.sequence,
+      }),
+    );
+    try {
+      await this.saveChatSummary(chat, previousSummary);
+    } catch (ex) {
+      chat.summary = previousSummary;
+      chat.updatedAt = previousUpdatedAt;
+      throw ex;
+    }
+  }
+
   private getMessagingGatewayByChannel(
     channel: ChatChannel,
   ): IMessagingGateway {
@@ -407,21 +588,6 @@ export class MessagingService {
       default:
         throw new ValidationException("Unsupported chat channel");
     }
-  }
-
-  private parseMessagesToAi(messages: Message[]): AiChatMessage[] {
-    return messages.map((m) => ({
-      role:
-        m.userType === MessageUserType.Bot
-          ? AiChatRole.Assistant
-          : AiChatRole.User,
-      type:
-        m.type === MessageType.ButtonReply
-          ? AiChatMessageType.Button
-          : AiChatMessageType.Text,
-      text: m.buttonReply ?? m.transcript ?? m.text ?? "",
-      buttons: m.buttonReplyOptions ?? [],
-    }));
   }
 
   private getExtension(mimeType: string): string {
@@ -449,6 +615,19 @@ export class MessagingService {
       default:
         return ".bin";
     }
+  }
+
+  private async sendLoginMessage(
+    chat: Chat,
+    receiveMessage: ReceiveMessageDTO,
+  ): Promise<void> {
+    await this.sendTextMessage(
+      { channel: ChatChannel.WhatsApp, toAddress: receiveMessage.fromAddress },
+      MessageLoader.getMessage(MessageTemplate.ThankYou, {
+        loginUrl: this.authService.getAppLoginUrl(receiveMessage.fromAddress),
+      }),
+      chat,
+    );
   }
 
   private async getChatByGenericChannelAddress(
@@ -507,56 +686,173 @@ export class MessagingService {
     const dbMessages = await this.database.sql<DbMessage[]>`
       SELECT * FROM messages
       WHERE id_chat = ${dbChat.id}
-      ORDER BY created_at ASC
+      ORDER BY sequence ASC
     `;
+    let currentTurnId: string | undefined;
+    const messages = dbMessages.map((dbMessage) => {
+      if (dbMessage.turn_id) {
+        currentTurnId = dbMessage.turn_id;
+      } else if (dbMessage.user_type === "User") {
+        currentTurnId = dbMessage.id;
+      }
+      return this.hydrateMessage(dbMessage, currentTurnId ?? dbMessage.id);
+    });
     const chat = new Chat();
     chat.id = dbChat.id;
     chat.idUser = dbChat.id_user ?? undefined;
     chat.channel = dbChat.channel as ChatChannel;
     chat.whatsAppAddress = dbChat.whatsapp_address ?? undefined;
     chat.webAddress = dbChat.web_address ?? undefined;
-    chat.summary = dbChat.summary ?? undefined;
-    chat.summarizedUntilId = dbChat.summarized_until_id ?? undefined;
-    chat.messages = dbMessages.map((message) => this.hydrateMessage(message));
+    chat.messages = messages;
+    const conversationSummary = this.parseJsonColumn<ConversationSummary>(
+      dbChat.conversation_summary,
+    );
+    if (conversationSummary) {
+      chat.summary = new ConversationSummary({
+        userProfile: conversationSummary.userProfile,
+        durableFacts: conversationSummary.durableFacts,
+        compactedThroughSequence: conversationSummary.compactedThroughSequence,
+      });
+    } else if (dbChat.summary && dbChat.summarized_until_id) {
+      const cursorMessage = messages.find(
+        (message) => message.id === dbChat.summarized_until_id,
+      );
+      if (cursorMessage?.sequence !== undefined) {
+        const legacySummary = this.parseLegacySummary(dbChat.summary);
+        chat.summary = legacySummary
+          ? new ConversationSummary({
+              userProfile: legacySummary.userProfile,
+              durableFacts: legacySummary.durableFacts,
+              compactedThroughSequence: cursorMessage.sequence,
+            })
+          : new ConversationSummary({
+              userProfile: [dbChat.summary],
+              durableFacts: [],
+              compactedThroughSequence: cursorMessage.sequence,
+            });
+      }
+    }
     chat.createdAt = dbChat.created_at;
     chat.updatedAt = dbChat.updated_at;
     chat.isDeleted = dbChat.is_deleted;
     return chat;
   }
 
-  private hydrateMessage(dbMessage: DbMessage): Message {
-    const message = new Message();
-    message.id = dbMessage.id;
-    message.idChat = dbMessage.id_chat;
-    message.text = dbMessage.text ?? undefined;
-    message.type = dbMessage.type as MessageType;
-    message.buttonReply = dbMessage.button_reply ?? undefined;
-    message.buttonReplyOptions =
-      typeof dbMessage.button_reply_options === "string"
-        ? dbMessage.button_reply_options.split(",")
-        : undefined;
-    message.mediaId = dbMessage.media_id ?? undefined;
-    message.mediaUrl = dbMessage.media_url ?? undefined;
-    message.mimeType = dbMessage.mime_type ?? undefined;
-    message.transcript = dbMessage.transcript ?? undefined;
-    message.userType = dbMessage.user_type as MessageUserType;
-    message.channelMessageId = dbMessage.channel_message_id ?? undefined;
-    message.createdAt = dbMessage.created_at;
-    message.updatedAt = dbMessage.updated_at;
-    return message;
+  private hydrateMessage(
+    dbMessage: DbMessage,
+    fallbackTurnId: string,
+  ): Message {
+    const content =
+      this.parseJsonColumn<MessageContent>(dbMessage.content) ??
+      this.getCanonicalContentFromLegacyMessage(dbMessage);
+    return Message.restore({
+      id: dbMessage.id,
+      idChat: dbMessage.id_chat,
+      turnId: dbMessage.turn_id ?? fallbackTurnId,
+      sequence: Number(dbMessage.sequence),
+      role:
+        dbMessage.role ??
+        (dbMessage.user_type === "User"
+          ? MessageRole.User
+          : MessageRole.Assistant),
+      audience: dbMessage.audience ?? MessageAudience.Both,
+      content,
+      channelMessageId: dbMessage.channel_message_id ?? undefined,
+      createdAt: dbMessage.created_at,
+      updatedAt: dbMessage.updated_at,
+    });
   }
 
-  private async sendLoginMessage(
-    chat: Chat,
-    receiveMessage: ReceiveMessageDTO,
-  ): Promise<void> {
-    await this.sendTextMessage(
-      { channel: ChatChannel.WhatsApp, toAddress: receiveMessage.fromAddress },
-      MessageLoader.getMessage(MessageTemplate.ThankYou, {
-        loginUrl: this.authService.getAppLoginUrl(receiveMessage.fromAddress),
-      }),
-      chat,
-    );
+  private getCanonicalContentFromLegacyMessage(
+    dbMessage: DbMessage,
+  ): MessageContent {
+    if (dbMessage.type === "Audio") {
+      return {
+        type: MessageContentType.Audio,
+        mediaId: dbMessage.media_id ?? undefined,
+        mediaUrl: dbMessage.media_url ?? undefined,
+        mimeType: dbMessage.mime_type ?? "audio/ogg",
+        transcript: dbMessage.transcript ?? undefined,
+      };
+    }
+    if (dbMessage.type === "Interactive") {
+      if (dbMessage.user_type === "User") {
+        return {
+          type: MessageContentType.Button,
+          text: dbMessage.button_reply ?? "",
+        };
+      }
+      return {
+        type: MessageContentType.Button,
+        text: dbMessage.text ?? "",
+        options: dbMessage.button_reply_options?.split(",") ?? undefined,
+      };
+    }
+    return { type: MessageContentType.Text, text: dbMessage.text ?? "" };
+  }
+
+  private parseLegacySummary(summary: string): ConversationSummary | undefined {
+    try {
+      const value = JSON.parse(summary) as Partial<ConversationSummary>;
+      if (
+        !Array.isArray(value.userProfile) ||
+        !Array.isArray(value.durableFacts)
+      ) {
+        return undefined;
+      }
+      return value as ConversationSummary;
+    } catch {
+      return undefined;
+    }
+  }
+
+  private parseJsonColumn<T>(value: unknown): T | undefined {
+    if (value === null || value === undefined) return undefined;
+    if (typeof value === "string") return JSON.parse(value) as T;
+    return value as T;
+  }
+
+  private getLegacyMessageColumns(message: Message) {
+    const content = message.content;
+    return {
+      type:
+        content.type === MessageContentType.Audio
+          ? "Audio"
+          : content.type === MessageContentType.Button
+            ? "Interactive"
+            : "Text",
+      userType: message.role === MessageRole.User ? "User" : "Bot",
+      text:
+        content.type === MessageContentType.Text
+          ? content.text
+          : content.type === MessageContentType.Button &&
+              message.role !== MessageRole.User
+            ? content.text
+            : null,
+      buttonReply:
+        content.type === MessageContentType.Button &&
+        message.role === MessageRole.User
+          ? content.text
+          : null,
+      buttonReplyOptions:
+        content.type === MessageContentType.Button && content.options
+          ? content.options.join(",")
+          : null,
+      mediaId:
+        content.type === MessageContentType.Audio
+          ? (content.mediaId ?? null)
+          : null,
+      mediaUrl:
+        content.type === MessageContentType.Audio
+          ? (content.mediaUrl ?? null)
+          : null,
+      mimeType:
+        content.type === MessageContentType.Audio ? content.mimeType : null,
+      transcript:
+        content.type === MessageContentType.Audio
+          ? (content.transcript ?? null)
+          : null,
+    };
   }
 
   private async createChat(chat: Chat): Promise<void> {
@@ -592,13 +888,15 @@ export class MessagingService {
   }
 
   private async createMessage(message: Message): Promise<boolean> {
-    const buttonReplyOptions = message.buttonReplyOptions
-      ? message.buttonReplyOptions.join(",")
-      : undefined;
-    const result = await this.database.sql`
+    const legacy = this.getLegacyMessageColumns(message);
+    const result = await this.database.sql<{ sequence: string }[]>`
       INSERT INTO messages (
         id,
         id_chat,
+        turn_id,
+        role,
+        audience,
+        content,
         type,
         user_type,
         text,
@@ -615,37 +913,46 @@ export class MessagingService {
       VALUES (
         ${message.id},
         ${message.idChat},
-        ${message.type},
-        ${message.userType},
-        ${message.text ?? null},
-        ${message.buttonReply ?? null},
-        ${buttonReplyOptions ?? null},
-        ${message.mediaId ?? null},
-        ${message.mediaUrl ?? null},
-        ${message.mimeType ?? null},
-        ${message.transcript ?? null},
+        ${message.turnId},
+        ${message.role},
+        ${message.audience},
+        ${this.database.json(message.content)},
+        ${legacy.type},
+        ${legacy.userType},
+        ${legacy.text},
+        ${legacy.buttonReply},
+        ${legacy.buttonReplyOptions},
+        ${legacy.mediaId},
+        ${legacy.mediaUrl},
+        ${legacy.mimeType},
+        ${legacy.transcript},
         ${message.channelMessageId ?? null},
         ${message.createdAt},
         ${message.updatedAt}
       )
       ON CONFLICT (channel_message_id) WHERE channel_message_id IS NOT NULL DO NOTHING
+      RETURNING sequence
     `;
-    return result.count > 0;
+    const inserted = result[0];
+    if (!inserted) return false;
+    message.sequence = Number(inserted.sequence);
+    return true;
   }
 
   private async saveMessage(message: Message): Promise<void> {
-    const buttonReplyOptions = message.buttonReplyOptions
-      ? message.buttonReplyOptions.join(",")
-      : undefined;
+    const legacy = this.getLegacyMessageColumns(message);
     await this.database.sql`
       UPDATE messages SET
-        text = ${message.text ?? null},
-        button_reply = ${message.buttonReply ?? null},
-        button_reply_options = ${buttonReplyOptions ?? null},
-        media_id = ${message.mediaId ?? null},
-        media_url = ${message.mediaUrl ?? null},
-        mime_type = ${message.mimeType ?? null},
-        transcript = ${message.transcript ?? null},
+        content = ${this.database.json(message.content)},
+        type = ${legacy.type},
+        user_type = ${legacy.userType},
+        text = ${legacy.text},
+        button_reply = ${legacy.buttonReply},
+        button_reply_options = ${legacy.buttonReplyOptions},
+        media_id = ${legacy.mediaId},
+        media_url = ${legacy.mediaUrl},
+        mime_type = ${legacy.mimeType},
+        transcript = ${legacy.transcript},
         updated_at = ${message.updatedAt}
       WHERE id = ${message.id}
     `;
@@ -659,11 +966,48 @@ export class MessagingService {
         whatsapp_address = ${chat.whatsAppAddress ?? null},
         web_address = ${chat.webAddress ?? null},
         updated_at = ${chat.updatedAt},
-        summary = ${chat.summary ?? null},
-        summarized_until_id = ${chat.summarizedUntilId ?? null},
         is_deleted = ${chat.isDeleted}
       WHERE id = ${chat.id}
     `;
+  }
+
+  private async saveChatSummary(
+    chat: Chat,
+    expectedSummary?: ConversationSummary,
+  ): Promise<void> {
+    if (!chat.summary) {
+      throw new ValidationException("Conversation summary is required");
+    }
+    const cursorMessage = chat.messages.find(
+      (message) => message.sequence === chat.summary?.compactedThroughSequence,
+    );
+    if (!cursorMessage) {
+      throw new ValidationException(
+        "The summary cursor must reference a persisted message",
+      );
+    }
+    const result = await this.database.sql<{ id: string }[]>`
+      UPDATE chats SET
+        conversation_summary = ${this.database.json(chat.summary)},
+        summary = ${JSON.stringify(chat.summary)},
+        summarized_until_id = ${cursorMessage.id},
+        updated_at = ${chat.updatedAt}
+      WHERE id = ${chat.id}
+      AND conversation_summary IS NOT DISTINCT FROM ${
+        expectedSummary ? this.database.json(expectedSummary) : null
+      }::jsonb
+      AND (
+        conversation_summary IS NULL
+        OR (conversation_summary->>'compactedThroughSequence')::bigint
+          < ${chat.summary.compactedThroughSequence}
+      )
+      RETURNING id
+    `;
+    if (!result[0]) {
+      throw new ValidationException(
+        "Conversation memory changed while it was being compacted",
+      );
+    }
   }
 
   private async isMessageDuplicate(channelMessageId: string): Promise<boolean> {
@@ -698,6 +1042,7 @@ interface DbChat {
   whatsapp_address: string | null;
   web_address: string | null;
   channel: string;
+  conversation_summary: unknown;
   summary: string | null;
   summarized_until_id: string | null;
   is_deleted: boolean;
@@ -708,8 +1053,13 @@ interface DbChat {
 interface DbMessage {
   id: string;
   id_chat: string;
-  user_type: string;
+  turn_id: string | null;
+  sequence: string;
+  role: string | null;
+  audience: string | null;
+  content: unknown;
   type: string;
+  user_type: string;
   text: string | null;
   button_reply: string | null;
   button_reply_options: string | null;

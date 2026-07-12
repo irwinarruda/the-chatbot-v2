@@ -7,6 +7,8 @@ export const MessageTemplate = {
   SignedIn: "SignedIn",
   ThankYou: "ThankYou",
   ProcessingAudio: "ProcessingAudio",
+  ToolRoundsExceeded: "ToolRoundsExceeded",
+  UnexpectedError: "UnexpectedError",
 } as const;
 export type MessageTemplate = ValueOf<typeof MessageTemplate>;
 
@@ -55,6 +57,10 @@ export class MessageLoader {
         return "thank-you-message";
       case MessageTemplate.ProcessingAudio:
         return "processing-audio-message";
+      case MessageTemplate.ToolRoundsExceeded:
+        return "tool-rounds-exceeded-message";
+      case MessageTemplate.UnexpectedError:
+        return "unexpected-error-message";
       default:
         throw new Error(`Unknown message template: ${template}`);
     }

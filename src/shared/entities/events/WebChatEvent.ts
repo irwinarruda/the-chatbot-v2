@@ -1,10 +1,3 @@
-import type { Message } from "~/shared/entities/Message";
-import type { User } from "~/shared/entities/User";
-
-export type SharedChatMessage = ReturnType<Message["toJSON"]>;
-
-export type SharedCurrentUser = ReturnType<User["toJSON"]>;
-
 export type WebChatEvent =
   | {
       type: "text";

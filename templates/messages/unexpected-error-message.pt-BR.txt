@@ -1,0 +1,3 @@
+⚠️ Algo deu errado ao processar sua mensagem.
+
+Por favor, tente novamente em instantes.

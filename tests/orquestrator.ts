@@ -10,7 +10,6 @@ import type {
   GoogleSheetsConfig,
   JwtConfig,
   OpenAiConfig,
-  SummarizationConfig,
 } from "~/infra/config";
 import { loadConfig } from "~/infra/config";
 import { Container } from "~/infra/container";
@@ -25,6 +24,7 @@ import { TestSpeechToTextGateway } from "~/server/resources/TestSpeechToTextGate
 import { TestStorageGateway } from "~/server/resources/TestStorageGateway";
 import { TestWebMessagingGateway } from "~/server/resources/TestWebMessagingGateway";
 import { TestWhatsAppMessagingGateway } from "~/server/resources/TestWhatsAppMessagingGateway";
+import { AiToolService } from "~/server/services/AiToolService";
 import {
   AuthService,
   type SyncUserChatAddressesEvent,
@@ -39,7 +39,6 @@ import { StatusService } from "~/server/services/StatusService";
 import { TodoService } from "~/server/services/TodoService";
 import { BsuidUtils } from "~/shared/entities/BsuidUtils";
 import { ChatChannel } from "~/shared/entities/enums/ChatChannel";
-import { MessageType } from "~/shared/entities/enums/MessageType";
 import { PhoneNumberUtils } from "~/shared/entities/PhoneNumberUtils";
 import { User } from "~/shared/entities/User";
 
@@ -63,7 +62,6 @@ export class Orquestrator {
   googleSheetsConfig: GoogleSheetsConfig;
   aiConfig: AiConfig;
   authConfig: AuthConfig;
-  summarizationConfig: SummarizationConfig;
   openAiConfig: OpenAiConfig;
   jwtConfig: JwtConfig;
 
@@ -88,7 +86,6 @@ export class Orquestrator {
     this.googleSheetsConfig = this.config.googleSheets;
     this.aiConfig = this.config.ai;
     this.authConfig = this.config.auth;
-    this.summarizationConfig = this.config.summarization;
     this.openAiConfig = this.config.openAi;
     this.jwtConfig = this.config.jwt;
 
@@ -123,11 +120,6 @@ export class Orquestrator {
       "singleton",
     );
     this.container.register("AuthConfig", () => this.authConfig, "singleton");
-    this.container.register(
-      "SummarizationConfig",
-      () => this.summarizationConfig,
-      "singleton",
-    );
     this.container.register(
       "GoogleSheetsConfig",
       () => this.googleSheetsConfig,
@@ -220,6 +212,17 @@ export class Orquestrator {
       "singleton",
     );
     this.container.register(
+      "AiToolService",
+      () =>
+        new AiToolService(
+          this.container.resolve("AuthService"),
+          this.container.resolve("CashFlowService"),
+          this.container.resolve("TodoService"),
+          this.container.resolve("IAiChatGateway"),
+        ),
+      "singleton",
+    );
+    this.container.register(
       "MessagingService",
       () =>
         new MessagingService(
@@ -229,9 +232,10 @@ export class Orquestrator {
           this.container.resolve("IWhatsAppMessagingGateway"),
           this.container.resolve("IWebMessagingGateway"),
           this.container.resolve("IAiChatGateway"),
+          this.container.resolve("AiToolService"),
           this.container.resolve("IStorageGateway"),
           this.container.resolve("ISpeechToTextGateway"),
-          this.summarizationConfig,
+          this.aiConfig,
         ),
       "singleton",
     );
@@ -351,7 +355,13 @@ export class Orquestrator {
   async getTranscripts(channelAddress: string): Promise<TranscriptDTO[]> {
     const normalizedId = this.normalizeWhatsAppChannelAddress(channelAddress);
     const dbMessages = await this.database.sql<TestDbMessage[]>`
-      SELECT m.* FROM messages m
+      SELECT
+        m.id,
+        m.content->>'transcript' AS transcript,
+        m.content->>'mediaUrl' AS media_url,
+        m.content->>'mimeType' AS mime_type,
+        m.created_at
+      FROM messages m
       INNER JOIN chats c ON c.id = m.id_chat
       WHERE (
         c.whatsapp_address = ${channelAddress}
@@ -360,8 +370,8 @@ export class Orquestrator {
         OR c.web_address = ${channelAddress}
       )
       AND c.is_deleted = false
-      AND m.type = ${MessageType.Audio}
-      AND m.transcript IS NOT NULL
+      AND m.content->>'type' = 'audio'
+      AND m.content->>'transcript' IS NOT NULL
       ORDER BY m.created_at DESC
     `;
     return dbMessages.map((m) => ({

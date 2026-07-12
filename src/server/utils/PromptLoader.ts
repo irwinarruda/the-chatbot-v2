@@ -72,6 +72,15 @@ export class PromptLoader {
     return PromptLoader.readFile(fileBase);
   }
 
+  static getConversationMemory(
+    locale: PromptLocale,
+    memoryData: string,
+  ): string {
+    const fileBase = `conversation-memory${PromptLoader.localeToFileSuffix(locale)}`;
+    const text = PromptLoader.readFile(fileBase);
+    return PromptLoader.applyTemplate(text, { MemoryData: memoryData });
+  }
+
   static getSummarization(
     locale: PromptLocale,
     existingSummary: string | undefined,

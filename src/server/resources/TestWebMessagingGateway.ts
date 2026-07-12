@@ -6,10 +6,10 @@ import type {
 } from "~/server/resources/IMessagingGateway";
 import type {
   IWebMessagingGateway,
-  WebChatEvent,
   WebIncomingMessageBody,
 } from "~/server/resources/IWebMessagingGateway";
 import { ChatChannel } from "~/shared/entities/enums/ChatChannel";
+import type { WebChatEvent } from "~/shared/entities/events/WebChatEvent";
 
 export class TestWebMessagingGateway implements IWebMessagingGateway {
   private events: WebChatEvent[] = [];

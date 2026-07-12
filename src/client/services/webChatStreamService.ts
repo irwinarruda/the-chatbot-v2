@@ -1,4 +1,4 @@
-import type { WebChatEvent } from "~/client/entities/WebChatEvent";
+import type { WebChatEvent } from "~/shared/entities/events/WebChatEvent";
 
 type SubscribeToWebChatStreamDto = {
   onOpen: () => void;

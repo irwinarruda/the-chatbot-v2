@@ -21,6 +21,7 @@
     "migrate:up": "bun infra/scripts/migrate.ts up",
     "migrate:down": "bun infra/scripts/migrate.ts down",
     "migrate:create": "node-pg-migrate create --migration-file-language js --migrations-dir infra/migrations",
+    "migrate:dump": "bun infra/scripts/sync-production-database.ts",
     "lint": "biome lint",
     "lint:fix": "biome lint --write --unsafe",
     "format": "biome format",
@@ -31,12 +32,14 @@
     "ci": "biome ci",
     "services:up": "docker compose -f infra/compose.yaml up -d",
     "services:down": "docker compose -f infra/compose.yaml down",
-    "services:ready": "bun run services:up && bun infra/scripts/wait-for-postgres.ts && bun run migrate:up"
+    "services:ready": "bun run services:up && bun infra/scripts/wait-for-postgres.ts && bun run migrate:up",
+    "ai:smoke": "bun infra/scripts/smoke-pi-ai.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.111.0",
     "@aws-sdk/client-s3": "^3.1024.0",
     "@base-ui/react": "^1.4.0",
+    "@earendil-works/pi-agent-core": "0.80.6",
+    "@earendil-works/pi-ai": "0.80.6",
     "@tanstack/react-router": "^1.168.18",
     "@tanstack/react-start": "^1.167.32",
     "@tanstack/react-virtual": "^3.13.24",

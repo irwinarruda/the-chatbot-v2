@@ -1,9 +1,10 @@
 import type { Database } from "~/infra/database";
 import { NotFoundException, ValidationException } from "~/infra/exceptions";
-import { MessageType } from "~/shared/entities/enums/MessageType";
-import { MessageUserType } from "~/shared/entities/enums/MessageUserType";
+import { MessageAudience } from "~/shared/entities/enums/MessageAudience";
+import { MessageContentType } from "~/shared/entities/enums/MessageContentType";
+import { MessageRole } from "~/shared/entities/enums/MessageRole";
 import { TodoStatus } from "~/shared/entities/enums/TodoStatus";
-import { Message } from "~/shared/entities/Message";
+import { Message, type MessageContent } from "~/shared/entities/Message";
 import { Todo } from "~/shared/entities/Todo";
 
 export interface TodoFiltersDTO {
@@ -55,11 +56,13 @@ export class TodoService {
   }
 
   async createTodos(dtos: CreateTodoDTO[]): Promise<Todo[]> {
-    const todos: Todo[] = [];
-    for (const dto of dtos) {
-      todos.push(await this.createTodo(dto));
-    }
-    return todos;
+    const todos = dtos.map((dto) => new Todo(dto));
+    await this.database.transaction(async (sql) => {
+      for (const todo of todos) await this.create(todo, sql);
+    });
+    return Promise.all(
+      todos.map((todo) => this.getTodoById(todo.idUser, todo.id)),
+    );
   }
 
   async updateTodo(dto: UpdateTodoDTO): Promise<Todo> {
@@ -86,6 +89,11 @@ export class TodoService {
         m.id AS source_message_id,
         m.id_chat AS source_message_chat_id,
         m.channel_message_id AS source_message_channel_message_id,
+        m.turn_id AS source_message_turn_id,
+        m.sequence AS source_message_sequence,
+        m.role AS source_message_role,
+        m.audience AS source_message_audience,
+        m.content AS source_message_content,
         m.type AS source_message_type,
         m.user_type AS source_message_user_type,
         m.text AS source_message_text,
@@ -127,6 +135,11 @@ export class TodoService {
         m.id AS source_message_id,
         m.id_chat AS source_message_chat_id,
         m.channel_message_id AS source_message_channel_message_id,
+        m.turn_id AS source_message_turn_id,
+        m.sequence AS source_message_sequence,
+        m.role AS source_message_role,
+        m.audience AS source_message_audience,
+        m.content AS source_message_content,
         m.type AS source_message_type,
         m.user_type AS source_message_user_type,
         m.text AS source_message_text,
@@ -148,8 +161,11 @@ export class TodoService {
     return this.mapTodo(row);
   }
 
-  private async create(todo: Todo): Promise<void> {
-    await this.database.sql`
+  private async create(
+    todo: Todo,
+    sql: Database["sql"] = this.database.sql,
+  ): Promise<void> {
+    await sql`
       INSERT INTO todos (
         id,
         id_user,
@@ -247,28 +263,57 @@ export class TodoService {
   }
 
   private mapSourceMessage(row: DbTodoWithSourceMessage): Message | undefined {
-    if (!row.source_message_id) return undefined;
-    const message = new Message();
-    message.id = row.source_message_id;
-    message.idChat = row.source_message_chat_id ?? "";
-    message.channelMessageId =
-      row.source_message_channel_message_id ?? undefined;
-    message.type = (row.source_message_type as MessageType) ?? MessageType.Text;
-    message.userType =
-      (row.source_message_user_type as MessageUserType) ?? MessageUserType.User;
-    message.text = row.source_message_text ?? undefined;
-    message.buttonReply = row.source_message_button_reply ?? undefined;
-    message.buttonReplyOptions =
-      typeof row.source_message_button_reply_options === "string"
-        ? row.source_message_button_reply_options.split(",")
-        : undefined;
-    message.mediaId = row.source_message_media_id ?? undefined;
-    message.mediaUrl = row.source_message_media_url ?? undefined;
-    message.mimeType = row.source_message_mime_type ?? undefined;
-    message.transcript = row.source_message_transcript ?? undefined;
-    message.createdAt = row.source_message_created_at ?? row.created_at;
-    message.updatedAt = row.source_message_updated_at ?? row.updated_at;
-    return message;
+    if (!row.source_message_id || !row.source_message_chat_id) return undefined;
+    const rawContent = row.source_message_content;
+    return Message.restore({
+      id: row.source_message_id,
+      idChat: row.source_message_chat_id,
+      channelMessageId: row.source_message_channel_message_id ?? undefined,
+      turnId: row.source_message_turn_id ?? row.source_message_id,
+      sequence: Number(row.source_message_sequence),
+      role:
+        row.source_message_role ??
+        (row.source_message_user_type === "User"
+          ? MessageRole.User
+          : MessageRole.Assistant),
+      audience: row.source_message_audience ?? MessageAudience.Both,
+      content:
+        (typeof rawContent === "string"
+          ? (JSON.parse(rawContent) as MessageContent)
+          : (rawContent as MessageContent)) ??
+        this.getLegacySourceMessageContent(row),
+      createdAt: row.source_message_created_at ?? row.created_at,
+      updatedAt: row.source_message_updated_at ?? row.updated_at,
+    });
+  }
+
+  private getLegacySourceMessageContent(
+    row: DbTodoWithSourceMessage,
+  ): MessageContent {
+    if (row.source_message_type === "Audio") {
+      return {
+        type: MessageContentType.Audio,
+        mediaId: row.source_message_media_id ?? undefined,
+        mediaUrl: row.source_message_media_url ?? undefined,
+        mimeType: row.source_message_mime_type ?? "audio/ogg",
+        transcript: row.source_message_transcript ?? undefined,
+      };
+    }
+    if (row.source_message_type === "Interactive") {
+      return {
+        type: MessageContentType.Button,
+        text:
+          row.source_message_user_type === "User"
+            ? (row.source_message_button_reply ?? "")
+            : (row.source_message_text ?? ""),
+        options:
+          row.source_message_button_reply_options?.split(",") ?? undefined,
+      };
+    }
+    return {
+      type: MessageContentType.Text,
+      text: row.source_message_text ?? "",
+    };
   }
 }
 
@@ -288,6 +333,11 @@ interface DbSourceMessage {
   source_message_id: string | null;
   source_message_chat_id: string | null;
   source_message_channel_message_id: string | null;
+  source_message_turn_id: string | null;
+  source_message_sequence: string | null;
+  source_message_role: string | null;
+  source_message_audience: string | null;
+  source_message_content: unknown;
   source_message_type: string | null;
   source_message_user_type: string | null;
   source_message_text: string | null;

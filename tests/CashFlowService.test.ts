@@ -500,6 +500,19 @@ describe("CashFlowService", () => {
     ).rejects.toThrow(ValidationException);
   });
 
+  test("cash-flow writes reject invalid transaction values", async () => {
+    await expect(
+      orquestrator.cashFlowService.addEarning({
+        phoneNumber: "5511982222222",
+        date: new Date("2025-02-01"),
+        value: -123.45,
+        category: "Salário",
+        description: "Pagamento",
+        bankAccount: "Caju",
+      }),
+    ).rejects.toThrow(ValidationException);
+  });
+
   test("addEarning and getCategoriesAndBankAccounts should work", async () => {
     const phoneNumber = "5511982222222";
     await setupUserWithSpreadsheet(phoneNumber);
@@ -508,7 +521,7 @@ describe("CashFlowService", () => {
       await orquestrator.cashFlowService.addEarning({
         phoneNumber,
         date: new Date("2025-02-01"),
-        value: -123.45,
+        value: 123.45,
         category: "Salário",
         description: "Pagamento",
         bankAccount: "Caju",

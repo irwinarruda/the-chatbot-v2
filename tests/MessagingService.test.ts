@@ -1,20 +1,40 @@
 import { v4 as uuidv4 } from "uuid";
 import { Encryption } from "~/infra/encryption";
 import { UnauthorizedException, ValidationException } from "~/infra/exceptions";
-import { AiChatMessageType } from "~/server/resources/IAiChatGateway";
 import type { TestAiChatGateway } from "~/server/resources/TestAiChatGateway";
 import type { TestWebMessagingGateway } from "~/server/resources/TestWebMessagingGateway";
 import { TestWhatsAppMessagingGateway } from "~/server/resources/TestWhatsAppMessagingGateway";
+import type { AiToolService } from "~/server/services/AiToolService";
 import { Chat } from "~/shared/entities/Chat";
+import { ConversationSummary } from "~/shared/entities/ConversationSummary";
 import { ChatChannel } from "~/shared/entities/enums/ChatChannel";
-import { MessageType } from "~/shared/entities/enums/MessageType";
-import { MessageUserType } from "~/shared/entities/enums/MessageUserType";
+import { MessageAudience } from "~/shared/entities/enums/MessageAudience";
+import { MessageContentType } from "~/shared/entities/enums/MessageContentType";
+import { MessageRole } from "~/shared/entities/enums/MessageRole";
+import { ToolResultStatus } from "~/shared/entities/enums/ToolResultStatus";
 import { Message } from "~/shared/entities/Message";
 import { User } from "~/shared/entities/User";
 import { orquestrator } from "./orquestrator";
 
 function createReceiveMessage(message: string): string {
   return JSON.stringify(message);
+}
+
+function estimateCurrentRequest(chat: Chat, channelAddress: string): number {
+  const tools = orquestrator.container
+    .resolve<AiToolService>("AiToolService")
+    .getDefinitions();
+  const gateway =
+    orquestrator.container.resolve<TestAiChatGateway>("IAiChatGateway");
+  return gateway.estimateInputTokens({
+    channelAddress,
+    messages: chat.getModelMessages().map((message) => ({
+      role: message.role,
+      content: message.content,
+    })),
+    tools,
+    memory: chat.summary,
+  });
 }
 
 const delay = 10;
@@ -40,10 +60,11 @@ describe("MessagingService", () => {
     expect(chat?.messages.length).toBe(2);
     const userMessage = chat?.messages[0];
     expect(userMessage?.text).toBe("User 1");
-    expect(userMessage?.userType).toBe(MessageUserType.User);
+    expect(userMessage?.role).toBe(MessageRole.User);
     const responseMessage = chat?.messages[1];
     expect(responseMessage?.text).toBe("Response to: User 1");
-    expect(responseMessage?.userType).toBe(MessageUserType.Bot);
+    expect(responseMessage?.role).toBe(MessageRole.Assistant);
+    expect(responseMessage?.turnId).toBe(userMessage?.id);
     await orquestrator.messagingService.sendTextMessage(phoneNumber, "Bot 1");
     chat =
       await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber);
@@ -72,7 +93,7 @@ describe("MessagingService", () => {
     let userMessage = chat?.messages[0];
     expect(userMessage).toBeDefined();
     expect(userMessage?.text).toBe("First message");
-    expect(userMessage?.userType).toBe(MessageUserType.User);
+    expect(userMessage?.role).toBe(MessageRole.User);
     let botMessage = chat?.messages[1];
     expect(botMessage).toBeDefined();
     expect(botMessage?.text).toContain("\ud83d\udc4b");
@@ -155,29 +176,7 @@ describe("MessagingService", () => {
     expect(chat).toBeDefined();
   });
 
-  test("summarizationShouldNotTriggerBeforeThreshold", async () => {
-    await orquestrator.clearDatabase();
-    const phoneNumber = TestWhatsAppMessagingGateway.phoneNumber;
-    await orquestrator.addAllowedNumber(phoneNumber);
-    await orquestrator.createUser({ phoneNumber });
-    for (let i = 0; i < 9; i++) {
-      await orquestrator.messagingService.receiveWhatsAppMessage(
-        createReceiveMessage(`Message ${i}`),
-        "sig",
-      );
-      await new Promise((r) => setTimeout(r, delay));
-    }
-    await new Promise((r) => setTimeout(r, 100));
-    const chat =
-      await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber);
-    expect(chat).toBeDefined();
-    expect(chat?.messages.length).toBe(18);
-    expect(chat?.summary).toBeUndefined();
-    expect(chat?.summarizedUntilId).toBeUndefined();
-    expect(chat?.effectiveMessages.length).toBe(18);
-  });
-
-  test("summarizationTriggeredAfterThreshold", async () => {
+  test("compaction does not trigger while the context fits the budget", async () => {
     await orquestrator.clearDatabase();
     const phoneNumber = TestWhatsAppMessagingGateway.phoneNumber;
     await orquestrator.addAllowedNumber(phoneNumber);
@@ -194,13 +193,11 @@ describe("MessagingService", () => {
       await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber);
     expect(chat).toBeDefined();
     expect(chat?.messages.length).toBe(20);
-    expect(chat?.summary).toBeDefined();
-    expect(chat?.summary).toContain("Summary of 20 messages");
-    expect(chat?.summarizedUntilId).toBeDefined();
-    expect(chat?.effectiveMessages.length).toBe(0);
+    expect(chat?.summary).toBeUndefined();
+    expect(chat?.getModelMessages().length).toBe(20);
   });
 
-  test("summarizationIncrementedOnNextThreshold", async () => {
+  test("compaction triggers before the request when the budget is exceeded", async () => {
     await orquestrator.clearDatabase();
     const phoneNumber = TestWhatsAppMessagingGateway.phoneNumber;
     await orquestrator.addAllowedNumber(phoneNumber);
@@ -212,41 +209,83 @@ describe("MessagingService", () => {
       );
       await new Promise((r) => setTimeout(r, delay));
     }
-    await new Promise((r) => setTimeout(r, 100));
     let chat =
       await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber);
     expect(chat).toBeDefined();
-    const firstSummary = chat?.summary;
-    expect(firstSummary).toBeDefined();
-    for (let i = 10; i < 20; i++) {
+    const config = orquestrator.aiConfig;
+    const aiGateway =
+      orquestrator.container.resolve<TestAiChatGateway>("IAiChatGateway");
+    const originalContextWindowTokens = aiGateway.contextWindowTokens;
+    aiGateway.contextWindowTokens =
+      config.maxOutputTokens +
+      config.safetyMarginTokens +
+      estimateCurrentRequest(chat as Chat, phoneNumber) -
+      50;
+    try {
+      await orquestrator.messagingService.receiveWhatsAppMessage(
+        createReceiveMessage("Message over budget"),
+        "sig",
+      );
+      await new Promise((r) => setTimeout(r, delay * 5));
+      chat =
+        await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber);
+      expect(chat?.summary).toBeDefined();
+      expect(chat?.summary?.userProfile.join(" ")).toContain("Summary of");
+      expect(chat?.summary?.durableFacts).toEqual([]);
+      expect(chat?.summary).toBeInstanceOf(ConversationSummary);
+      expect(chat?.summary?.compactedThroughSequence).toBeGreaterThan(0);
+      expect(chat?.messages.length).toBe(22);
+      expect(chat?.getModelMessages().length).toBeLessThan(22);
+      const lastMessage = chat?.messages[chat.messages.length - 1];
+      expect(lastMessage?.text).toBe("Response to: Message over budget");
+    } finally {
+      aiGateway.contextWindowTokens = originalContextWindowTokens;
+    }
+  });
+
+  test("a malformed summary stops the request without truncating history", async () => {
+    await orquestrator.clearDatabase();
+    const phoneNumber = TestWhatsAppMessagingGateway.phoneNumber;
+    await orquestrator.addAllowedNumber(phoneNumber);
+    await orquestrator.createUser({ phoneNumber });
+    for (let i = 0; i < 10; i++) {
       await orquestrator.messagingService.receiveWhatsAppMessage(
         createReceiveMessage(`Message ${i}`),
         "sig",
       );
       await new Promise((r) => setTimeout(r, delay));
     }
-    await new Promise((r) => setTimeout(r, 100));
-    chat =
+    let chat =
       await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber);
-    expect(chat).toBeDefined();
-    expect(chat?.messages.length).toBe(40);
-    expect(chat?.summary).toBeDefined();
-    expect(chat?.summary).toContain(firstSummary ?? "");
-    expect(chat?.summary).toContain(
-      "Summary of 20 messages + Summary of 20 messages",
-    );
-  });
-
-  test("chatEffectiveMessagesReturnsAllWhenSummarizedIdNotFound", () => {
-    const chat = new Chat();
-    chat.setChannelAddress(
-      ChatChannel.WhatsApp,
-      TestWhatsAppMessagingGateway.phoneNumber,
-    );
-    chat.addUserTextMessage("Hello");
-    chat.addBotTextMessage("Hi there");
-    chat.setSummary("Some summary", uuidv4());
-    expect(chat.effectiveMessages.length).toBe(2);
+    const aiGateway =
+      orquestrator.container.resolve<TestAiChatGateway>("IAiChatGateway");
+    const config = orquestrator.aiConfig;
+    const originalContextWindowTokens = aiGateway.contextWindowTokens;
+    aiGateway.contextWindowTokens =
+      config.maxOutputTokens +
+      config.safetyMarginTokens +
+      estimateCurrentRequest(chat as Chat, phoneNumber) -
+      50;
+    aiGateway.summaryError = new ValidationException("malformed summary");
+    const requestCount = aiGateway.requests.length;
+    try {
+      await orquestrator.messagingService.receiveWhatsAppMessage(
+        createReceiveMessage("Message over budget"),
+        "sig",
+      );
+      await new Promise((r) => setTimeout(r, delay * 5));
+      chat =
+        await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber);
+      expect(aiGateway.summaryCalls).toBeGreaterThan(0);
+      expect(chat?.summary).toBeUndefined();
+      expect(aiGateway.requests).toHaveLength(requestCount);
+      const lastMessage = chat?.messages[chat.messages.length - 1];
+      expect(lastMessage?.text).toContain("malformed summary");
+      expect(lastMessage?.audience).toBe(MessageAudience.Both);
+    } finally {
+      aiGateway.summaryError = undefined;
+      aiGateway.contextWindowTokens = originalContextWindowTokens;
+    }
   });
 
   test("receiveWebMessage creates Web chat and responds via web gateway", async () => {
@@ -278,8 +317,8 @@ describe("MessagingService", () => {
     expect(chat?.idUser).toBe(user.id);
     expect(chat?.messages.length).toBe(2);
     expect(chat?.messages[0]?.text).toBe("Hello from web");
-    expect(chat?.messages[0]?.userType).toBe(MessageUserType.User);
-    expect(chat?.messages[1]?.userType).toBe(MessageUserType.Bot);
+    expect(chat?.messages[0]?.role).toBe(MessageRole.User);
+    expect(chat?.messages[1]?.role).toBe(MessageRole.Assistant);
     expect(chat?.messages[1]?.text).toBe("Response to: Hello from web");
 
     const events = webGateway.getEvents();
@@ -314,7 +353,7 @@ describe("MessagingService", () => {
     expect(chat).toBeDefined();
     expect(chat?.channel).toBe(ChatChannel.Web);
     expect(chat?.messages[0]?.buttonReply).toBe("Yes");
-    expect(chat?.messages[0]?.userType).toBe(MessageUserType.User);
+    expect(chat?.messages[0]?.role).toBe(MessageRole.User);
   });
 
   test("receiveWebMessage accepts web addresses without an allowlist row", async () => {
@@ -560,7 +599,7 @@ describe("MessagingService", () => {
       ChatChannel.Web,
     );
     expect(chat?.messages).toHaveLength(3);
-    expect(chat?.messages[0]?.type).toBe(MessageType.Audio);
+    expect(chat?.messages[0]?.content.type).toBe(MessageContentType.Audio);
     expect(chat?.messages[0]?.transcript).toBe(
       "This is a mock transcript for testing purposes.",
     );
@@ -569,6 +608,10 @@ describe("MessagingService", () => {
     );
     expect(chat?.messages[0]?.mimeType).toBe("audio/mp4; codecs=mp4a.40.2");
     expect(chat?.messages[1]?.text).not.toBeUndefined();
+    expect(chat?.messages[1]?.audience).toBe(MessageAudience.Channel);
+    expect(chat?.getModelMessages().map((m) => m.id)).not.toContain(
+      chat?.messages[1]?.id,
+    );
     expect(chat?.messages[2]?.text).toBe(
       "Response to: This is a mock transcript for testing purposes.",
     );
@@ -603,8 +646,9 @@ describe("MessagingService", () => {
     chat.setChannelAddress(ChatChannel.WhatsApp, "5511912345678");
     const message = new Message({
       idChat: chat.id,
-      type: MessageType.Audio,
-      userType: MessageUserType.User,
+      role: MessageRole.User,
+      audience: MessageAudience.Both,
+      content: { type: MessageContentType.Audio, mimeType: "audio/ogg" },
     });
 
     await expect(
@@ -700,26 +744,10 @@ describe("MessagingService", () => {
     gateway.validateWebhook = validateWebhook;
   });
 
-  test("internal helpers cover mime mappings, ai parsing, summarization failures, and invalid chat types", async () => {
+  test("internal helpers cover mime mappings and invalid chat types", async () => {
     const service = orquestrator.messagingService as unknown as {
       getExtension: (mimeType: string) => string;
-      parseMessagesToAi: (messages: Message[]) => unknown[];
-      triggerSummarization: (chat: Chat) => Promise<void>;
       getMessagingGatewayByChannel: (channel: ChatChannel) => unknown;
-      aiChatGateway: {
-        getResponse: (
-          channelAddress: string,
-          messages: unknown[],
-        ) => Promise<{
-          type: AiChatMessageType;
-          text: string;
-          buttons: string[];
-        }>;
-        generateSummary: (
-          messages: unknown[],
-          summary?: string,
-        ) => Promise<string>;
-      };
     };
 
     expect(service.getExtension("audio/ogg")).toBe(".ogg");
@@ -730,67 +758,6 @@ describe("MessagingService", () => {
     expect(service.getExtension("audio/webm")).toBe(".webm");
     expect(service.getExtension("audio/wave")).toBe(".wav");
     expect(service.getExtension("application/octet-stream")).toBe(".bin");
-
-    const textMessage = new Message({
-      idChat: "chat-1",
-      type: MessageType.Text,
-      userType: MessageUserType.Bot,
-      text: "bot text",
-    });
-    const buttonMessage = new Message({
-      idChat: "chat-1",
-      type: MessageType.ButtonReply,
-      userType: MessageUserType.User,
-      buttonReply: "Yes",
-      buttonReplyOptions: ["Yes", "No"],
-    });
-    const transcriptMessage = new Message({
-      idChat: "chat-1",
-      type: MessageType.Audio,
-      userType: MessageUserType.User,
-    });
-    transcriptMessage.transcript = "voice text";
-
-    expect(
-      service.parseMessagesToAi([
-        textMessage,
-        buttonMessage,
-        transcriptMessage,
-      ]),
-    ).toEqual([
-      {
-        role: "assistant",
-        type: "text",
-        text: "bot text",
-        buttons: [],
-      },
-      {
-        role: "user",
-        type: "button",
-        text: "Yes",
-        buttons: ["Yes", "No"],
-      },
-      {
-        role: "user",
-        type: "text",
-        text: "voice text",
-        buttons: [],
-      },
-    ]);
-
-    const generateSummary = service.aiChatGateway.generateSummary;
-    service.aiChatGateway.generateSummary = async () => {
-      throw new Error("boom");
-    };
-
-    const chat = new Chat();
-    chat.setChannelAddress(ChatChannel.WhatsApp, "5511912345678");
-    chat.addUserTextMessage("hello");
-    chat.addBotTextMessage("world");
-    await expect(service.triggerSummarization(chat)).resolves.toBeUndefined();
-    expect(chat.summary).toBeUndefined();
-
-    service.aiChatGateway.generateSummary = generateSummary;
 
     expect(() =>
       service.getMessagingGatewayByChannel("unsupported" as ChatChannel),
@@ -805,24 +772,15 @@ describe("MessagingService", () => {
     const webAddress = user.email ?? "";
     await orquestrator.addAllowedWebId(webAddress);
 
-    const service = orquestrator.messagingService as unknown as {
-      aiChatGateway: {
-        getResponse: (
-          channelAddress: string,
-          messages: unknown[],
-        ) => Promise<{
-          type: AiChatMessageType;
-          text: string;
-          buttons: string[];
-        }>;
-      };
-    };
-    const getResponse = service.aiChatGateway.getResponse;
-    service.aiChatGateway.getResponse = async () => ({
-      type: AiChatMessageType.Button,
-      text: "Choose",
-      buttons: ["A", "B"],
-    });
+    const aiGateway =
+      orquestrator.container.resolve<TestAiChatGateway>("IAiChatGateway");
+    aiGateway.scriptedResponses = [
+      {
+        content: { type: "button", text: "Choose", options: ["A", "B"] },
+        toolCalls: [],
+        finishReason: "stop",
+      },
+    ];
 
     const webGateway = orquestrator.container.resolve<TestWebMessagingGateway>(
       "IWebMessagingGateway",
@@ -840,23 +798,33 @@ describe("MessagingService", () => {
       type: "interactive_button",
       data: { text: "Choose", buttons: ["A", "B"] },
     });
-
-    service.aiChatGateway.getResponse = getResponse;
   });
 
-  test("respondToMessage passes idSourceMessage in AI context", async () => {
+  test("tool calls persist before execution and results feed the follow-up call", async () => {
     await orquestrator.clearDatabase();
     const user = await orquestrator.createUser({
       phoneNumber: "5511912345678",
     });
     const webAddress = user.email ?? "";
-    await orquestrator.addAllowedWebId(webAddress);
-
     const aiGateway =
       orquestrator.container.resolve<TestAiChatGateway>("IAiChatGateway");
+    aiGateway.requests = [];
+    aiGateway.scriptedResponses = [
+      {
+        toolCalls: [
+          {
+            type: MessageContentType.ToolCall,
+            callId: "call-1",
+            name: "list_todos",
+            arguments: { status: "Pending" },
+          },
+        ],
+        finishReason: "tool_calls",
+      },
+    ];
 
     await orquestrator.messagingService.receiveWebMessage(webAddress, {
-      text: "remember this",
+      text: "list my todos",
     });
     await new Promise((r) => setTimeout(r, delay));
 
@@ -864,11 +832,313 @@ describe("MessagingService", () => {
       webAddress,
       ChatChannel.Web,
     );
-    expect(aiGateway.lastChannelAddress).toBe(webAddress);
-    expect(aiGateway.lastContext?.idSourceMessage).toBe(chat?.messages[0]?.id);
-    expect(aiGateway.lastContext).not.toHaveProperty("idUser");
-    expect(aiGateway.lastContext).not.toHaveProperty("channelAddress");
-    expect(aiGateway.lastContext).not.toHaveProperty("channel");
+    expect(chat?.messages).toHaveLength(4);
+    const userMessage = chat?.messages[0];
+    const toolCallMessage = chat?.messages[1];
+    expect(toolCallMessage?.role).toBe(MessageRole.Assistant);
+    expect(toolCallMessage?.audience).toBe(MessageAudience.Model);
+    expect(toolCallMessage?.turnId).toBe(userMessage?.id);
+    expect(toolCallMessage?.content).toMatchObject({
+      type: MessageContentType.ToolCall,
+      callId: "call-1",
+      name: "list_todos",
+    });
+    const toolResultMessage = chat?.messages[2];
+    expect(toolResultMessage?.role).toBe(MessageRole.Tool);
+    expect(toolResultMessage?.turnId).toBe(userMessage?.id);
+    expect(toolResultMessage?.content).toMatchObject({
+      type: MessageContentType.ToolResult,
+      callId: "call-1",
+      outcome: { status: ToolResultStatus.Succeeded, data: { count: 0 } },
+    });
+    expect(chat?.messages[3]?.role).toBe(MessageRole.Assistant);
+    expect(chat?.messages[3]?.text).toBeDefined();
+
+    const followUp = aiGateway.requests[aiGateway.requests.length - 1];
+    expect(
+      followUp?.messages.some(
+        (m) => m.content.type === MessageContentType.ToolCall,
+      ),
+    ).toBe(true);
+    expect(
+      followUp?.messages.some(
+        (m) => m.content.type === MessageContentType.ToolResult,
+      ),
+    ).toBe(true);
+
+    expect(chat?.getChannelMessages()).toHaveLength(2);
+    expect(chat?.toJSON().messages).toHaveLength(2);
+  });
+
+  test("unknown tools and malformed arguments become persisted failed results", async () => {
+    await orquestrator.clearDatabase();
+    const user = await orquestrator.createUser({
+      phoneNumber: "5511912345678",
+    });
+    const webAddress = user.email ?? "";
+    const aiGateway =
+      orquestrator.container.resolve<TestAiChatGateway>("IAiChatGateway");
+    aiGateway.scriptedResponses = [
+      {
+        toolCalls: [
+          {
+            type: MessageContentType.ToolCall,
+            callId: "call-unknown",
+            name: "does_not_exist",
+            arguments: {},
+          },
+          {
+            type: MessageContentType.ToolCall,
+            callId: "call-malformed",
+            name: "list_todos",
+            arguments: "{not json",
+          },
+        ],
+        finishReason: "tool_calls",
+      },
+    ];
+
+    await orquestrator.messagingService.receiveWebMessage(webAddress, {
+      text: "break the tools",
+    });
+    await new Promise((r) => setTimeout(r, delay));
+
+    const chat = await orquestrator.messagingService.getChatByChannelAddress(
+      webAddress,
+      ChatChannel.Web,
+    );
+    expect(chat?.messages).toHaveLength(6);
+    const turnId = chat?.messages[0]?.turnId ?? "";
+    expect(chat?.getToolResult(turnId, "call-unknown")?.content).toMatchObject({
+      type: MessageContentType.ToolResult,
+      outcome: { status: ToolResultStatus.Failed, code: "UnknownTool" },
+    });
+    expect(
+      chat?.getToolResult(turnId, "call-malformed")?.content,
+    ).toMatchObject({
+      type: MessageContentType.ToolResult,
+      outcome: { status: ToolResultStatus.Failed, code: "InvalidArguments" },
+    });
+    expect(chat?.messages[5]?.role).toBe(MessageRole.Assistant);
+    expect(chat?.messages[5]?.audience).toBe(MessageAudience.Both);
+  });
+
+  test("persisted results prevent duplicate execution and unknown outcomes are not retried", async () => {
+    await orquestrator.clearDatabase();
+    const user = await orquestrator.createUser({
+      phoneNumber: "5511912345678",
+    });
+    const webAddress = user.email ?? "";
+    const aiGateway =
+      orquestrator.container.resolve<TestAiChatGateway>("IAiChatGateway");
+    const service = orquestrator.messagingService as unknown as {
+      aiToolService: AiToolService;
+    };
+    const execute = service.aiToolService.execute;
+    let executions = 0;
+    service.aiToolService.execute = async (call) => {
+      executions++;
+      return {
+        type: MessageContentType.ToolResult,
+        callId: call.callId,
+        outcome: {
+          status: ToolResultStatus.Unknown,
+          code: "UnconfirmedOutcome",
+          message: "confirmation lost",
+        },
+      };
+    };
+    aiGateway.scriptedResponses = [
+      {
+        toolCalls: [
+          {
+            type: MessageContentType.ToolCall,
+            callId: "call-dup",
+            name: "add_transaction",
+            arguments: { type: "Expense", user_message: "50", value: 50 },
+          },
+        ],
+        finishReason: "tool_calls",
+      },
+      {
+        toolCalls: [
+          {
+            type: MessageContentType.ToolCall,
+            callId: "call-dup",
+            name: "add_transaction",
+            arguments: { type: "Expense", user_message: "50", value: 50 },
+          },
+        ],
+        finishReason: "tool_calls",
+      },
+    ];
+
+    try {
+      await orquestrator.messagingService.receiveWebMessage(webAddress, {
+        text: "add 50",
+      });
+      await new Promise((r) => setTimeout(r, delay));
+
+      const chat = await orquestrator.messagingService.getChatByChannelAddress(
+        webAddress,
+        ChatChannel.Web,
+      );
+      expect(executions).toBe(1);
+      const turnId = chat?.messages[0]?.turnId ?? "";
+      const results = chat?.messages.filter(
+        (m) =>
+          m.content.type === MessageContentType.ToolResult &&
+          m.content.callId === "call-dup",
+      );
+      expect(results).toHaveLength(1);
+      expect(chat?.getToolResult(turnId, "call-dup")?.content).toMatchObject({
+        type: MessageContentType.ToolResult,
+        outcome: { status: ToolResultStatus.Unknown },
+      });
+    } finally {
+      service.aiToolService.execute = execute;
+    }
+  });
+
+  test("multiple tool calls persist in provider order before executing", async () => {
+    await orquestrator.clearDatabase();
+    const user = await orquestrator.createUser({
+      phoneNumber: "5511912345678",
+    });
+    const webAddress = user.email ?? "";
+    const aiGateway =
+      orquestrator.container.resolve<TestAiChatGateway>("IAiChatGateway");
+    aiGateway.scriptedResponses = [
+      {
+        toolCalls: [
+          {
+            type: MessageContentType.ToolCall,
+            callId: "call-a",
+            name: "list_todos",
+            arguments: { status: "Pending" },
+          },
+          {
+            type: MessageContentType.ToolCall,
+            callId: "call-b",
+            name: "list_todos",
+            arguments: { status: "Completed" },
+          },
+        ],
+        finishReason: "tool_calls",
+      },
+    ];
+
+    await orquestrator.messagingService.receiveWebMessage(webAddress, {
+      text: "list everything",
+    });
+    await new Promise((r) => setTimeout(r, delay));
+
+    const chat = await orquestrator.messagingService.getChatByChannelAddress(
+      webAddress,
+      ChatChannel.Web,
+    );
+    const kinds = chat?.messages.map((m) => {
+      if (m.content.type === MessageContentType.ToolCall)
+        return `call:${m.content.callId}`;
+      if (m.content.type === MessageContentType.ToolResult)
+        return `result:${m.content.callId}`;
+      return m.content.type;
+    });
+    expect(kinds).toEqual([
+      "text",
+      "call:call-a",
+      "call:call-b",
+      "result:call-a",
+      "result:call-b",
+      "text",
+    ]);
+  });
+
+  test("the maximum tool-round limit terminates the loop with a safe reply", async () => {
+    await orquestrator.clearDatabase();
+    const user = await orquestrator.createUser({
+      phoneNumber: "5511912345678",
+    });
+    const webAddress = user.email ?? "";
+    const aiGateway =
+      orquestrator.container.resolve<TestAiChatGateway>("IAiChatGateway");
+    const maxToolRounds = orquestrator.aiConfig.maxToolRounds;
+    aiGateway.scriptedResponses = Array.from(
+      { length: maxToolRounds + 2 },
+      (_, i) => ({
+        toolCalls: [
+          {
+            type: MessageContentType.ToolCall,
+            callId: `call-${i}`,
+            name: "list_todos",
+            arguments: { status: "Pending" },
+          },
+        ],
+        finishReason: "tool_calls",
+      }),
+    );
+
+    await orquestrator.messagingService.receiveWebMessage(webAddress, {
+      text: "never finish",
+    });
+    await new Promise((r) => setTimeout(r, delay * 5));
+
+    const chat = await orquestrator.messagingService.getChatByChannelAddress(
+      webAddress,
+      ChatChannel.Web,
+    );
+    const toolCallCount = chat?.messages.filter(
+      (m) => m.content.type === MessageContentType.ToolCall,
+    ).length;
+    expect(toolCallCount).toBe(maxToolRounds);
+    const lastMessage = chat?.messages[chat.messages.length - 1];
+    expect(lastMessage?.role).toBe(MessageRole.Assistant);
+    expect(lastMessage?.text).toContain("limite de operações");
+    aiGateway.scriptedResponses = [];
+  });
+
+  test("create_todos binds created todos to the source message", async () => {
+    await orquestrator.clearDatabase();
+    const user = await orquestrator.createUser({
+      phoneNumber: "5511912345678",
+    });
+    const webAddress = user.email ?? "";
+    const aiGateway =
+      orquestrator.container.resolve<TestAiChatGateway>("IAiChatGateway");
+    aiGateway.scriptedResponses = [
+      {
+        toolCalls: [
+          {
+            type: MessageContentType.ToolCall,
+            callId: "call-todo",
+            name: "create_todos",
+            arguments: {
+              todos: [{ name: "Buy milk", status: "Pending" }],
+            },
+          },
+        ],
+        finishReason: "tool_calls",
+      },
+    ];
+
+    await orquestrator.messagingService.receiveWebMessage(webAddress, {
+      text: "remember to buy milk",
+    });
+    await new Promise((r) => setTimeout(r, delay));
+
+    const chat = await orquestrator.messagingService.getChatByChannelAddress(
+      webAddress,
+      ChatChannel.Web,
+    );
+    const todos = await orquestrator.todoService.listTodos(user.id, {});
+    expect(todos).toHaveLength(1);
+    expect(todos[0]?.name).toBe("Buy milk");
+    expect(todos[0]?.idSourceMessage).toBe(chat?.messages[0]?.id);
+    const turnId = chat?.messages[0]?.turnId ?? "";
+    expect(chat?.getToolResult(turnId, "call-todo")?.content).toMatchObject({
+      type: MessageContentType.ToolResult,
+      outcome: { status: ToolResultStatus.Succeeded },
+    });
   });
 
   test("listenToMessage falls back to an empty text payload for unknown shapes", async () => {

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ServerBootstrap } from "~/infra/server-bootstrap";
 import type { AuthService } from "~/server/services/AuthService";
 import { Http } from "~/server/utils/Http";
-import type { SharedCurrentUser } from "~/shared/types/web-chat";
+import type { CurrentUserDTO } from "~/shared/entities/dtos/CurrentUserDTO";
 
 export const Route = createFileRoute("/api/v1/web/auth/me")({
   server: {
@@ -15,7 +15,7 @@ export const Route = createFileRoute("/api/v1/web/auth/me")({
         if (!user) {
           return Http.json({ error: "User not found" }, { status: 404 });
         }
-        const currentUser: SharedCurrentUser = user.toJSON();
+        const currentUser: CurrentUserDTO = user.toJSON();
         return Http.json(currentUser);
       },
     },

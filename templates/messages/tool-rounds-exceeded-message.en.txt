@@ -1,0 +1,3 @@
+⚠️ I could not finish that request right now.
+
+I tried to run the needed actions, but the operation limit was reached. Please try again with a simpler request or check whether the last action completed.
