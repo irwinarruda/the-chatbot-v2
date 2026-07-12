@@ -1,11 +1,12 @@
 import { Mediator } from "~/infra/mediator";
-import { AiChatGateway } from "~/server/resources/AiChatGateway";
 import { GoogleAuthGateway } from "~/server/resources/GoogleAuthGateway";
 import { GoogleCashFlowSpreadsheetGateway } from "~/server/resources/GoogleCashFlowSpreadsheetGateway";
 import { OpenAiSpeechToTextGateway } from "~/server/resources/OpenAiSpeechToTextGateway";
+import { PiAiChatGateway } from "~/server/resources/PiAiChatGateway";
 import { R2StorageGateway } from "~/server/resources/R2StorageGateway";
 import { WebMessagingGateway } from "~/server/resources/WebMessagingGateway";
 import { WhatsAppMessagingGateway } from "~/server/resources/WhatsAppMessagingGateway";
+import { AiToolService } from "~/server/services/AiToolService";
 import {
   AuthService,
   type SyncUserChatAddressesEvent,
@@ -37,11 +38,6 @@ export function registerDependencies(config: Config) {
   container.register("AiConfig", () => config.ai, "singleton");
   container.register("OpenAiConfig", () => config.openAi, "singleton");
   container.register("AuthConfig", () => config.auth, "singleton");
-  container.register(
-    "SummarizationConfig",
-    () => config.summarization,
-    "singleton",
-  );
   container.register(
     "GoogleSheetsConfig",
     () => config.googleSheets,
@@ -119,12 +115,17 @@ export function registerDependencies(config: Config) {
   );
   container.register(
     "IAiChatGateway",
+    () => new PiAiChatGateway(config.ai),
+    "singleton",
+  );
+  container.register(
+    "AiToolService",
     () =>
-      new AiChatGateway(
-        config.ai,
-        container.resolve("CashFlowService"),
+      new AiToolService(
         container.resolve("AuthService"),
+        container.resolve("CashFlowService"),
         container.resolve("TodoService"),
+        container.resolve("IAiChatGateway"),
       ),
     "singleton",
   );
@@ -138,9 +139,10 @@ export function registerDependencies(config: Config) {
         container.resolve("IWhatsAppMessagingGateway"),
         container.resolve("IWebMessagingGateway"),
         container.resolve("IAiChatGateway"),
+        container.resolve("AiToolService"),
         container.resolve("IStorageGateway"),
         container.resolve("ISpeechToTextGateway"),
-        config.summarization,
+        config.ai,
       ),
     "singleton",
   );

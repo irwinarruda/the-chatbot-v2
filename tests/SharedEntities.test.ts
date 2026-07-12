@@ -2,18 +2,24 @@ import { ValidationException } from "~/infra/exceptions";
 import { BsuidUtils } from "~/shared/entities/BsuidUtils";
 import { CashFlowSpreadsheet } from "~/shared/entities/CashFlowSpreadsheet";
 import { Chat } from "~/shared/entities/Chat";
+import { ConversationSummary } from "~/shared/entities/ConversationSummary";
 import { Credential } from "~/shared/entities/Credentials";
+import { AddTransactionToolDTO } from "~/shared/entities/dtos/AddTransactionToolDTO";
+import { CreateTodosToolDTO } from "~/shared/entities/dtos/CreateTodosToolDTO";
+import { TransferBetweenBankAccountsToolDTO } from "~/shared/entities/dtos/TransferBetweenBankAccountsToolDTO";
 import { CashFlowSpreadsheetType } from "~/shared/entities/enums/CashFlowSpreadsheetType";
 import { ChatChannel } from "~/shared/entities/enums/ChatChannel";
 import { CredentialType } from "~/shared/entities/enums/CredentialType";
-import { MessageType } from "~/shared/entities/enums/MessageType";
-import { MessageUserType } from "~/shared/entities/enums/MessageUserType";
+import { MessageAudience } from "~/shared/entities/enums/MessageAudience";
+import { MessageContentType } from "~/shared/entities/enums/MessageContentType";
+import { MessageRole } from "~/shared/entities/enums/MessageRole";
+import { ToolResultStatus } from "~/shared/entities/enums/ToolResultStatus";
 import { Message } from "~/shared/entities/Message";
 import { PhoneNumberUtils } from "~/shared/entities/PhoneNumberUtils";
 import { User } from "~/shared/entities/User";
 
 describe("shared entities", () => {
-  test("Chat handles provider IDs, summarization, validation, and serialization", () => {
+  test("Chat handles channel addresses, audiences, tool invariants, and serialization", () => {
     const chat = new Chat();
     chat.setChannelAddress(ChatChannel.WhatsApp, "5511984444444");
     expect(chat.whatsAppAddress).toBe("5511984444444");
@@ -23,57 +29,130 @@ describe("shared entities", () => {
     expect(() => chat.setChannelAddress(ChatChannel.WhatsApp, "")).toThrow(
       ValidationException,
     );
+    expect(chat.getChannelAddress()).toBe("user@example.com");
 
-    const firstUserMessage = chat.addUserTextMessage("hello", "provider-1");
-    const botMessage = chat.addBotTextMessage("hi", "provider-2");
-    const buttonMessage = chat.addUserButtonReply("yes", "provider-3");
-    const buttonReply = chat.addBotButtonReply(
-      "choose",
-      ["A", "B"],
-      "provider-4",
-    );
+    const userMessage = chat.addUserTextMessage("hello", "provider-1");
+    expect(userMessage.turnId).toBe(userMessage.id);
+    expect(userMessage.role).toBe(MessageRole.User);
+    const assistantMessage = chat.addAssistantTextMessage("hi", {
+      turnId: userMessage.turnId,
+    });
+    expect(assistantMessage.turnId).toBe(userMessage.turnId);
+    expect(assistantMessage.role).toBe(MessageRole.Assistant);
+    const buttonMessage = chat.addUserButtonMessage("yes", "provider-3");
+    chat.addAssistantButtonMessage("choose", ["A", "B"], {
+      turnId: buttonMessage.turnId,
+    });
     const audioMessage = chat.addUserAudioMessage(
       "media-1",
       "audio/webm",
       "provider-5",
     );
+    const notice = chat.addAssistantTextMessage("processing...", {
+      turnId: audioMessage.turnId,
+      audience: MessageAudience.Channel,
+    });
 
-    expect(chat.effectiveMessages).toHaveLength(5);
-    expect(chat.shouldSummarize(10)).toBe(false);
-    expect(chat.shouldSummarize(5)).toBe(true);
-    expect(chat.getChannelAddress()).toBe("user@example.com");
+    const toolCall = chat.addAssistantToolCall(audioMessage.turnId, {
+      type: MessageContentType.ToolCall,
+      callId: "call-1",
+      name: "list_todos",
+      arguments: { status: "Pending" },
+    });
+    expect(toolCall.audience).toBe(MessageAudience.Model);
+    expect(() =>
+      chat.addAssistantToolCall("unknown-turn", {
+        type: MessageContentType.ToolCall,
+        callId: "call-x",
+        name: "list_todos",
+        arguments: {},
+      }),
+    ).toThrow(ValidationException);
+    expect(() =>
+      chat.addToolResult(audioMessage.turnId, {
+        type: MessageContentType.ToolResult,
+        callId: "missing-call",
+        outcome: { status: ToolResultStatus.Succeeded, data: {} },
+      }),
+    ).toThrow(ValidationException);
+    expect(() =>
+      chat.addToolResult(userMessage.turnId, {
+        type: MessageContentType.ToolResult,
+        callId: "call-1",
+        outcome: { status: ToolResultStatus.Succeeded, data: {} },
+      }),
+    ).toThrow(ValidationException);
+    const toolResult = chat.addToolResult(audioMessage.turnId, {
+      type: MessageContentType.ToolResult,
+      callId: "call-1",
+      outcome: { status: ToolResultStatus.Succeeded, data: { count: 0 } },
+    });
+    expect(() =>
+      chat.addToolResult(audioMessage.turnId, {
+        type: MessageContentType.ToolResult,
+        callId: "call-1",
+        outcome: { status: ToolResultStatus.Succeeded, data: {} },
+      }),
+    ).toThrow(ValidationException);
+    expect(chat.getToolResult(audioMessage.turnId, "call-1")?.id).toBe(
+      toolResult.id,
+    );
 
-    chat.summarizedUntilId = buttonMessage.id;
-    expect(chat.effectiveMessages).toEqual(chat.messages);
-
-    chat.summary = "summary";
-    expect(chat.effectiveMessages).toEqual([buttonReply, audioMessage]);
-    expect(chat.shouldSummarize(10)).toBe(false);
-
-    chat.summary = undefined;
-    expect(chat.shouldSummarize(10)).toBe(true);
-
-    chat.setSummary("fresh summary", firstUserMessage.id);
-    expect(chat.summary).toBe("fresh summary");
-    expect(chat.effectiveMessages).toEqual([
-      botMessage,
-      buttonMessage,
-      buttonReply,
-      audioMessage,
-    ]);
-
-    chat.addUser("user-1");
-    expect(() => chat.addUser("user-2")).toThrow(ValidationException);
+    const channelMessages = chat.getChannelMessages();
+    expect(channelMessages).toContain(notice);
+    expect(channelMessages).not.toContain(toolCall);
+    expect(channelMessages).not.toContain(toolResult);
+    const modelMessages = chat.getModelMessages();
+    expect(modelMessages).toContain(toolCall);
+    expect(modelMessages).toContain(toolResult);
+    expect(modelMessages).not.toContain(notice);
 
     const serialized = chat.toJSON();
     expect(serialized.channel).toBe("web");
     expect(serialized.whatsAppAddress).toBe("5511984444444");
     expect(serialized.webAddress).toBe("user@example.com");
-    expect(serialized.messages).toHaveLength(5);
+    expect(serialized.messages).toHaveLength(6);
 
+    chat.addUser("user-1");
+    expect(() => chat.addUser("user-2")).toThrow(ValidationException);
     chat.deleteChat();
     expect(chat.isDeleted).toBe(true);
     expect(() => chat.deleteChat()).toThrow(ValidationException);
+  });
+
+  test("Chat summary cursor advances only through complete turns", () => {
+    const chat = new Chat();
+    chat.setChannelAddress(ChatChannel.WhatsApp, "5511984444444");
+    const firstUser = chat.addUserTextMessage("first");
+    chat.addAssistantTextMessage("first reply", { turnId: firstUser.turnId });
+    const secondUser = chat.addUserTextMessage("second");
+    const secondReply = chat.addAssistantTextMessage("second reply", {
+      turnId: secondUser.turnId,
+    });
+    const thirdUser = chat.addUserTextMessage("third");
+    chat.messages.forEach((message, index) => {
+      message.sequence = index + 1;
+    });
+    const summary = (compactedThroughSequence: number) =>
+      new ConversationSummary({
+        userProfile: ["profile"],
+        durableFacts: [],
+        compactedThroughSequence,
+      });
+    expect(() => chat.setSummary(summary(99))).toThrow(ValidationException);
+    expect(() => chat.setSummary(summary(1))).toThrow(ValidationException);
+    expect(() => chat.setSummary(summary(5))).toThrow(ValidationException);
+    chat.setSummary(summary(2));
+    expect(chat.summary?.compactedThroughSequence).toBe(2);
+    expect(chat.getModelMessages().map((m) => m.id)).toEqual([
+      secondUser.id,
+      secondReply.id,
+      thirdUser.id,
+    ]);
+    expect(chat.getUncompactedTurns()).toHaveLength(2);
+    expect(() => chat.setSummary(summary(2))).toThrow(ValidationException);
+    chat.setSummary(summary(4));
+    expect(chat.getModelMessages().map((m) => m.id)).toEqual([thirdUser.id]);
   });
 
   test("User validates inputs, manages google credentials, and serializes", () => {
@@ -131,28 +210,189 @@ describe("shared entities", () => {
     });
   });
 
-  test("Message serializes lowercase enum values and stores audio metadata", () => {
-    const emptyMessage = new Message();
-    expect(emptyMessage.idChat).toBe("");
-    expect(emptyMessage.type).toBe(MessageType.Text);
-    expect(emptyMessage.userType).toBe(MessageUserType.User);
-
+  test("Message validates content, role, and audience combinations", () => {
     const message = new Message({
       idChat: "chat-1",
-      type: MessageType.Audio,
-      userType: MessageUserType.Bot,
-      mediaId: "media-1",
-      mimeType: "audio/webm",
+      role: MessageRole.User,
+      audience: MessageAudience.Both,
+      content: {
+        type: MessageContentType.Audio,
+        mediaId: "media-1",
+        mimeType: "audio/webm",
+      },
     });
     message.addAudioTranscriptAndUrl("transcript", "https://example.com/audio");
-
     expect(message.toJSON()).toMatchObject({
       type: "audio",
-      userType: "bot",
+      userType: "user",
       mediaUrl: "https://example.com/audio",
       mimeType: "audio/webm",
       transcript: "transcript",
     });
+
+    const textMessage = new Message({
+      idChat: "chat-1",
+      role: MessageRole.Assistant,
+      audience: MessageAudience.Both,
+      content: { type: MessageContentType.Text, text: "hello" },
+    });
+    expect(() =>
+      textMessage.addAudioTranscriptAndUrl("t", "https://example.com"),
+    ).toThrow(ValidationException);
+    expect(textMessage.toJSON()).toMatchObject({
+      type: "text",
+      userType: "bot",
+      text: "hello",
+    });
+
+    const userButton = new Message({
+      idChat: "chat-1",
+      role: MessageRole.User,
+      audience: MessageAudience.Both,
+      content: { type: MessageContentType.Button, text: "Yes" },
+    });
+    expect(userButton.toJSON()).toMatchObject({
+      type: "interactive",
+      userType: "user",
+      buttonReply: "Yes",
+    });
+
+    const toolCallContent = {
+      type: MessageContentType.ToolCall,
+      callId: "call-1",
+      name: "list_todos",
+      arguments: {},
+    } as const;
+    const toolResultContent = {
+      type: MessageContentType.ToolResult,
+      callId: "call-1",
+      outcome: { status: ToolResultStatus.Succeeded, data: {} },
+    } as const;
+    expect(
+      () =>
+        new Message({
+          idChat: "chat-1",
+          role: MessageRole.User,
+          audience: MessageAudience.Model,
+          content: toolCallContent,
+        }),
+    ).toThrow(ValidationException);
+    expect(
+      () =>
+        new Message({
+          idChat: "chat-1",
+          role: MessageRole.Assistant,
+          audience: MessageAudience.Both,
+          content: toolCallContent,
+        }),
+    ).toThrow(ValidationException);
+    expect(
+      () =>
+        new Message({
+          idChat: "chat-1",
+          role: MessageRole.Assistant,
+          audience: MessageAudience.Model,
+          content: toolResultContent,
+        }),
+    ).toThrow(ValidationException);
+    expect(
+      () =>
+        new Message({
+          idChat: "chat-1",
+          role: MessageRole.Tool,
+          audience: MessageAudience.Model,
+          content: { type: MessageContentType.Text, text: "not a result" },
+        }),
+    ).toThrow(ValidationException);
+    expect(
+      () =>
+        new Message({
+          idChat: "chat-1",
+          role: MessageRole.Tool,
+          audience: MessageAudience.Model,
+          content: {
+            type: MessageContentType.ToolResult,
+            callId: "call-1",
+            outcome: {
+              status: ToolResultStatus.Succeeded,
+              data: {},
+              code: "X",
+              message: "boom",
+            } as never,
+          },
+        }),
+    ).toThrow(ValidationException);
+    expect(
+      () =>
+        new Message({
+          idChat: "chat-1",
+          role: MessageRole.User,
+          audience: MessageAudience.Both,
+          content: { type: MessageContentType.Audio, mimeType: "" },
+        }),
+    ).toThrow(ValidationException);
+
+    const toolMessage = new Message({
+      idChat: "chat-1",
+      role: MessageRole.Tool,
+      audience: MessageAudience.Model,
+      content: {
+        type: MessageContentType.ToolResult,
+        callId: "call-1",
+        outcome: {
+          status: ToolResultStatus.Failed,
+          code: "Oops",
+          message: "boom",
+        },
+      },
+    });
+    expect(() => toolMessage.toJSON()).toThrow(ValidationException);
+
+    const restored = Message.restore({
+      id: "message-1",
+      idChat: "chat-1",
+      turnId: "turn-1",
+      sequence: 3,
+      role: MessageRole.User,
+      audience: MessageAudience.Both,
+      content: { type: MessageContentType.Text, text: "restored" },
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+      updatedAt: new Date("2026-01-02T00:00:00.000Z"),
+    });
+    expect(restored.id).toBe("message-1");
+    expect(restored.sequence).toBe(3);
+    expect(restored.text).toBe("restored");
+    expect(() =>
+      Message.restore({
+        id: "message-2",
+        idChat: "chat-1",
+        turnId: "turn-1",
+        sequence: 4,
+        role: "Invalid",
+        audience: MessageAudience.Both,
+        content: { type: MessageContentType.Text, text: "invalid" },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }),
+    ).toThrow(ValidationException);
+  });
+
+  test("tool DTOs reject invalid mutating arguments", () => {
+    expect(() =>
+      AddTransactionToolDTO.parse({
+        type: "Expense",
+        user_message: "invalid value",
+        value: 0,
+      }),
+    ).toThrow();
+    expect(() =>
+      TransferBetweenBankAccountsToolDTO.parse({
+        user_message: "invalid date",
+        value: 10,
+        date: "2026-02-30",
+      }),
+    ).toThrow();
+    expect(() => CreateTodosToolDTO.parse({ todos: [] })).toThrow();
   });
 
   test("Credential constructor and update handle expiration with and without ttl", () => {

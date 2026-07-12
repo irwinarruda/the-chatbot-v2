@@ -54,10 +54,13 @@ export const r2ConfigSchema = z.object({
 export type R2Config = z.infer<typeof r2ConfigSchema>;
 
 export const aiConfigSchema = z.object({
-  provider: z.enum(["openai", "anthropic", "glm"]),
+  provider: z.enum(["openai", "anthropic", "zai"]),
   apiKey: z.string().min(1),
   model: z.string().min(1),
-  baseUrl: z.string().default(""),
+  maxOutputTokens: z.coerce.number().int().positive(),
+  safetyMarginTokens: z.coerce.number().int().nonnegative(),
+  minRecentTurns: z.coerce.number().int().positive(),
+  maxToolRounds: z.coerce.number().int().positive(),
 });
 export type AiConfig = z.infer<typeof aiConfigSchema>;
 
@@ -71,11 +74,6 @@ export const authConfigSchema = z.object({
   hashPassword: z.string().min(1),
 });
 export type AuthConfig = z.infer<typeof authConfigSchema>;
-
-export const summarizationConfigSchema = z.object({
-  messageCountThreshold: z.coerce.number().int().positive().default(20),
-});
-export type SummarizationConfig = z.infer<typeof summarizationConfigSchema>;
 
 export const googleSheetsConfigSchema = z.object({
   testSheetId: z.string().default(""),
@@ -97,7 +95,6 @@ export const configSchema = z.object({
   ai: aiConfigSchema,
   openAi: openAiConfigSchema,
   auth: authConfigSchema,
-  summarization: summarizationConfigSchema,
   googleSheets: googleSheetsConfigSchema,
   jwt: jwtConfigSchema,
   port: z.coerce.number().default(3000),
@@ -154,7 +151,10 @@ export function loadConfig(): Config {
       provider: process.env.AI_PROVIDER,
       apiKey: process.env.AI_API_KEY,
       model: process.env.AI_MODEL,
-      baseUrl: process.env.AI_BASE_URL,
+      maxOutputTokens: process.env.AI_MAX_OUTPUT_TOKENS,
+      safetyMarginTokens: process.env.AI_CONTEXT_SAFETY_MARGIN_TOKENS,
+      minRecentTurns: process.env.AI_MIN_RECENT_TURNS,
+      maxToolRounds: process.env.AI_MAX_TOOL_ROUNDS,
     },
     openAi: {
       apiKey: process.env.OPENAI_API_KEY,
@@ -162,9 +162,6 @@ export function loadConfig(): Config {
     },
     auth: {
       hashPassword: process.env.AUTH_HASH_PASSWORD,
-    },
-    summarization: {
-      messageCountThreshold: process.env.SUMMARIZATION_MESSAGE_COUNT_THRESHOLD,
     },
     googleSheets: {
       testSheetId: process.env.GOOGLE_SHEETS_TEST_SHEET_ID,

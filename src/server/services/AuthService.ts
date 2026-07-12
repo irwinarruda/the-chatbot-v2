@@ -411,6 +411,14 @@ export class AuthService {
     return users;
   }
 
+  async deleteUserById(idUser: string, channelAddress: string): Promise<void> {
+    await this.database.sql`
+      DELETE FROM users
+      WHERE id = ${idUser}
+    `;
+    await this.mediator.send("DeleteUserByChatChannelAddress", channelAddress);
+  }
+
   async deleteUserByChatChannelAddress(channelAddress: string): Promise<void> {
     await this.database.sql`
       DELETE FROM users

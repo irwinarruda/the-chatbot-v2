@@ -39,7 +39,7 @@ The first version of this project was written in **C# / .NET 9** ([irwinarruda/t
 
 - **Frontends are now part of the product.** A welcome page, a privacy page, a web chat, and eventually richer dashboards (bank balances, notes). Living in a single TypeScript codebase with React + TanStack Start removes an entire context switch.
 - **One language, end to end.** Server, client, scripts (CLI, migrations) and shared domain entities now share types. The `User`, `Chat`, and `Message` you see in a route loader are literally the same class the service uses.
-- **Faster iteration on AI tooling.** The JS/TS ecosystem around LLMs (OpenAI SDK, Anthropic SDK, MCP-style tool calling) moves fast and is where most experimentation happens.
+- **Faster iteration on AI tooling.** The JS/TS ecosystem around LLMs and agent runtimes moves fast and is where most experimentation happens.
 - **Edge-friendly deploys.** TanStack Start + Nitro runs comfortably in environments where .NET would be heavy or awkward.
 
 The architecture, the layering, the "no repositories, raw SQL inside services" philosophy — all of that survived the rewrite intentionally. The language changed; the discipline did not.
@@ -54,7 +54,7 @@ The architecture, the layering, the "no repositories, raw SQL inside services" p
 | Language         | **TypeScript** (strict-ish)        | Shared types between `src/server`, `src/client`, and `src/shared` — domain entities are literal classes used on both sides.                          |
 | Database         | **PostgreSQL** + `postgres` driver | Tagged-template SQL inside services. No ORM, no repository layer — see Architecture below.                                                           |
 | Migrations       | **node-pg-migrate**                | Plain JS migrations under `infra/migrations/`. Versioned, reversible, simple.                                                                        |
-| LLM              | **OpenAI** + **Anthropic** SDKs    | Behind a single `IAiChatGateway` so the model can be swapped per environment.                                                                        |
+| LLM              | **Pi AI** + **Pi Agent Core**      | Provider normalization and the model/tool loop live behind `IAiChatGateway`; PostgreSQL remains the conversation source of truth.                    |
 | Speech           | **OpenAI Whisper** (via SDK)       | Voice notes sent on WhatsApp are downloaded, persisted, and transcribed before being fed to the LLM.                                                 |
 | Storage          | **Cloudflare R2** (S3 SDK)         | Permanent storage for audio media (WhatsApp media URLs expire).                                                                                      |
 | Messaging        | **WhatsApp Business Cloud API**    | The original — and still primary — interface.                                                                                                        |
@@ -79,7 +79,7 @@ Route (TanStack)  ─►  Service  ─►  Entity (shared)
 
 - **Entities are not anemic.** A `Chat` knows how to add a user message, a button reply, or an audio message. A `User` creates and updates its own `Credential`. Logic lives where the data lives — DDD-light.
 - **No repositories, no mappers.** SQL is written as `private` methods inside the service that owns it, using tagged templates (`this.database.sql\`SELECT ...\``). Reading the service tells you the whole story — domain rules and the exact query that backs them — in one file.
-- **Gateways isolate the outside world.** Every external dependency (WhatsApp, Google Auth, Google Sheets, OpenAI, Anthropic, R2, Whisper, the web SSE bus) is behind an `I*Gateway` interface with at least a real and a `Test*` implementation. Swapping providers is a one-line change in [`infra/bootstrap.ts`](./infra/bootstrap.ts).
+- **Gateways isolate the outside world.** Every external dependency (WhatsApp, Google Auth, Google Sheets, Pi-backed LLM providers, R2, Whisper, the web SSE bus) is behind an `I*Gateway` interface with at least a real and a `Test*` implementation. Swapping providers stays inside the resource and configuration boundary.
 - **A tiny DI container wires everything.** [`infra/container.ts`](./infra/container.ts) + [`infra/bootstrap.ts`](./infra/bootstrap.ts) keeps construction in one place. Tests rebuild the container with fakes via [`tests/orquestrator.ts`](./tests/orquestrator.ts), which also wipes the schema between files.
 - **A mediator decouples cross-service effects.** Sending a "signed in" WhatsApp message after Google login, or deleting a chat when a user is removed, happens through `Mediator` events — services don't need to know about each other directly.
 - **Two front-doors, one core.** WhatsApp messages and the web chat share the exact same `MessagingService` pipeline; the only thing that changes is which `IMessagingGateway` writes the reply.
@@ -126,7 +126,7 @@ tests/                # Vitest, runs serially, wipes schema per file
 - **ngrok** (for receiving WhatsApp webhooks locally)
 - A Google Cloud project with OAuth client + Sheets API enabled
 - WhatsApp Business Cloud API credentials
-- An OpenAI key (Anthropic optional, depending on `AI_MODEL`)
+- An API key for the configured OpenAI, Anthropic, or Z.AI/GLM model
 - A Cloudflare R2 bucket (or any S3-compatible storage)
 
 ### First run
@@ -157,17 +157,31 @@ bun run dev:local          # starts vite + ngrok in parallel
 | `bun run migrate:create` | `bun run migrate:create -- <name>` — scaffold a new migration    |
 | `bun run migrate:up`     | Apply pending migrations                                         |
 | `bun run migrate:down`   | Roll back one migration                                          |
+| `bun run ai:smoke`       | Run the configured Pi provider smoke check with real credentials |
 
 ### Environments
 
 `--mode` is the single source of truth. Valid values: `development`, `test`, `preview`, `production`.
 `.env` is always loaded first (template with placeholders), then `.env.${mode}` overrides it. Vite and Vitest have `envDir: false`, so only the explicitly selected mode file is loaded by the project config.
 
+### Pi upgrades
+
+`@earendil-works/pi-ai` and `@earendil-works/pi-agent-core` are pinned to the same exact version, currently `0.80.6`. Upgrade them together, then run:
+
+```bash
+bun run check
+bun run typecheck
+bun run test
+bun run build
+```
+
+Run `bun run ai:smoke` once for each configured OpenAI, Anthropic, and Z.AI/GLM path. These checks require explicit development credentials and stay outside the default Vitest suite.
+
 ## Testing philosophy
 
 - Vitest runs **serially** with a 30s timeout. Each test file gets a clean schema (`DROP SCHEMA public CASCADE` → recreate → migrate) via [`tests/orquestrator.ts`](./tests/orquestrator.ts), so tests are isolated without mocks-of-mocks.
 - Only **application** tests live in the default suite: services, entities, utils. Routes, controllers, gateways and infra are deliberately excluded — they are exercised end-to-end through service tests.
-- Gateways have `Test*` implementations registered by the test orchestrator, so business logic is covered without hitting OpenAI, Google, or WhatsApp during CI.
+- Gateways have `Test*` implementations registered by the test orchestrator, so business logic is covered without hitting Pi providers, Google, or WhatsApp during CI.
 
 ---
 

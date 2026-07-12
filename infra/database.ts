@@ -17,6 +17,10 @@ export class Database {
     });
   }
 
+  json(value: unknown): postgres.Parameter {
+    return this.sql.json(value as postgres.JSONValue);
+  }
+
   async close(): Promise<void> {
     await this.sql.end();
   }

@@ -2,9 +2,7 @@ import type {
   IMessagingGateway,
   ReceiveMessageDTO,
 } from "~/server/resources/IMessagingGateway";
-import type { WebChatEvent } from "~/shared/types/web-chat";
-
-export type { WebChatEvent } from "~/shared/types/web-chat";
+import type { WebChatEvent } from "~/shared/entities/events/WebChatEvent";
 
 export type WebIncomingMessageBody =
   | {

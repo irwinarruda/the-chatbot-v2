@@ -126,6 +126,7 @@ export class CashFlowService {
   }
 
   async addExpense(expense: CashFlowAddExpenseDTO): Promise<void> {
+    this.validateTransactionInput(expense);
     const { sheet, credential } = await this.getUserAndSheet(
       expense.phoneNumber,
     );
@@ -141,6 +142,7 @@ export class CashFlowService {
   }
 
   async addEarning(earning: CashFlowAddEarningDTO): Promise<void> {
+    this.validateTransactionInput(earning);
     const { sheet, credential } = await this.getUserAndSheet(
       earning.phoneNumber,
     );
@@ -289,6 +291,26 @@ export class CashFlowService {
       ...new Set([...expenseCategories, ...earningCategories]),
     ];
     return { categories, bankAccounts };
+  }
+
+  private validateTransactionInput(
+    transaction: CashFlowAddExpenseDTO | CashFlowAddEarningDTO,
+  ): void {
+    if (!Number.isFinite(transaction.value) || transaction.value <= 0) {
+      throw new ValidationException("Transaction value must be positive");
+    }
+    if (Number.isNaN(transaction.date.getTime())) {
+      throw new ValidationException("Transaction date is invalid");
+    }
+    if (
+      !transaction.category.trim() ||
+      !transaction.description.trim() ||
+      !transaction.bankAccount.trim()
+    ) {
+      throw new ValidationException(
+        "Transaction category, description, and bank account are required",
+      );
+    }
   }
 
   private validateBankAccountExists(

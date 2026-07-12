@@ -25,8 +25,4 @@ export class Printable {
       process.env.NODE_ENV === "production" ? undefined : 2,
     );
   }
-
-  static convert<T>(json: string): T {
-    return JSON.parse(json) as T;
-  }
 }

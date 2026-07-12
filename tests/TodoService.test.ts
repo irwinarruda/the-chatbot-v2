@@ -1,5 +1,6 @@
 import { NotFoundException, ValidationException } from "~/infra/exceptions";
 import { ChatChannel } from "~/shared/entities/enums/ChatChannel";
+import { MessageContentType } from "~/shared/entities/enums/MessageContentType";
 import { TodoStatus } from "~/shared/entities/enums/TodoStatus";
 import { orquestrator } from "./orquestrator";
 
@@ -31,6 +32,17 @@ describe("TodoService", () => {
     ]);
     expect(todos).toHaveLength(2);
     expect(todos.map((item) => item.name)).toEqual(["Call Ana", "Ship report"]);
+  });
+
+  test("batch creation validates before committing any todo", async () => {
+    const user = await orquestrator.createUser();
+    await expect(
+      orquestrator.todoService.createTodos([
+        { idUser: user.id, name: "Valid first todo" },
+        { idUser: user.id, name: "  " },
+      ]),
+    ).rejects.toThrow(ValidationException);
+    expect(await orquestrator.todoService.listTodos(user.id)).toHaveLength(0);
   });
 
   test("lists todos scoped by user and filters by search, due date, due, and status", async () => {
@@ -138,7 +150,7 @@ describe("TodoService", () => {
     });
 
     expect(todo.sourceMessage?.id).toBe(sourceMessage?.id);
-    expect(todo.sourceMessage?.type).toBe(sourceMessage?.type);
+    expect(todo.sourceMessage?.content.type).toBe(MessageContentType.Audio);
     expect(todo.sourceMessage?.transcript).toBe(sourceMessage?.transcript);
     expect(todo.toJSON()).toMatchObject({
       id: todo.id,
