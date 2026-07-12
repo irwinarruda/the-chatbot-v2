@@ -285,13 +285,13 @@ describe("MessagingService", () => {
     const events = webGateway.getEvents();
     expect(events.length).toBeGreaterThan(eventsBefore);
     const lastEvent = events[events.length - 1];
-    expect(lastEvent?.type).toBe("text");
-    expect(
-      (lastEvent?.data as { toAddress: string; text: string }).toAddress,
-    ).toBe(webAddress);
-    expect((lastEvent?.data as { toAddress: string; text: string }).text).toBe(
-      "Response to: Hello from web",
-    );
+    expect(lastEvent).toMatchObject({
+      type: "text",
+      data: {
+        toAddress: webAddress,
+        text: "Response to: Hello from web",
+      },
+    });
   });
 
   test("receiveWebMessage with buttonReply routes through web gateway", async () => {
@@ -363,10 +363,10 @@ describe("MessagingService", () => {
 
     const first = await generator.next();
     expect(first.done).toBe(false);
-    expect(first.value?.type).toBe("text");
-    expect((first.value?.data as { text: string }).text).toBe(
-      "hello subscriber",
-    );
+    expect(first.value).toMatchObject({
+      type: "text",
+      data: { text: "hello subscriber" },
+    });
 
     controller.abort();
     const next = await generator.next();
@@ -488,8 +488,10 @@ describe("MessagingService", () => {
     const events = webGateway.getEvents();
     expect(events.length).toBe(eventsBefore + 1);
     const lastEvent = events[events.length - 1];
-    expect(lastEvent?.type).toBe("text");
-    expect((lastEvent?.data as { text: string }).text).toBe("Forced web");
+    expect(lastEvent).toMatchObject({
+      type: "text",
+      data: { text: "Forced web" },
+    });
   });
 
   test("receiveWhatsAppMessage rejects invalid signatures", async () => {
