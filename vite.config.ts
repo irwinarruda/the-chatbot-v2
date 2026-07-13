@@ -26,6 +26,7 @@ export default defineConfig(({ mode }) => {
       babel({ presets: [reactCompilerPreset()] }),
       nitro(),
       persist([
+        { src: "infra/package.json", dest: "infra/package.json" },
         { src: "infra/migrations", dest: "infra/migrations" },
         { src: "templates", dest: "templates" },
       ]),
