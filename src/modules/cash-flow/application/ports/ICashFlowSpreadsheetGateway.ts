@@ -41,6 +41,7 @@ export interface ICashFlowSpreadsheetGateway {
   ): Promise<Transaction | undefined>;
   getExpenseCategories(sheetConfig: SheetConfigDTO): Promise<string[]>;
   getEarningCategories(sheetConfig: SheetConfigDTO): Promise<string[]>;
+  getTransferCategory(sheetConfig: SheetConfigDTO): Promise<string>;
   getBankAccount(sheetConfig: SheetConfigDTO): Promise<string[]>;
   getBankAccountsStatus(
     sheetConfig: SheetConfigDTO,

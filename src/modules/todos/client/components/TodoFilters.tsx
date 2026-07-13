@@ -1,6 +1,7 @@
 import { Calendar, Search, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
+import { DEFAULT_TODO_STATUS } from "~/modules/todos/client/TodoSearch";
 import { useDebouncedValue } from "~/modules/todos/client/utils/useDebouncedValue";
 import type {
   TodoDueFilter,
@@ -56,7 +57,7 @@ export function TodoFilters({
       q: "",
       dueDate: "",
       due: "all",
-      status: "all",
+      status: DEFAULT_TODO_STATUS,
     });
     onClear();
   };

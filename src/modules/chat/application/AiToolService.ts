@@ -17,6 +17,7 @@ import { PromptLoader, PromptLocale } from "~/modules/chat/server/PromptLoader";
 import type { AuthService } from "~/modules/identity/application/AuthService";
 import { DeleteUserByChatChannelAddressToolDTO } from "~/modules/identity/application/tools/DeleteUserByChatChannelAddressToolDTO";
 import type { User } from "~/modules/identity/domain/User";
+import { GetCurrentDateTimeToolDTO } from "~/modules/system/application/tools/GetCurrentDateTimeToolDTO";
 import type { TodoService } from "~/modules/todos/application/TodoService";
 import { CreateTodosToolDTO } from "~/modules/todos/application/tools/CreateTodosToolDTO";
 import { ListTodosToolDTO } from "~/modules/todos/application/tools/ListTodosToolDTO";
@@ -27,23 +28,34 @@ import {
 import { ValidationException } from "~/shared/errors/DomainErrors";
 import { Printable } from "~/shared/http/utils/Printable";
 
+const currentTimeZone = "America/Sao_Paulo";
+const currentDateFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: currentTimeZone,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
 export class AiToolService extends ToolExecutor {
   private authService: AuthService;
   private cashFlowService: CashFlowService;
   private todoService: TodoService;
   private aiChatGateway: IAiChatGateway;
+  private now: () => Date;
 
   constructor(
     authService: AuthService,
     cashFlowService: CashFlowService,
     todoService: TodoService,
     aiChatGateway: IAiChatGateway,
+    now: () => Date = () => new Date(),
   ) {
     super();
     this.authService = authService;
     this.cashFlowService = cashFlowService;
     this.todoService = todoService;
     this.aiChatGateway = aiChatGateway;
+    this.now = now;
     this.setTools(this.buildRegistry());
   }
 
@@ -107,7 +119,6 @@ export class AiToolService extends ToolExecutor {
   ) {
     const schema = z
       .object({
-        category: z.string().trim().min(1),
         from: z.string().refine((account) => bankAccounts.includes(account)),
         to: z.string().refine((account) => bankAccounts.includes(account)),
         description: z.string().trim().min(1),
@@ -167,6 +178,27 @@ export class AiToolService extends ToolExecutor {
 
   private buildRegistry(): RegisteredTool[] {
     return [
+      {
+        name: "get_current_datetime",
+        description: [
+          "Return the current date and time for the user's time zone.",
+          "Call this first and wait for its result before interpreting a current or relative date or time.",
+          "Use it for expressions such as today, tomorrow, next Friday, one month from now, or a date without a year.",
+          "Do not use it when the user provides a complete absolute date.",
+          "Returns { currentDate, currentDateTimeUtc, timeZone }.",
+        ].join("\n"),
+        inputSchema: GetCurrentDateTimeToolDTO,
+        mutating: false,
+        run: async (args) => {
+          GetCurrentDateTimeToolDTO.parse(args);
+          const now = this.now();
+          return {
+            currentDate: currentDateFormatter.format(now),
+            currentDateTimeUtc: now.toISOString(),
+            timeZone: currentTimeZone,
+          };
+        },
+      },
       {
         name: "create_todos",
         description: [
@@ -334,7 +366,7 @@ export class AiToolService extends ToolExecutor {
       {
         name: "transfer_between_bank_accounts",
         description:
-          "Transfer a fixed amount from one bank account to another. Creates two entries: an expense on the source account and an earning on the destination account. Category and bank accounts are automatically resolved via classification using available bank accounts. Use this for credit card payments or any movement of money between accounts. Returns { message, from, to, category, description, date, value }.",
+          "Transfer a fixed amount from one bank account to another. Creates two entries: an expense on the source account and an earning on the destination account. Bank accounts are resolved via classification, while the transfer category is read from the spreadsheet. Use this for credit card payments or any movement of money between accounts. Returns { message, from, to, category, description, date, value }.",
         inputSchema: TransferBetweenBankAccountsToolDTO,
         mutating: true,
         run: async (args, context) => {
@@ -349,20 +381,20 @@ export class AiToolService extends ToolExecutor {
             input.value,
             bankAccounts,
           );
-          await this.cashFlowService.transferBetweenBankAccounts({
-            phoneNumber,
-            date,
-            value: input.value,
-            category: parsed.category,
-            description: parsed.description,
-            from: parsed.from,
-            to: parsed.to,
-          });
+          const category =
+            await this.cashFlowService.transferBetweenBankAccounts({
+              phoneNumber,
+              date,
+              value: input.value,
+              description: parsed.description,
+              from: parsed.from,
+              to: parsed.to,
+            });
           return {
             message: "Transfer completed successfully",
             from: parsed.from,
             to: parsed.to,
-            category: parsed.category,
+            category,
             description: parsed.description,
             date,
             value: input.value,

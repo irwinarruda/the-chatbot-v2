@@ -10,6 +10,8 @@ export type TodoSearch = {
   status?: "all" | TodoStatus;
 };
 
+export const DEFAULT_TODO_STATUS: TodoStatus = "Pending";
+
 export function normalizeTodoSearch(
   search: Record<string, unknown>,
 ): TodoSearch {
@@ -25,7 +27,7 @@ export function normalizeTodoSearch(
     status:
       status === "Pending" || status === "Completed" || status === "all"
         ? status
-        : "all",
+        : DEFAULT_TODO_STATUS,
   };
 }
 
@@ -34,6 +36,6 @@ export function toTodoRouteSearch(search: TodoSearch): TodoSearch {
     q: search.q || undefined,
     dueDate: search.dueDate || undefined,
     due: search.due === "all" ? undefined : search.due,
-    status: search.status === "all" ? undefined : search.status,
+    status: search.status === DEFAULT_TODO_STATUS ? undefined : search.status,
   };
 }

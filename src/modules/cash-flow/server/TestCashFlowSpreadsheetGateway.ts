@@ -149,6 +149,19 @@ export class TestCashFlowSpreadsheetGateway
     return ["Salário", "Outras Receitas"];
   }
 
+  async getTransferCategory(sheetConfig: SheetConfigDTO): Promise<string> {
+    TestCashFlowSpreadsheetGateway.validateAccessToken(
+      sheetConfig.sheetAccessToken,
+    );
+    if (sheetConfig.sheetId !== this.validSheetId) {
+      throw new ServiceException(
+        undefined,
+        "The provided sheet ID is not valid",
+      );
+    }
+    return "Transferência de contas";
+  }
+
   async getBankAccount(sheetConfig: SheetConfigDTO): Promise<string[]> {
     TestCashFlowSpreadsheetGateway.validateAccessToken(
       sheetConfig.sheetAccessToken,

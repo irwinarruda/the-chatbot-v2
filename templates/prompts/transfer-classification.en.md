@@ -13,13 +13,12 @@ Your task:
 1. Identify exactly ONE source account from bankAccounts. This is the account money leaves from.
 2. Identify exactly ONE destination account from bankAccounts. This is the account money arrives in.
   CASE RULE: RETURN from and to EXACTLY AS THEY APPEAR IN bankAccounts. DO NOT change capitalization, spacing, accents, punctuation, or pluralization. Copy verbatim.
-3. Generate category with a short classification for the transfer reason. For card bill payments, prefer "Credit Card". For a transfer with no clear reason, use "Transfer".
-4. Generate description (4-8 concise words, no ending period) summarizing the transfer. Must start with uppercase. Keep remaining words lowercase unless proper nouns/acronyms.
+3. Generate description (4-8 concise words, no ending period) summarizing the transfer. Must start with uppercase. Keep remaining words lowercase unless proper nouns/acronyms.
 
 ===== CRITICAL OUTPUT FORMAT RULES =====
 
 Your response MUST be EXACTLY this format with NO exceptions:
-{"category":"VALUE","from":"VALUE","to":"VALUE","description":"VALUE"}
+{"from":"VALUE","to":"VALUE","description":"VALUE"}
 
 ABSOLUTELY FORBIDDEN (will cause system failure):
 
@@ -30,7 +29,7 @@ ABSOLUTELY FORBIDDEN (will cause system failure):
 - Any text after the closing }
 - Line breaks inside the JSON
 - Explanations, reasoning, or notes
-- Extra keys beyond the four required
+- Extra keys beyond the three required
 - Trailing commas
 - Single quotes instead of double quotes
 - Unescaped special characters in strings
@@ -41,7 +40,7 @@ THERE MUST BE NOTHING ELSE.
 
 ===== EDGE CASES =====
 
-- If bankAccounts is empty: {"category":"Transfer","from":"unknown","to":"unknown","description":"Transfer between accounts"}
+- If bankAccounts is empty: {"from":"unknown","to":"unknown","description":"Transfer between accounts"}
 - If only one account is clearly mentioned, use that account in the field indicated by the text and choose the first other available account for the remaining field.
 - If the text uses "from X to Y", "de X para Y", or "X -> Y", X is from and Y is to.
 - If the text indicates a card payment, the checking/savings account is from and the card account is to.
@@ -50,16 +49,15 @@ THERE MUST BE NOTHING ELSE.
 ===== EXAMPLES =====
 
 CORRECT OUTPUT:
-{"category":"Credit Card","from":"NuConta","to":"Nubank Credit","description":"Nubank card bill payment"}
+{"from":"NuConta","to":"Nubank Credit","description":"Nubank card bill payment"}
 
 CORRECT OUTPUT:
-{"category":"Transfer","from":"Banco Inter","to":"Caju","description":"Transfer to Caju account"}
+{"from":"Banco Inter","to":"Caju","description":"Transfer to Caju account"}
 
 WRONG (has markdown):
 
 ```json
 {
-  "category": "Transfer",
   "from": "NuConta",
   "to": "Caju",
   "description": "Transfer to Caju"
@@ -67,6 +65,6 @@ WRONG (has markdown):
 ```
 
 WRONG (extra key):
-{"category":"Transfer","from":"NuConta","to":"Caju","description":"Transfer to Caju","extra":"x"}
+{"from":"NuConta","to":"Caju","description":"Transfer to Caju","extra":"x"}
 
 Remember: Output ONLY the raw JSON object. First character must be {, last character must be }. Nothing else.

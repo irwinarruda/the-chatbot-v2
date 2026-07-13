@@ -102,6 +102,12 @@ Do not maintain a handwritten interface beside the schema. Do not assert
 
 Internal commands that never cross a runtime trust boundary may be plain types.
 
+AI tool inputs are the deliberate naming and placement exception to the general
+contract rule above. Export the Zod schema and inferred type with the same
+`*ToolDTO` name from the owning module's `application/tools/` folder, even when the
+schema is an empty object. Tool registries import and parse these DTOs; never define
+tool input schemas inline or introduce a shared generic empty-input DTO.
+
 ## Closed value sets
 
 Model application-owned closed string sets as const objects plus `ValueOf`:

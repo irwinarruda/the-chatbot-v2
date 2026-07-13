@@ -44,7 +44,6 @@ export interface CashFlowTransferDTO {
   phoneNumber: string;
   date: Date;
   value: number;
-  category: string;
   description: string;
   from: string;
   to: string;
@@ -160,14 +159,18 @@ export class CashFlowService {
 
   async transferBetweenBankAccounts(
     transfer: CashFlowTransferDTO,
-  ): Promise<void> {
+  ): Promise<string> {
     const { sheet, credential } = await this.getUserAndSheet(
       transfer.phoneNumber,
     );
-    const bankAccounts = await this.spreadsheetResource.getBankAccount({
+    const sheetConfig = {
       sheetId: sheet.idSheet,
       sheetAccessToken: credential.accessToken,
-    });
+    };
+    const [bankAccounts, category] = await Promise.all([
+      this.spreadsheetResource.getBankAccount(sheetConfig),
+      this.spreadsheetResource.getTransferCategory(sheetConfig),
+    ]);
     this.validateBankAccountExists(transfer.from, bankAccounts, "Source");
     this.validateBankAccountExists(transfer.to, bankAccounts, "Destination");
     if (transfer.from === transfer.to) {
@@ -186,7 +189,7 @@ export class CashFlowService {
       phoneNumber: transfer.phoneNumber,
       date: transfer.date,
       value: transfer.value,
-      category: transfer.category,
+      category,
       description: transfer.description,
       bankAccount: transfer.from,
     });
@@ -194,10 +197,11 @@ export class CashFlowService {
       phoneNumber: transfer.phoneNumber,
       date: transfer.date,
       value: transfer.value,
-      category: transfer.category,
+      category,
       description: transfer.description,
       bankAccount: transfer.to,
     });
+    return category;
   }
 
   async getExpenseCategories(phoneNumber: string): Promise<string[]> {

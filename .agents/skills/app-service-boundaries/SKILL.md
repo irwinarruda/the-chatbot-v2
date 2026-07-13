@@ -202,8 +202,12 @@ tool sets in bootstrap and inject them into one small generic execution policy.
 Do not create one class per tool. Group related definitions until independent
 responsibility or size gives a real reason to split.
 
-Tool input is runtime data and must be parsed by its Zod contract before application
-behavior runs. Tool results use the canonical message content model.
+Tool input is runtime data. Define every input as a named Zod `*ToolDTO` in the
+owning module's `application/tools/` folder, including empty-object inputs. The tool
+registry imports that DTO and parses input with it before application behavior runs;
+do not define input schemas inline or reuse a generic empty-input DTO across
+features. This rule applies to tool input only. Tool calls and results use the
+canonical message content model rather than parallel DTO families.
 
 For long-running tools, define whether completion means completed business work or
 durable acceptance. Asynchronous work returns an explicit accepted outcome with a

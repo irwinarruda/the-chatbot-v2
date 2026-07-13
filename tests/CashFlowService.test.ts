@@ -740,15 +740,16 @@ describe("CashFlowService", () => {
       await getBankAccountsStatusEventually(phoneNumber, date, [
         { bankAccount: "NuConta", balance: 1000 },
       ]);
-      await orquestrator.cashFlowService.transferBetweenBankAccounts({
-        phoneNumber,
-        date,
-        value: 500,
-        category: "Cartão de Crédito",
-        description: "Pagamento cartão Nubank",
-        from: "NuConta",
-        to: "Caju",
-      });
+      const category =
+        await orquestrator.cashFlowService.transferBetweenBankAccounts({
+          phoneNumber,
+          date,
+          value: 500,
+          description: "Pagamento cartão Nubank",
+          from: "NuConta",
+          to: "Caju",
+        });
+      expect(category).toBe("Transferência de contas");
       const status = await getBankAccountsStatusEventually(phoneNumber, date, [
         { bankAccount: "NuConta", balance: 500 },
         { bankAccount: "Caju", balance: 500 },
@@ -762,8 +763,10 @@ describe("CashFlowService", () => {
       expect(transactions.length).toBe(3);
       const lastTwo = transactions.slice(-2);
       expect(lastTwo[0].value).toBe(-500);
+      expect(lastTwo[0].category).toBe("Transferência de contas");
       expect(lastTwo[0].bankAccount).toBe("NuConta");
       expect(lastTwo[1].value).toBe(500);
+      expect(lastTwo[1].category).toBe("Transferência de contas");
       expect(lastTwo[1].bankAccount).toBe("Caju");
     });
   });
@@ -776,7 +779,6 @@ describe("CashFlowService", () => {
         phoneNumber,
         date: new Date(),
         value: 100,
-        category: "Transferência",
         description: "Test transfer",
         from: "NonExistentAccount",
         to: "NuConta",
@@ -792,7 +794,6 @@ describe("CashFlowService", () => {
         phoneNumber,
         date: new Date(),
         value: 100,
-        category: "Transferência",
         description: "Test transfer",
         from: "NuConta",
         to: "NonExistentAccount",
@@ -808,7 +809,6 @@ describe("CashFlowService", () => {
         phoneNumber,
         date: new Date(),
         value: 100,
-        category: "Transferência",
         description: "Same account transfer",
         from: "NuConta",
         to: "NuConta",
@@ -824,7 +824,6 @@ describe("CashFlowService", () => {
         phoneNumber,
         date: new Date(),
         value: 0,
-        category: "Transferência",
         description: "Zero transfer",
         from: "NuConta",
         to: "Caju",
@@ -835,7 +834,6 @@ describe("CashFlowService", () => {
         phoneNumber,
         date: new Date(),
         value: -50,
-        category: "Transferência",
         description: "Negative transfer",
         from: "NuConta",
         to: "Caju",
@@ -849,7 +847,6 @@ describe("CashFlowService", () => {
         phoneNumber: "5511900099999",
         date: new Date(),
         value: 100,
-        category: "Transferência",
         description: "Test",
         from: "NuConta",
         to: "Caju",
@@ -862,7 +859,6 @@ describe("CashFlowService", () => {
         phoneNumber: noGooglePhone,
         date: new Date(),
         value: 100,
-        category: "Transferência",
         description: "Test",
         from: "NuConta",
         to: "Caju",
@@ -875,7 +871,6 @@ describe("CashFlowService", () => {
         phoneNumber: noSheetPhone,
         date: new Date(),
         value: 100,
-        category: "Transferência",
         description: "Test",
         from: "NuConta",
         to: "Caju",
@@ -903,7 +898,6 @@ describe("CashFlowService", () => {
         phoneNumber,
         date,
         value: 200,
-        category: "Transferência",
         description: "First transfer",
         from: "NuConta",
         to: "Caju",
@@ -920,7 +914,6 @@ describe("CashFlowService", () => {
         phoneNumber,
         date,
         value: 300,
-        category: "Transferência",
         description: "Second transfer",
         from: "NuConta",
         to: "Caju",
@@ -937,7 +930,6 @@ describe("CashFlowService", () => {
         phoneNumber,
         date,
         value: 100,
-        category: "Transferência",
         description: "Reverse transfer",
         from: "Caju",
         to: "NuConta",
@@ -962,7 +954,6 @@ describe("CashFlowService", () => {
         phoneNumber,
         date,
         value: 750.5,
-        category: "Cartão de Crédito",
         description: "Pagamento fatura Nubank dezembro",
         from: "NuConta",
         to: "Caju",
@@ -972,7 +963,7 @@ describe("CashFlowService", () => {
       expect(transactions.length).toBe(2);
       const expense = transactions[0];
       expect(expense.value).toBe(-750.5);
-      expect(expense.category).toBe("Cartão de Crédito");
+      expect(expense.category).toBe("Transferência de contas");
       expect(expense.description).toBe("Pagamento fatura Nubank dezembro");
       expect(expense.bankAccount).toBe("NuConta");
       expect(expense.date.getTime()).toBe(
@@ -980,7 +971,7 @@ describe("CashFlowService", () => {
       );
       const earning = transactions[1];
       expect(earning.value).toBe(750.5);
-      expect(earning.category).toBe("Cartão de Crédito");
+      expect(earning.category).toBe("Transferência de contas");
       expect(earning.description).toBe("Pagamento fatura Nubank dezembro");
       expect(earning.bankAccount).toBe("Caju");
       expect(earning.date.getTime()).toBe(
@@ -997,7 +988,6 @@ describe("CashFlowService", () => {
         phoneNumber,
         date: new Date(2025, 10, 15),
         value: 1234.56,
-        category: "Cartão de Crédito",
         description: "Decimal transfer",
         from: "NuConta",
         to: "Caju",
@@ -1019,7 +1009,6 @@ describe("CashFlowService", () => {
         phoneNumber,
         date: transferDate,
         value: 300,
-        category: "Transferência",
         description: "November transfer",
         from: "NuConta",
         to: "Caju",

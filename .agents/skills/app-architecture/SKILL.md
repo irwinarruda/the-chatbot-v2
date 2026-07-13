@@ -71,7 +71,7 @@ src/
   modules/
     <capability>/
       domain/          aggregates, entities, value objects, domain errors
-      application/     cohesive workflows and outbound port contracts
+      application/     workflows, outbound ports, and feature-owned tool input DTOs
       contracts/       Zod-backed HTTP/SSE request, response, and event contracts
       server/          controllers and concrete server adapters owned by the module
       client/          feature-owned browser implementation
@@ -365,6 +365,8 @@ the narrowest reliable seam.
 
 - Domain invariant or transition? Owning module `domain/`.
 - Application workflow? Owning module `application/`.
+- AI tool input? Named Zod `*ToolDTO` in the owning module's `application/tools/`,
+  including empty inputs; never an inline schema or generic shared empty DTO.
 - HTTP/SSE request, response, or event? Owning module `contracts/`.
 - Provider or browser integration? Owning module adapter under `server/` or `client/`.
 - SQL? Owning module, near its workflow; narrow aggregate store only if justified.

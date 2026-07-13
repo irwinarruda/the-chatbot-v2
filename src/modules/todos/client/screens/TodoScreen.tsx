@@ -9,6 +9,7 @@ import {
 import { TodoRow } from "~/modules/todos/client/components/TodoRow";
 import type { TodoErrorCode } from "~/modules/todos/client/state/todoSlice";
 import {
+  DEFAULT_TODO_STATUS,
   type TodoSearch,
   toTodoRouteSearch,
 } from "~/modules/todos/client/TodoSearch";
@@ -45,7 +46,7 @@ export function TodoScreen({ search }: { search: TodoSearch }) {
     q: search.q ?? "",
     dueDate: search.dueDate ?? "",
     due: search.due ?? "all",
-    status: search.status ?? "all",
+    status: search.status ?? DEFAULT_TODO_STATUS,
   };
   const errorMessages: Record<TodoErrorCode, string> = {
     loading: t.errorLoading,

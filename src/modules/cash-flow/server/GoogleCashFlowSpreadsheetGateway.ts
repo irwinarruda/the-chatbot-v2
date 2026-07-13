@@ -218,6 +218,27 @@ export class GoogleCashFlowSpreadsheetGateway
     });
   }
 
+  async getTransferCategory(sheetConfig: SheetConfigDTO): Promise<string> {
+    return this.withRetry(async () => {
+      const sheetsService = this.getSheetsService(
+        sheetConfig.sheetId,
+        sheetConfig.sheetAccessToken,
+      );
+      const sheet = await sheetsService.spreadsheets.values.get({
+        spreadsheetId: sheetConfig.sheetId,
+        range: "DADOS Gerais + Plano de Contas!B17",
+      });
+      const category = String(sheet.data.values?.[0]?.[0] ?? "");
+      if (!category.trim()) {
+        throw new ValidationException(
+          "Transfer category is not configured in the spreadsheet",
+          "Set the transfer category in 'DADOS Gerais + Plano de Contas' cell B17.",
+        );
+      }
+      return category;
+    });
+  }
+
   async getBankAccount(sheetConfig: SheetConfigDTO): Promise<string[]> {
     return this.withRetry(async () => {
       const sheetsService = this.getSheetsService(
