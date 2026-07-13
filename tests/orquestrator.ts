@@ -1,5 +1,29 @@
 import { faker } from "@faker-js/faker";
 import { v4 as uuidv4 } from "uuid";
+import { createApplication } from "~/infra/bootstrap";
+import { Database } from "~/infra/database";
+import type { CashFlowService } from "~/modules/cash-flow/application/CashFlowService";
+import { TestCashFlowSpreadsheetGateway } from "~/modules/cash-flow/server/TestCashFlowSpreadsheetGateway";
+import type { AiToolService } from "~/modules/chat/application/AiToolService";
+import type { MessagingService } from "~/modules/chat/application/MessagingService";
+import { ChatChannel } from "~/modules/chat/domain/enums/ChatChannel";
+import { TestAiChatGateway } from "~/modules/chat/server/TestAiChatGateway";
+import { TestSpeechToTextGateway } from "~/modules/chat/server/TestSpeechToTextGateway";
+import { TestStorageGateway } from "~/modules/chat/server/TestStorageGateway";
+import { TestWebMessagingGateway } from "~/modules/chat/server/TestWebMessagingGateway";
+import { TestWhatsAppMessagingGateway } from "~/modules/chat/server/TestWhatsAppMessagingGateway";
+import type {
+  AuthService,
+  IdentityChatCoordinator,
+} from "~/modules/identity/application/AuthService";
+import { BsuidUtils } from "~/modules/identity/domain/BsuidUtils";
+import { PhoneNumberUtils } from "~/modules/identity/domain/PhoneNumberUtils";
+import { User } from "~/modules/identity/domain/User";
+import { TestGoogleAuthGateway } from "~/modules/identity/server/TestGoogleAuthGateway";
+import type { StatusService } from "~/modules/system/application/StatusService";
+import type { MigrationService } from "~/modules/system/server/MigrationService";
+import type { TodoService } from "~/modules/todos/application/TodoService";
+import { ValidationException } from "~/shared/errors/DomainErrors";
 import type {
   AiConfig,
   AuthConfig,
@@ -10,37 +34,8 @@ import type {
   GoogleSheetsConfig,
   JwtConfig,
   OpenAiConfig,
-} from "~/infra/config";
-import { loadConfig } from "~/infra/config";
-import { Container } from "~/infra/container";
-import { Database } from "~/infra/database";
-import { ValidationException } from "~/infra/exceptions";
-import { Mediator } from "~/infra/mediator";
-import { GoogleCashFlowSpreadsheetGateway } from "~/server/resources/GoogleCashFlowSpreadsheetGateway";
-import { TestAiChatGateway } from "~/server/resources/TestAiChatGateway";
-import { TestCashFlowSpreadsheetGateway } from "~/server/resources/TestCashFlowSpreadsheetGateway";
-import { TestGoogleAuthGateway } from "~/server/resources/TestGoogleAuthGateway";
-import { TestSpeechToTextGateway } from "~/server/resources/TestSpeechToTextGateway";
-import { TestStorageGateway } from "~/server/resources/TestStorageGateway";
-import { TestWebMessagingGateway } from "~/server/resources/TestWebMessagingGateway";
-import { TestWhatsAppMessagingGateway } from "~/server/resources/TestWhatsAppMessagingGateway";
-import { AiToolService } from "~/server/services/AiToolService";
-import {
-  AuthService,
-  type SyncUserChatAddressesEvent,
-} from "~/server/services/AuthService";
-import { CashFlowService } from "~/server/services/CashFlowService";
-import {
-  MessagingService,
-  type RespondToMessageEvent,
-} from "~/server/services/MessagingService";
-import { MigrationService } from "~/server/services/MigrationService";
-import { StatusService } from "~/server/services/StatusService";
-import { TodoService } from "~/server/services/TodoService";
-import { BsuidUtils } from "~/shared/entities/BsuidUtils";
-import { ChatChannel } from "~/shared/entities/enums/ChatChannel";
-import { PhoneNumberUtils } from "~/shared/entities/PhoneNumberUtils";
-import { User } from "~/shared/entities/User";
+} from "~/shared/server/Config";
+import { loadConfig } from "~/shared/server/Config";
 
 export interface TranscriptDTO {
   id: string;
@@ -52,9 +47,7 @@ export interface TranscriptDTO {
 
 export class Orquestrator {
   config: Config;
-  container: Container;
   database: Database;
-  mediator: Mediator;
 
   databaseConfig: DatabaseConfig;
   encryptionConfig: EncryptionConfig;
@@ -71,14 +64,18 @@ export class Orquestrator {
   cashFlowService: CashFlowService;
   todoService: TodoService;
   migrationService: MigrationService;
+  aiToolService: AiToolService;
+  aiGateway: TestAiChatGateway;
+  googleAuthGateway: TestGoogleAuthGateway;
+  webMessagingGateway: TestWebMessagingGateway;
+  whatsAppMessagingGateway: TestWhatsAppMessagingGateway;
+  identityChatCoordinator: IdentityChatCoordinator;
 
   constructor() {
     this.config = loadConfig();
-    this.container = new Container();
     this.database = new Database(this.config.database.connectionString, {
       onnotice: () => {},
     });
-    this.mediator = new Mediator();
 
     this.databaseConfig = this.config.database;
     this.encryptionConfig = this.config.encryption;
@@ -88,192 +85,35 @@ export class Orquestrator {
     this.authConfig = this.config.auth;
     this.openAiConfig = this.config.openAi;
     this.jwtConfig = this.config.jwt;
-
-    this.container.register("Database", () => this.database, "singleton");
-    this.container.register("Mediator", () => this.mediator, "singleton");
-
-    this.container.register(
-      "DatabaseConfig",
-      () => this.databaseConfig,
-      "singleton",
-    );
-    this.container.register(
-      "EncryptionConfig",
-      () => this.encryptionConfig,
-      "singleton",
-    );
-    this.container.register(
-      "GoogleConfig",
-      () => this.googleConfig,
-      "singleton",
-    );
-    this.container.register(
-      "WhatsAppConfig",
-      () => this.config.whatsApp,
-      "singleton",
-    );
-    this.container.register("R2Config", () => this.config.r2, "singleton");
-    this.container.register("AiConfig", () => this.aiConfig, "singleton");
-    this.container.register(
-      "OpenAiConfig",
-      () => this.openAiConfig,
-      "singleton",
-    );
-    this.container.register("AuthConfig", () => this.authConfig, "singleton");
-    this.container.register(
-      "GoogleSheetsConfig",
-      () => this.googleSheetsConfig,
-      "singleton",
-    );
-
-    this.container.register(
-      "IGoogleAuthGateway",
-      () => new TestGoogleAuthGateway(this.googleConfig),
-      "singleton",
-    );
-    this.container.register(
-      "IWhatsAppMessagingGateway",
-      () => new TestWhatsAppMessagingGateway(),
-      "singleton",
-    );
-    this.container.register(
-      "IWebMessagingGateway",
-      () => new TestWebMessagingGateway(),
-      "singleton",
-    );
-    this.container.register(
-      "IAiChatGateway",
-      () => new TestAiChatGateway(),
-      "singleton",
-    );
-    this.container.register(
-      "IStorageGateway",
-      () => new TestStorageGateway(),
-      "singleton",
-    );
-    this.container.register(
-      "ISpeechToTextGateway",
-      () => new TestSpeechToTextGateway(),
-      "singleton",
-    );
-    this.container.register(
-      "ICashFlowSpreadsheetGateway",
-      () =>
-        this.googleSheetsConfig.testSheetId !== "TestSheetId"
-          ? new GoogleCashFlowSpreadsheetGateway(
-              this.googleConfig,
-              this.googleSheetsConfig,
-            )
-          : new TestCashFlowSpreadsheetGateway(this.googleSheetsConfig),
-      "singleton",
-    );
-
-    this.container.register(
-      "StatusService",
-      () =>
-        new StatusService(this.database, this.databaseConfig, this.aiConfig),
-      "singleton",
-    );
-    this.container.register(
-      "MigrationService",
-      () =>
-        new MigrationService(
-          this.database,
-          this.databaseConfig,
-          this.authConfig,
+    this.aiGateway = new TestAiChatGateway();
+    this.googleAuthGateway = new TestGoogleAuthGateway(this.googleConfig);
+    this.webMessagingGateway = new TestWebMessagingGateway();
+    this.whatsAppMessagingGateway = new TestWhatsAppMessagingGateway();
+    const application = createApplication(this.config, {
+      database: this.database,
+      gateways: {
+        aiChat: this.aiGateway,
+        cashFlowSpreadsheet: new TestCashFlowSpreadsheetGateway(
+          this.googleSheetsConfig,
         ),
-      "transient",
-    );
-    this.container.register(
-      "AuthService",
-      () =>
-        new AuthService(
-          this.database,
-          this.encryptionConfig,
-          this.jwtConfig,
-          this.container.resolve("IGoogleAuthGateway"),
-          this.mediator,
-        ),
-      "singleton",
-    );
-    this.container.register(
-      "CashFlowService",
-      () =>
-        new CashFlowService(
-          this.database,
-          this.container.resolve("AuthService"),
-          this.container.resolve("ICashFlowSpreadsheetGateway"),
-        ),
-      "singleton",
-    );
-    this.container.register(
-      "TodoService",
-      () => new TodoService(this.database),
-      "singleton",
-    );
-    this.container.register(
-      "AiToolService",
-      () =>
-        new AiToolService(
-          this.container.resolve("AuthService"),
-          this.container.resolve("CashFlowService"),
-          this.container.resolve("TodoService"),
-          this.container.resolve("IAiChatGateway"),
-        ),
-      "singleton",
-    );
-    this.container.register(
-      "MessagingService",
-      () =>
-        new MessagingService(
-          this.database,
-          this.container.resolve("AuthService"),
-          this.mediator,
-          this.container.resolve("IWhatsAppMessagingGateway"),
-          this.container.resolve("IWebMessagingGateway"),
-          this.container.resolve("IAiChatGateway"),
-          this.container.resolve("AiToolService"),
-          this.container.resolve("IStorageGateway"),
-          this.container.resolve("ISpeechToTextGateway"),
-          this.aiConfig,
-        ),
-      "singleton",
-    );
-
-    this.authService = this.container.resolve<AuthService>("AuthService");
-    this.messagingService =
-      this.container.resolve<MessagingService>("MessagingService");
-    this.statusService = this.container.resolve<StatusService>("StatusService");
-    this.cashFlowService =
-      this.container.resolve<CashFlowService>("CashFlowService");
-    this.todoService = this.container.resolve<TodoService>("TodoService");
-    this.migrationService =
-      this.container.resolve<MigrationService>("MigrationService");
-
-    this.mediator.register<string>(
-      "DeleteUserByChatChannelAddress",
-      async (channelAddress) => {
-        const svc =
-          this.container.resolve<MessagingService>("MessagingService");
-        await svc.deleteChat(channelAddress);
+        googleAuth: this.googleAuthGateway,
+        speechToText: new TestSpeechToTextGateway(),
+        storage: new TestStorageGateway(),
+        webMessaging: this.webMessagingGateway,
+        whatsAppMessaging: this.whatsAppMessagingGateway,
       },
-    );
-    this.mediator.register<SyncUserChatAddressesEvent>(
-      "SyncUserChatAddresses",
-      async (data) => {
-        const svc =
-          this.container.resolve<MessagingService>("MessagingService");
-        await svc.syncUserChatAddresses(data);
+      coordination: {
+        sendSignedInMessage: async () => {},
       },
-    );
-    this.mediator.register<RespondToMessageEvent>(
-      "RespondToMessage",
-      async (data) => {
-        const svc =
-          this.container.resolve<MessagingService>("MessagingService");
-        await svc.respondToMessage(data.chat, data.message, data.channel);
-      },
-    );
+    });
+    this.authService = application.services.auth;
+    this.messagingService = application.services.messaging;
+    this.statusService = application.services.status;
+    this.cashFlowService = application.services.cashFlow;
+    this.todoService = application.services.todos;
+    this.migrationService = application.services.migration;
+    this.aiToolService = application.services.tools;
+    this.identityChatCoordinator = application.coordination.identityChat;
   }
 
   async wipeDatabase(): Promise<void> {

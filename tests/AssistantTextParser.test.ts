@@ -1,5 +1,5 @@
-import { AssistantTextParser } from "~/server/utils/AssistantTextParser";
-import { MessageContentType } from "~/shared/entities/enums/MessageContentType";
+import { MessageContentType } from "~/modules/chat/domain/enums/MessageContentType";
+import { AssistantTextParser } from "~/modules/chat/server/AssistantTextParser";
 
 describe("AssistantTextParser", () => {
   test("parses a well-formed text response", () => {

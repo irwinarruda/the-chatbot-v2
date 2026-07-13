@@ -8,7 +8,7 @@ import { TerminalPrompt } from "~/client/components/TerminalPrompt";
 import { TerminalWindow } from "~/client/components/TerminalWindow";
 import { Button } from "~/client/components/ui/button";
 import { useDictionary } from "~/client/providers/useDictionary";
-import { requireWebAccess } from "~/server/tanstack/functions/require-web-access";
+import { requireWebAccess } from "~/shared/http/functions/require-web-access";
 
 export const Route = createFileRoute("/chat/login")({
   beforeLoad: async () => {

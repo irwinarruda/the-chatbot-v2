@@ -1,10 +1,10 @@
 import { memo, useState } from "react";
-import type { ChatMessage as ChatMessageEntity } from "~/client/entities/ChatMessage";
 import {
   type WhatsAppBlockNode,
   type WhatsAppInlineNode,
   WhatsAppMessageParser,
 } from "~/client/utils/WhatsAppMessageParser";
+import type { ChatMessage as ChatMessageEntity } from "~/modules/chat/contracts/ChatContracts";
 import { AudioWaveform } from "./AudioWaveform";
 import { Button } from "./ui/button";
 

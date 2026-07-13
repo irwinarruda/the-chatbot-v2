@@ -1,19 +1,18 @@
 import { v4 as uuidv4 } from "uuid";
-import { Encryption } from "~/infra/encryption";
-import { UnauthorizedException, ValidationException } from "~/infra/exceptions";
-import type { TestAiChatGateway } from "~/server/resources/TestAiChatGateway";
-import type { TestWebMessagingGateway } from "~/server/resources/TestWebMessagingGateway";
-import { TestWhatsAppMessagingGateway } from "~/server/resources/TestWhatsAppMessagingGateway";
-import type { AiToolService } from "~/server/services/AiToolService";
-import { Chat } from "~/shared/entities/Chat";
-import { ConversationSummary } from "~/shared/entities/ConversationSummary";
-import { ChatChannel } from "~/shared/entities/enums/ChatChannel";
-import { MessageAudience } from "~/shared/entities/enums/MessageAudience";
-import { MessageContentType } from "~/shared/entities/enums/MessageContentType";
-import { MessageRole } from "~/shared/entities/enums/MessageRole";
-import { ToolResultStatus } from "~/shared/entities/enums/ToolResultStatus";
-import { Message } from "~/shared/entities/Message";
-import { User } from "~/shared/entities/User";
+import type { AiToolService } from "~/modules/chat/application/AiToolService";
+import { Chat } from "~/modules/chat/domain/Chat";
+import { ConversationSummary } from "~/modules/chat/domain/ConversationSummary";
+import { ChatChannel } from "~/modules/chat/domain/enums/ChatChannel";
+import { MessageAudience } from "~/modules/chat/domain/enums/MessageAudience";
+import { MessageContentType } from "~/modules/chat/domain/enums/MessageContentType";
+import { MessageRole } from "~/modules/chat/domain/enums/MessageRole";
+import { ToolResultStatus } from "~/modules/chat/domain/enums/ToolResultStatus";
+import { Message } from "~/modules/chat/domain/Message";
+import { TestWhatsAppMessagingGateway } from "~/modules/chat/server/TestWhatsAppMessagingGateway";
+import { Encryption } from "~/modules/identity/application/Encryption";
+import { User } from "~/modules/identity/domain/User";
+import { UnauthorizedException } from "~/shared/errors/ApplicationErrors";
+import { ValidationException } from "~/shared/errors/DomainErrors";
 import { orquestrator } from "./orquestrator";
 
 function createReceiveMessage(message: string): string {
@@ -21,11 +20,8 @@ function createReceiveMessage(message: string): string {
 }
 
 function estimateCurrentRequest(chat: Chat, channelAddress: string): number {
-  const tools = orquestrator.container
-    .resolve<AiToolService>("AiToolService")
-    .getDefinitions();
-  const gateway =
-    orquestrator.container.resolve<TestAiChatGateway>("IAiChatGateway");
+  const tools = orquestrator.aiToolService.getDefinitions();
+  const gateway = orquestrator.aiGateway;
   return gateway.estimateInputTokens({
     channelAddress,
     messages: chat.getModelMessages().map((message) => ({
@@ -213,8 +209,7 @@ describe("MessagingService", () => {
       await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber);
     expect(chat).toBeDefined();
     const config = orquestrator.aiConfig;
-    const aiGateway =
-      orquestrator.container.resolve<TestAiChatGateway>("IAiChatGateway");
+    const aiGateway = orquestrator.aiGateway;
     const originalContextWindowTokens = aiGateway.contextWindowTokens;
     aiGateway.contextWindowTokens =
       config.maxOutputTokens +
@@ -257,8 +252,7 @@ describe("MessagingService", () => {
     }
     let chat =
       await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber);
-    const aiGateway =
-      orquestrator.container.resolve<TestAiChatGateway>("IAiChatGateway");
+    const aiGateway = orquestrator.aiGateway;
     const config = orquestrator.aiConfig;
     const originalContextWindowTokens = aiGateway.contextWindowTokens;
     aiGateway.contextWindowTokens =
@@ -296,9 +290,7 @@ describe("MessagingService", () => {
     const webAddress = user.email ?? "";
     await orquestrator.addAllowedWebId(webAddress);
 
-    const webGateway = orquestrator.container.resolve<TestWebMessagingGateway>(
-      "IWebMessagingGateway",
-    );
+    const webGateway = orquestrator.webMessagingGateway;
     const eventsBefore = webGateway.getEvents().length;
     const incomingWebAddress = webAddress.toUpperCase();
 
@@ -325,9 +317,8 @@ describe("MessagingService", () => {
     expect(events.length).toBeGreaterThan(eventsBefore);
     const lastEvent = events[events.length - 1];
     expect(lastEvent).toMatchObject({
-      type: "text",
-      data: {
-        toAddress: webAddress,
+      type: "messageCreated",
+      message: {
         text: "Response to: Hello from web",
       },
     });
@@ -384,9 +375,7 @@ describe("MessagingService", () => {
 
   test("subscribeToWebEvents yields enqueued events and stops on abort", async () => {
     const webAddress = "subscriber@example.com";
-    const webGateway = orquestrator.container.resolve<TestWebMessagingGateway>(
-      "IWebMessagingGateway",
-    );
+    const webGateway = orquestrator.webMessagingGateway;
     webGateway.clearEvents();
 
     const controller = new AbortController();
@@ -396,14 +385,14 @@ describe("MessagingService", () => {
     );
 
     webGateway.enqueue(webAddress, {
-      type: "text",
-      data: { toAddress: webAddress, text: "hello subscriber" },
+      type: "error",
+      data: { text: "hello subscriber" },
     });
 
     const first = await generator.next();
     expect(first.done).toBe(false);
     expect(first.value).toMatchObject({
-      type: "text",
+      type: "error",
       data: { text: "hello subscriber" },
     });
 
@@ -436,9 +425,7 @@ describe("MessagingService", () => {
     expect(chat?.idUser).toBe(user?.id);
     expect(chat?.webAddress).toBe(user?.email);
     expect(chat?.messages[0]?.text).toBe("WhatsApp history");
-    const webGateway = orquestrator.container.resolve<TestWebMessagingGateway>(
-      "IWebMessagingGateway",
-    );
+    const webGateway = orquestrator.webMessagingGateway;
     webGateway.clearEvents();
     await orquestrator.messagingService.receiveWebMessage(user?.email ?? "", {
       text: "Web follow-up",
@@ -453,9 +440,8 @@ describe("MessagingService", () => {
     expect(updatedChat?.messages[2]?.text).toBe("Web follow-up");
     const events = webGateway.getEvents();
     expect(events[events.length - 1]).toMatchObject({
-      type: "text",
-      data: {
-        toAddress: user?.email,
+      type: "messageCreated",
+      message: {
         text: "Response to: Web follow-up",
       },
     });
@@ -514,9 +500,7 @@ describe("MessagingService", () => {
     });
     await new Promise((r) => setTimeout(r, delay));
 
-    const webGateway = orquestrator.container.resolve<TestWebMessagingGateway>(
-      "IWebMessagingGateway",
-    );
+    const webGateway = orquestrator.webMessagingGateway;
     const eventsBefore = webGateway.getEvents().length;
 
     await orquestrator.messagingService.sendTextMessage(
@@ -528,16 +512,13 @@ describe("MessagingService", () => {
     expect(events.length).toBe(eventsBefore + 1);
     const lastEvent = events[events.length - 1];
     expect(lastEvent).toMatchObject({
-      type: "text",
-      data: { text: "Forced web" },
+      type: "messageCreated",
+      message: { text: "Forced web" },
     });
   });
 
   test("receiveWhatsAppMessage rejects invalid signatures", async () => {
-    const gateway =
-      orquestrator.container.resolve<TestWhatsAppMessagingGateway>(
-        "IWhatsAppMessagingGateway",
-      );
+    const gateway = orquestrator.whatsAppMessagingGateway;
     const validateSignature = gateway.validateSignature;
     gateway.validateSignature = () => false;
 
@@ -556,10 +537,7 @@ describe("MessagingService", () => {
     const phoneNumber = TestWhatsAppMessagingGateway.phoneNumber;
     await orquestrator.addAllowedNumber(phoneNumber);
 
-    const gateway =
-      orquestrator.container.resolve<TestWhatsAppMessagingGateway>(
-        "IWhatsAppMessagingGateway",
-      );
+    const gateway = orquestrator.whatsAppMessagingGateway;
     const receiveWhatsAppMessage = gateway.receiveWhatsAppMessage;
     gateway.receiveWhatsAppMessage = () => undefined;
 
@@ -583,9 +561,7 @@ describe("MessagingService", () => {
     const webAddress = user.email ?? "";
     await orquestrator.addAllowedWebId(webAddress);
 
-    const webGateway = orquestrator.container.resolve<TestWebMessagingGateway>(
-      "IWebMessagingGateway",
-    );
+    const webGateway = orquestrator.webMessagingGateway;
     webGateway.clearEvents();
 
     await orquestrator.messagingService.receiveWebMessage(webAddress, {
@@ -628,14 +604,15 @@ describe("MessagingService", () => {
 
     const events = webGateway.getEvents();
     expect(events.map((event) => event.type)).toEqual([
-      "text",
-      "audio",
-      "text",
+      "messageCreated",
+      "messageCreated",
+      "messageUpdated",
+      "messageCreated",
     ]);
-    expect(events[1]).toMatchObject({
-      type: "audio",
-      data: {
-        mimeType: "audio/mp4",
+    expect(events[2]).toMatchObject({
+      type: "messageUpdated",
+      message: {
+        mimeType: "audio/mp4; codecs=mp4a.40.2",
         transcript: "This is a mock transcript for testing purposes.",
       },
     });
@@ -673,9 +650,7 @@ describe("MessagingService", () => {
     });
     await new Promise((r) => setTimeout(r, delay));
 
-    const webGateway = orquestrator.container.resolve<TestWebMessagingGateway>(
-      "IWebMessagingGateway",
-    );
+    const webGateway = orquestrator.webMessagingGateway;
     webGateway.clearEvents();
 
     await orquestrator.messagingService.sendButtonReplyMessage(
@@ -687,11 +662,10 @@ describe("MessagingService", () => {
     const events = webGateway.getEvents();
     expect(events).toHaveLength(1);
     expect(events[0]).toMatchObject({
-      type: "interactive_button",
-      data: {
-        toAddress: webAddress,
+      type: "messageCreated",
+      message: {
         text: "Pick one",
-        buttons: ["Yes", "No"],
+        buttonReplyOptions: ["Yes", "No"],
       },
     });
   });
@@ -730,10 +704,7 @@ describe("MessagingService", () => {
       await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber),
     ).toBeUndefined();
 
-    const gateway =
-      orquestrator.container.resolve<TestWhatsAppMessagingGateway>(
-        "IWhatsAppMessagingGateway",
-      );
+    const gateway = orquestrator.whatsAppMessagingGateway;
     const validateWebhook = gateway.validateWebhook;
     gateway.validateWebhook = () => false;
 
@@ -772,8 +743,7 @@ describe("MessagingService", () => {
     const webAddress = user.email ?? "";
     await orquestrator.addAllowedWebId(webAddress);
 
-    const aiGateway =
-      orquestrator.container.resolve<TestAiChatGateway>("IAiChatGateway");
+    const aiGateway = orquestrator.aiGateway;
     aiGateway.scriptedResponses = [
       {
         content: { type: "button", text: "Choose", options: ["A", "B"] },
@@ -782,9 +752,7 @@ describe("MessagingService", () => {
       },
     ];
 
-    const webGateway = orquestrator.container.resolve<TestWebMessagingGateway>(
-      "IWebMessagingGateway",
-    );
+    const webGateway = orquestrator.webMessagingGateway;
     webGateway.clearEvents();
 
     await orquestrator.messagingService.receiveWebMessage(webAddress, {
@@ -793,10 +761,10 @@ describe("MessagingService", () => {
     await new Promise((r) => setTimeout(r, delay));
 
     const events = webGateway.getEvents();
-    expect(events).toHaveLength(1);
-    expect(events[0]).toMatchObject({
-      type: "interactive_button",
-      data: { text: "Choose", buttons: ["A", "B"] },
+    expect(events).toHaveLength(2);
+    expect(events[1]).toMatchObject({
+      type: "messageCreated",
+      message: { text: "Choose", buttonReplyOptions: ["A", "B"] },
     });
   });
 
@@ -806,8 +774,7 @@ describe("MessagingService", () => {
       phoneNumber: "5511912345678",
     });
     const webAddress = user.email ?? "";
-    const aiGateway =
-      orquestrator.container.resolve<TestAiChatGateway>("IAiChatGateway");
+    const aiGateway = orquestrator.aiGateway;
     aiGateway.requests = [];
     aiGateway.scriptedResponses = [
       {
@@ -876,8 +843,7 @@ describe("MessagingService", () => {
       phoneNumber: "5511912345678",
     });
     const webAddress = user.email ?? "";
-    const aiGateway =
-      orquestrator.container.resolve<TestAiChatGateway>("IAiChatGateway");
+    const aiGateway = orquestrator.aiGateway;
     aiGateway.scriptedResponses = [
       {
         toolCalls: [
@@ -929,8 +895,7 @@ describe("MessagingService", () => {
       phoneNumber: "5511912345678",
     });
     const webAddress = user.email ?? "";
-    const aiGateway =
-      orquestrator.container.resolve<TestAiChatGateway>("IAiChatGateway");
+    const aiGateway = orquestrator.aiGateway;
     const service = orquestrator.messagingService as unknown as {
       aiToolService: AiToolService;
     };
@@ -1006,8 +971,7 @@ describe("MessagingService", () => {
       phoneNumber: "5511912345678",
     });
     const webAddress = user.email ?? "";
-    const aiGateway =
-      orquestrator.container.resolve<TestAiChatGateway>("IAiChatGateway");
+    const aiGateway = orquestrator.aiGateway;
     aiGateway.scriptedResponses = [
       {
         toolCalls: [
@@ -1060,8 +1024,7 @@ describe("MessagingService", () => {
       phoneNumber: "5511912345678",
     });
     const webAddress = user.email ?? "";
-    const aiGateway =
-      orquestrator.container.resolve<TestAiChatGateway>("IAiChatGateway");
+    const aiGateway = orquestrator.aiGateway;
     const maxToolRounds = orquestrator.aiConfig.maxToolRounds;
     aiGateway.scriptedResponses = Array.from(
       { length: maxToolRounds + 2 },
@@ -1103,8 +1066,7 @@ describe("MessagingService", () => {
       phoneNumber: "5511912345678",
     });
     const webAddress = user.email ?? "";
-    const aiGateway =
-      orquestrator.container.resolve<TestAiChatGateway>("IAiChatGateway");
+    const aiGateway = orquestrator.aiGateway;
     aiGateway.scriptedResponses = [
       {
         toolCalls: [
@@ -1158,25 +1120,26 @@ describe("MessagingService", () => {
     expect(chat?.messages[0]?.text).toBe("");
   });
 
-  test("internal helpers persist preloaded chat messages and send signed-in copy", async () => {
+  test("sendSignedInMessage persists signed-in copy for an existing chat", async () => {
     await orquestrator.clearDatabase();
-    const service = orquestrator.messagingService as unknown as {
-      createChat: (chat: Chat) => Promise<void>;
-    };
     const phoneNumber = TestWhatsAppMessagingGateway.phoneNumber;
     await orquestrator.addAllowedNumber(phoneNumber);
-
-    const chat = new Chat();
-    chat.setChannelAddress(ChatChannel.WhatsApp, phoneNumber);
-    chat.addUserTextMessage("seed");
-    await service.createChat(chat);
+    await orquestrator.createUser({ phoneNumber });
+    await orquestrator.messagingService.listenToMessage({
+      fromAddress: phoneNumber,
+      channelMessageId: uuidv4(),
+      channel: ChatChannel.WhatsApp,
+      text: "seed",
+    } as never);
 
     await orquestrator.messagingService.sendSignedInMessage(phoneNumber);
 
     const savedChat =
       await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber);
     expect(savedChat?.messages[0]?.text).toBe("seed");
-    expect(savedChat?.messages[1]?.text).toContain("Conectado com o Google");
+    expect(savedChat?.messages.at(-1)?.text).toContain(
+      "Conectado com o Google",
+    );
   });
 
   test("dual-ID webhook keeps phone-valued whatsapp_address", async () => {

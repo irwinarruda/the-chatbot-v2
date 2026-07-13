@@ -1,9 +1,12 @@
 import { Calendar, Search, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
-import type { TodoDueFilter, TodoStatus } from "~/client/entities/Todo";
 import type { Dictionary } from "~/client/i18n";
 import { useDebouncedValue } from "~/client/utils/useDebouncedValue";
+import type {
+  TodoDueFilter,
+  TodoStatus,
+} from "~/modules/todos/contracts/TodoContracts";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { NativeSelect, NativeSelectOption } from "./ui/native-select";

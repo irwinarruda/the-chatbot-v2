@@ -17,12 +17,15 @@ import {
 import { TodoRow } from "~/client/components/TodoRow";
 import { Alert, AlertDescription } from "~/client/components/ui/alert";
 import { Button } from "~/client/components/ui/button";
-import type { TodoDueFilter, TodoStatus } from "~/client/entities/Todo";
 import { getDictionary } from "~/client/i18n";
 import { usePrefs } from "~/client/providers/usePrefs";
 import { useApp } from "~/client/stores";
-import type { TodoErrorCode } from "~/client/stores/slices/todoSlice";
-import { requireWebAccess } from "~/server/tanstack/functions/require-web-access";
+import type { TodoErrorCode } from "~/modules/todos/client/state/todoSlice";
+import type {
+  TodoDueFilter,
+  TodoStatus,
+} from "~/modules/todos/contracts/TodoContracts";
+import { requireWebAccess } from "~/shared/http/functions/require-web-access";
 
 export type TodoSearch = {
   q?: string;
@@ -86,7 +89,6 @@ function TodoLayout() {
   const completedTodoCount = useApp((s) => s.completedTodoCount);
   const canSaveTodoDraft = useApp((s) => s.canSaveTodoDraft);
   const bootstrapTodos = useApp((s) => s.bootstrapTodos);
-  const setTodoFilters = useApp((s) => s.setTodoFilters);
   const setTodoDraft = useApp((s) => s.setTodoDraft);
   const resetTodoDraft = useApp((s) => s.resetTodoDraft);
   const createTodoFromDraft = useApp((s) => s.createTodoFromDraft);
@@ -109,7 +111,6 @@ function TodoLayout() {
   const todoErrorMessage = todoError ? errorMessages[todoError] : undefined;
   function onChangeFilters(patch: Partial<TodoFilterValues>) {
     const next = { ...filters, ...patch };
-    setTodoFilters(next);
     navigate({
       to: "/todo",
       search: toTodoRouteSearch(next),
@@ -117,13 +118,6 @@ function TodoLayout() {
   }
 
   function onClearFilters() {
-    const next: TodoFilterValues = {
-      q: "",
-      dueDate: "",
-      due: "all",
-      status: "all",
-    };
-    setTodoFilters(next);
     navigate({ to: "/todo", search: {} });
   }
 
@@ -140,14 +134,12 @@ function TodoLayout() {
     const todo = await createTodoFromDraft();
     if (!todo) return;
     setIsTodoComposerOpen(false);
-    await bootstrapTodos(filters);
   }
 
   async function onToggleTodoStatus(id: string, status: TodoStatus) {
     await updateTodo(id, {
       status: status === "Completed" ? "Pending" : "Completed",
     });
-    await bootstrapTodos(filters);
   }
 
   useEffect(() => {

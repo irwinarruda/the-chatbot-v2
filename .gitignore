@@ -13,6 +13,6 @@ bun.lock
 deno.lock
 coverage
 
-
+.DS_Store
 # Local Vercel folder
 .vercel

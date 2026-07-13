@@ -1,10 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { TodoDetailDialog } from "~/client/components/TodoDetailDialog";
-import type { TodoStatus } from "~/client/entities/Todo";
 import { getDictionary } from "~/client/i18n";
 import { usePrefs } from "~/client/providers/usePrefs";
 import { useApp } from "~/client/stores";
+import type { TodoStatus } from "~/modules/todos/contracts/TodoContracts";
 import { normalizeTodoSearch } from "../todo";
 
 export const Route = createFileRoute("/todo/$todoId")({

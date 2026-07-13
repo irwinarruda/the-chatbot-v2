@@ -1,7 +1,8 @@
-import { NotFoundException, ValidationException } from "~/infra/exceptions";
-import { ChatChannel } from "~/shared/entities/enums/ChatChannel";
-import { MessageContentType } from "~/shared/entities/enums/MessageContentType";
-import { TodoStatus } from "~/shared/entities/enums/TodoStatus";
+import { ChatChannel } from "~/modules/chat/domain/enums/ChatChannel";
+import { MessageContentType } from "~/modules/chat/domain/enums/MessageContentType";
+import { TodoStatus } from "~/modules/todos/domain/enums/TodoStatus";
+import { NotFoundException } from "~/shared/errors/ApplicationErrors";
+import { ValidationException } from "~/shared/errors/DomainErrors";
 import { orquestrator } from "./orquestrator";
 
 describe("TodoService", () => {

@@ -25,9 +25,29 @@ Valid modes: `development`, `test`, `preview`, `production`. `bun run dev` defau
 
 ## Testing
 
-Tests run serially (`fileParallelism: false`) with a 30s timeout. The `Orquestrator` class in `tests/orquestrator.ts` handles DI wiring and **wipes the entire database schema** before each test file (`DROP SCHEMA public CASCADE` → recreate → run migrations). Tests require a running PostgreSQL instance.
+Tests run serially (`fileParallelism: false`) with a 30s timeout. Domain, application, and contract tests must stay deterministic and infrastructure-free. PostgreSQL integration tests own their schema reset/migration lifecycle and require a running test database.
 
-Only application tests are allowed in the Vitest suite: tests for Services, Entities, and Utils. Do not add route, controller, middleware, gateway/resource, or infra-focused tests to the default test run.
+Use the narrowest test level that proves the behavior:
+
+- Domain tests cover entity/value-object invariants and transitions without DI or PostgreSQL.
+- Application tests cover workflows with deterministic port/client-service fakes.
+- Contract tests cover owned HTTP/SSE schemas and server/client mapping.
+- Integration tests cover PostgreSQL, migrations, transactions, hydration, optimistic concurrency, and concrete provider mapping where valuable.
+
+Do not add route implementation tests when a contract or application test proves the owned behavior more directly. Do not start PostgreSQL for domain, client-state, or provider-independent application behavior.
+
+## Project Skills
+
+Load the project skill that owns the decision before changing code:
+
+- `app-architecture` — feature ownership, module placement, DDD/OOP, dependency direction, cross-module coordination, and overall application shape.
+- `app-service-boundaries` — HTTP/SSE contracts, Services, ports/adapters, providers, AI tools, SQL, transactions, errors, and dependency composition.
+- `app-coding-styleguide` — non-visual TypeScript/JavaScript style, naming, contracts, imports, whitespace, comments, and locality.
+- `client-state-management` — URL/Zustand/local state, async actions, optimistic state, realtime reduction, browser lifecycles, and SSR hydration.
+- `client-jsx-styleguide` — React/TSX, terminal visual system, shared UI primitives, layout, responsive behavior, accessibility, and interaction design.
+- `app-tests` — Vitest/PostgreSQL test levels, placement, harnesses, fakes, fixtures, assertions, and integration policy.
+
+Use multiple skills when a change crosses concerns. Local project skills take precedence over generic preferences.
 
 ## Generated Files
 

@@ -1,22 +1,22 @@
-import { ValidationException } from "~/infra/exceptions";
-import { BsuidUtils } from "~/shared/entities/BsuidUtils";
-import { CashFlowSpreadsheet } from "~/shared/entities/CashFlowSpreadsheet";
-import { Chat } from "~/shared/entities/Chat";
-import { ConversationSummary } from "~/shared/entities/ConversationSummary";
-import { Credential } from "~/shared/entities/Credentials";
-import { AddTransactionToolDTO } from "~/shared/entities/dtos/AddTransactionToolDTO";
-import { CreateTodosToolDTO } from "~/shared/entities/dtos/CreateTodosToolDTO";
-import { TransferBetweenBankAccountsToolDTO } from "~/shared/entities/dtos/TransferBetweenBankAccountsToolDTO";
-import { CashFlowSpreadsheetType } from "~/shared/entities/enums/CashFlowSpreadsheetType";
-import { ChatChannel } from "~/shared/entities/enums/ChatChannel";
-import { CredentialType } from "~/shared/entities/enums/CredentialType";
-import { MessageAudience } from "~/shared/entities/enums/MessageAudience";
-import { MessageContentType } from "~/shared/entities/enums/MessageContentType";
-import { MessageRole } from "~/shared/entities/enums/MessageRole";
-import { ToolResultStatus } from "~/shared/entities/enums/ToolResultStatus";
-import { Message } from "~/shared/entities/Message";
-import { PhoneNumberUtils } from "~/shared/entities/PhoneNumberUtils";
-import { User } from "~/shared/entities/User";
+import { AddTransactionToolDTO } from "~/modules/cash-flow/application/tools/AddTransactionToolDTO";
+import { TransferBetweenBankAccountsToolDTO } from "~/modules/cash-flow/application/tools/TransferBetweenBankAccountsToolDTO";
+import { CashFlowSpreadsheet } from "~/modules/cash-flow/domain/CashFlowSpreadsheet";
+import { CashFlowSpreadsheetType } from "~/modules/cash-flow/domain/enums/CashFlowSpreadsheetType";
+import { Chat } from "~/modules/chat/domain/Chat";
+import { ConversationSummary } from "~/modules/chat/domain/ConversationSummary";
+import { ChatChannel } from "~/modules/chat/domain/enums/ChatChannel";
+import { MessageAudience } from "~/modules/chat/domain/enums/MessageAudience";
+import { MessageContentType } from "~/modules/chat/domain/enums/MessageContentType";
+import { MessageRole } from "~/modules/chat/domain/enums/MessageRole";
+import { ToolResultStatus } from "~/modules/chat/domain/enums/ToolResultStatus";
+import { Message } from "~/modules/chat/domain/Message";
+import { BsuidUtils } from "~/modules/identity/domain/BsuidUtils";
+import { Credential } from "~/modules/identity/domain/Credentials";
+import { CredentialType } from "~/modules/identity/domain/enums/CredentialType";
+import { PhoneNumberUtils } from "~/modules/identity/domain/PhoneNumberUtils";
+import { User } from "~/modules/identity/domain/User";
+import { CreateTodosToolDTO } from "~/modules/todos/application/tools/CreateTodosToolDTO";
+import { ValidationException } from "~/shared/errors/DomainErrors";
 
 describe("shared entities", () => {
   test("Chat handles channel addresses, audiences, tool invariants, and serialization", () => {

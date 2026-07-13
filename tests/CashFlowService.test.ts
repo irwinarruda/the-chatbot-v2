@@ -1,11 +1,11 @@
-import { Encryption } from "~/infra/encryption";
+import type { CashFlowAddExpenseDTO } from "~/modules/cash-flow/application/CashFlowService";
+import { Encryption } from "~/modules/identity/application/Encryption";
+import { User } from "~/modules/identity/domain/User";
 import {
   NotFoundException,
   ServiceException,
-  ValidationException,
-} from "~/infra/exceptions";
-import type { CashFlowAddExpenseDTO } from "~/server/services/CashFlowService";
-import { User } from "~/shared/entities/User";
+} from "~/shared/errors/ApplicationErrors";
+import { ValidationException } from "~/shared/errors/DomainErrors";
 import { orquestrator } from "./orquestrator";
 
 describe("CashFlowService", () => {

@@ -1,13 +1,12 @@
-import { Encryption } from "~/infra/encryption";
+import { Encryption } from "~/modules/identity/application/Encryption";
+import { Jwt } from "~/modules/identity/application/Jwt";
+import { User } from "~/modules/identity/domain/User";
+import { GoogleAuthScopes } from "~/modules/identity/server/GoogleAuthScopes";
 import {
   DeveloperException,
   NotFoundException,
   UnauthorizedException,
-} from "~/infra/exceptions";
-import { Jwt } from "~/infra/jwt";
-import { GoogleAuthScopes } from "~/server/resources/GoogleAuthScopes";
-import type { IGoogleAuthGateway } from "~/server/resources/IGoogleAuthGateway";
-import { User } from "~/shared/entities/User";
+} from "~/shared/errors/ApplicationErrors";
 import { orquestrator } from "./orquestrator";
 
 describe("AuthService", () => {
@@ -116,8 +115,7 @@ describe("AuthService", () => {
   test("handleGoogleRedirect exchanges code with the app redirect target", async () => {
     await orquestrator.clearDatabase();
     const encryption = new Encryption(orquestrator.encryptionConfig);
-    const gateway =
-      orquestrator.container.resolve<IGoogleAuthGateway>("IGoogleAuthGateway");
+    const gateway = orquestrator.googleAuthGateway;
     const spy = vi.spyOn(gateway, "exchangeCodeForTokens");
 
     await orquestrator.authService.handleGoogleRedirect(
@@ -349,8 +347,7 @@ describe("AuthService", () => {
       encryption.encrypt("5511999888777"),
       "rightCode",
     );
-    const gateway =
-      orquestrator.container.resolve<IGoogleAuthGateway>("IGoogleAuthGateway");
+    const gateway = orquestrator.googleAuthGateway;
     const spy = vi.spyOn(gateway, "exchangeCodeForTokens");
 
     await orquestrator.authService.handleWebGoogleRedirect("rightCode");
@@ -646,18 +643,15 @@ describe("AuthService", () => {
     await orquestrator.clearDatabase();
     const phoneNumber = "5511984444444";
     await orquestrator.createUser({ phoneNumber });
-    const sendSpy = vi
-      .spyOn(orquestrator.mediator, "send")
+    const deleteChatSpy = vi
+      .spyOn(orquestrator.identityChatCoordinator, "deleteChat")
       .mockResolvedValue(undefined);
     await orquestrator.authService.deleteUserByChatChannelAddress(phoneNumber);
     expect(
       await orquestrator.authService.getUserByPhoneNumber(phoneNumber),
     ).toBeUndefined();
-    expect(sendSpy).toHaveBeenCalledWith(
-      "DeleteUserByChatChannelAddress",
-      phoneNumber,
-    );
-    sendSpy.mockRestore();
+    expect(deleteChatSpy).toHaveBeenCalledWith(phoneNumber);
+    deleteChatSpy.mockRestore();
   });
 
   test("deleteUserByChatChannelAddress deletes user by BSUID", async () => {
@@ -666,35 +660,29 @@ describe("AuthService", () => {
     const user = new User("BSUID User");
     user.bsuid = bsuid;
     await orquestrator.authService.createUser(user);
-    const sendSpy = vi
-      .spyOn(orquestrator.mediator, "send")
+    const deleteChatSpy = vi
+      .spyOn(orquestrator.identityChatCoordinator, "deleteChat")
       .mockResolvedValue(undefined);
     await orquestrator.authService.deleteUserByChatChannelAddress(bsuid);
     expect(
       await orquestrator.authService.getUserByBsuid(bsuid),
     ).toBeUndefined();
-    expect(sendSpy).toHaveBeenCalledWith(
-      "DeleteUserByChatChannelAddress",
-      bsuid,
-    );
-    sendSpy.mockRestore();
+    expect(deleteChatSpy).toHaveBeenCalledWith(bsuid);
+    deleteChatSpy.mockRestore();
   });
 
   test("deleteUserByChatChannelAddress deletes user by email", async () => {
     await orquestrator.clearDatabase();
     const email = "delete-user@example.com";
     await orquestrator.createUser({ email });
-    const sendSpy = vi
-      .spyOn(orquestrator.mediator, "send")
+    const deleteChatSpy = vi
+      .spyOn(orquestrator.identityChatCoordinator, "deleteChat")
       .mockResolvedValue(undefined);
     await orquestrator.authService.deleteUserByChatChannelAddress(email);
     expect(
       await orquestrator.authService.getUserByEmail(email),
     ).toBeUndefined();
-    expect(sendSpy).toHaveBeenCalledWith(
-      "DeleteUserByChatChannelAddress",
-      email,
-    );
-    sendSpy.mockRestore();
+    expect(deleteChatSpy).toHaveBeenCalledWith(email);
+    deleteChatSpy.mockRestore();
   });
 });

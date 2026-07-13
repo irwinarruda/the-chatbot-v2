@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { audioInputService } from "~/client/services/audioInputService";
+import { audioInputService } from "~/modules/chat/client/services/audioInputService";
 
 describe("audioInputService", () => {
   test("keeps the stored device when it still exists", () => {

@@ -3,7 +3,7 @@ import { preferredAudioMimeTypesConstants } from "~/client/constants/preferredAu
 import {
   createRecordedBlob,
   resolveRecordedMimeType,
-} from "~/client/services/audioRecordingService";
+} from "~/modules/chat/client/services/audioRecordingService";
 
 describe("audioRecordingService", () => {
   test("prefers an actually supported recording mime type", () => {

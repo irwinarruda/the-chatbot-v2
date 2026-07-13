@@ -26,10 +26,10 @@ import {
 import { Textarea } from "~/client/components/ui/textarea";
 import { getDictionary } from "~/client/i18n";
 import { usePrefs } from "~/client/providers/usePrefs";
-import { audioInputService } from "~/client/services/audioInputService";
 import { useApp } from "~/client/stores";
-import type { ChatErrorCode } from "~/client/stores/slices/chatSlice";
-import { requireWebAccess } from "~/server/tanstack/functions/require-web-access";
+import { audioInputService } from "~/modules/chat/client/services/audioInputService";
+import type { ChatErrorCode } from "~/modules/chat/client/state/chatSlice";
+import { requireWebAccess } from "~/shared/http/functions/require-web-access";
 
 export const Route = createFileRoute("/chat/")({
   beforeLoad: async () => {

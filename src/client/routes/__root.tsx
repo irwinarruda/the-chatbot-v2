@@ -1,5 +1,5 @@
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
 import { TerminalFooter } from "~/client/components/TerminalFooter";
 import { TerminalPageHeader } from "~/client/components/TerminalPageHeader";
 import { TerminalPanel } from "~/client/components/TerminalPanel";
@@ -47,7 +47,10 @@ function RootDocument({ children }: { children: ReactNode }) {
   const prefs = Route.useRouteContext();
   const suppressHydrationWarning = import.meta.env.DEV;
   const hydratePrefs = useApp((state) => state.hydratePrefs);
-  hydratePrefs(prefs);
+
+  useEffect(() => {
+    hydratePrefs(prefs);
+  }, [hydratePrefs, prefs]);
 
   return (
     <html lang={prefs.locale} data-theme={prefs.theme}>

@@ -3,7 +3,7 @@ import { TerminalWindow } from "~/client/components/TerminalWindow";
 import type { Prefs } from "~/client/entities/Prefs";
 import { getDictionary } from "~/client/i18n";
 import { useDictionary } from "~/client/providers/useDictionary";
-import { loadPrivacyContent } from "~/server/tanstack/functions/load-privacy";
+import { loadPrivacyContent } from "~/shared/http/functions/load-privacy";
 
 export const Route = createFileRoute("/privacy")({
   component: PrivacyRoute,

@@ -1,4 +1,4 @@
-import { StatusService } from "~/server/services/StatusService";
+import { StatusService } from "~/modules/system/application/StatusService";
 import { orquestrator } from "./orquestrator";
 
 describe("StatusService", () => {

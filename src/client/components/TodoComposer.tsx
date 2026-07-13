@@ -1,6 +1,6 @@
 import { Plus, X } from "lucide-react";
 import type { SubmitEventHandler } from "react";
-import type { TodoDraft } from "~/client/stores/slices/todoSlice";
+import type { TodoDraft } from "~/modules/todos/client/state/todoSlice";
 import type { Dictionary } from "../i18n";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";

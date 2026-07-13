@@ -1,183 +1,151 @@
-import { Mediator } from "~/infra/mediator";
-import { GoogleAuthGateway } from "~/server/resources/GoogleAuthGateway";
-import { GoogleCashFlowSpreadsheetGateway } from "~/server/resources/GoogleCashFlowSpreadsheetGateway";
-import { OpenAiSpeechToTextGateway } from "~/server/resources/OpenAiSpeechToTextGateway";
-import { PiAiChatGateway } from "~/server/resources/PiAiChatGateway";
-import { R2StorageGateway } from "~/server/resources/R2StorageGateway";
-import { WebMessagingGateway } from "~/server/resources/WebMessagingGateway";
-import { WhatsAppMessagingGateway } from "~/server/resources/WhatsAppMessagingGateway";
-import { AiToolService } from "~/server/services/AiToolService";
+import { Database } from "~/infra/database";
+import { CashFlowService } from "~/modules/cash-flow/application/CashFlowService";
+import type { ICashFlowSpreadsheetGateway } from "~/modules/cash-flow/application/ports/ICashFlowSpreadsheetGateway";
+import { GoogleCashFlowSpreadsheetGateway } from "~/modules/cash-flow/server/GoogleCashFlowSpreadsheetGateway";
+import { AiToolService } from "~/modules/chat/application/AiToolService";
+import { MessagingService } from "~/modules/chat/application/MessagingService";
+import type { IAiChatGateway } from "~/modules/chat/application/ports/IAiChatGateway";
+import type { ISpeechToTextGateway } from "~/modules/chat/application/ports/ISpeechToTextGateway";
+import type { IStorageGateway } from "~/modules/chat/application/ports/IStorageGateway";
+import type { IWebMessagingGateway } from "~/modules/chat/application/ports/IWebMessagingGateway";
+import type { IWhatsAppMessagingGateway } from "~/modules/chat/application/ports/IWhatsAppMessagingGateway";
+import { OpenAiSpeechToTextGateway } from "~/modules/chat/server/OpenAiSpeechToTextGateway";
+import { PiAiChatGateway } from "~/modules/chat/server/PiAiChatGateway";
+import { R2StorageGateway } from "~/modules/chat/server/R2StorageGateway";
+import { WebMessagingGateway } from "~/modules/chat/server/WebMessagingGateway";
+import { WhatsAppMessagingGateway } from "~/modules/chat/server/WhatsAppMessagingGateway";
 import {
   AuthService,
-  type SyncUserChatAddressesEvent,
-} from "~/server/services/AuthService";
-import { CashFlowService } from "~/server/services/CashFlowService";
-import {
-  MessagingService,
-  type RespondToMessageEvent,
-} from "~/server/services/MessagingService";
-import { MigrationService } from "~/server/services/MigrationService";
-import { StatusService } from "~/server/services/StatusService";
-import { TodoService } from "~/server/services/TodoService";
-import type { Config } from "./config";
-import { container } from "./container";
-import { Database } from "./database";
+  type IdentityChatCoordinator,
+} from "~/modules/identity/application/AuthService";
+import type { IGoogleAuthGateway } from "~/modules/identity/application/ports/IGoogleAuthGateway";
+import { GoogleAuthGateway } from "~/modules/identity/server/GoogleAuthGateway";
+import { StatusService } from "~/modules/system/application/StatusService";
+import { MigrationService } from "~/modules/system/server/MigrationService";
+import { TodoService } from "~/modules/todos/application/TodoService";
+import type { Config } from "~/shared/server/Config";
 
-export function registerDependencies(config: Config) {
-  const database = new Database(config.database.connectionString);
-  const mediator = new Mediator();
+export interface ApplicationGateways {
+  aiChat: IAiChatGateway;
+  cashFlowSpreadsheet: ICashFlowSpreadsheetGateway;
+  googleAuth: IGoogleAuthGateway;
+  speechToText: ISpeechToTextGateway;
+  storage: IStorageGateway;
+  webMessaging: IWebMessagingGateway;
+  whatsAppMessaging: IWhatsAppMessagingGateway;
+}
 
-  container.register("Database", () => database, "singleton");
-  container.register("Mediator", () => mediator, "singleton");
+export interface Application {
+  config: Config;
+  database: Database;
+  gateways: ApplicationGateways;
+  coordination: {
+    identityChat: IdentityChatCoordinator;
+  };
+  services: {
+    auth: AuthService;
+    cashFlow: CashFlowService;
+    messaging: MessagingService;
+    migration: MigrationService;
+    status: StatusService;
+    todos: TodoService;
+    tools: AiToolService;
+  };
+}
 
-  container.register("DatabaseConfig", () => config.database, "singleton");
-  container.register("EncryptionConfig", () => config.encryption, "singleton");
-  container.register("GoogleConfig", () => config.google, "singleton");
-  container.register("WhatsAppConfig", () => config.whatsApp, "singleton");
-  container.register("R2Config", () => config.r2, "singleton");
-  container.register("AiConfig", () => config.ai, "singleton");
-  container.register("OpenAiConfig", () => config.openAi, "singleton");
-  container.register("AuthConfig", () => config.auth, "singleton");
-  container.register(
-    "GoogleSheetsConfig",
-    () => config.googleSheets,
-    "singleton",
-  );
+export interface ApplicationOverrides {
+  database?: Database;
+  gateways?: Partial<ApplicationGateways>;
+  coordination?: Partial<IdentityChatCoordinator>;
+}
 
-  container.register(
-    "IWhatsAppMessagingGateway",
-    () => new WhatsAppMessagingGateway(config.whatsApp),
-    "singleton",
-  );
-  container.register(
-    "IWebMessagingGateway",
-    () => new WebMessagingGateway(),
-    "singleton",
-  );
-  container.register(
-    "IStorageGateway",
-    () => new R2StorageGateway(config.r2),
-    "singleton",
-  );
-  container.register(
-    "ISpeechToTextGateway",
-    () => new OpenAiSpeechToTextGateway(config.openAi),
-    "singleton",
-  );
-  container.register(
-    "IGoogleAuthGateway",
-    () => new GoogleAuthGateway(config.google),
-    "singleton",
-  );
-  container.register(
-    "ICashFlowSpreadsheetGateway",
-    () =>
+export function createApplication(
+  config: Config,
+  overrides: ApplicationOverrides = {},
+): Application {
+  const database =
+    overrides.database ?? new Database(config.database.connectionString);
+  const gateways: ApplicationGateways = {
+    aiChat: overrides.gateways?.aiChat ?? new PiAiChatGateway(config.ai),
+    cashFlowSpreadsheet:
+      overrides.gateways?.cashFlowSpreadsheet ??
       new GoogleCashFlowSpreadsheetGateway(config.google, config.googleSheets),
-    "singleton",
+    googleAuth:
+      overrides.gateways?.googleAuth ?? new GoogleAuthGateway(config.google),
+    speechToText:
+      overrides.gateways?.speechToText ??
+      new OpenAiSpeechToTextGateway(config.openAi),
+    storage: overrides.gateways?.storage ?? new R2StorageGateway(config.r2),
+    webMessaging: overrides.gateways?.webMessaging ?? new WebMessagingGateway(),
+    whatsAppMessaging:
+      overrides.gateways?.whatsAppMessaging ??
+      new WhatsAppMessagingGateway(config.whatsApp),
+  };
+  let messagingService: MessagingService | undefined;
+  const defaultChatCoordinator: IdentityChatCoordinator = {
+    deleteChat: (channelAddress) =>
+      requireMessagingService(messagingService).deleteChat(channelAddress),
+    sendSignedInMessage: (channelAddress) =>
+      requireMessagingService(messagingService).sendSignedInMessage(
+        channelAddress,
+      ),
+    syncUserChatAddresses: (data) =>
+      requireMessagingService(messagingService).syncUserChatAddresses(data),
+  };
+  const chatCoordinator: IdentityChatCoordinator = {
+    ...defaultChatCoordinator,
+    ...overrides.coordination,
+  };
+  const authService = new AuthService(
+    database,
+    config.encryption,
+    config.jwt,
+    gateways.googleAuth,
+    chatCoordinator,
   );
+  const cashFlowService = new CashFlowService(
+    database,
+    authService,
+    gateways.cashFlowSpreadsheet,
+  );
+  const todoService = new TodoService(database);
+  const aiToolService = new AiToolService(
+    authService,
+    cashFlowService,
+    todoService,
+    gateways.aiChat,
+  );
+  messagingService = new MessagingService(
+    database,
+    authService,
+    gateways.whatsAppMessaging,
+    gateways.webMessaging,
+    gateways.aiChat,
+    aiToolService,
+    gateways.storage,
+    gateways.speechToText,
+    config.ai,
+  );
+  return {
+    config,
+    database,
+    gateways,
+    coordination: { identityChat: chatCoordinator },
+    services: {
+      auth: authService,
+      cashFlow: cashFlowService,
+      messaging: messagingService,
+      migration: new MigrationService(database, config.database, config.auth),
+      status: new StatusService(database, config.database, config.ai),
+      todos: todoService,
+      tools: aiToolService,
+    },
+  };
+}
 
-  container.register(
-    "StatusService",
-    () => new StatusService(database, config.database, config.ai),
-    "singleton",
-  );
-  container.register(
-    "MigrationService",
-    () => new MigrationService(database, config.database, config.auth),
-    "transient",
-  );
-  container.register(
-    "AuthService",
-    () =>
-      new AuthService(
-        database,
-        config.encryption,
-        config.jwt,
-        container.resolve("IGoogleAuthGateway"),
-        mediator,
-      ),
-    "singleton",
-  );
-  container.register(
-    "CashFlowService",
-    () =>
-      new CashFlowService(
-        database,
-        container.resolve("AuthService"),
-        container.resolve("ICashFlowSpreadsheetGateway"),
-      ),
-    "singleton",
-  );
-  container.register(
-    "TodoService",
-    () => new TodoService(database),
-    "singleton",
-  );
-  container.register(
-    "IAiChatGateway",
-    () => new PiAiChatGateway(config.ai),
-    "singleton",
-  );
-  container.register(
-    "AiToolService",
-    () =>
-      new AiToolService(
-        container.resolve("AuthService"),
-        container.resolve("CashFlowService"),
-        container.resolve("TodoService"),
-        container.resolve("IAiChatGateway"),
-      ),
-    "singleton",
-  );
-  container.register(
-    "MessagingService",
-    () =>
-      new MessagingService(
-        database,
-        container.resolve("AuthService"),
-        mediator,
-        container.resolve("IWhatsAppMessagingGateway"),
-        container.resolve("IWebMessagingGateway"),
-        container.resolve("IAiChatGateway"),
-        container.resolve("AiToolService"),
-        container.resolve("IStorageGateway"),
-        container.resolve("ISpeechToTextGateway"),
-        config.ai,
-      ),
-    "singleton",
-  );
-
-  mediator.register<string>(
-    "SaveUserByGoogleCredential",
-    async (phoneNumber) => {
-      const messagingService =
-        container.resolve<MessagingService>("MessagingService");
-      await messagingService.sendSignedInMessage(phoneNumber);
-    },
-  );
-  mediator.register<SyncUserChatAddressesEvent>(
-    "SyncUserChatAddresses",
-    async (data) => {
-      const messagingService =
-        container.resolve<MessagingService>("MessagingService");
-      await messagingService.syncUserChatAddresses(data);
-    },
-  );
-  mediator.register<string>(
-    "DeleteUserByChatChannelAddress",
-    async (channelAddress) => {
-      const messagingService =
-        container.resolve<MessagingService>("MessagingService");
-      await messagingService.deleteChat(channelAddress);
-    },
-  );
-  mediator.register<RespondToMessageEvent>("RespondToMessage", async (data) => {
-    const messagingService =
-      container.resolve<MessagingService>("MessagingService");
-    await messagingService.respondToMessage(
-      data.chat,
-      data.message,
-      data.channel,
-    );
-  });
+function requireMessagingService(
+  service: MessagingService | undefined,
+): MessagingService {
+  if (!service) throw new Error("Messaging service is not composed yet");
+  return service;
 }

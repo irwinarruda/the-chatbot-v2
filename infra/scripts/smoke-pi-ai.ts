@@ -1,9 +1,8 @@
 import { resolve } from "path";
-import { loadConfig } from "~/infra/config";
-import { PiAiChatGateway } from "~/server/resources/PiAiChatGateway";
-import { MessageContentType } from "~/shared/entities/enums/MessageContentType";
-import { MessageRole } from "~/shared/entities/enums/MessageRole";
-import { ToolResultStatus } from "~/shared/entities/enums/ToolResultStatus";
+import { MessageContentType } from "~/modules/chat/domain/enums/MessageContentType";
+import { MessageRole } from "~/modules/chat/domain/enums/MessageRole";
+import { PiAiChatGateway } from "~/modules/chat/server/PiAiChatGateway";
+import { loadConfig } from "~/shared/server/Config";
 import { loadModeEnv, resolveMode } from "../../plugins/env";
 
 const root = resolve(import.meta.dirname, "..", "..");
@@ -13,7 +12,7 @@ loadModeEnv(mode, root);
 
 const config = loadConfig();
 const gateway = new PiAiChatGateway(config.ai);
-const response = await gateway.runAgent({
+const response = await gateway.complete({
   channelAddress: "pi-smoke-test",
   messages: [
     {
@@ -25,17 +24,6 @@ const response = await gateway.runAgent({
     },
   ],
   tools: [],
-  maxToolRounds: 1,
-  onToolCalls: async () => {},
-  executeTool: async (call) => ({
-    type: MessageContentType.ToolResult,
-    callId: call.callId,
-    outcome: {
-      status: ToolResultStatus.Failed,
-      code: "UnexpectedToolCall",
-      message: "The smoke test does not expose tools.",
-    },
-  }),
 });
 
 console.log(

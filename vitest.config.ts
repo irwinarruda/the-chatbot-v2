@@ -15,7 +15,11 @@ export default defineConfig(({ mode = "test" }) => {
       hookTimeout: 120000,
       testTimeout: 120000,
       coverage: {
-        include: ["src/server/services/**/*.ts", "src/shared/entities/**/*.ts"],
+        include: [
+          "src/modules/*/application/**/*.ts",
+          "src/modules/*/domain/**/*.ts",
+          "src/shared/http/**/*.ts",
+        ],
       },
     },
   };
