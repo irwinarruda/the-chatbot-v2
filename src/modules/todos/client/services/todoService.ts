@@ -2,10 +2,14 @@ import {
   type SaveTodoRequest,
   type TodoDueFilter,
   TodoItemResponse,
-  type TodoResponse,
+  TodoResponse,
   type TodoStatus,
   TodosResponse,
 } from "~/modules/todos/contracts/TodoContracts";
+import {
+  normalizeApiResponse,
+  parseApiResponse,
+} from "~/shared/client/utils/ApiResponseParser";
 import { ApiErrorResponse } from "~/shared/contracts/ApiErrorContract";
 
 export interface TodoFilters {
@@ -15,13 +19,19 @@ export interface TodoFilters {
   status?: "all" | TodoStatus;
 }
 
-export type TodoSaveDto = SaveTodoRequest;
+export type TodoSaveDTO = SaveTodoRequest;
 
 async function parseError(response: Response): Promise<Error> {
-  const body = ApiErrorResponse.safeParse(await response.json());
+  const body = ApiErrorResponse.safeParse(
+    normalizeApiResponse(await response.json()),
+  );
   return new Error(
     body.success ? body.data.message : `Request failed with ${response.status}`,
   );
+}
+
+export function parseTodo(data: unknown): TodoResponse {
+  return parseApiResponse(TodoResponse, data);
 }
 
 export const todoService = {
@@ -36,33 +46,33 @@ export const todoService = {
     const url = `/api/v1/web/todos${params.size ? `?${params}` : ""}`;
     const response = await fetch(url);
     if (!response.ok) throw await parseError(response);
-    return TodosResponse.parse(await response.json()).todos;
+    return parseApiResponse(TodosResponse, await response.json()).todos;
   },
 
   async getTodo(id: string): Promise<TodoResponse> {
     const response = await fetch(`/api/v1/web/todos/${id}`);
     if (!response.ok) throw await parseError(response);
-    return TodoItemResponse.parse(await response.json()).todo;
+    return parseApiResponse(TodoItemResponse, await response.json()).todo;
   },
 
-  async createTodo(dto: TodoSaveDto): Promise<TodoResponse> {
+  async createTodo(dto: TodoSaveDTO): Promise<TodoResponse> {
     const response = await fetch("/api/v1/web/todos", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(dto),
     });
     if (!response.ok) throw await parseError(response);
-    return TodoItemResponse.parse(await response.json()).todo;
+    return parseApiResponse(TodoItemResponse, await response.json()).todo;
   },
 
-  async updateTodo(id: string, dto: TodoSaveDto): Promise<TodoResponse> {
+  async updateTodo(id: string, dto: TodoSaveDTO): Promise<TodoResponse> {
     const response = await fetch(`/api/v1/web/todos/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(dto),
     });
     if (!response.ok) throw await parseError(response);
-    return TodoItemResponse.parse(await response.json()).todo;
+    return parseApiResponse(TodoItemResponse, await response.json()).todo;
   },
 
   async deleteTodo(id: string): Promise<void> {

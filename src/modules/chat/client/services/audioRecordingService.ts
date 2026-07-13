@@ -1,6 +1,6 @@
-import { preferredAudioMimeTypesConstants } from "~/client/constants/preferredAudioMimeTypesConstants";
+import { preferredAudioMimeTypesConstants } from "~/modules/chat/client/constants/preferredAudioMimeTypesConstants";
 
-type StartAudioRecordingServiceDto = {
+type StartAudioRecordingServiceDTO = {
   audioInputDeviceId?: string;
   onTick: (duration: number) => void;
   onRecorded: (recording: { blob: Blob; url: string }) => Promise<void> | void;
@@ -36,7 +36,7 @@ export function createRecordedBlob(
 }
 
 export const audioRecordingService = {
-  async start(dto: StartAudioRecordingServiceDto): Promise<void> {
+  async start(dto: StartAudioRecordingServiceDTO): Promise<void> {
     if (activeMediaRecorder) {
       clearInterval(activeTimer);
       activeTimer = undefined;

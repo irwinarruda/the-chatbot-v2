@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const ChannelMessageResponse = z.object({
   id: z.string().uuid(),
-  clientMessageId: z.string().uuid().optional(),
+  clientMessageId: z.string().min(1).optional(),
   type: z.enum(["text", "interactive", "audio"]),
   userType: z.enum(["user", "bot"]),
   text: z.string().optional(),

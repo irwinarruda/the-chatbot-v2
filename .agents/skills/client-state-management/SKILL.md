@@ -67,7 +67,9 @@ Keep ephemeral interaction state out of the URL.
 ## Feature-owned slices
 
 Each feature owns its slice under the module's `client/` area. The app may compose
-slices into one hook, but composition does not erase ownership.
+slices into one hook under `src/shared/client/stores`, but composition does not erase
+ownership. Feature slice definitions must not import the app-wide store composition
+or its full state type; type each slice against only the state it actually reads.
 
 A slice interface may contain:
 

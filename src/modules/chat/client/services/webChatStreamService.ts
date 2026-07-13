@@ -2,8 +2,9 @@ import {
   type WebChatEvent,
   WebChatEvent as WebChatEventContract,
 } from "~/modules/chat/contracts/ChatContracts";
+import { parseApiResponse } from "~/shared/client/utils/ApiResponseParser";
 
-type SubscribeToWebChatStreamDto = {
+type SubscribeToWebChatStreamDTO = {
   onOpen: () => void;
   onClose: () => void;
   onEvent: (event: WebChatEvent) => void;
@@ -11,8 +12,12 @@ type SubscribeToWebChatStreamDto = {
   retryMs?: number;
 };
 
+export function parseWebChatEvent(data: unknown): WebChatEvent {
+  return parseApiResponse(WebChatEventContract, data);
+}
+
 export const webChatStreamService = {
-  subscribe(dto: SubscribeToWebChatStreamDto): () => void {
+  subscribe(dto: SubscribeToWebChatStreamDTO): () => void {
     let eventSource: EventSource | undefined;
     let retryTimeout: ReturnType<typeof setTimeout> | undefined;
     let active = true;
@@ -26,9 +31,7 @@ export const webChatStreamService = {
 
       eventSource.onmessage = (eventMessage) => {
         try {
-          dto.onEvent(
-            WebChatEventContract.parse(JSON.parse(eventMessage.data)),
-          );
+          dto.onEvent(parseWebChatEvent(JSON.parse(eventMessage.data)));
         } catch {
           dto.onMalformedEvent?.();
         }

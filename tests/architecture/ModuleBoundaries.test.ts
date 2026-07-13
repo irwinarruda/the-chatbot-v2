@@ -13,7 +13,7 @@ describe("module boundaries", () => {
       return (
         source
           .match(
-            /from ["']~\/(?:infra|server|client|shared\/http|modules\/[^/]+\/(?:application|server|client))\//g,
+            /from ["']~\/(?:infra|server|shared\/(?:client|http)|modules\/[^/]+\/(?:application|server|client))\//g,
           )
           ?.map(() => file) ?? []
       );
@@ -29,7 +29,33 @@ describe("module boundaries", () => {
       "src/modules/*/server/**/*.ts",
     ]);
     const violations = files.filter((file) =>
-      readFileSync(file, "utf8").includes('from "~/client/'),
+      readFileSync(file, "utf8").includes('from "~/shared/client/'),
+    );
+
+    expect(violations).toEqual([]);
+  });
+
+  test("shared client primitives do not import feature modules", () => {
+    const files = globSync([
+      "src/shared/client/components/**/*.ts",
+      "src/shared/client/components/**/*.tsx",
+      "src/shared/client/entities/**/*.ts",
+      "src/shared/client/i18n/**/*.ts",
+      "src/shared/client/providers/**/*.ts",
+      "src/shared/client/services/**/*.ts",
+      "src/shared/client/utils/**/*.ts",
+    ]);
+    const violations = files.filter((file) =>
+      readFileSync(file, "utf8").includes('from "~/modules/'),
+    );
+
+    expect(violations).toEqual([]);
+  });
+
+  test("feature slices do not import the app store composition", () => {
+    const files = globSync("src/modules/*/client/state/**/*.ts");
+    const violations = files.filter((file) =>
+      readFileSync(file, "utf8").includes('from "~/shared/client/stores'),
     );
 
     expect(violations).toEqual([]);

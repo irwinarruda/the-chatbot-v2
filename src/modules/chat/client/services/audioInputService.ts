@@ -1,4 +1,4 @@
-import type { AudioInputOption } from "~/client/entities/AudioInputOption";
+import type { AudioInputOption } from "~/modules/chat/client/entities/AudioInputOption";
 
 const STORAGE_KEY = "chat-page-audio-input-device-id";
 

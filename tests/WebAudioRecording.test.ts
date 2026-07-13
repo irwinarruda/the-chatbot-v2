@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { preferredAudioMimeTypesConstants } from "~/client/constants/preferredAudioMimeTypesConstants";
+import { preferredAudioMimeTypesConstants } from "~/modules/chat/client/constants/preferredAudioMimeTypesConstants";
 import {
   createRecordedBlob,
   resolveRecordedMimeType,

@@ -8,13 +8,13 @@ description: "Authoritative guide to The Chatbot client JSX/TSX and terminal UI 
 ## Source of truth and precedence
 
 The implemented client UI, shared primitives, and terminal tokens in
-`src/client/styles/tailwind.css` are the source of truth. This skill owns TSX/JSX
+`src/shared/client/styles/tailwind.css` are the source of truth. This skill owns TSX/JSX
 implementation. Non-visual TypeScript belongs to `app-coding-styleguide`.
 
 Precedence:
 
 1. The user's explicit request, scoped `AGENTS.md`, and an intentional nearby pattern.
-2. `src/client/styles/tailwind.css`, terminal tokens, and shared UI primitives.
+2. `src/shared/client/styles/tailwind.css`, terminal tokens, and shared UI primitives.
 3. This skill as the default client UI implementation guide.
 
 Keep diffs focused. Do not restyle unrelated JSX or Tailwind classes.
@@ -28,7 +28,8 @@ or icon semantics. Do not load it for a purely structural JSX edit.
 Before implementing UI:
 
 1. Inspect the nearest analogous screen/component.
-2. Search shared terminal components and `src/shared/client` primitives.
+2. Search `src/shared/client/components/terminal` and
+   `src/shared/client/components/ui`.
 3. Check shadcn/Base UI exports and existing wrappers.
 4. Reuse the established primitive when it fits.
 5. Create a module component only for feature-owned reuse or independent behavior.

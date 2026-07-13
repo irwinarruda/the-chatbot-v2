@@ -7,10 +7,10 @@ description: "Authoritative guide to The Chatbot's feature-oriented modular-mono
 
 ## Source of truth and precedence
 
-The implemented architecture under `src/modules`, `src/shared`, `src/client/routes`,
-and `infra` is the source of truth. This skill describes the
-completed target architecture. When prose and code disagree, verify whether the code
-is an intentional exception or architectural drift before copying it.
+The implemented architecture under `src/modules`, `src/shared`, and `infra` is the
+source of truth. This skill describes the completed target architecture. When prose
+and code disagree, verify whether the code is an intentional exception or
+architectural drift before copying it.
 
 Precedence:
 
@@ -57,8 +57,8 @@ framework route/controller -> module application workflow -> domain model
                                                    -> outbound port -> adapter
                                                    -> feature-local persistence
 
-client route -> feature screen/component -> feature slice -> client service
-                                     -> owning HTTP/SSE contract -> controller
+shared client route -> feature screen/component -> feature slice -> client service
+                                            -> owning contract -> HTTP controller
 ```
 
 Framework entrypoints remain thin. Modules own behavior. Infrastructure selects
@@ -74,7 +74,11 @@ src/
       application/     cohesive workflows and outbound port contracts
       contracts/       Zod-backed HTTP/SSE request, response, and event contracts
       server/          controllers and concrete server adapters owned by the module
-      client/          screens, components, stores, and browser services
+      client/          feature-owned browser implementation
+        screens/       page-level workflow composition
+        components/    feature-owned React UI
+        state/         Zustand slices and pure client reducers
+        services/      HTTP, SSE, storage, media, and browser adapters
   shared/
     domain/            tiny domain-agnostic kernel only
     contracts/         transport primitives no capability owns
@@ -84,9 +88,19 @@ src/
       functions/       TanStack server functions
       middleware/      cross-cutting request/response behavior
       utils/           shared HTTP support helpers
-    client/            app-wide UI primitives, providers, and generic hooks
+    client/            React/TanStack application shell and shared client primitives
+      routes/          thin TanStack route entrypoints
+      stores/          app-wide Zustand composition root
+      components/      app-wide UI only
+        ui/            generic Base UI and shadcn primitives
+        terminal/      shared terminal design system
+      providers/       app-wide React providers and hooks
+      i18n/            dictionaries and locale lookup
+      styles/          global client tokens and Tailwind source
+      services/        app-wide browser services
+      entities/        plain app-wide browser data
+      utils/           generic browser/client helpers
     server/            app-wide technical ports such as database execution
-  client/routes/       thin TanStack route entrypoints
 infra/
   bootstrap.ts         typed production composition root
   config.ts            environment and technical configuration
@@ -133,8 +147,10 @@ Prefer explicit imports from the published owner.
 ## Dependency direction
 
 ```text
-TanStack entrypoints -> module public APIs
-module client -> module contracts + shared client primitives
+shared client routes -> module client public APIs
+shared client store composition -> module feature slices
+module client screens/components -> module contracts + shared client primitives
+module client screens -> shared client store hook
 module server -> module application + module domain
 module application -> module domain + outbound ports, including database execution
 module adapters -> outbound ports + provider/database libraries
@@ -267,20 +283,28 @@ Keep the TanStack server HTTP layer under `src/shared/http`, separated by
 responsibility: the route manifest at the root, route adapters in `controllers/`,
 server functions in `functions/`, cross-cutting behavior in `middleware/`, and
 response, error, serialization, authentication, and content-loading support in
-`utils/`. This establishes the shared HTTP module without prematurely moving client
-code. Keep business workflows and provider behavior with their owning feature
+`utils/`. Keep business workflows and provider behavior with their owning feature
 modules; HTTP files remain thin framework adapters.
 
 ## Client ownership
 
 Keep backend DDD out of React state. Browser models are plain data.
 
-- Thin route entrypoints compose module screens.
+- Thin route entrypoints under `src/shared/client/routes` compose published module
+  screens.
 - Screens coordinate route state and feature actions.
 - Components render and emit user intent.
 - Zustand slices own shared client workflow state.
 - Client services own browser HTTP/SSE/storage boundaries.
-- Shared UI contains only app-wide primitives and providers.
+- `src/shared/client/stores` composes module slices into the app hook; feature slice
+  definitions must not import that composition root or its app-wide state type.
+- Shared client primitives contain only app-wide UI, providers, browser services,
+  and generic hooks. They must not import feature modules.
+
+`src/shared/client` has two intentional dependency roles. `routes/` and `stores/`
+are outer composition edges and may import published module client APIs or slices.
+Its primitive folders are inward dependencies consumed by modules and must stay
+module-agnostic. Do not flatten these roles into one undifferentiated shared folder.
 
 Load `client-state-management` for state placement and lifecycle rules.
 
@@ -346,6 +370,8 @@ the narrowest reliable seam.
 - SQL? Owning module, near its workflow; narrow aggregate store only if justified.
 - HTTP parsing/response mapping? Controller.
 - Shared client workflow state? Feature slice.
+- TanStack client route or app-wide store composition? `src/shared/client`.
+- Feature screen or component? Owning module `client/`.
 - Navigable state? URL, not a duplicate slice field.
 - Pure difficult transformation? One named module-local function with focused tests.
 - Cross-feature linear step? Direct published contract or explicit coordinator.

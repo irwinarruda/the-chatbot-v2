@@ -1,6 +1,6 @@
+import type { StateCreator } from "zustand";
 import { compute } from "zustand-computed-state";
-import type { AudioInputOption } from "~/client/entities/AudioInputOption";
-import type { AppState } from "~/client/stores";
+import type { AudioInputOption } from "~/modules/chat/client/entities/AudioInputOption";
 import { audioInputService } from "~/modules/chat/client/services/audioInputService";
 import { audioRecordingService } from "~/modules/chat/client/services/audioRecordingService";
 import { webChatService } from "~/modules/chat/client/services/webChatService";
@@ -18,7 +18,18 @@ export interface RecordingSlice {
   stopRecording: (shouldSend: boolean) => void;
 }
 
-export const recordingSlice: AppState<RecordingSlice> = (set, get) => ({
+type RecordingState = RecordingSlice & {
+  chatError?: "loading" | "sending" | "microphone";
+  chatMessages: ChatMessage[];
+  isChatSubmitting: boolean;
+};
+
+export const recordingSlice: StateCreator<
+  RecordingState,
+  [],
+  [],
+  RecordingSlice
+> = (set, get) => ({
   audioInputOptions: [],
   selectedAudioInputId: "",
   isRecording: false,

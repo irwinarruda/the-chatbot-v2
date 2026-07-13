@@ -54,12 +54,16 @@ module's `contracts/`.
 Use the same schema on both sides:
 
 - controller parses requests and constructs/parses responses;
-- client service parses `response.json()` with the response schema;
+- the HTTP/SSE adapter serializes response keys to snake_case;
+- the client service normalizes response keys to camelCase, then parses them with
+  the response schema;
 - stream producer emits the event contract;
 - stream consumer parses the same event contract.
 
-Prefer camelCase for application-owned wire fields. Keep snake_case or provider
-naming private to adapters that do not own the protocol.
+Keep application contracts, client state, and domain data in camelCase. Application
+API responses always cross the wire in snake_case; that casing belongs only to the
+server and client transport adapters. Keep provider naming private to the adapter
+that owns the provider protocol.
 
 ```ts
 export const TodoResponse = z.object({

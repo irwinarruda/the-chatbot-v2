@@ -4,6 +4,7 @@ import {
   InternalServerException,
 } from "~/shared/errors/ApplicationErrors";
 import { ValidationException } from "~/shared/errors/DomainErrors";
+import { Printable } from "~/shared/http/utils/Printable";
 
 export const ExceptionResponse = {
   handle(error: unknown): ApplicationFailure {
@@ -29,7 +30,7 @@ export const ExceptionResponse = {
 
 export function createApiErrorResponse(error: unknown): Response {
   const response = ExceptionResponse.handle(error);
-  return new Response(JSON.stringify(response), {
+  return new Response(Printable.make(response), {
     status: response.statusCode,
     headers: { "Content-Type": "application/json" },
   });

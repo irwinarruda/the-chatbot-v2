@@ -1,21 +1,25 @@
-import type { SendWebAudioDto } from "~/client/entities/dtos/SendWebAudioDto";
-import type { SendWebMessageDto } from "~/client/entities/dtos/SendWebMessageDto";
+import type { SendWebAudioDTO } from "~/modules/chat/client/entities/dtos/SendWebAudioDTO";
+import type { SendWebMessageDTO } from "~/modules/chat/client/entities/dtos/SendWebMessageDTO";
 import {
   ChannelMessageResponse,
   ChatMessagesResponse,
 } from "~/modules/chat/contracts/ChatContracts";
 import { CurrentUserResponse as IdentityCurrentUserResponse } from "~/modules/identity/contracts/IdentityContracts";
+import {
+  normalizeApiResponse,
+  parseApiResponse,
+} from "~/shared/client/utils/ApiResponseParser";
 import { ApiErrorResponse } from "~/shared/contracts/ApiErrorContract";
 
 export type ChatMessage = ChannelMessageResponse;
 export type CurrentUser = IdentityCurrentUserResponse;
 
 export function parseChatMessage(data: unknown): ChatMessage {
-  return ChannelMessageResponse.parse(data);
+  return parseApiResponse(ChannelMessageResponse, data);
 }
 
 export function parseCurrentUser(data: unknown): CurrentUser {
-  return IdentityCurrentUserResponse.parse(data);
+  return parseApiResponse(IdentityCurrentUserResponse, data);
 }
 
 export class WebChatAuthError extends Error {
@@ -36,7 +40,9 @@ export class WebChatApiError extends Error {
 }
 
 async function parseError(response: Response): Promise<WebChatApiError> {
-  const body = ApiErrorResponse.safeParse(await response.json());
+  const body = ApiErrorResponse.safeParse(
+    normalizeApiResponse(await response.json()),
+  );
   return new WebChatApiError(
     body.success ? body.data.message : `Request failed with ${response.status}`,
     response.status,
@@ -53,16 +59,17 @@ export const webChatService = {
       throw new WebChatAuthError("not_registered");
     }
     if (!response.ok) throw await parseError(response);
-    return IdentityCurrentUserResponse.parse(await response.json());
+    return parseCurrentUser(await response.json());
   },
 
   async getMessages(): Promise<ChatMessage[]> {
     const response = await fetch("/api/v1/web/messages");
     if (!response.ok) throw await parseError(response);
-    return ChatMessagesResponse.parse(await response.json()).messages;
+    return parseApiResponse(ChatMessagesResponse, await response.json())
+      .messages;
   },
 
-  async sendMessage(dto: SendWebMessageDto): Promise<void> {
+  async sendMessage(dto: SendWebMessageDTO): Promise<void> {
     const response = await fetch("/api/v1/web/messages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -71,7 +78,7 @@ export const webChatService = {
     if (!response.ok) throw await parseError(response);
   },
 
-  async sendAudio(dto: SendWebAudioDto): Promise<void> {
+  async sendAudio(dto: SendWebAudioDTO): Promise<void> {
     const response = await fetch("/api/v1/web/audio", {
       method: "POST",
       headers: {

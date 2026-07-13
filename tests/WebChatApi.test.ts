@@ -10,10 +10,10 @@ describe("webChatService", () => {
       parseChatMessage({
         id: "00000000-0000-4000-8000-000000000001",
         type: "interactive",
-        userType: "bot",
+        user_type: "bot",
         text: "Pick an option",
-        buttonReplyOptions: ["A", "B"],
-        createdAt: "2025-01-02T03:04:05.000Z",
+        button_reply_options: ["A", "B"],
+        created_at: "2025-01-02T03:04:05.000Z",
       }),
     ];
 
@@ -34,7 +34,7 @@ describe("webChatService", () => {
       id: "00000000-0000-4000-8000-000000000002",
       name: "Irwin",
       email: undefined,
-      phoneNumber: "5511999999999",
+      phone_number: "5511999999999",
     });
 
     expect(user).toEqual({
@@ -49,8 +49,8 @@ describe("webChatService", () => {
     const message = parseChatMessage({
       id: "00000000-0000-4000-8000-000000000001",
       type: "text",
-      userType: "user",
-      createdAt: "2025-01-02T03:04:05.000Z",
+      user_type: "user",
+      created_at: "2025-01-02T03:04:05.000Z",
     });
 
     expect(message).toEqual({

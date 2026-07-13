@@ -1,20 +1,23 @@
 import { index, rootRoute, route } from "@tanstack/virtual-file-routes";
 
-export const routes = rootRoute("client/routes/__root.tsx", [
-  index("client/routes/index.tsx"),
-  route("/privacy", "client/routes/privacy.tsx"),
+export const routes = rootRoute("shared/client/routes/__root.tsx", [
+  index("shared/client/routes/index.tsx"),
+  route("/privacy", "shared/client/routes/privacy.tsx"),
   route("/chat", [
-    index("client/routes/chat/index.tsx"),
-    route("/login", "client/routes/chat/login.tsx"),
-    route("/not-registered", "client/routes/chat/not-registered.tsx"),
+    index("shared/client/routes/chat/index.tsx"),
+    route("/login", "shared/client/routes/chat/login.tsx"),
+    route("/not-registered", "shared/client/routes/chat/not-registered.tsx"),
   ]),
-  route("/todo", "client/routes/todo.tsx", [
-    index("client/routes/todo/index.tsx"),
-    route("/$todoId", "client/routes/todo/$todoId.tsx"),
+  route("/todo", "shared/client/routes/todo.tsx", [
+    index("shared/client/routes/todo/index.tsx"),
+    route("/$todoId", "shared/client/routes/todo/$todoId.tsx"),
   ]),
   route("/google", [
-    route("/already-signed-in", "client/routes/google/already-signed-in.tsx"),
-    route("/thank-you", "client/routes/google/thank-you.tsx"),
+    route(
+      "/already-signed-in",
+      "shared/client/routes/google/already-signed-in.tsx",
+    ),
+    route("/thank-you", "shared/client/routes/google/thank-you.tsx"),
   ]),
   route("/api/v1/status", "shared/http/controllers/status.ts"),
   route("/api/v1/migration", "shared/http/controllers/migration.ts"),

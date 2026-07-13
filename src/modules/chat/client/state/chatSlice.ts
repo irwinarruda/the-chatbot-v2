@@ -1,5 +1,5 @@
+import type { StateCreator } from "zustand";
 import { compute } from "zustand-computed-state";
-import type { AppState } from "~/client/stores";
 import {
   WebChatAuthError,
   webChatService,
@@ -34,7 +34,14 @@ export type ChatSlice = {
   logout: () => Promise<void>;
 };
 
-export const chatSlice: AppState<ChatSlice> = (set, get) => {
+type ChatState = ChatSlice & {
+  stopRecording: (shouldSend: boolean) => void;
+};
+
+export const chatSlice: StateCreator<ChatState, [], [], ChatSlice> = (
+  set,
+  get,
+) => {
   let stopStream: (() => void) | undefined;
   return {
     currentUser: undefined,

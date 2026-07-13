@@ -20,7 +20,7 @@ component patterns, prose rules, animations, or visual semantics.
 
 Use this skill to make every UI change look native to **The Chatbot**. The app is a personal terminal-flavored assistant with a macOS terminal window frame, monochrome/monospace structure, green command prompts, subdued surfaces, and terminal color semantics for status and meaning.
 
-The source of truth is this application's implementation and the tokens in `src/client/styles/tailwind.css`. When there is tension between generic shadcn defaults and this app's aesthetic, adapt shadcn primitives into the terminal palette instead of introducing a separate visual language.
+The source of truth is this application's implementation and the tokens in `src/shared/client/styles/tailwind.css`. When there is tension between generic shadcn defaults and this app's aesthetic, adapt shadcn primitives into the terminal palette instead of introducing a separate visual language.
 
 The whole interface should feel like a polished terminal emulator, not a generic SaaS dashboard:
 
@@ -33,7 +33,7 @@ The whole interface should feel like a polished terminal emulator, not a generic
 
 ## Tech and CSS architecture
 
-- Styling uses **Tailwind CSS v4**, CSS-first config in `src/client/styles/tailwind.css`.
+- Styling uses **Tailwind CSS v4**, CSS-first config in `src/shared/client/styles/tailwind.css`.
 - The project imports Tailwind, `tw-animate-css`, and `shadcn/tailwind.css` from that one CSS file.
 - Custom design tokens live in `@theme`; light mode overrides token values with `[data-theme="light"]`.
 - There is no Tailwind config file; do not add one for normal app styling.

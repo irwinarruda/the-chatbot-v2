@@ -129,6 +129,8 @@ its adapter.
 - Name provider implementations by provider plus capability.
 - Name persistence collaborators for the real aggregate/capability, never
   `BaseRepository` or `GenericDAO`.
+- Spell acronym suffixes consistently in uppercase, including `DTO`; use
+  `CreateTodoDTO`, never `CreateTodoDto`, in identifiers and filenames.
 - Do not prefix interfaces with `I` in new code. The type's role and location should
   make the abstraction clear.
 
@@ -243,7 +245,7 @@ State ownership and async lifecycle rules live in `client-state-management`.
 Use the configured `~/*` aliases for imports that cross directories:
 
 ```ts
-import { Button } from "~/shared/client/components/Button";
+import { Button } from "~/shared/client/components/ui/button";
 import { Chat } from "~/modules/chat/domain/Chat";
 ```
 

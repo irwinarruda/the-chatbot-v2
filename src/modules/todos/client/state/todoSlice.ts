@@ -1,5 +1,5 @@
+import type { StateCreator } from "zustand";
 import { compute } from "zustand-computed-state";
-import type { AppState } from "~/client/stores";
 import {
   type TodoFilters,
   todoService,
@@ -46,7 +46,7 @@ const emptyDraft: TodoDraft = {
   status: "Pending",
 };
 
-export const todoSlice: AppState<TodoSlice> = (set, get) => ({
+export const todoSlice: StateCreator<TodoSlice> = (set, get) => ({
   todos: [],
   selectedTodo: undefined,
   todoDraft: emptyDraft,

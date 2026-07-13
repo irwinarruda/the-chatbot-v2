@@ -51,7 +51,7 @@ The architecture, the layering, the "no repositories, raw SQL inside services" p
 | Runtime          | **Bun**                            | Fast install, fast scripts, native TypeScript. Used as the package manager and script runner; production still runs on Node-compatible Nitro output. |
 | Server framework | **TanStack Start** (+ Nitro)       | File-based API routes, server functions, and a real React app share the same router. No separate Express/Next split.                                 |
 | Client           | **React 19** + **TanStack Router** | Type-safe routing all the way into loaders and search params. Pairs naturally with Start.                                                            |
-| Language         | **TypeScript** (strict-ish)        | Shared types between `src/server`, `src/client`, and `src/shared` — domain entities are literal classes used on both sides.                          |
+| Language         | **TypeScript** (strict-ish)        | Feature code lives under `src/modules`; app-wide HTTP, client, contracts, and technical infrastructure live under `src/shared`.                    |
 | Database         | **PostgreSQL** + `postgres` driver | Tagged-template SQL inside services. No ORM, no repository layer — see Architecture below.                                                           |
 | Migrations       | **node-pg-migrate**                | Plain JS migrations under `infra/migrations/`. Versioned, reversible, simple.                                                                        |
 | LLM              | **Pi AI** + **Pi Agent Core**      | Provider normalization and the model/tool loop live behind `IAiChatGateway`; PostgreSQL remains the conversation source of truth.                    |

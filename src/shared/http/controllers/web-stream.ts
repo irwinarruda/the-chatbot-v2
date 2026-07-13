@@ -5,6 +5,7 @@ import {
   WebChatEvent as WebChatEventContract,
 } from "~/modules/chat/contracts/ChatContracts";
 import { Http } from "~/shared/http/utils/Http";
+import { Printable } from "~/shared/http/utils/Printable";
 
 const encoder = new TextEncoder();
 const SSE_HEADERS = {
@@ -70,7 +71,7 @@ function encodeSseComment(comment: string): Uint8Array {
 
 function encodeSseData(event: WebChatEvent): Uint8Array {
   return encoder.encode(
-    `id: ${event.type === "error" ? "" : event.sequence}\ndata: ${JSON.stringify(WebChatEventContract.parse(event))}\n\n`,
+    `id: ${event.type === "error" ? "" : event.sequence}\ndata: ${Printable.make(WebChatEventContract.parse(event))}\n\n`,
   );
 }
 
