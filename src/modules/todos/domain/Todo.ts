@@ -16,6 +16,19 @@ export interface TodoConfig {
   updatedAt?: Date;
 }
 
+export interface RestoredTodoConfig {
+  id: string;
+  idUser: string;
+  idSourceMessage?: string;
+  sourceMessage?: Message;
+  name: string;
+  description?: string;
+  dueDate?: Date;
+  status?: TodoStatus;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export class Todo {
   id: string;
   idUser: string;
@@ -57,12 +70,7 @@ export class Todo {
     this.updatedAt = config.updatedAt ?? new Date();
   }
 
-  static restore(
-    config: Required<
-      Pick<TodoConfig, "id" | "idUser" | "name" | "createdAt" | "updatedAt">
-    > &
-      TodoConfig,
-  ): Todo {
+  static restore(config: RestoredTodoConfig): Todo {
     return new Todo(config);
   }
 

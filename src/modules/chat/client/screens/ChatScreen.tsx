@@ -1,6 +1,13 @@
 import { useNavigate, useRouter } from "@tanstack/react-router";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ArrowDown, ListTodo, Mic, Send, Trash2 } from "lucide-react";
+import {
+  ArrowDown,
+  ListTodo,
+  Mic,
+  ReceiptText,
+  Send,
+  Trash2,
+} from "lucide-react";
 import {
   type ChangeEvent,
   type KeyboardEvent,
@@ -146,6 +153,10 @@ export function ChatScreen() {
     navigate({ to: "/todo" });
   }
 
+  function onOpenBills() {
+    navigate({ to: "/bills" });
+  }
+
   async function onToggleLocale() {
     await toggleLocale();
     router.invalidate();
@@ -260,6 +271,9 @@ export function ChatScreen() {
           </TerminalChromeButton>
           <TerminalChromeButton onClick={onOpenTodos} title={t.todoAction}>
             <ListTodo className="size-3" />
+          </TerminalChromeButton>
+          <TerminalChromeButton onClick={onOpenBills} title={t.billsAction}>
+            <ReceiptText className="size-3" />
           </TerminalChromeButton>
           <TerminalChromeButton
             onClick={toggleTheme}

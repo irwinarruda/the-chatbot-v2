@@ -47,13 +47,18 @@ Run the formatter instead of hand-tuning mechanical layout.
 - Prefer inferred local and return types when inference expresses the same contract.
 - Add explicit types for public contracts, interfaces, generic boundaries, and cases
   where inference becomes wider or less useful.
+- Give lifecycle boundaries plain named input types. Do not construct a public
+  method or factory signature with mapped-type puzzles such as
+  `Required<Pick<Config, ...>> & Config`; repeat the fields in an explicit contract
+  when that makes creation and restoration requirements obvious.
 - Use `undefined` or optional properties in application types. Avoid `null` outside
   protocol and SQL boundaries.
 - Convert `undefined` to SQL `NULL` with `?? null` directly at the query boundary.
 - Prefer named functions when a useful name improves readability, reuse, stack
   traces, or tests.
 - Keep short third-party callbacks anonymous when a name would add noise.
-- Never use nested or chained ternaries. Use an explicit branch or a named selection.
+- Do not use ternary expressions. Use an explicit branch, lookup, or named
+  selection instead.
 - Prefer composition over inheritance.
 - Keep transport/provider types private to their adapter unless they are an owned
   module contract.

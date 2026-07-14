@@ -11,6 +11,7 @@ describe("AiToolService", () => {
     const service = new AiToolService(
       orquestrator.authService,
       orquestrator.cashFlowService,
+      orquestrator.monthlyExpenseService,
       orquestrator.todoService,
       orquestrator.aiGateway,
       () => now,

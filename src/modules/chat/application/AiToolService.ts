@@ -1,10 +1,17 @@
 import { ZodError, z } from "zod";
 import type { CashFlowService } from "~/modules/cash-flow/application/CashFlowService";
+import type {
+  MonthlyExpenseItem,
+  MonthlyExpenseService,
+} from "~/modules/cash-flow/application/MonthlyExpenseService";
 import { AddCashFlowSpreadsheetUrlToolDTO } from "~/modules/cash-flow/application/tools/AddCashFlowSpreadsheetUrlToolDTO";
 import { AddTransactionToolDTO } from "~/modules/cash-flow/application/tools/AddTransactionToolDTO";
+import { CreateMonthlyExpenseToolDTO } from "~/modules/cash-flow/application/tools/CreateMonthlyExpenseToolDTO";
 import { GetBankAccountsStatusToolDTO } from "~/modules/cash-flow/application/tools/GetBankAccountsStatusToolDTO";
 import { GetLatestTransactionsToolDTO } from "~/modules/cash-flow/application/tools/GetLatestTransactionsToolDTO";
+import { ListMonthlyExpensesToolDTO } from "~/modules/cash-flow/application/tools/ListMonthlyExpensesToolDTO";
 import { PhoneNumberToolDTO } from "~/modules/cash-flow/application/tools/PhoneNumberToolDTO";
+import { SetMonthlyExpensePaidToolDTO } from "~/modules/cash-flow/application/tools/SetMonthlyExpensePaidToolDTO";
 import { SyncBankAccountBalanceToolDTO } from "~/modules/cash-flow/application/tools/SyncBankAccountBalanceToolDTO";
 import { TransferBetweenBankAccountsToolDTO } from "~/modules/cash-flow/application/tools/TransferBetweenBankAccountsToolDTO";
 import type { IAiChatGateway } from "~/modules/chat/application/ports/IAiChatGateway";
@@ -39,6 +46,7 @@ const currentDateFormatter = new Intl.DateTimeFormat("en-CA", {
 export class AiToolService extends ToolExecutor {
   private authService: AuthService;
   private cashFlowService: CashFlowService;
+  private monthlyExpenseService: MonthlyExpenseService;
   private todoService: TodoService;
   private aiChatGateway: IAiChatGateway;
   private now: () => Date;
@@ -46,6 +54,7 @@ export class AiToolService extends ToolExecutor {
   constructor(
     authService: AuthService,
     cashFlowService: CashFlowService,
+    monthlyExpenseService: MonthlyExpenseService,
     todoService: TodoService,
     aiChatGateway: IAiChatGateway,
     now: () => Date = () => new Date(),
@@ -53,6 +62,7 @@ export class AiToolService extends ToolExecutor {
     super();
     this.authService = authService;
     this.cashFlowService = cashFlowService;
+    this.monthlyExpenseService = monthlyExpenseService;
     this.todoService = todoService;
     this.aiChatGateway = aiChatGateway;
     this.now = now;
@@ -200,6 +210,88 @@ export class AiToolService extends ToolExecutor {
         },
       },
       {
+        name: "create_monthly_expense",
+        description: [
+          "Create one recurring monthly bill for the authenticated user.",
+          "Use this when the user asks to register a fixed or recurring monthly obligation.",
+          "The expected amount and due day are optional because bills may vary.",
+          "Returns { message, expense }.",
+        ].join("\n"),
+        inputSchema: CreateMonthlyExpenseToolDTO,
+        mutating: true,
+        run: async (args, context) => {
+          const input = CreateMonthlyExpenseToolDTO.parse(args);
+          const user = await this.resolveUser(context);
+          const item = await this.monthlyExpenseService.createMonthlyExpense({
+            idUser: user.id,
+            name: input.name,
+            expectedAmount: input.expected_amount,
+            dueDay: input.due_day,
+          });
+          return {
+            message: "Monthly expense created",
+            expense: this.serializeMonthlyExpense(item),
+          };
+        },
+      },
+      {
+        name: "list_monthly_expenses",
+        description: [
+          "List recurring monthly bills and their paid status for one calendar month.",
+          "Use this before marking a bill when its ID is not already available in a recent tool result.",
+          "Omit month for the current month. Filter by All, Paid, or Unpaid when useful.",
+          "Returns { month, count, expenses }.",
+        ].join("\n"),
+        inputSchema: ListMonthlyExpensesToolDTO,
+        mutating: false,
+        run: async (args, context) => {
+          const input = ListMonthlyExpensesToolDTO.parse(args);
+          const user = await this.resolveUser(context);
+          const items = await this.monthlyExpenseService.listMonthlyExpenses(
+            user.id,
+            input.month,
+          );
+          const filtered = items.filter((item) => {
+            if (!input.status || input.status === "All") return true;
+            return input.status === "Paid" ? item.isPaid : !item.isPaid;
+          });
+          return {
+            month: input.month ?? this.monthlyExpenseService.currentMonth(),
+            count: filtered.length,
+            expenses: filtered.map((item) =>
+              this.serializeMonthlyExpense(item),
+            ),
+          };
+        },
+      },
+      {
+        name: "set_monthly_expense_paid",
+        description: [
+          "Mark one recurring bill as paid or unpaid for one calendar month.",
+          "Use the exact expense ID returned by list_monthly_expenses or add_transaction.",
+          "After an expense transaction suggests a possible bill match, call this only after the user explicitly confirms the match.",
+          "Omit month for the current month. Returns { message, expense }.",
+        ].join("\n"),
+        inputSchema: SetMonthlyExpensePaidToolDTO,
+        mutating: true,
+        run: async (args, context) => {
+          const input = SetMonthlyExpensePaidToolDTO.parse(args);
+          const user = await this.resolveUser(context);
+          const item = await this.monthlyExpenseService.setMonthlyExpensePaid(
+            user.id,
+            input.expense_id,
+            input.is_paid,
+            input.month,
+          );
+          return {
+            message: input.is_paid
+              ? "Monthly expense marked as paid"
+              : "Monthly expense marked as unpaid",
+            expense: this.serializeMonthlyExpense(item),
+          };
+        },
+      },
+      {
         name: "create_todos",
         description: [
           "Create one or more todos for the authenticated user.",
@@ -317,8 +409,14 @@ export class AiToolService extends ToolExecutor {
       },
       {
         name: "add_transaction",
-        description:
-          "Append a transaction specifying its type. Category and bank_account are automatically resolved via classification using available categories and bank accounts. Returns { message, type, category, bank_account, date, value }.",
+        description: [
+          "Append a transaction specifying its type. Category and bank_account are automatically resolved via classification using available categories and bank accounts.",
+          "For an Expense, the result also includes unpaid_monthly_expenses for the current month.",
+          "Compare the transaction description, user message, value, category, and bank account with those candidates.",
+          "If exactly one is a plausible match, finish by calling reply_with_options to ask whether it should be marked paid. Do not mark it automatically.",
+          "If several are plausible, ask the user to choose. If none plausibly match, do not mention the checklist.",
+          "Returns { message, type, category, bank_account, description, date, value, unpaid_monthly_expenses }.",
+        ].join("\n"),
         inputSchema: AddTransactionToolDTO,
         mutating: true,
         run: async (args, context) => {
@@ -352,6 +450,14 @@ export class AiToolService extends ToolExecutor {
           } else {
             await this.cashFlowService.addEarning(transaction);
           }
+          let unpaidMonthlyExpenses: MonthlyExpenseItem[] = [];
+          if (input.type === "Expense") {
+            const monthlyExpenses =
+              await this.monthlyExpenseService.listMonthlyExpenses(user.id);
+            unpaidMonthlyExpenses = monthlyExpenses.filter(
+              (item) => !item.isPaid,
+            );
+          }
           return {
             message: "Transaction added",
             type: input.type,
@@ -360,6 +466,9 @@ export class AiToolService extends ToolExecutor {
             description: parsed.description,
             date,
             value: input.value,
+            unpaidMonthlyExpenses: unpaidMonthlyExpenses.map((item) =>
+              this.serializeMonthlyExpense(item),
+            ),
           };
         },
       },
@@ -510,5 +619,19 @@ export class AiToolService extends ToolExecutor {
         },
       },
     ];
+  }
+
+  private serializeMonthlyExpense(
+    item: Awaited<ReturnType<MonthlyExpenseService["createMonthlyExpense"]>>,
+  ) {
+    return {
+      id: item.expense.id,
+      name: item.expense.name,
+      expectedAmount: item.expense.expectedAmount,
+      dueDay: item.expense.dueDay,
+      month: item.month,
+      isPaid: item.isPaid,
+      paidAt: item.paidAt?.toISOString(),
+    };
   }
 }

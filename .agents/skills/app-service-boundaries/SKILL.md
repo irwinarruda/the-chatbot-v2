@@ -227,6 +227,11 @@ database/transaction executor port; the concrete PostgreSQL wrapper stays in
 next, and private SQL/hydration details near the bottom when they remain in the
 Service.
 
+Create every migration with `bun run migrate:create -- <name>` before editing
+its contents. The command owns the timestamp and filename; never hand-create a
+migration file or invent those values. This keeps migration ordering and the
+repository workflow deterministic.
+
 Do not introduce:
 
 - generic repositories or DAOs;

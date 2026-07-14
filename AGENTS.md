@@ -14,6 +14,10 @@
 
 Use `bun` as the package manager (not npm or yarn).
 
+Always create migration files with `bun run migrate:create -- <name>`, then
+edit the generated file. Never create a migration file manually or invent its
+timestamp/filename.
+
 ## Environment System
 
 Two-layer env loading is handled by the Vite/Vitest configs and infra scripts:

@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import { createApplication } from "~/infra/bootstrap";
 import { Database } from "~/infra/database";
 import type { CashFlowService } from "~/modules/cash-flow/application/CashFlowService";
+import type { MonthlyExpenseService } from "~/modules/cash-flow/application/MonthlyExpenseService";
 import { TestCashFlowSpreadsheetGateway } from "~/modules/cash-flow/server/TestCashFlowSpreadsheetGateway";
 import type { AiToolService } from "~/modules/chat/application/AiToolService";
 import type { MessagingService } from "~/modules/chat/application/MessagingService";
@@ -62,6 +63,7 @@ export class Orquestrator {
   messagingService: MessagingService;
   statusService: StatusService;
   cashFlowService: CashFlowService;
+  monthlyExpenseService: MonthlyExpenseService;
   todoService: TodoService;
   migrationService: MigrationService;
   aiToolService: AiToolService;
@@ -110,6 +112,7 @@ export class Orquestrator {
     this.messagingService = application.services.messaging;
     this.statusService = application.services.status;
     this.cashFlowService = application.services.cashFlow;
+    this.monthlyExpenseService = application.services.monthlyExpenses;
     this.todoService = application.services.todos;
     this.migrationService = application.services.migration;
     this.aiToolService = application.services.tools;

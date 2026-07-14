@@ -12,6 +12,7 @@ export const routes = rootRoute("shared/client/routes/__root.tsx", [
     index("shared/client/routes/todo/index.tsx"),
     route("/$todoId", "shared/client/routes/todo/$todoId.tsx"),
   ]),
+  route("/bills", "shared/client/routes/bills.tsx"),
   route("/google", [
     route(
       "/already-signed-in",
@@ -45,6 +46,18 @@ export const routes = rootRoute("shared/client/routes/__root.tsx", [
   route("/api/v1/web/stream", "shared/http/controllers/web-stream.ts"),
   route("/api/v1/web/todos", "shared/http/controllers/web-todos.ts"),
   route("/api/v1/web/todos/$todoId", "shared/http/controllers/web-todo.ts"),
+  route(
+    "/api/v1/web/monthly-expenses",
+    "shared/http/controllers/web-monthly-expenses.ts",
+  ),
+  route(
+    "/api/v1/web/monthly-expenses/$expenseId",
+    "shared/http/controllers/web-monthly-expense.ts",
+  ),
+  route(
+    "/api/v1/web/monthly-expenses/$expenseId/payment",
+    "shared/http/controllers/web-monthly-expense-payment.ts",
+  ),
 ]);
 
 export default routes;

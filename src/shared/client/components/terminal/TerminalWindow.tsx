@@ -6,7 +6,7 @@ import { usePrefs } from "~/shared/client/providers/usePrefs";
 import { useApp } from "~/shared/client/stores";
 import { TerminalChromeButton } from "./TerminalChromeButton";
 
-type TerminalPath = "/" | "/privacy" | "/chat" | "/todo";
+type TerminalPath = "/" | "/privacy" | "/chat" | "/todo" | "/bills";
 
 export function TerminalWindow({
   activePath = "/",
@@ -43,6 +43,7 @@ export function TerminalWindow({
         { label: dictionary.nav.privacy, href: "/privacy" as const },
         { label: dictionary.nav.chat, href: "/chat" as const },
         { label: dictionary.nav.todo, href: "/todo" as const },
+        { label: dictionary.nav.bills, href: "/bills" as const },
       ]
     : [];
   const shouldShowNavigation = showNavigation ?? dictionary !== undefined;

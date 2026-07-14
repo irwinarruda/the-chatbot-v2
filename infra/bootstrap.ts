@@ -1,5 +1,6 @@
 import { Database } from "~/infra/database";
 import { CashFlowService } from "~/modules/cash-flow/application/CashFlowService";
+import { MonthlyExpenseService } from "~/modules/cash-flow/application/MonthlyExpenseService";
 import type { ICashFlowSpreadsheetGateway } from "~/modules/cash-flow/application/ports/ICashFlowSpreadsheetGateway";
 import { GoogleCashFlowSpreadsheetGateway } from "~/modules/cash-flow/server/GoogleCashFlowSpreadsheetGateway";
 import { AiToolService } from "~/modules/chat/application/AiToolService";
@@ -45,6 +46,7 @@ export interface Application {
   services: {
     auth: AuthService;
     cashFlow: CashFlowService;
+    monthlyExpenses: MonthlyExpenseService;
     messaging: MessagingService;
     migration: MigrationService;
     status: StatusService;
@@ -108,10 +110,12 @@ export function createApplication(
     authService,
     gateways.cashFlowSpreadsheet,
   );
+  const monthlyExpenseService = new MonthlyExpenseService(database);
   const todoService = new TodoService(database);
   const aiToolService = new AiToolService(
     authService,
     cashFlowService,
+    monthlyExpenseService,
     todoService,
     gateways.aiChat,
   );
@@ -134,6 +138,7 @@ export function createApplication(
     services: {
       auth: authService,
       cashFlow: cashFlowService,
+      monthlyExpenses: monthlyExpenseService,
       messaging: messagingService,
       migration: new MigrationService(database, config.database, config.auth),
       status: new StatusService(database, config.database, config.ai),
