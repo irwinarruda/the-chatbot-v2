@@ -43,7 +43,6 @@ export const routes = rootRoute("shared/client/routes/__root.tsx", [
   ),
   route("/api/v1/web/messages", "shared/http/controllers/web-messages.ts"),
   route("/api/v1/web/audio", "shared/http/controllers/web-audio.ts"),
-  route("/api/v1/web/stream", "shared/http/controllers/web-stream.ts"),
   route("/api/v1/web/todos", "shared/http/controllers/web-todos.ts"),
   route("/api/v1/web/todos/$todoId", "shared/http/controllers/web-todo.ts"),
   route(

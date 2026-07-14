@@ -35,21 +35,3 @@ export const SendWebMessageRequest = z.union([
 ]);
 
 export type SendWebMessageRequest = z.infer<typeof SendWebMessageRequest>;
-
-const persistedMessageEvent = z.object({
-  id: z.string().uuid(),
-  sequence: z.number().int().positive(),
-  createdAt: z.iso.datetime(),
-  message: ChannelMessageResponse,
-});
-
-export const WebChatEvent = z.discriminatedUnion("type", [
-  persistedMessageEvent.extend({ type: z.literal("messageCreated") }),
-  persistedMessageEvent.extend({ type: z.literal("messageUpdated") }),
-  z.object({
-    type: z.literal("error"),
-    data: z.object({ text: z.string() }),
-  }),
-]);
-
-export type WebChatEvent = z.infer<typeof WebChatEvent>;

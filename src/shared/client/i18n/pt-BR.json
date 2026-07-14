@@ -71,8 +71,6 @@
     "errorLoading": "Falha ao carregar o chat. Tente novamente.",
     "errorSending": "Falha ao enviar mensagem. Tente novamente.",
     "errorMicrophone": "Não foi possível acessar o microfone. Verifique as permissões.",
-    "connected": "Conectado",
-    "disconnected": "Desconectado",
     "logout": "sair",
     "emptyState": "Envie uma mensagem para começar a conversar",
     "you": "você",

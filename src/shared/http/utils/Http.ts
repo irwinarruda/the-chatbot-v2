@@ -29,10 +29,6 @@ export class Http {
     return new Response(undefined, { status: 200, ...init });
   }
 
-  static stream(stream: ReadableStream, init?: Init): Response {
-    return new Response(stream, { status: 200, ...init });
-  }
-
   static redirect(url: string, init?: Init): Response {
     const headers = new Headers(init?.headers);
     headers.set("Location", url);

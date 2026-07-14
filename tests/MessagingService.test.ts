@@ -282,7 +282,7 @@ describe("MessagingService", () => {
     }
   });
 
-  test("receiveWebMessage creates Web chat and responds via web gateway", async () => {
+  test("receiveWebMessage returns the authoritative persisted Web chat", async () => {
     await orquestrator.clearDatabase();
     const user = await orquestrator.createUser({
       phoneNumber: "5511912345678",
@@ -290,18 +290,13 @@ describe("MessagingService", () => {
     const webAddress = user.email ?? "";
     await orquestrator.addAllowedWebId(webAddress);
 
-    const webGateway = orquestrator.webMessagingGateway;
-    const eventsBefore = webGateway.getEvents().length;
     const incomingWebAddress = webAddress.toUpperCase();
 
-    await orquestrator.messagingService.receiveWebMessage(incomingWebAddress, {
-      text: "Hello from web",
-    });
-    await new Promise((r) => setTimeout(r, delay));
-
-    const chat = await orquestrator.messagingService.getChatByChannelAddress(
-      webAddress,
-      ChatChannel.Web,
+    const chat = await orquestrator.messagingService.receiveWebMessage(
+      incomingWebAddress,
+      {
+        text: "Hello from web",
+      },
     );
     expect(chat).toBeDefined();
     expect(chat?.channel).toBe(ChatChannel.Web);
@@ -312,16 +307,6 @@ describe("MessagingService", () => {
     expect(chat?.messages[0]?.role).toBe(MessageRole.User);
     expect(chat?.messages[1]?.role).toBe(MessageRole.Assistant);
     expect(chat?.messages[1]?.text).toBe("Response to: Hello from web");
-
-    const events = webGateway.getEvents();
-    expect(events.length).toBeGreaterThan(eventsBefore);
-    const lastEvent = events[events.length - 1];
-    expect(lastEvent).toMatchObject({
-      type: "messageCreated",
-      message: {
-        text: "Response to: Hello from web",
-      },
-    });
   });
 
   test("receiveWebMessage with buttonReply routes through web gateway", async () => {
@@ -373,34 +358,6 @@ describe("MessagingService", () => {
     ).rejects.toThrow(ValidationException);
   });
 
-  test("subscribeToWebEvents yields enqueued events and stops on abort", async () => {
-    const webAddress = "subscriber@example.com";
-    const webGateway = orquestrator.webMessagingGateway;
-    webGateway.clearEvents();
-
-    const controller = new AbortController();
-    const generator = await orquestrator.messagingService.subscribeToWebEvents(
-      webAddress,
-      controller.signal,
-    );
-
-    webGateway.enqueue(webAddress, {
-      type: "error",
-      data: { text: "hello subscriber" },
-    });
-
-    const first = await generator.next();
-    expect(first.done).toBe(false);
-    expect(first.value).toMatchObject({
-      type: "error",
-      data: { text: "hello subscriber" },
-    });
-
-    controller.abort();
-    const next = await generator.next();
-    expect(next.done).toBe(true);
-  });
-
   test("handleGoogleRedirect syncs email onto an existing WhatsApp chat", async () => {
     await orquestrator.clearDatabase();
     const phoneNumber = TestWhatsAppMessagingGateway.phoneNumber;
@@ -425,8 +382,6 @@ describe("MessagingService", () => {
     expect(chat?.idUser).toBe(user?.id);
     expect(chat?.webAddress).toBe(user?.email);
     expect(chat?.messages[0]?.text).toBe("WhatsApp history");
-    const webGateway = orquestrator.webMessagingGateway;
-    webGateway.clearEvents();
     await orquestrator.messagingService.receiveWebMessage(user?.email ?? "", {
       text: "Web follow-up",
     });
@@ -438,13 +393,7 @@ describe("MessagingService", () => {
       );
     expect(updatedChat?.id).toBe(chat?.id);
     expect(updatedChat?.messages[2]?.text).toBe("Web follow-up");
-    const events = webGateway.getEvents();
-    expect(events[events.length - 1]).toMatchObject({
-      type: "messageCreated",
-      message: {
-        text: "Response to: Web follow-up",
-      },
-    });
+    expect(updatedChat?.messages[3]?.text).toBe("Response to: Web follow-up");
 
     await orquestrator.messagingService.receiveWhatsAppMessage(
       createReceiveMessage("WhatsApp follow-up"),
@@ -487,7 +436,7 @@ describe("MessagingService", () => {
     expect(syncedChat?.webAddress).toBe(email);
   });
 
-  test("sendTextMessage routes to web gateway when recipient is web", async () => {
+  test("sendTextMessage persists messages for Web recipients", async () => {
     await orquestrator.clearDatabase();
     const user = await orquestrator.createUser({
       phoneNumber: TestWhatsAppMessagingGateway.phoneNumber,
@@ -500,21 +449,16 @@ describe("MessagingService", () => {
     });
     await new Promise((r) => setTimeout(r, delay));
 
-    const webGateway = orquestrator.webMessagingGateway;
-    const eventsBefore = webGateway.getEvents().length;
-
     await orquestrator.messagingService.sendTextMessage(
       { channel: ChatChannel.Web, toAddress: webAddress },
       "Forced web",
     );
 
-    const events = webGateway.getEvents();
-    expect(events.length).toBe(eventsBefore + 1);
-    const lastEvent = events[events.length - 1];
-    expect(lastEvent).toMatchObject({
-      type: "messageCreated",
-      message: { text: "Forced web" },
-    });
+    const chat = await orquestrator.messagingService.getChatByChannelAddress(
+      webAddress,
+      ChatChannel.Web,
+    );
+    expect(chat?.messages.at(-1)?.text).toBe("Forced web");
   });
 
   test("receiveWhatsAppMessage rejects invalid signatures", async () => {
@@ -553,7 +497,7 @@ describe("MessagingService", () => {
     gateway.receiveWhatsAppMessage = receiveWhatsAppMessage;
   });
 
-  test("receiveWebMessage with audio uploads, transcribes, and exposes transcript events", async () => {
+  test("receiveWebMessage with audio returns the persisted transcript", async () => {
     await orquestrator.clearDatabase();
     const user = await orquestrator.createUser({
       phoneNumber: "5511912345678",
@@ -561,18 +505,12 @@ describe("MessagingService", () => {
     const webAddress = user.email ?? "";
     await orquestrator.addAllowedWebId(webAddress);
 
-    const webGateway = orquestrator.webMessagingGateway;
-    webGateway.clearEvents();
-
-    await orquestrator.messagingService.receiveWebMessage(webAddress, {
-      audioBuffer: Buffer.from("audio-content"),
-      mimeType: "audio/mp4; codecs=mp4a.40.2",
-    });
-    await new Promise((r) => setTimeout(r, delay));
-
-    const chat = await orquestrator.messagingService.getChatByChannelAddress(
+    const chat = await orquestrator.messagingService.receiveWebMessage(
       webAddress,
-      ChatChannel.Web,
+      {
+        audioBuffer: Buffer.from("audio-content"),
+        mimeType: "audio/mp4; codecs=mp4a.40.2",
+      },
     );
     expect(chat?.messages).toHaveLength(3);
     expect(chat?.messages[0]?.content.type).toBe(MessageContentType.Audio);
@@ -601,21 +539,6 @@ describe("MessagingService", () => {
     expect(transcripts[0]?.mediaUrl).toContain(
       `https://test-storage.example.com/audio/${chat?.id}/`,
     );
-
-    const events = webGateway.getEvents();
-    expect(events.map((event) => event.type)).toEqual([
-      "messageCreated",
-      "messageCreated",
-      "messageUpdated",
-      "messageCreated",
-    ]);
-    expect(events[2]).toMatchObject({
-      type: "messageUpdated",
-      message: {
-        mimeType: "audio/mp4; codecs=mp4a.40.2",
-        transcript: "This is a mock transcript for testing purposes.",
-      },
-    });
   });
 
   test("respondToMessage returns early for incomplete audio messages", async () => {
@@ -637,7 +560,7 @@ describe("MessagingService", () => {
     ).resolves.toBeUndefined();
   });
 
-  test("sendButtonReplyMessage routes to web gateway when recipient is web", async () => {
+  test("sendButtonReplyMessage persists messages for Web recipients", async () => {
     await orquestrator.clearDatabase();
     const user = await orquestrator.createUser({
       phoneNumber: TestWhatsAppMessagingGateway.phoneNumber,
@@ -650,23 +573,19 @@ describe("MessagingService", () => {
     });
     await new Promise((r) => setTimeout(r, delay));
 
-    const webGateway = orquestrator.webMessagingGateway;
-    webGateway.clearEvents();
-
     await orquestrator.messagingService.sendButtonReplyMessage(
       { channel: ChatChannel.Web, toAddress: webAddress },
       "Pick one",
       ["Yes", "No"],
     );
 
-    const events = webGateway.getEvents();
-    expect(events).toHaveLength(1);
-    expect(events[0]).toMatchObject({
-      type: "messageCreated",
-      message: {
-        text: "Pick one",
-        buttonReplyOptions: ["Yes", "No"],
-      },
+    const chat = await orquestrator.messagingService.getChatByChannelAddress(
+      webAddress,
+      ChatChannel.Web,
+    );
+    expect(chat?.messages.at(-1)).toMatchObject({
+      text: "Pick one",
+      buttonReplyOptions: ["Yes", "No"],
     });
   });
 
@@ -752,19 +671,15 @@ describe("MessagingService", () => {
       },
     ];
 
-    const webGateway = orquestrator.webMessagingGateway;
-    webGateway.clearEvents();
-
-    await orquestrator.messagingService.receiveWebMessage(webAddress, {
-      text: "Need choices",
-    });
-    await new Promise((r) => setTimeout(r, delay));
-
-    const events = webGateway.getEvents();
-    expect(events).toHaveLength(2);
-    expect(events[1]).toMatchObject({
-      type: "messageCreated",
-      message: { text: "Choose", buttonReplyOptions: ["A", "B"] },
+    const chat = await orquestrator.messagingService.receiveWebMessage(
+      webAddress,
+      {
+        text: "Need choices",
+      },
+    );
+    expect(chat?.messages.at(-1)).toMatchObject({
+      text: "Choose",
+      buttonReplyOptions: ["A", "B"],
     });
   });
 

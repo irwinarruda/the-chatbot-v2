@@ -14,12 +14,24 @@ import { ApiErrorResponse } from "~/shared/entities/dtos/ApiErrorDTO";
 export type ChatMessage = ChannelMessageResponse;
 export type CurrentUser = IdentityCurrentUserResponse;
 
+export interface WebChatClientService {
+  getCurrentUser(): Promise<CurrentUser>;
+  getMessages(): Promise<ChatMessage[]>;
+  sendMessage(dto: SendWebMessageDTO): Promise<ChatMessage[]>;
+  sendAudio(dto: SendWebAudioDTO): Promise<ChatMessage[]>;
+  logout(): Promise<void>;
+}
+
 export function parseChatMessage(data: unknown): ChatMessage {
   return parseApiResponse(ChannelMessageResponse, data);
 }
 
 export function parseCurrentUser(data: unknown): CurrentUser {
   return parseApiResponse(IdentityCurrentUserResponse, data);
+}
+
+export function parseChatMessages(data: unknown): ChatMessage[] {
+  return parseApiResponse(ChatMessagesResponse, data).messages;
 }
 
 export class WebChatAuthError extends Error {
@@ -49,7 +61,7 @@ async function parseError(response: Response): Promise<WebChatApiError> {
   );
 }
 
-export const webChatService = {
+export const webChatService: WebChatClientService = {
   async getCurrentUser(): Promise<CurrentUser> {
     const response = await fetch("/api/v1/web/auth/me");
     if (response.status === 401) {
@@ -65,20 +77,20 @@ export const webChatService = {
   async getMessages(): Promise<ChatMessage[]> {
     const response = await fetch("/api/v1/web/messages");
     if (!response.ok) throw await parseError(response);
-    return parseApiResponse(ChatMessagesResponse, await response.json())
-      .messages;
+    return parseChatMessages(await response.json());
   },
 
-  async sendMessage(dto: SendWebMessageDTO): Promise<void> {
+  async sendMessage(dto: SendWebMessageDTO): Promise<ChatMessage[]> {
     const response = await fetch("/api/v1/web/messages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(dto),
     });
     if (!response.ok) throw await parseError(response);
+    return parseChatMessages(await response.json());
   },
 
-  async sendAudio(dto: SendWebAudioDTO): Promise<void> {
+  async sendAudio(dto: SendWebAudioDTO): Promise<ChatMessage[]> {
     const response = await fetch("/api/v1/web/audio", {
       method: "POST",
       headers: {
@@ -88,6 +100,7 @@ export const webChatService = {
       body: dto.blob,
     });
     if (!response.ok) throw await parseError(response);
+    return parseChatMessages(await response.json());
   },
 
   async logout(): Promise<void> {

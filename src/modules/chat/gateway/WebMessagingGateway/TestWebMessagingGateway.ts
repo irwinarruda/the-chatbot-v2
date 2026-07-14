@@ -1,4 +1,3 @@
-import type { WebChatEvent } from "~/modules/chat/entities/dtos/ChatDTO";
 import { ChatChannel } from "~/modules/chat/entities/enums/ChatChannel";
 import type {
   ReceiveMessageDTO,
@@ -12,7 +11,6 @@ import type {
 import { ValidationException } from "~/shared/errors/DomainErrors";
 
 export class TestWebMessagingGateway implements WebMessagingGateway {
-  private events: WebChatEvent[] = [];
   private mediaById = new Map<string, Buffer>();
 
   async receiveWebMessage(
@@ -59,42 +57,6 @@ export class TestWebMessagingGateway implements WebMessagingGateway {
 
   async downloadMediaAsync(_mediaId: string): Promise<Buffer> {
     return Buffer.from("test-audio-content");
-  }
-
-  enqueue(_webAddress: string, event: WebChatEvent): void {
-    this.events.push(event);
-  }
-
-  async *subscribe(
-    _webAddress: string,
-    signal: AbortSignal,
-  ): AsyncGenerator<WebChatEvent> {
-    while (!signal.aborted) {
-      if (this.events.length > 0) {
-        const event = this.events.shift();
-        if (event) yield event;
-        continue;
-      }
-      await new Promise<void>((resolve) => {
-        const timeout = setTimeout(resolve, 100);
-        signal.addEventListener(
-          "abort",
-          () => {
-            clearTimeout(timeout);
-            resolve();
-          },
-          { once: true },
-        );
-      });
-    }
-  }
-
-  getEvents(): WebChatEvent[] {
-    return [...this.events];
-  }
-
-  clearEvents(): void {
-    this.events = [];
   }
 
   private createBaseReceiveMessage(

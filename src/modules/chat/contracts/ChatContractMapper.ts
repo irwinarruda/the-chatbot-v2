@@ -1,6 +1,7 @@
+import type { Chat } from "~/modules/chat/entities/Chat";
 import {
   ChannelMessageResponse,
-  type WebChatEvent,
+  ChatMessagesResponse,
 } from "~/modules/chat/entities/dtos/ChatDTO";
 import type { Message } from "~/modules/chat/entities/Message";
 
@@ -13,28 +14,8 @@ export function toChannelMessageResponse(
   });
 }
 
-export function toMessageCreatedEvent(message: Message): WebChatEvent {
-  if (message.sequence === undefined) {
-    throw new Error("Cannot stream a message before it is persisted");
-  }
-  return {
-    type: "messageCreated",
-    id: message.id,
-    sequence: message.sequence,
-    createdAt: message.createdAt.toISOString(),
-    message: toChannelMessageResponse(message),
-  };
-}
-
-export function toMessageUpdatedEvent(message: Message): WebChatEvent {
-  if (message.sequence === undefined) {
-    throw new Error("Cannot stream a message before it is persisted");
-  }
-  return {
-    type: "messageUpdated",
-    id: message.id,
-    sequence: message.sequence,
-    createdAt: message.createdAt.toISOString(),
-    message: toChannelMessageResponse(message),
-  };
+export function toChatMessagesResponse(chat?: Chat): ChatMessagesResponse {
+  return ChatMessagesResponse.parse({
+    messages: chat?.getChannelMessages().map(toChannelMessageResponse) ?? [],
+  });
 }

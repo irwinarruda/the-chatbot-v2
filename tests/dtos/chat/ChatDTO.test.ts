@@ -1,9 +1,11 @@
 import { describe, expect, test } from "vitest";
-import { parseChatMessage } from "~/modules/chat/client/services/webChatService";
-import { parseWebChatEvent } from "~/modules/chat/client/services/webChatStreamService";
+import {
+  parseChatMessage,
+  parseChatMessages,
+} from "~/modules/chat/client/services/webChatService";
 import {
   toChannelMessageResponse,
-  toMessageCreatedEvent,
+  toChatMessagesResponse,
 } from "~/modules/chat/contracts/ChatContractMapper";
 import { Chat } from "~/modules/chat/entities/Chat";
 import { SendWebMessageRequest } from "~/modules/chat/entities/dtos/ChatDTO";
@@ -43,25 +45,20 @@ describe("Chat contracts", () => {
     expect(result.success).toBe(false);
   });
 
-  test("persisted message events carry exact identity and sequence", () => {
+  test("persisted messages round trip through the authoritative snapshot", () => {
     const chat = new Chat();
     const message = chat.addAssistantTextMessage("done");
     message.sequence = 7;
-    const response = toMessageCreatedEvent(message);
+    const response = toChatMessagesResponse(chat);
     const wireResponse = JSON.parse(Printable.make(response));
 
-    const event = parseWebChatEvent(wireResponse);
+    const messages = parseChatMessages(wireResponse);
 
     expect(wireResponse).toMatchObject({
-      type: "messageCreated",
-      created_at: message.createdAt.toISOString(),
-      message: { user_type: "bot" },
+      messages: [{ id: message.id, user_type: "bot" }],
     });
-    expect(event).toMatchObject({
-      type: "messageCreated",
-      id: message.id,
-      sequence: 7,
-      message: { id: message.id, text: "done" },
-    });
+    expect(messages).toEqual([
+      expect.objectContaining({ id: message.id, text: "done" }),
+    ]);
   });
 });

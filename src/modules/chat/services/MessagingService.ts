@@ -1,12 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
-import {
-  toMessageCreatedEvent,
-  toMessageUpdatedEvent,
-} from "~/modules/chat/contracts/ChatContractMapper";
 import type { AssistantMessageOptions } from "~/modules/chat/entities/Chat";
 import { Chat } from "~/modules/chat/entities/Chat";
 import { ConversationSummary } from "~/modules/chat/entities/ConversationSummary";
-import type { WebChatEvent } from "~/modules/chat/entities/dtos/ChatDTO";
 import { ChatChannel } from "~/modules/chat/entities/enums/ChatChannel";
 import { MessageAudience } from "~/modules/chat/entities/enums/MessageAudience";
 import { MessageContentType } from "~/modules/chat/entities/enums/MessageContentType";
@@ -106,14 +101,25 @@ export class MessagingService {
     await this.listenToMessage(receiveMessage);
   }
 
-  async receiveWebMessage(webAddress: string, body: unknown): Promise<void> {
+  async receiveWebMessage(
+    webAddress: string,
+    body: unknown,
+  ): Promise<Chat | undefined> {
     const receiveMessage = await this.webMessagingGateway.receiveWebMessage(
       webAddress,
       body,
     );
-    if (receiveMessage) {
-      await this.listenToMessage(receiveMessage);
+    if (!receiveMessage) {
+      return this.getChatByChannelAddress(
+        webAddress.toLowerCase(),
+        ChatChannel.Web,
+      );
     }
+    await this.listenToMessage(receiveMessage);
+    return this.getChatByChannelAddress(
+      receiveMessage.fromAddress,
+      ChatChannel.Web,
+    );
   }
 
   async listenToMessage(receiveMessage: ReceiveMessageDTO): Promise<void> {
@@ -168,12 +174,6 @@ export class MessagingService {
         })
       : await this.createMessage(message);
     if (!created) return;
-    if (receiveMessage.channel === ChatChannel.Web) {
-      this.webMessagingGateway.enqueue(
-        receiveMessage.fromAddress,
-        toMessageCreatedEvent(message),
-      );
-    }
     if (!chat.idUser) {
       const user =
         chat.channel === ChatChannel.Web
@@ -226,12 +226,6 @@ export class MessagingService {
         });
         message.addAudioTranscriptAndUrl(transcript, permanentUrl);
         await this.saveMessage(message);
-        if (recipient.channel === ChatChannel.Web) {
-          this.webMessagingGateway.enqueue(
-            recipient.toAddress,
-            toMessageUpdatedEvent(message),
-          );
-        }
       }
       await this.runAiAgent(chat, message, recipient);
     } catch (ex) {
@@ -273,12 +267,6 @@ export class MessagingService {
     const gateway = this.getMessagingGatewayByChannel(dto.channel);
     const message = chat.addAssistantTextMessage(text, options);
     await this.createMessage(message);
-    if (dto.channel === ChatChannel.Web) {
-      this.webMessagingGateway.enqueue(
-        dto.toAddress,
-        toMessageCreatedEvent(message),
-      );
-    }
     await gateway.sendTextMessage({ toAddress: dto.toAddress, text });
   }
 
@@ -307,12 +295,6 @@ export class MessagingService {
       messageOptions,
     );
     await this.createMessage(message);
-    if (dto.channel === ChatChannel.Web) {
-      this.webMessagingGateway.enqueue(
-        dto.toAddress,
-        toMessageCreatedEvent(message),
-      );
-    }
     await gateway.sendInteractiveReplyButtonMessage({
       toAddress: dto.toAddress,
       text,
@@ -325,13 +307,6 @@ export class MessagingService {
       channelAddress,
       MessageLoader.getMessage(MessageTemplate.SignedIn),
     );
-  }
-
-  async subscribeToWebEvents(
-    webAddress: string,
-    signal: AbortSignal,
-  ): Promise<AsyncGenerator<WebChatEvent>> {
-    return this.webMessagingGateway.subscribe(webAddress, signal);
   }
 
   async deleteChat(channelAddress: string): Promise<void> {

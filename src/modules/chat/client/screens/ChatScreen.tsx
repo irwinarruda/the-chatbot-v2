@@ -44,7 +44,6 @@ export function ChatScreen() {
   const chatError = useApp((s) => s.chatError);
   const isChatBootstrapping = useApp((s) => s.isChatBootstrapping);
   const isChatSubmitting = useApp((s) => s.isChatSubmitting);
-  const isChatStreamConnected = useApp((s) => s.isChatStreamConnected);
   const audioInputOptions = useApp((s) => s.audioInputOptions);
   const selectedAudioInputId = useApp((s) => s.selectedAudioInputId);
   const isRecording = useApp((s) => s.isRecording);
@@ -56,8 +55,7 @@ export function ChatScreen() {
   const setChatInput = useApp((s) => s.setChatInput);
   const clearChatError = useApp((s) => s.clearChatError);
   const bootstrapChat = useApp((s) => s.bootstrapChat);
-  const startChatStream = useApp((s) => s.startChatStream);
-  const stopChatStream = useApp((s) => s.stopChatStream);
+  const refreshChat = useApp((s) => s.refreshChat);
   const syncAudioInputs = useApp((s) => s.syncAudioInputs);
   const selectAudioInput = useApp((s) => s.selectAudioInput);
   const sendChatInput = useApp((s) => s.sendChatInput);
@@ -221,13 +219,20 @@ export function ChatScreen() {
         navigate({ to: "/chat/login" });
       } else if (result === "not_registered") {
         navigate({ to: "/chat/not-registered" });
-      } else if (result === "ok") {
-        startChatStream();
       }
     });
     return () => {
       cancelled = true;
-      stopChatStream();
+    };
+  }, []);
+
+  useEffect(() => {
+    function onVisibilityChange() {
+      if (document.visibilityState === "visible") void refreshChat();
+    }
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, []);
 
@@ -258,14 +263,6 @@ export function ChatScreen() {
       showNavigation={false}
       chromeControls={
         <>
-          <span
-            title={isChatStreamConnected ? t.connected : t.disconnected}
-            className={`h-1.5 w-1.5 rounded-full transition-colors duration-300 ${
-              isChatStreamConnected
-                ? "bg-term-green-dot motion-safe:animate-glow-pulse"
-                : "bg-term-muted"
-            }`}
-          />
           <TerminalChromeButton onClick={onToggleLocale} title={prefs.locale}>
             {prefs.locale === "pt-BR" ? "PT" : "EN"}
           </TerminalChromeButton>

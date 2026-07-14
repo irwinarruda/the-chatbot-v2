@@ -3,7 +3,6 @@ export {
   ChannelMessageResponse,
   ChatMessagesResponse,
   SendWebMessageRequest,
-  WebChatEvent,
 } from "./entities/dtos/ChatDTO";
 export { Message } from "./entities/Message";
 export { MessagingService } from "./services/MessagingService";

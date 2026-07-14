@@ -6,7 +6,6 @@ const PROTECTED_WEB_API_PATHS = new Set([
   "/api/v1/web/auth/me",
   "/api/v1/web/messages",
   "/api/v1/web/monthly-expenses",
-  "/api/v1/web/stream",
   "/api/v1/web/todos",
 ]);
 

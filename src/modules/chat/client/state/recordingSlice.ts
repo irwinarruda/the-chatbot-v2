@@ -74,11 +74,12 @@ export const recordingSlice: StateCreator<
             chatMessages: [...state.chatMessages, optimistic],
           }));
           try {
-            await webChatService.sendAudio({
+            const messages = await webChatService.sendAudio({
               blob,
               mimeType: blob.type,
               clientMessageId: optimistic.id,
             });
+            set({ chatMessages: messages });
           } catch {
             set({ chatError: "sending" });
           } finally {
