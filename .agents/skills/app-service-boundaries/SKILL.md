@@ -1,380 +1,279 @@
 ---
 name: app-service-boundaries
-description: "Authoritative guide to The Chatbot's runtime and side-effect boundaries: application Services, HTTP/SSE contracts, Zod schemas, client services, provider ports/adapters, AI tools, raw SQL, transactions, errors, typed composition, and production/test wiring. Use for API shape or integration work involving AI, messaging, storage, OAuth, speech, spreadsheets, databases, or browser effects, even when the user does not say boundary or architecture."
+description: "Authoritative guide to The Chatbot's runtime and side-effect boundaries: Services, DTOs, Zod schemas, gateway interfaces and implementations, client services, AI tools, SQL, transactions, errors, realtime delivery, and typed composition. Use for API or integration work involving AI, messaging, storage, OAuth, speech, spreadsheets, databases, or browser effects."
 ---
 
 # App Service Boundaries
 
 ## Source of truth and precedence
 
-The owned contracts, application Services, outbound ports, concrete adapters,
-database executor, and typed composition root in the current module tree are the
-source of truth.
+The current DTOs, Services, gateway directories, database gateway, HTTP layer, and
+typed composition root are the source of truth.
 
 Precedence:
 
 1. The user's explicit request and scoped `AGENTS.md`.
-2. The owning module's implemented public contracts and integration behavior.
+2. The owning module's implemented vocabulary and behavior.
 3. This skill as the default boundary design.
 
-Start by identifying the owned vocabulary, runtime parse point, error translation,
-atomicity/partial-failure policy, and deterministic replacement seam.
-
-## Purpose
-
-Make side effects explicit without wrapping the application in ceremony. Owned
-runtime data is validated once, provider data is normalized immediately, application
-workflows remain provider-neutral, and production/tests share one typed graph.
-
-Load `app-architecture` for module ownership and dependency direction. Load
-`app-coding-styleguide` while implementing. This skill owns boundary mechanics.
+Load `app-architecture` for placement and dependency direction. Load
+`app-coding-styleguide` while implementing.
 
 ## Boundary map
 
 ```text
-HTTP/SSE adapter -> owned contract -> application Service -> domain
-                                                     -> outbound port
-provider/database/browser adapter -> protocol data -> owned internal vocabulary
-bootstrap -> concrete adapters -> constructor-injected application graph
+HTTP/SSE -> Zod DTO -> Service -> entity
+                              -> gateway interface
+gateway implementation -> provider protocol -> owned DTO/entity vocabulary
+bootstrap -> concrete gateways -> constructor-injected Services
 ```
 
-Every boundary must answer:
+Every external boundary must answer:
 
-1. Who owns the vocabulary?
-2. Where is untrusted/runtime data parsed?
-3. Which layer translates failures?
+1. Who owns the data?
+2. Where is runtime data parsed?
+3. Where are failures translated?
 4. What is the transaction or partial-failure policy?
 5. How does a deterministic test replace the effect?
 
-## Owned HTTP and SSE contracts
+## DTOs and runtime schemas
 
-Define one Zod-backed contract per real request, response, or event in the owning
-module's `contracts/`.
+Put DTO declarations under an `entities/dtos/` directory. This applies to Service
+inputs, gateway inputs, AI tool inputs, HTTP requests/responses, SSE events, and
+browser-only DTOs.
 
-Use the same schema on both sides:
-
-- controller parses requests and constructs/parses responses;
-- the HTTP/SSE adapter serializes response keys to snake_case;
-- the client service normalizes response keys to camelCase, then parses them with
-  the response schema;
-- stream producer emits the event contract;
-- stream consumer parses the same event contract.
-
-Keep application contracts, client state, and domain data in camelCase. Application
-API responses always cross the wire in snake_case; that casing belongs only to the
-server and client transport adapters. Keep provider naming private to the adapter
-that owns the provider protocol.
+Use Zod when data crosses an owned runtime boundary. Export the schema value and its
+inferred type with the same PascalCase name:
 
 ```ts
-export const TodoResponse = z.object({
-  id: z.string().uuid(),
-  name: z.string(),
-  dueDate: z.iso.datetime().optional(),
+export const CreateTodoRequest = z.object({
+  name: z.string().trim().min(1),
 });
 
-export type TodoResponse = z.infer<typeof TodoResponse>;
+export type CreateTodoRequest = z.infer<typeof CreateTodoRequest>;
 ```
+
+The schema value is the runtime parser; the same-named type is the compile-time
+contract. Do not add a parallel handwritten interface.
+
+Internal trusted DTOs may be plain types or interfaces when runtime parsing adds no
+value. They still live under `entities/dtos/` when named `*DTO`.
 
 Do not:
 
-- cast `response.json()` to an expected type;
-- maintain a handwritten `Wire*` interface beside a schema;
-- return domain entities directly as an accidental public API;
-- create separate server and client definitions for the same owned payload;
-- expose provider payload types as application contracts.
+- cast `response.json()` to the expected type;
+- define request, response, event, or tool schemas inline at their use site;
+- keep separate server and client shapes for the same owned payload;
+- expose provider payload types outside their gateway implementation;
+- put DTO schemas in `contracts/`.
 
-Use a client view model only when the UI adds state or needs a genuinely different
-projection. Reuse alone is not enough reason for another model.
+Application-facing values use camelCase. HTTP adapters serialize wire responses to
+snake_case; client services normalize them back to camelCase before parsing.
 
-## Controller responsibilities
+## Contracts and mappers
+
+Use `contracts/` only for explicit mapping helpers between entities and boundary
+DTOs. A mapper may parse its result through the DTO schema.
+
+Do not put DTO declarations, Zod schemas, gateway interfaces, or miscellaneous
+utilities in `contracts/`.
+
+## Controllers
 
 Controllers may:
 
-- read HTTP params, search, headers, cookies, body, and auth context;
-- parse owned request contracts;
-- call one application workflow;
-- map the result into an owned response contract;
+- read params, search, headers, cookies, body, and auth context;
+- parse the owning request DTO;
+- call one Service workflow;
+- map the result to a response DTO;
 - select status codes and headers.
 
-Use `src/shared/http` as the shared TanStack HTTP module. Keep its route manifest at
-the root; place route adapters in `controllers/`, server functions in `functions/`,
-cross-cutting request/response behavior in `middleware/`, and response helpers,
-error mapping, serialization, HTTP authentication, and content loading in `utils/`.
-Keep feature request/response schemas in the owning module's `contracts/`; keep
-genuinely shared wire contracts in `src/shared/contracts`. Do not move client HTTP
-services into `shared/http` until the client-side module is deliberately unified.
+Controllers must not execute SQL, call provider SDKs, duplicate entity validation,
+or describe the business workflow.
 
-Controllers must not:
+Keep shared TanStack HTTP code under `src/shared/http`: route definitions at the
+root, route adapters in `controllers/`, server functions in `functions/`,
+cross-cutting behavior in `middleware/`, and technical helpers in `utils/`.
 
-- describe the business workflow;
-- execute SQL;
-- call provider SDKs;
-- assemble provider-specific payloads;
-- duplicate domain validation;
-- return an entity's incidental serialization as the endpoint contract.
+## Services
 
-Keep response mapping explicit and small. Extract a pure mapper only when multiple
-endpoints share a projection or the transformation itself is non-trivial.
+Services orchestrate entities, persistence, gateways, and explicit cross-feature
+capabilities. Their public API reads as business capabilities, not transport routes.
 
-## Client services
+Use constructor injection. A Service never resolves a global container and never
+constructs its own provider client.
 
-Client services are the browser boundary for HTTP, SSE, storage, media, and device
-APIs. Components and slices call client services rather than these mechanisms
-directly.
+Keep known linear calls direct. Use an event only for genuine independent fan-out
+with explicit delivery semantics.
 
-Client services should:
+The `services/` directory must not contain `ports/`. A meaningful external
+substitution boundary is a gateway and belongs under `gateway/`.
 
-- serialize request contracts;
-- parse response/event contracts;
-- own transport headers and mechanics;
-- translate transport failures into the small owned client error model;
-- own connection/retry mechanics for streams;
-- return stable application-facing data.
+## Gateways
 
-They should not own React state, notifications, routing, translations, optimistic UI,
-or feature workflow decisions.
+Create a gateway for an external effect with meaningful replacement, failure,
+protocol, or test value, including:
 
-## Application Services
-
-Application Services orchestrate domain behavior, persistence, and outbound ports.
-Their API describes capabilities, not transport endpoints.
-
-Use constructor injection. A Service must never call a global container or instantiate
-its own provider client.
-
-Keep direct workflows direct. If a method always calls one known next capability and
-awaits it, use a published contract or explicit coordinator instead of an event.
-
-Do not create an interface for every Service. Add an interface when another module
-needs a narrow published capability or composition/testing needs a real substitution
-boundary. Internal deterministic classes do not need ceremonial twins.
-
-## Outbound ports
-
-Create a port when an external effect has meaningful replacement, failure, protocol,
-or test value:
-
-- AI/model invocation;
-- messaging channels and streams;
+- AI/model providers;
+- messaging and streams;
 - object storage;
 - speech-to-text;
-- OAuth/provider authentication;
-- spreadsheets or other external systems.
-- database and transaction execution.
+- OAuth and external authentication;
+- spreadsheets;
+- database/transaction execution.
 
-Place the port with the application code that needs it. Place the concrete adapter
-under the owning module's `server/` or `client/` integration area.
+Every gateway gets a directory:
 
-Name the port after the capability, not the vendor. Name the implementation after the
-vendor plus capability.
+```text
+gateway/
+  SpeechToTextGateway/
+    index.ts
+    OpenAiSpeechToTextGateway.ts
+    TestSpeechToTextGateway.ts
+```
 
-The adapter owns:
+The interface lives in `index.ts`. Do not prefix it with `I`. Concrete classes are
+named by provider or mechanism plus capability.
 
-- provider authentication and SDK setup;
-- provider request/response types;
-- protocol serialization and normalization;
-- provider error translation;
-- provider-specific retry only when the protocol requires it.
+The implementation owns provider authentication, SDK setup, provider request and
+response types, serialization, normalization, protocol-specific retry, and provider
+error translation.
 
-The adapter does not own:
+It does not own Service workflow ordering, business retry/idempotency, durable
+tool-call persistence, another feature's SQL, or UI behavior.
 
-- application workflow ordering;
-- business retries/idempotency;
-- durable tool-call/result persistence;
-- feature Service calls;
-- database writes outside its own infrastructure responsibility;
-- UI behavior.
+Keep provider-private mappers and chunkers inside the gateway directory. Put generic
+feature loaders or parsers under the module's `utils/`.
 
-## AI boundary and tools
+## AI tools
 
-The AI gateway translates canonical messages, calls the model, estimates provider
-tokens when needed, and maps provider failures. The application layer owns:
+Every AI tool input is a named Zod `*ToolDTO` under the owning module's
+`entities/dtos/` directory, including empty-object inputs. The tool registry imports
+and parses that DTO before behavior runs.
 
-- tool-round iteration and maximum rounds;
-- persistence order for calls and results;
-- duplicate call handling and idempotency;
-- uncertain outcomes and crash recovery;
-- compaction decisions and recent-turn protection.
+Tool calls and results remain in the canonical message-content entity model; do not
+create a parallel DTO family for them.
 
-Tool definitions belong to the feature whose capability they expose. Compose feature
-tool sets in bootstrap and inject them into one small generic execution policy.
+The AI gateway translates canonical messages, invokes the model, estimates tokens
+when needed, and maps provider failures. Services own tool-round iteration,
+persistence order, duplicate handling, compaction decisions, and business recovery.
 
-Do not create one class per tool. Group related definitions until independent
-responsibility or size gives a real reason to split.
+Long-running work must distinguish durable acceptance from completed business work.
+Persist a feature-owned operation only when retries, leases, progress, or crash
+recovery give it an independent lifecycle.
 
-Tool input is runtime data. Define every input as a named Zod `*ToolDTO` in the
-owning module's `application/tools/` folder, including empty-object inputs. The tool
-registry imports that DTO and parses input with it before application behavior runs;
-do not define input schemas inline or reuse a generic empty-input DTO across
-features. This rule applies to tool input only. Tool calls and results use the
-canonical message content model rather than parallel DTO families.
+## Persistence and SQL
 
-For long-running tools, define whether completion means completed business work or
-durable acceptance. Asynchronous work returns an explicit accepted outcome with a
-stable feature operation ID; never report accepted work as completed business work.
+Services receive `DatabaseGateway`; the concrete PostgreSQL `Database` stays in
+`infra` and is selected by bootstrap.
 
-When work must survive time or process failure, persist a feature-owned operation or
-intent with status, attempts, next-attempt time, and provider idempotency key. A
-worker or explicit application entrypoint claims due work with concurrency
-protection and invokes the same application capability. Business retry must not
-depend on process memory, the originating request, or an open SSE connection.
+Keep raw SQL explicit and feature-local. Put public workflows first and private SQL
+or hydration details near the bottom of the Service.
 
-## Persistence and raw SQL
+Do not introduce generic repositories, DAOs, base CRUD classes, ORM mirrors, or
+repository methods that duplicate the Service API.
 
-Keep SQL explicit and feature-local. Application Services receive the app-wide
-database/transaction executor port; the concrete PostgreSQL wrapper stays in
-`infra` and is selected by bootstrap. Put public workflows first, orchestration
-next, and private SQL/hydration details near the bottom when they remain in the
-Service.
+Create migrations only with:
 
-Create every migration with `bun run migrate:create -- <name>` before editing
-its contents. The command owns the timestamp and filename; never hand-create a
-migration file or invent those values. This keeps migration ordering and the
-repository workflow deterministic.
+```bash
+bun run migrate:create -- <name>
+```
 
-Do not introduce:
+Then edit the generated file. Never invent migration timestamps or filenames.
 
-- generic repositories or DAOs;
-- base CRUD classes;
-- ORM-shaped entity mirrors;
-- repository methods that duplicate the Service API.
+Convert application `undefined` to SQL `NULL` only at the query boundary. Restore
+entities through explicit mapping rather than arbitrary field mutation.
 
-A narrow aggregate store is justified when multiple workflows share complex
-hydration/writes or persistence mechanics hide the workflows. Model only that shared
-need.
-
-Convert application `undefined` to SQL `NULL` only at the query boundary. Translate
-database rows through explicit restoration/mapping rather than mutating entity fields
-from outside.
-
-## Transactions and external side effects
+## Transactions and external effects
 
 State the atomicity boundary before implementing a multi-write workflow.
 
 Use a database transaction when several database operations must succeed or fail as
-one application outcome. Pass the transaction-scoped database handle through the
-feature-local persistence operations rather than hiding nested independent writes.
+one outcome. Pass the transaction-scoped SQL handle through feature-local methods.
 
-A database transaction cannot make provider calls atomic. For workflows that mix
-database and external effects, choose and test an explicit policy:
+A database transaction cannot make provider calls atomic. For mixed workflows,
+choose and test one explicit policy: idempotent external operation, persisted intent,
+compensation, documented partial/unknown outcome, or provider-native atomicity.
 
-- perform an idempotent external operation and persist its key/outcome;
-- persist intent, then retry the external operation;
-- compensate a completed earlier step;
-- surface a documented partial/unknown outcome;
-- use a provider-native atomic operation when available.
-
-Never imply atomicity the system does not provide.
-
-If one invariant appears to require atomic writes across modules, reconsider
-ownership first: one module should usually own the atomic outcome. When a genuine
-cross-module transaction remains, an explicit coordinator owns it and invokes narrow
-published transactional capabilities through an opaque transaction context. Modules
-never mutate sibling tables directly.
+If an invariant seems to require atomic writes across modules, reconsider ownership
+first. A genuine cross-module transaction needs an explicit coordinator and narrow
+published capabilities; modules do not mutate sibling tables directly.
 
 ## Error translation
 
-Keep failures stable as they cross boundaries:
-
 ```text
-provider/driver failure -> adapter/application translation
-domain invariant        -> domain error
-application failure     -> controller/middleware HTTP mapping
-HTTP error contract     -> client service parsing
-client error            -> UI presentation decision
+provider/driver failure -> gateway or Service translation
+entity invariant        -> entity/domain error
+Service failure         -> controller/middleware HTTP mapping
+HTTP error DTO          -> client service parsing
+client error            -> UI presentation
 ```
 
-Domain errors do not contain HTTP status codes, localized UI copy, provider response
+Entity errors do not contain HTTP status codes, localized copy, provider response
 objects, or database details.
 
-Catch only for:
-
-- meaningful translation;
-- recovery or fallback;
-- rollback/compensation;
-- cleanup;
-- preserving an explicit unknown outcome.
-
-Do not swallow errors into `[]` or `undefined` when those are valid successful
-results. Do not catch only to log and rethrow.
+Catch only for translation, recovery, compensation, cleanup, or an explicit fallback
+or unknown outcome. Do not swallow errors into values that are also valid success
+results.
 
 ## Realtime boundaries
 
-Stream canonical owned events, not fragments that force the client to invent domain
-identity.
+Stream owned events with persisted identity, sequence/order, and timestamps. Updates
+must identify what they replace. Optimistic client items use stable correlation IDs.
 
-Message events should carry persisted IDs, sequence/order, timestamps, and exact
-message identity. Updates identify the item they replace. Optimistic client items use
-a stable correlation ID when server identity is not yet known.
+Every reconnectable stream defines resume, duplicate, ordering, and cursor-expiry
+behavior. Publish committed state only.
 
-Every reconnectable stream defines a resume policy. Emit stable SSE event IDs and
-monotonic sequence values. On reconnect, accept `Last-Event-ID` or an explicit cursor
-and either replay persisted events or return an authoritative snapshot before
-continuing. Define ordering, cursor expiry, and duplicate handling.
+The gateway owns connection mechanics, retry, backoff, cancellation, and low-level
+parsing. The feature slice owns connection state and reduction into client state.
 
-Progress represents committed state only. Publish after commit, or persist an
-outbox/event row in the same transaction and publish from it. Never expose an
-uncommitted transition through SSE.
+## Client services
 
-The stream adapter owns connection, retry, backoff, cancellation, and low-level
-parsing. The feature slice owns connection state and reduction into feature state.
-Only an explicit lifecycle exit should permanently stop retries.
+Client services own browser HTTP, SSE, storage, media, and device mechanics. They
+serialize request DTOs, parse response/event DTOs, translate transport failures, and
+return stable data.
+
+They do not own React state, notifications, routing, translations, optimistic UI, or
+feature workflow decisions.
 
 ## Typed composition
 
-Build one typed graph:
+Build one typed application graph. Production selects real gateway implementations;
+tests use the same builder with deterministic gateway overrides.
 
-```ts
-type Application = {
-  identity: IdentityService;
-  chat: ChatService;
-  todos: TodoService;
-};
-
-function createApplication(
-  config: Config,
-  overrides: Partial<ApplicationDependencies> = {},
-): Application {}
-```
-
-Production creates real adapters. Tests call the same graph builder with deterministic
-overrides. Keep production source free of test imports and environment-based surprise
-selection.
-
-If a framework requires global access, expose a typed `getApplication()` only at the
-entry boundary. Do not expose arbitrary string-plus-generic resolution.
+Framework entrypoints may call `getApplication()`. Services must not. Production
+code must not import test implementations except concrete `Test*Gateway` classes
+that are intentionally published for the test composition root.
 
 ## Testing boundaries
 
-Add the narrowest tests that prove the contract:
+Use the narrowest proof:
 
-- contract round trips using the actual server mapper and shared schema;
-- application workflow tests with deterministic port fakes;
-- provider adapter mapping tests using provider fixtures;
-- PostgreSQL integration tests for SQL, transactions, migrations, hydration, and
-  optimistic concurrency;
-- failure-injection tests for partial and unknown outcomes;
-- forced disconnect/reconnect tests for streams.
+- DTO tests for Zod parsing and real mapper round trips;
+- Service tests with deterministic gateway/database fakes;
+- gateway integration tests for provider mapping and error translation;
+- database integration tests for SQL, migrations, transactions, and hydration;
+- reconnect/replay tests for realtime mechanics.
 
-Do not test a fake's invented behavior instead of the production mapper it is meant
-to replace.
+Do not test a fake's invented behavior instead of the production mapper it replaces.
 
 ## Checklist
 
 1. Identify the owner of the vocabulary and effect.
-2. Parse runtime data at the first owned boundary.
-3. Keep provider types inside the adapter.
-4. Keep workflow decisions in the application layer.
-5. Use a port only for a meaningful boundary.
-6. Make SQL and transaction scope explicit.
-7. State the partial-failure policy for external effects.
-8. Translate errors once at the correct boundary.
-9. Build production/tests from the same typed composition.
-10. Prove the boundary with a contract, application, adapter, or integration test.
+2. Put DTO declarations under `entities/dtos/`.
+3. Parse runtime data at the first owned boundary.
+4. Keep provider types inside the gateway implementation.
+5. Keep workflow decisions in Services.
+6. Put each gateway interface in `gateway/<Name>/index.ts`.
+7. Keep `services/` free of `ports/`.
+8. Make SQL, transactions, and partial failure explicit.
+9. Translate errors once at the right boundary.
+10. Wire production and tests through the same typed graph.
 
 ## Related skills
 
-- `app-architecture` — module ownership, dependency direction, DDD/OOP, and events.
-- `app-coding-styleguide` — TypeScript implementation style and contract naming.
+- `app-architecture` — ownership, placement, entities, Services, and dependency
+  direction.
+- `app-coding-styleguide` — TypeScript implementation style and DTO naming.
 - `client-state-management` — client reduction of HTTP/SSE/browser effects.
-- `app-tests` — contract, application, persistence, and adapter test conventions.
+- `app-tests` — DTO, Service, gateway, and persistence test conventions.

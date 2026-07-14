@@ -1,9 +1,9 @@
-export { TodoService } from "./application/TodoService";
 export {
   CreateTodoRequest,
   SaveTodoRequest,
   TodoItemResponse,
   TodoResponse,
   TodosResponse,
-} from "./contracts/TodoContracts";
-export { Todo } from "./domain/Todo";
+} from "./entities/dtos/TodoDTO";
+export { Todo } from "./entities/Todo";
+export { TodoService } from "./services/TodoService";

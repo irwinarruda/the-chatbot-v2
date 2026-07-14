@@ -1,11 +1,5 @@
 import { preferredAudioMimeTypesConstants } from "~/modules/chat/client/constants/preferredAudioMimeTypesConstants";
-
-type StartAudioRecordingServiceDTO = {
-  audioInputDeviceId?: string;
-  onTick: (duration: number) => void;
-  onRecorded: (recording: { blob: Blob; url: string }) => Promise<void> | void;
-  onEmptyRecording: () => void;
-};
+import type { StartAudioRecordingServiceDTO } from "~/modules/chat/client/entities/dtos/StartAudioRecordingServiceDTO";
 
 let activeMediaRecorder: MediaRecorder | undefined;
 let activeStream: MediaStream | undefined;

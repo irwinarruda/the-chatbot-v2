@@ -1,6 +1,6 @@
 import { Cookie } from "~/infra/cookie";
 import { ServerBootstrap } from "~/infra/server-bootstrap";
-import type { WebAuthTokenPayload } from "~/modules/identity/application/AuthService";
+import type { WebAuthTokenPayload } from "~/modules/identity/services/AuthService";
 
 export interface WebAuthContext {
   webAuth: WebAuthTokenPayload;

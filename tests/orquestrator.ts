@@ -2,29 +2,28 @@ import { faker } from "@faker-js/faker";
 import { v4 as uuidv4 } from "uuid";
 import { createApplication } from "~/infra/bootstrap";
 import { Database } from "~/infra/database";
-import type { CashFlowService } from "~/modules/cash-flow/application/CashFlowService";
-import type { MonthlyExpenseService } from "~/modules/cash-flow/application/MonthlyExpenseService";
-import { TestCashFlowSpreadsheetGateway } from "~/modules/cash-flow/server/TestCashFlowSpreadsheetGateway";
-import type { AiToolService } from "~/modules/chat/application/AiToolService";
-import type { MessagingService } from "~/modules/chat/application/MessagingService";
-import { ChatChannel } from "~/modules/chat/domain/enums/ChatChannel";
-import { TestAiChatGateway } from "~/modules/chat/server/TestAiChatGateway";
-import { TestSpeechToTextGateway } from "~/modules/chat/server/TestSpeechToTextGateway";
-import { TestStorageGateway } from "~/modules/chat/server/TestStorageGateway";
-import { TestWebMessagingGateway } from "~/modules/chat/server/TestWebMessagingGateway";
-import { TestWhatsAppMessagingGateway } from "~/modules/chat/server/TestWhatsAppMessagingGateway";
+import { TestCashFlowSpreadsheetGateway } from "~/modules/cash-flow/gateway/CashFlowSpreadsheetGateway/TestCashFlowSpreadsheetGateway";
+import type { CashFlowService } from "~/modules/cash-flow/services/CashFlowService";
+import type { MonthlyExpenseService } from "~/modules/cash-flow/services/MonthlyExpenseService";
+import { ChatChannel } from "~/modules/chat/entities/enums/ChatChannel";
+import { TestAiChatGateway } from "~/modules/chat/gateway/AiChatGateway/TestAiChatGateway";
+import { TestSpeechToTextGateway } from "~/modules/chat/gateway/SpeechToTextGateway/TestSpeechToTextGateway";
+import { TestStorageGateway } from "~/modules/chat/gateway/StorageGateway/TestStorageGateway";
+import { TestWebMessagingGateway } from "~/modules/chat/gateway/WebMessagingGateway/TestWebMessagingGateway";
+import { TestWhatsAppMessagingGateway } from "~/modules/chat/gateway/WhatsAppMessagingGateway/TestWhatsAppMessagingGateway";
+import type { AiToolService } from "~/modules/chat/services/AiToolService";
+import type { MessagingService } from "~/modules/chat/services/MessagingService";
+import { BsuidUtils } from "~/modules/identity/entities/BsuidUtils";
+import { PhoneNumberUtils } from "~/modules/identity/entities/PhoneNumberUtils";
+import { User } from "~/modules/identity/entities/User";
+import { TestAuthGateway } from "~/modules/identity/gateway/AuthGateway/TestAuthGateway";
 import type {
   AuthService,
   IdentityChatCoordinator,
-} from "~/modules/identity/application/AuthService";
-import { BsuidUtils } from "~/modules/identity/domain/BsuidUtils";
-import { PhoneNumberUtils } from "~/modules/identity/domain/PhoneNumberUtils";
-import { User } from "~/modules/identity/domain/User";
-import { TestGoogleAuthGateway } from "~/modules/identity/server/TestGoogleAuthGateway";
-import type { StatusService } from "~/modules/system/application/StatusService";
-import type { MigrationService } from "~/modules/system/server/MigrationService";
-import type { TodoService } from "~/modules/todos/application/TodoService";
-import { ValidationException } from "~/shared/errors/DomainErrors";
+} from "~/modules/identity/services/AuthService";
+import type { MigrationService } from "~/modules/system/services/MigrationService";
+import type { StatusService } from "~/modules/system/services/StatusService";
+import type { TodoService } from "~/modules/todos/services/TodoService";
 import type {
   AiConfig,
   AuthConfig,
@@ -35,8 +34,9 @@ import type {
   GoogleSheetsConfig,
   JwtConfig,
   OpenAiConfig,
-} from "~/shared/server/Config";
-import { loadConfig } from "~/shared/server/Config";
+} from "~/shared/config/Config";
+import { loadConfig } from "~/shared/config/Config";
+import { ValidationException } from "~/shared/errors/DomainErrors";
 
 export interface TranscriptDTO {
   id: string;
@@ -68,7 +68,7 @@ export class Orquestrator {
   migrationService: MigrationService;
   aiToolService: AiToolService;
   aiGateway: TestAiChatGateway;
-  googleAuthGateway: TestGoogleAuthGateway;
+  googleAuthGateway: TestAuthGateway;
   webMessagingGateway: TestWebMessagingGateway;
   whatsAppMessagingGateway: TestWhatsAppMessagingGateway;
   identityChatCoordinator: IdentityChatCoordinator;
@@ -88,7 +88,7 @@ export class Orquestrator {
     this.openAiConfig = this.config.openAi;
     this.jwtConfig = this.config.jwt;
     this.aiGateway = new TestAiChatGateway();
-    this.googleAuthGateway = new TestGoogleAuthGateway(this.googleConfig);
+    this.googleAuthGateway = new TestAuthGateway(this.googleConfig);
     this.webMessagingGateway = new TestWebMessagingGateway();
     this.whatsAppMessagingGateway = new TestWhatsAppMessagingGateway();
     const application = createApplication(this.config, {

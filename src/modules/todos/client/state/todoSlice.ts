@@ -4,7 +4,7 @@ import {
   type TodoFilters,
   todoService,
 } from "~/modules/todos/client/services/todoService";
-import type { Todo, TodoStatus } from "~/modules/todos/contracts/TodoContracts";
+import type { Todo, TodoStatus } from "~/modules/todos/entities/dtos/TodoDTO";
 
 export type TodoErrorCode = "loading" | "saving" | "deleting";
 

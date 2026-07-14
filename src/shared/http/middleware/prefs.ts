@@ -1,5 +1,5 @@
 import { createMiddleware } from "@tanstack/react-start";
-import { resolvePrefs } from "~/shared/contracts/PrefsContract";
+import { resolvePrefs } from "~/shared/utils/PrefsUtils";
 
 export const prefsMiddleware = createMiddleware({
   type: "request",

@@ -1,6 +1,6 @@
-import type { CashFlowAddExpenseDTO } from "~/modules/cash-flow/application/CashFlowService";
-import { Encryption } from "~/modules/identity/application/Encryption";
-import { User } from "~/modules/identity/domain/User";
+import type { CashFlowAddExpenseDTO } from "~/modules/cash-flow/entities/dtos/CashFlowServiceDTO";
+import { User } from "~/modules/identity/entities/User";
+import { Encryption } from "~/modules/identity/services/Encryption";
 import {
   NotFoundException,
   ServiceException,

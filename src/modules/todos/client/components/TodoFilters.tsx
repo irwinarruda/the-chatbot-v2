@@ -6,7 +6,7 @@ import { useDebouncedValue } from "~/modules/todos/client/utils/useDebouncedValu
 import type {
   TodoDueFilter,
   TodoStatus,
-} from "~/modules/todos/contracts/TodoContracts";
+} from "~/modules/todos/entities/dtos/TodoDTO";
 import { Button } from "~/shared/client/components/ui/button";
 import { Input } from "~/shared/client/components/ui/input";
 import {

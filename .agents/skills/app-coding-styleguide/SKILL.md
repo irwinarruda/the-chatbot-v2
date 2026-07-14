@@ -1,14 +1,14 @@
 ---
 name: app-coding-styleguide
-description: "Authoritative non-visual TypeScript/JavaScript styleguide for The Chatbot: naming, inference, classes versus functions, runtime contracts, imports, whitespace, errors, locality, Services, entities, adapters, client services, stores, and tests. Use whenever creating, editing, reviewing, or refactoring application code. For TSX/JSX, components, Tailwind, or user-facing UI, also use client-jsx-styleguide."
+description: "Authoritative non-visual TypeScript/JavaScript styleguide for The Chatbot: naming, inference, classes versus functions, DTOs and runtime schemas, imports, whitespace, errors, locality, Services, entities, gateways, client services, stores, and tests. Use whenever creating, editing, reviewing, or refactoring application code. For TSX/JSX, components, Tailwind, or user-facing UI, also use client-jsx-styleguide."
 ---
 
 # App Coding Styleguide
 
 ## Source of truth and precedence
 
-This skill owns non-visual TypeScript/JavaScript style across server, domain,
-application, contracts, adapters, client services, stores, and tests. TSX/JSX visual
+This skill owns non-visual TypeScript/JavaScript style across entities, DTOs,
+Services, gateways, contracts, client services, stores, and tests. TSX/JSX visual
 implementation belongs to `client-jsx-styleguide`.
 
 Precedence:
@@ -60,8 +60,8 @@ Run the formatter instead of hand-tuning mechanical layout.
 - Do not use ternary expressions. Use an explicit branch, lookup, or named
   selection instead.
 - Prefer composition over inheritance.
-- Keep transport/provider types private to their adapter unless they are an owned
-  module contract.
+- Keep provider types private to their gateway implementation unless they are an
+  owned module DTO.
 
 ## Classes and plain functions
 
@@ -81,7 +81,12 @@ Keep logic inline by default. Extract when:
 
 A one-use private helper that merely shortens a method is usually missed locality.
 
-## Runtime-backed contracts
+## DTOs and runtime schemas
+
+Declare every type, interface, or schema whose name ends in `DTO` inside an
+`entities/dtos/` directory. Browser-only DTOs may use the feature's
+`client/entities/dtos/`; module API, Service, gateway, and tool DTOs use the
+module-root `entities/dtos/`.
 
 Use Zod when data crosses an owned runtime boundary such as HTTP, SSE, untrusted
 storage, tool input, or environment input.
@@ -99,17 +104,16 @@ export const CreateTodoRequest = z.object({
 export type CreateTodoRequest = z.infer<typeof CreateTodoRequest>;
 ```
 
-Keep the schema in the owning module's `contracts/`. Put a contract in
-`src/shared/contracts` only when no feature owns the primitive.
+Keep the schema in the owning module's `entities/dtos/`. Put it in
+`src/shared/entities/dtos` only when no feature owns the primitive.
 
 Do not maintain a handwritten interface beside the schema. Do not assert
-`response.json() as Contract`; parse it.
+`response.json() as ResponseDTO`; parse it.
 
 Internal commands that never cross a runtime trust boundary may be plain types.
 
-AI tool inputs are the deliberate naming and placement exception to the general
-contract rule above. Export the Zod schema and inferred type with the same
-`*ToolDTO` name from the owning module's `application/tools/` folder, even when the
+AI tool inputs use an explicit `DTO` suffix. Export the Zod schema and inferred type
+with the same `*ToolDTO` name from the owning module's `entities/dtos/` folder, even when the
 schema is an empty object. Tool registries import and parse these DTOs; never define
 tool input schemas inline or introduce a shared generic empty-input DTO.
 
@@ -129,15 +133,16 @@ export type ToolResultStatus = ValueOf<typeof ToolResultStatus>;
 
 Compare through the member, not a repeated raw literal. Raw string unions/literals
 are acceptable when an external protocol owns the values and the type stays inside
-its adapter.
+its gateway implementation.
 
 ## Naming
 
 - Use names that state the domain action or value, not the implementation mechanism.
-- Application Service public methods should read as capabilities.
+- Service public methods should read as capabilities.
 - Use `on{Name}{Event}` for React handlers: `onTodoCreate`, `onMessageSend`.
 - Avoid `handle{Name}` when the code expresses user intent.
-- Name provider implementations by provider plus capability.
+- Name gateway implementations by provider or mechanism plus capability. Put the
+  interface in `gateway/<Name>Gateway/index.ts` without an `I` prefix.
 - Name persistence collaborators for the real aggregate/capability, never
   `BaseRepository` or `GenericDAO`.
 - Spell acronym suffixes consistently in uppercase, including `DTO`; use
@@ -170,7 +175,7 @@ Prefer a linear reading order:
 
 1. guards and input normalization;
 2. source reads;
-3. domain/application action;
+3. entity/Service action;
 4. persistence/effects;
 5. return value.
 
@@ -257,7 +262,7 @@ Use the configured `~/*` aliases for imports that cross directories:
 
 ```ts
 import { Button } from "~/shared/client/components/ui/button";
-import { Chat } from "~/modules/chat/domain/Chat";
+import { Chat } from "~/modules/chat/entities/Chat";
 ```
 
 Use `./` for same-directory files or direct subdirectories. Avoid `../` parent
@@ -270,7 +275,7 @@ published entrypoint or concrete published path.
 
 - Name tests after observable behavior.
 - Keep setup focused on what the behavior needs.
-- Prefer domain/application fakes over provider SDK mocks.
+- Prefer gateway and Service fakes over provider SDK mocks.
 - Avoid decorative arrange/act/assert comments and blank-line rituals.
 - Assert through public behavior; inspect internal state only when that state is the
   contract under test.

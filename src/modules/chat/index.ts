@@ -1,9 +1,9 @@
-export { MessagingService } from "./application/MessagingService";
+export { Chat } from "./entities/Chat";
 export {
   ChannelMessageResponse,
   ChatMessagesResponse,
   SendWebMessageRequest,
   WebChatEvent,
-} from "./contracts/ChatContracts";
-export { Chat } from "./domain/Chat";
-export { Message } from "./domain/Message";
+} from "./entities/dtos/ChatDTO";
+export { Message } from "./entities/Message";
+export { MessagingService } from "./services/MessagingService";

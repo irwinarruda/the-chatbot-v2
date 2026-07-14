@@ -4,7 +4,7 @@ import type { AudioInputOption } from "~/modules/chat/client/entities/AudioInput
 import { audioInputService } from "~/modules/chat/client/services/audioInputService";
 import { audioRecordingService } from "~/modules/chat/client/services/audioRecordingService";
 import { webChatService } from "~/modules/chat/client/services/webChatService";
-import type { ChatMessage } from "~/modules/chat/contracts/ChatContracts";
+import type { ChatMessage } from "~/modules/chat/entities/dtos/ChatDTO";
 
 export interface RecordingSlice {
   audioInputOptions: AudioInputOption[];

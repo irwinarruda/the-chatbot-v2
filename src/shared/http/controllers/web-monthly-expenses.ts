@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ServerBootstrap } from "~/infra/server-bootstrap";
+import { toMonthlyExpenseResponse } from "~/modules/cash-flow/contracts/MonthlyExpenseContractMapper";
 import {
   CreateMonthlyExpenseRequest,
   MonthlyExpenseMonth,
   MonthlyExpensesResponse,
-} from "~/modules/cash-flow/contracts/MonthlyExpenseContracts";
-import { toMonthlyExpenseResponse } from "~/modules/cash-flow/server/MonthlyExpenseContractMapper";
+} from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
 import { Http } from "~/shared/http/utils/Http";
 
 export const Route = createFileRoute("/api/v1/web/monthly-expenses")({

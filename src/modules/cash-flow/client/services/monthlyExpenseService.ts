@@ -5,12 +5,12 @@ import {
   MonthlyExpensesResponse,
   type SetMonthlyExpensePaidRequest,
   type UpdateMonthlyExpenseRequest,
-} from "~/modules/cash-flow/contracts/MonthlyExpenseContracts";
+} from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
 import {
   normalizeApiResponse,
   parseApiResponse,
 } from "~/shared/client/utils/ApiResponseParser";
-import { ApiErrorResponse } from "~/shared/contracts/ApiErrorContract";
+import { ApiErrorResponse } from "~/shared/entities/dtos/ApiErrorDTO";
 
 async function parseError(response: Response): Promise<Error> {
   const body = ApiErrorResponse.safeParse(

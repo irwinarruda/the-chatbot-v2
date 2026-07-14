@@ -4,8 +4,8 @@ import { toChannelMessageResponse } from "~/modules/chat/contracts/ChatContractM
 import {
   ChatMessagesResponse,
   SendWebMessageRequest,
-} from "~/modules/chat/contracts/ChatContracts";
-import { ChatChannel } from "~/modules/chat/domain/enums/ChatChannel";
+} from "~/modules/chat/entities/dtos/ChatDTO";
+import { ChatChannel } from "~/modules/chat/entities/enums/ChatChannel";
 import { Http } from "~/shared/http/utils/Http";
 
 export const Route = createFileRoute("/api/v1/web/messages")({

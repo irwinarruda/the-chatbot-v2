@@ -5,7 +5,7 @@ import {
   createMonthlyExpenseSlice,
   type MonthlyExpenseSlice,
 } from "~/modules/cash-flow/client/state/monthlyExpenseSlice";
-import type { MonthlyExpense } from "~/modules/cash-flow/contracts/MonthlyExpenseContracts";
+import type { MonthlyExpense } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
 
 function createExpense(patch: Partial<MonthlyExpense> = {}): MonthlyExpense {
   return {

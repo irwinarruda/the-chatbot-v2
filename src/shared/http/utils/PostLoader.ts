@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "fs";
 import { Marked, Renderer } from "marked";
 import { join } from "path";
 import { Paths } from "~/infra/paths";
-import type { Prefs } from "~/shared/contracts/PrefsContract";
+import type { Prefs } from "~/shared/entities/dtos/PrefsDTO";
 import { NotFoundException } from "~/shared/errors/ApplicationErrors";
 
 type Locale = Prefs["locale"];

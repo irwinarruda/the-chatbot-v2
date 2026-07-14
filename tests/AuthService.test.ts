@@ -1,7 +1,7 @@
-import { Encryption } from "~/modules/identity/application/Encryption";
-import { Jwt } from "~/modules/identity/application/Jwt";
-import { User } from "~/modules/identity/domain/User";
-import { GoogleAuthScopes } from "~/modules/identity/server/GoogleAuthScopes";
+import { User } from "~/modules/identity/entities/User";
+import { GoogleAuthScopes } from "~/modules/identity/gateway/AuthGateway/GoogleAuthScopes";
+import { Encryption } from "~/modules/identity/services/Encryption";
+import { Jwt } from "~/modules/identity/services/Jwt";
 import {
   DeveloperException,
   NotFoundException,

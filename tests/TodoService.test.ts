@@ -1,6 +1,6 @@
-import { ChatChannel } from "~/modules/chat/domain/enums/ChatChannel";
-import { MessageContentType } from "~/modules/chat/domain/enums/MessageContentType";
-import { TodoStatus } from "~/modules/todos/domain/enums/TodoStatus";
+import { ChatChannel } from "~/modules/chat/entities/enums/ChatChannel";
+import { MessageContentType } from "~/modules/chat/entities/enums/MessageContentType";
+import { TodoStatus } from "~/modules/todos/entities/enums/TodoStatus";
 import { NotFoundException } from "~/shared/errors/ApplicationErrors";
 import { ValidationException } from "~/shared/errors/DomainErrors";
 import { orquestrator } from "./orquestrator";

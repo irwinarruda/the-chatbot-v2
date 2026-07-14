@@ -1,5 +1,5 @@
 import { CalendarDays, Check, Circle, Pencil, ReceiptText } from "lucide-react";
-import type { MonthlyExpense } from "~/modules/cash-flow/contracts/MonthlyExpenseContracts";
+import type { MonthlyExpense } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
 import { Button } from "~/shared/client/components/ui/button";
 import { cn } from "~/shared/client/components/ui/lib";
 import type { Dictionary, Locale } from "~/shared/client/i18n";

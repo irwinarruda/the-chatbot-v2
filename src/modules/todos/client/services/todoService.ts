@@ -5,12 +5,12 @@ import {
   TodoResponse,
   type TodoStatus,
   TodosResponse,
-} from "~/modules/todos/contracts/TodoContracts";
+} from "~/modules/todos/entities/dtos/TodoDTO";
 import {
   normalizeApiResponse,
   parseApiResponse,
 } from "~/shared/client/utils/ApiResponseParser";
-import { ApiErrorResponse } from "~/shared/contracts/ApiErrorContract";
+import { ApiErrorResponse } from "~/shared/entities/dtos/ApiErrorDTO";
 
 export interface TodoFilters {
   q?: string;
@@ -18,8 +18,6 @@ export interface TodoFilters {
   due?: TodoDueFilter;
   status?: "all" | TodoStatus;
 }
-
-export type TodoSaveDTO = SaveTodoRequest;
 
 async function parseError(response: Response): Promise<Error> {
   const body = ApiErrorResponse.safeParse(
@@ -55,7 +53,7 @@ export const todoService = {
     return parseApiResponse(TodoItemResponse, await response.json()).todo;
   },
 
-  async createTodo(dto: TodoSaveDTO): Promise<TodoResponse> {
+  async createTodo(dto: SaveTodoRequest): Promise<TodoResponse> {
     const response = await fetch("/api/v1/web/todos", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -65,7 +63,7 @@ export const todoService = {
     return parseApiResponse(TodoItemResponse, await response.json()).todo;
   },
 
-  async updateTodo(id: string, dto: TodoSaveDTO): Promise<TodoResponse> {
+  async updateTodo(id: string, dto: SaveTodoRequest): Promise<TodoResponse> {
     const response = await fetch(`/api/v1/web/todos/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },

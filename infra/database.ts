@@ -1,6 +1,7 @@
 import postgres from "postgres";
+import type { DatabaseGateway } from "~/shared/gateway/DatabaseGateway";
 
-export class Database {
+export class Database implements DatabaseGateway {
   readonly sql: postgres.Sql;
 
   constructor(

@@ -1,8 +1,8 @@
 import type { Model } from "@earendil-works/pi-ai";
-import { MessageContentType } from "~/modules/chat/domain/enums/MessageContentType";
-import { MessageRole } from "~/modules/chat/domain/enums/MessageRole";
-import { ToolResultStatus } from "~/modules/chat/domain/enums/ToolResultStatus";
-import { PiMessageMapper } from "~/modules/chat/server/PiMessageMapper";
+import { MessageContentType } from "~/modules/chat/entities/enums/MessageContentType";
+import { MessageRole } from "~/modules/chat/entities/enums/MessageRole";
+import { ToolResultStatus } from "~/modules/chat/entities/enums/ToolResultStatus";
+import { PiMessageMapper } from "~/modules/chat/gateway/AiChatGateway/PiMessageMapper";
 import { ValidationException } from "~/shared/errors/DomainErrors";
 
 const model: Model<"openai-completions"> = {

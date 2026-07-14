@@ -7,7 +7,7 @@ import type {
   CreateMonthlyExpenseRequest,
   MonthlyExpense,
   UpdateMonthlyExpenseRequest,
-} from "~/modules/cash-flow/contracts/MonthlyExpenseContracts";
+} from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
 
 export type MonthlyExpenseErrorCode = "loading" | "saving" | "deleting";
 

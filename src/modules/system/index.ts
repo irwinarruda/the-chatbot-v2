@@ -1,2 +1,2 @@
-export { StatusService } from "./application/StatusService";
-export { MigrationService } from "./server/MigrationService";
+export { MigrationService } from "./services/MigrationService";
+export { StatusService } from "./services/StatusService";

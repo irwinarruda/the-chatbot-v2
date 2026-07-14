@@ -13,7 +13,7 @@ import {
   type TodoSearch,
   toTodoRouteSearch,
 } from "~/modules/todos/client/TodoSearch";
-import type { TodoStatus } from "~/modules/todos/contracts/TodoContracts";
+import type { TodoStatus } from "~/modules/todos/entities/dtos/TodoDTO";
 import { TerminalPageHeader } from "~/shared/client/components/terminal/TerminalPageHeader";
 import { TerminalWindow } from "~/shared/client/components/terminal/TerminalWindow";
 import { Alert, AlertDescription } from "~/shared/client/components/ui/alert";

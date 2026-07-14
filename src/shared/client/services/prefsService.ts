@@ -1,12 +1,8 @@
 import { CookieParser } from "~/shared/client/utils/CookieParser";
-import {
-  PREFS_COOKIE_NAME,
-  type Prefs,
-  resolvePrefs,
-  type Theme,
-} from "~/shared/contracts/PrefsContract";
+import type { Prefs, Theme } from "~/shared/entities/dtos/PrefsDTO";
+import { PREFS_COOKIE_NAME, resolvePrefs } from "~/shared/utils/PrefsUtils";
 
-export { DEFAULT_PREFS } from "~/shared/contracts/PrefsContract";
+export { DEFAULT_PREFS } from "~/shared/utils/PrefsUtils";
 export type { Prefs, Theme };
 
 const PREFS_COOKIE_MAX_AGE_SECONDS = 31536000;

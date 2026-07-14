@@ -3,7 +3,7 @@ import { ServerBootstrap } from "~/infra/server-bootstrap";
 import {
   type WebChatEvent,
   WebChatEvent as WebChatEventContract,
-} from "~/modules/chat/contracts/ChatContracts";
+} from "~/modules/chat/entities/dtos/ChatDTO";
 import { Http } from "~/shared/http/utils/Http";
 import { Printable } from "~/shared/http/utils/Printable";
 

@@ -1,5 +1,5 @@
 import { type Application, createApplication } from "~/infra/bootstrap";
-import { loadConfig } from "~/shared/server/Config";
+import { loadConfig } from "~/shared/config/Config";
 
 export class ServerBootstrap {
   private static application: Application | undefined;

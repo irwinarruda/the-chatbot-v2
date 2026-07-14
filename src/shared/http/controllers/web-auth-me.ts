@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ServerBootstrap } from "~/infra/server-bootstrap";
-import { toCurrentUserResponse } from "~/modules/identity/server/IdentityContractMapper";
+import { toCurrentUserResponse } from "~/modules/identity/contracts/IdentityContractMapper";
 import { Http } from "~/shared/http/utils/Http";
 
 export const Route = createFileRoute("/api/v1/web/auth/me")({

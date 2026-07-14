@@ -1,4 +1,4 @@
-import { WhatsAppTextChunker } from "~/modules/chat/server/WhatsAppTextChunker";
+import { WhatsAppTextChunker } from "~/modules/chat/gateway/WhatsAppMessagingGateway/WhatsAppTextChunker";
 
 describe("WhatsAppTextChunker", () => {
   test("short text returns one chunk", () => {

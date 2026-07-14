@@ -1,5 +1,5 @@
 import { Calendar, CheckCircle2, Circle } from "lucide-react";
-import type { Todo } from "~/modules/todos/contracts/TodoContracts";
+import type { Todo } from "~/modules/todos/entities/dtos/TodoDTO";
 import { cn } from "~/shared/client/components/ui/lib";
 
 export function TodoRow({

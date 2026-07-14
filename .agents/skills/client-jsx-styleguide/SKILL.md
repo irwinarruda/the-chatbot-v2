@@ -123,7 +123,7 @@ Prefer a module-local form seam with named pure operations when needed:
 - field-data-to-request conversion.
 
 Use existing controlled primitives and React Hook Form wrappers before writing raw
-controls. Keep server/domain validation authoritative for business invariants.
+controls. Keep Service/entity validation authoritative for business invariants.
 
 ## Tables and complex views
 

@@ -1,16 +1,9 @@
+import type { SubscribeToWebChatStreamDTO } from "~/modules/chat/client/entities/dtos/SubscribeToWebChatStreamDTO";
 import {
   type WebChatEvent,
   WebChatEvent as WebChatEventContract,
-} from "~/modules/chat/contracts/ChatContracts";
+} from "~/modules/chat/entities/dtos/ChatDTO";
 import { parseApiResponse } from "~/shared/client/utils/ApiResponseParser";
-
-type SubscribeToWebChatStreamDTO = {
-  onOpen: () => void;
-  onClose: () => void;
-  onEvent: (event: WebChatEvent) => void;
-  onMalformedEvent?: () => void;
-  retryMs?: number;
-};
 
 export function parseWebChatEvent(data: unknown): WebChatEvent {
   return parseApiResponse(WebChatEventContract, data);

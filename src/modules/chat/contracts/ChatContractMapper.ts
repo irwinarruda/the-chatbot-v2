@@ -1,8 +1,8 @@
 import {
   ChannelMessageResponse,
   type WebChatEvent,
-} from "~/modules/chat/contracts/ChatContracts";
-import type { Message } from "~/modules/chat/domain/Message";
+} from "~/modules/chat/entities/dtos/ChatDTO";
+import type { Message } from "~/modules/chat/entities/Message";
 
 export function toChannelMessageResponse(
   message: Message,

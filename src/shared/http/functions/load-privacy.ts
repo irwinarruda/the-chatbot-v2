@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
-
-import { resolvePrefs } from "~/shared/contracts/PrefsContract";
 import { PostLoader } from "~/shared/http/utils/PostLoader";
+import { resolvePrefs } from "~/shared/utils/PrefsUtils";
 
 export const loadPrivacyContent = createServerFn({ method: "GET" }).handler(
   async ({ request }: any) => {

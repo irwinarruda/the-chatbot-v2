@@ -1,56 +1,52 @@
 ---
 name: app-tests
-description: "Authoritative guide to writing and placing The Chatbot tests with Vitest and PostgreSQL. Use whenever adding, editing, reviewing, debugging, or asking about tests, coverage, test placement, fixtures, generators, fakes, mocks, assertions, domain tests, application Service tests, contract tests, Zustand/client-state tests, SSE tests, provider adapter tests, database integration tests, migrations, or anything touching *.test.ts/tsx, even if the user does not say test architecture."
+description: "Authoritative guide to writing and placing The Chatbot tests with Vitest and PostgreSQL. Use whenever adding, editing, reviewing, or debugging entity, DTO, Service, gateway, client-state, UI, database, migration, provider, or realtime tests, including fixtures, fakes, builders, assertions, and coverage."
 ---
 
 # App Test Styleguide
 
 ## Source of truth and precedence
 
-The implemented test tree, `vitest.config.ts`, test application factory, contract
-schemas, and database integration harness are the source of truth.
+The implemented test tree, `vitest.config.ts`, DTO schemas, test composition root,
+and database harness are the source of truth.
 
 Precedence:
 
 1. The user's explicit request and scoped `AGENTS.md`.
-2. The nearest established test pattern for the same test level.
+2. The nearest established pattern at the same test level.
 3. Vitest/project configuration.
 4. This skill as the default testing standard.
 
-This skill owns test placement, harnesses, fakes, fixtures, and assertion style.
-Production placement belongs to `app-architecture`; implementation style belongs to
-`app-coding-styleguide`.
+## Choose the narrowest level
 
-## First decision: choose the test level
+1. **Entity** — invariants and transitions without DI or PostgreSQL.
+2. **DTO** — Zod requests/responses/events plus real boundary mapping.
+3. **Service** — workflows with deterministic gateways or database fakes.
+4. **Client state** — slice actions, selectors, hydration, optimistic/realtime
+   reduction, resets, and SSR isolation.
+5. **Gateway integration** — concrete provider/protocol mapping and failures.
+6. **Database integration** — PostgreSQL SQL, migrations, transactions, constraints,
+   hydration, and concurrency.
+7. **UI** — interaction, accessibility, focus, keyboard, or rendering behavior that
+   cannot be proved more directly.
 
-Use the narrowest level that proves the owned behavior.
-
-1. **Domain** — entity/value-object invariants and transitions; no DI or database.
-2. **Application** — Service workflows with deterministic outbound-port/database
-   fakes when persistence mechanics are not the subject.
-3. **Contract** — Zod HTTP/SSE schemas plus real server/client mapping.
-4. **Client state** — slice actions, selectors, URL hydration, optimistic/realtime
-   reduction, resets, and SSR isolation with deterministic client services.
-5. **Integration** — PostgreSQL SQL/migrations/transactions/hydration or concrete
-   provider adapter mapping.
-6. **UI** — interaction, accessibility, or rendering behavior that cannot be proven
-   more directly through state/application/contract tests.
-
-Do not call every Service test an integration test. The external mechanism under
-test determines the level.
+The external mechanism under test determines the level. A class named `Service` does
+not automatically make its test an integration test.
 
 ## Placement
 
-Keep one centralized test tree that mirrors architectural ownership:
+Keep tests centralized and grouped by level:
 
 ```text
 tests/
-  domain/<module>/
-  application/<module>/
-  contracts/<module>/
+  entities/<module>/
+  dtos/<module>/
+  services/<module>/
   client/<module>/
-  integration/database/<module>/
-  integration/adapters/<module>/
+  integration/
+    gateways/<module>/
+    database/<module>/
+  architecture/
   utils/
     builders/
     fakes/
@@ -58,23 +54,22 @@ tests/
     createTestApplication.ts
 ```
 
-Do not co-locate `*.test.ts`/`*.test.tsx` inside production module folders. A
-centralized tree keeps test infrastructure out of the production graph and gives
-each test level one obvious home.
+Do not co-locate tests in production module directories.
 
-Name files after the public behavior owner:
+Name files after the behavior owner:
 
 ```text
-tests/domain/chat/Chat.test.ts
-tests/application/chat/ChatService.test.ts
-tests/contracts/chat/ChatContracts.test.ts
+tests/entities/chat/Chat.test.ts
+tests/dtos/chat/ChatDTO.test.ts
+tests/services/chat/MessagingService.test.ts
 tests/client/chat/chatSlice.test.ts
+tests/integration/gateways/chat/PiAiChatGateway.test.ts
 tests/integration/database/chat/ChatPersistence.test.ts
 ```
 
 ## Commands
 
-Use `bun` from the repository root:
+Use Bun from the repository root:
 
 ```bash
 bun run test
@@ -82,14 +77,14 @@ bun run test:coverage
 bun run test -- <file-or-pattern>
 ```
 
-Run the narrowest relevant file/pattern while iterating, then the full suite before
-handoff when the environment supports it. PostgreSQL integration tests require the
-test database and own their schema/migration lifecycle. Domain, application,
-contract, and client-state tests must not require PostgreSQL.
+Run the narrowest relevant test while iterating, then the full suite before handoff
+when the environment supports it. Entity, DTO, Service, and client-state tests must
+not require PostgreSQL. Database integration tests own their schema and migration
+lifecycle.
 
-## Standard test shape
+## Standard shape
 
-Use `describe` and `test`, not `it`. Write behavior sentences:
+Use `describe` and `test`, not `it`. Name tests after observable behavior:
 
 ```ts
 describe("Chat", () => {
@@ -104,201 +99,143 @@ describe("Chat", () => {
 });
 ```
 
-Keep setup, action, and assertion visually readable without mandatory
-arrange/act/assert comments. Use a blank line only when it separates meaningful
-phases.
+Keep setup, action, and assertion readable without mandatory arrange/act/assert
+comments. One file should have one clear public behavior owner.
 
-One file should have one clear public behavior owner. Nested `describe` blocks may
-group several cases of one capability.
+## Entity tests
 
-## Domain tests
+Construct real entities through public constructors or `create`/`restore` factories.
+Test valid construction, rejected invalid state, transitions, timestamps, aggregate
+consistency, and public value-object behavior.
 
-Construct real entities through public `create`/`restore` factories. Test:
+Do not mock, inspect private fields, or test trivial getters and TypeScript types.
 
-- valid construction and normalized state;
-- rejected invalid state;
-- transitions and timestamps;
-- aggregate consistency;
-- value-object equality/serialization only when it is public behavior.
+## DTO tests
 
-Do not mock. Do not inspect private fields. Do not test trivial getters or TypeScript
-types.
+Exercise the real boundary:
 
-## Application tests
+1. Produce the real entity or Service result.
+2. Run the production mapper.
+3. Parse the result with the owning Zod DTO.
+4. When valuable, pass it through the client parser or reducer.
+
+Test valid data, rejection, optional fields, error payloads, and discriminated event
+variants. Do not only parse a fixture designed to match the schema.
+
+## Service tests
 
 Create the Service through the typed test application factory or a focused
-constructor with deterministic port fakes.
+constructor with deterministic gateway/database fakes.
 
-Test:
+Test workflow ordering, public outcomes, entity coordination, transaction and
+partial-failure decisions, error translation, tool idempotency, retry decisions, and
+explicit cross-feature coordination.
 
-- workflow ordering and public outcomes;
-- domain behavior coordination;
-- transaction/partial-failure decisions at the application level;
-- error translation owned by the application;
-- tool idempotency, retry decisions, and unknown outcomes;
-- direct cross-feature coordination through published capabilities.
+Do not import concrete production provider gateways. Do not start PostgreSQL unless
+SQL or PostgreSQL behavior is the subject.
 
-Do not import concrete production provider adapters. Do not start PostgreSQL merely
-because the production Service uses raw SQL; inject a deterministic database
-executor fake unless SQL itself is under test.
+## Client-state tests
 
-## Contract tests
+Create slices with deterministic client-service dependencies. Read and act through
+the public state/action surface.
 
-Contract tests must exercise the actual production mapping seam:
+Test URL hydration, source versus derived state, loading/submitting cleanup,
+authoritative reconciliation, optimistic correlation, failure/retry, stream ordering,
+stale generations, reset/lifecycle cleanup, and SSR isolation.
 
-1. produce the real application/domain result;
-2. run the controller/event mapper;
-3. parse through the shared Zod response/event schema;
-4. when valuable, feed that result through the client service/reducer parser.
+Read fresh state after actions; do not assert against a stale destructured snapshot.
 
-This prevents server and client from independently inventing compatible-looking
-wire shapes.
+## Gateway integration tests
 
-Test success, optional fields, error payloads, and discriminated event variants. Do
-not test only a fixture created to match the schema.
+Use minimal provider fixtures or a local protocol fake. Verify serialization,
+normalization, authentication/signatures, provider error translation, and real
+protocol quirks.
 
-## Client state tests
+Do not test the provider SDK itself. Never let a test flag silently select a live
+external provider.
 
-Create slices through typed factories with deterministic client-service dependencies.
-Read and act through the public state/action surface.
+## Database integration tests
 
-Test:
+Use PostgreSQL only for raw SQL, migrations/backfills, transactions, constraints,
+deduplication, concurrency, or hydration/restoration.
 
-- URL/search hydration and invalid params;
-- source versus derived state;
-- loading/submitting cleanup on success and failure;
-- authoritative mutation, refresh, or stream reconciliation policy;
-- optimistic correlation, failure, and retry;
-- keyed stream replacement and stale-generation rejection;
-- resets and lifecycle cleanup;
-- SSR isolation with two different request snapshots.
-
-Use a live state getter after actions rather than holding a stale destructured
-snapshot.
-
-## Integration tests
-
-Use real PostgreSQL only for behavior that depends on PostgreSQL:
-
-- raw SQL and row mapping;
-- migrations and backfills;
-- transaction rollback/commit;
-- constraints and deduplication;
-- optimistic concurrency;
-- aggregate hydration/restoration;
-- destructive migration audit queries.
-
-The integration harness owns database readiness, migration, and schema cleanup. Keep
-tests isolated from order and shared mutable rows.
-
-Concrete provider adapter tests use recorded/minimal provider fixtures or a local
-protocol fake. They verify mapping, authentication/signature logic, provider error
-translation, and protocol quirks—not the provider's own SDK implementation.
-
-Never allow a test environment flag to select a real external provider silently.
+The integration harness owns readiness, migrations, and cleanup. Tests must not
+depend on order or shared mutable rows.
 
 ## Realtime tests
 
-Test stream mechanics and state reduction separately.
+Gateway tests cover reconnect, backoff, cancellation, cursor transmission, resume,
+duplicates, ordering, and terminal stop behavior.
 
-Adapter tests cover:
-
-- reconnect/backoff/cancel;
-- stable event ID/cursor transmission;
-- replay versus snapshot resume;
-- duplicate and out-of-order delivery;
-- terminal stop behavior.
-
-Slice/reducer tests cover:
-
-- exact persisted identity;
-- correlation of optimistic and canonical items;
-- stale subscription generations;
-- committed progress only;
-- connection state visible to the UI.
+Slice tests cover persisted identity, optimistic correlation, stale subscription
+generations, committed progress, and connection state visible to the UI.
 
 ## UI tests
 
-Add a UI test when user interaction, accessibility, focus, keyboard behavior, or
-conditional rendering is the owned behavior. Use the shared render harness and
-high-level user actions.
+Add a UI test only when interaction, accessibility, focus, keyboard behavior, or
+conditional rendering is the behavior. Prefer role, label, and visible-text queries.
 
-Prefer queries by role, label, and visible text. Avoid implementation selectors,
-class-name assertions, and snapshots for interactive behavior.
-
-Do not duplicate a slice test through the DOM merely to increase coverage.
+Avoid implementation selectors, class-name assertions, and snapshots for interactive
+behavior. Do not repeat a slice test through the DOM for coverage.
 
 ## Fakes, fixtures, and builders
 
-Prefer hand-written deterministic fakes at real ports over broad `vi.mock` module
+Prefer small deterministic fakes at real gateway interfaces over broad `vi.mock`
 replacement.
 
-A fake should:
+A fake should implement the production-facing interface, expose only needed controls,
+reset cleanly, and never call a real network/browser/provider.
 
-- implement the production-facing contract;
-- expose only the request/outcome controls tests need;
-- reset cleanly between tests;
-- never make real network/browser/provider calls.
-
-Build domain data through public factories. Put reusable builders/generators under
-`tests/utils/builders`; keep a one-test request/contract factory local until a second
-file needs it.
-
-Use provider fixtures only at adapter boundaries. Do not leak provider-shaped data
-into domain/application tests.
+Build entity data through public factories. Put reusable builders under
+`tests/utils/builders`; keep one-test data local until it is reused. Provider-shaped
+fixtures belong only in gateway integration tests.
 
 ## Assertions
 
-Assert the smallest public outcome that proves the behavior:
+Assert the smallest public outcome that proves behavior:
 
 - `toBe` for primitives/identity;
 - `toEqual` for owned structural output;
 - `toMatchObject` for focused partial structure;
 - `toHaveLength` for collection size;
 - `toBeDefined`/`toBeUndefined` for presence;
-- `toBeInstanceOf` for domain restoration when class identity matters;
-- `rejects.toThrow(ErrorType)` or `toThrow(ErrorType)` for failures.
+- `toBeInstanceOf` when restored class identity matters;
+- `toThrow(ErrorType)` or `rejects.toThrow(ErrorType)` for failures.
 
-Assert the specific domain/application error type when the type is part of the
-contract. Avoid over-asserting unrelated fields that make tests brittle.
+Assert specific entity or Service errors when their type is part of the contract.
 
-## Isolation and cleanup
+## Isolation
 
-Every test starts from deterministic state. Reset fake requests, timers, stores,
-subscriptions, storage, and database rows through the owning harness.
+Every test starts from deterministic state. Reset gateway requests, timers, stores,
+subscriptions, storage, and database rows through the owning harness. Do not depend
+on test order or share mutable entity instances.
 
-Do not depend on test order. Do not share mutable entity instances across tests. Use
-fake timers only when real time would make the test slow/flaky, and restore them.
+## Architecture tests
 
-## What not to do
+Keep architecture tests for the decisions that make the simplified shape real:
 
-- Do not put tests in production module trees.
-- Do not start PostgreSQL for non-integration behavior.
-- Do not mock internals when a public port exists.
-- Do not assert private fields or call private helpers.
-- Do not test a fake's invented mapping instead of the real production mapper.
-- Do not use live external providers in the normal suite.
-- Do not use route/controller tests when an application or contract seam proves the
-  behavior more directly.
-- Do not write vague names such as `works` or `test 1`.
+- no `domain/`, `application/`, `server/`, or `services/ports/`;
+- entity dependency direction;
+- Services and gateways do not import client code;
+- each gateway directory contains `index.ts`;
+- DTO declarations live in an `entities/dtos/` directory;
+- `contracts/` contains no Zod schema declarations.
 
 ## Checklist
 
 1. Choose the narrowest test level.
-2. Place the test in the centralized mirrored tree.
-3. Use the real public behavior surface.
-4. Use deterministic fakes at meaningful boundaries.
-5. Build valid domain data through public factories.
-6. Exercise real production mapping in contract tests.
-7. Keep PostgreSQL/provider mechanics in integration tests.
-8. Assert focused observable outcomes and specific errors.
-9. Reset all owned state and effects.
-10. Run the focused test, then the relevant/full suite.
+2. Place it in the centralized matching directory.
+3. Use public behavior and real production mapping.
+4. Use deterministic fakes at gateway interfaces.
+5. Keep PostgreSQL and provider mechanics in integration tests.
+6. Assert focused observable outcomes and specific errors.
+7. Reset all owned state and effects.
+8. Run the focused test, then the relevant/full suite.
 
 ## Related skills
 
 - `app-architecture` — production ownership and dependency direction.
-- `app-service-boundaries` — contracts, providers, SQL, transactions, and errors.
-- `app-coding-styleguide` — test implementation style.
-- `client-state-management` — expected slice/SSR/realtime behavior.
-- `client-jsx-styleguide` — UI and accessibility conventions for approved UI tests.
+- `app-service-boundaries` — DTOs, gateways, SQL, transactions, and errors.
+- `app-coding-styleguide` — implementation style.
+- `client-state-management` — slice, SSR, and realtime behavior.
+- `client-jsx-styleguide` — UI and accessibility conventions.

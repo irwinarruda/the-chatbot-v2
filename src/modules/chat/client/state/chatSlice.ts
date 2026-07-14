@@ -5,8 +5,8 @@ import {
   webChatService,
 } from "~/modules/chat/client/services/webChatService";
 import { webChatStreamService } from "~/modules/chat/client/services/webChatStreamService";
-import type { ChatMessage } from "~/modules/chat/contracts/ChatContracts";
-import type { CurrentUser } from "~/modules/identity/contracts/IdentityContracts";
+import type { ChatMessage } from "~/modules/chat/entities/dtos/ChatDTO";
+import type { CurrentUser } from "~/modules/identity/entities/dtos/IdentityDTO";
 
 export type ChatErrorCode = "loading" | "sending" | "microphone";
 

@@ -1,6 +1,6 @@
 import { Calendar, CheckCircle2, Circle, Trash2, Volume2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { Todo } from "~/modules/todos/contracts/TodoContracts";
+import type { Todo } from "~/modules/todos/entities/dtos/TodoDTO";
 import { AudioWaveform } from "~/shared/client/components/AudioWaveform";
 import { Button } from "~/shared/client/components/ui/button";
 import { Dialog } from "~/shared/client/components/ui/dialog";

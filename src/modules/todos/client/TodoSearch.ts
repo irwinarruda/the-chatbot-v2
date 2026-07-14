@@ -1,7 +1,7 @@
 import type {
   TodoDueFilter,
   TodoStatus,
-} from "~/modules/todos/contracts/TodoContracts";
+} from "~/modules/todos/entities/dtos/TodoDTO";
 
 export type TodoSearch = {
   q?: string;

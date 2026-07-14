@@ -1,6 +1,6 @@
 import { CalendarDays, CircleDollarSign, ReceiptText } from "lucide-react";
 import { type SubmitEvent, useEffect, useId, useState } from "react";
-import type { MonthlyExpense } from "~/modules/cash-flow/contracts/MonthlyExpenseContracts";
+import type { MonthlyExpense } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
 import { Button } from "~/shared/client/components/ui/button";
 import { Input } from "~/shared/client/components/ui/input";
 import type { Dictionary } from "~/shared/client/i18n";

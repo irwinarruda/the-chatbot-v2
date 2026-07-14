@@ -1,8 +1,8 @@
 import { resolve } from "path";
-import { MessageContentType } from "~/modules/chat/domain/enums/MessageContentType";
-import { MessageRole } from "~/modules/chat/domain/enums/MessageRole";
-import { PiAiChatGateway } from "~/modules/chat/server/PiAiChatGateway";
-import { loadConfig } from "~/shared/server/Config";
+import { MessageContentType } from "~/modules/chat/entities/enums/MessageContentType";
+import { MessageRole } from "~/modules/chat/entities/enums/MessageRole";
+import { PiAiChatGateway } from "~/modules/chat/gateway/AiChatGateway/PiAiChatGateway";
+import { loadConfig } from "~/shared/config/Config";
 import { loadModeEnv, resolveMode } from "../../plugins/env";
 
 const root = resolve(import.meta.dirname, "..", "..");

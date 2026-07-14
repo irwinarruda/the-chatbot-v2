@@ -3,13 +3,13 @@ import type { SendWebMessageDTO } from "~/modules/chat/client/entities/dtos/Send
 import {
   ChannelMessageResponse,
   ChatMessagesResponse,
-} from "~/modules/chat/contracts/ChatContracts";
-import { CurrentUserResponse as IdentityCurrentUserResponse } from "~/modules/identity/contracts/IdentityContracts";
+} from "~/modules/chat/entities/dtos/ChatDTO";
+import { CurrentUserResponse as IdentityCurrentUserResponse } from "~/modules/identity/entities/dtos/IdentityDTO";
 import {
   normalizeApiResponse,
   parseApiResponse,
 } from "~/shared/client/utils/ApiResponseParser";
-import { ApiErrorResponse } from "~/shared/contracts/ApiErrorContract";
+import { ApiErrorResponse } from "~/shared/entities/dtos/ApiErrorDTO";
 
 export type ChatMessage = ChannelMessageResponse;
 export type CurrentUser = IdentityCurrentUserResponse;

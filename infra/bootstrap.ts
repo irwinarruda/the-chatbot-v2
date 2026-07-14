@@ -1,39 +1,39 @@
 import { Database } from "~/infra/database";
-import { CashFlowService } from "~/modules/cash-flow/application/CashFlowService";
-import { MonthlyExpenseService } from "~/modules/cash-flow/application/MonthlyExpenseService";
-import type { ICashFlowSpreadsheetGateway } from "~/modules/cash-flow/application/ports/ICashFlowSpreadsheetGateway";
-import { GoogleCashFlowSpreadsheetGateway } from "~/modules/cash-flow/server/GoogleCashFlowSpreadsheetGateway";
-import { AiToolService } from "~/modules/chat/application/AiToolService";
-import { MessagingService } from "~/modules/chat/application/MessagingService";
-import type { IAiChatGateway } from "~/modules/chat/application/ports/IAiChatGateway";
-import type { ISpeechToTextGateway } from "~/modules/chat/application/ports/ISpeechToTextGateway";
-import type { IStorageGateway } from "~/modules/chat/application/ports/IStorageGateway";
-import type { IWebMessagingGateway } from "~/modules/chat/application/ports/IWebMessagingGateway";
-import type { IWhatsAppMessagingGateway } from "~/modules/chat/application/ports/IWhatsAppMessagingGateway";
-import { OpenAiSpeechToTextGateway } from "~/modules/chat/server/OpenAiSpeechToTextGateway";
-import { PiAiChatGateway } from "~/modules/chat/server/PiAiChatGateway";
-import { R2StorageGateway } from "~/modules/chat/server/R2StorageGateway";
-import { WebMessagingGateway } from "~/modules/chat/server/WebMessagingGateway";
-import { WhatsAppMessagingGateway } from "~/modules/chat/server/WhatsAppMessagingGateway";
+import type { CashFlowSpreadsheetGateway } from "~/modules/cash-flow/gateway/CashFlowSpreadsheetGateway";
+import { GoogleCashFlowSpreadsheetGateway } from "~/modules/cash-flow/gateway/CashFlowSpreadsheetGateway/GoogleCashFlowSpreadsheetGateway";
+import { CashFlowService } from "~/modules/cash-flow/services/CashFlowService";
+import { MonthlyExpenseService } from "~/modules/cash-flow/services/MonthlyExpenseService";
+import type { AiChatGateway } from "~/modules/chat/gateway/AiChatGateway";
+import { PiAiChatGateway } from "~/modules/chat/gateway/AiChatGateway/PiAiChatGateway";
+import type { SpeechToTextGateway } from "~/modules/chat/gateway/SpeechToTextGateway";
+import { OpenAiSpeechToTextGateway } from "~/modules/chat/gateway/SpeechToTextGateway/OpenAiSpeechToTextGateway";
+import type { StorageGateway } from "~/modules/chat/gateway/StorageGateway";
+import { R2StorageGateway } from "~/modules/chat/gateway/StorageGateway/R2StorageGateway";
+import type { WebMessagingGateway } from "~/modules/chat/gateway/WebMessagingGateway";
+import { LocalWebMessagingGateway } from "~/modules/chat/gateway/WebMessagingGateway/LocalWebMessagingGateway";
+import type { WhatsAppMessagingGateway } from "~/modules/chat/gateway/WhatsAppMessagingGateway";
+import { MetaWhatsAppMessagingGateway } from "~/modules/chat/gateway/WhatsAppMessagingGateway/MetaWhatsAppMessagingGateway";
+import { AiToolService } from "~/modules/chat/services/AiToolService";
+import { MessagingService } from "~/modules/chat/services/MessagingService";
+import type { AuthGateway } from "~/modules/identity/gateway/AuthGateway";
+import { GoogleAuthGateway } from "~/modules/identity/gateway/AuthGateway/GoogleAuthGateway";
 import {
   AuthService,
   type IdentityChatCoordinator,
-} from "~/modules/identity/application/AuthService";
-import type { IGoogleAuthGateway } from "~/modules/identity/application/ports/IGoogleAuthGateway";
-import { GoogleAuthGateway } from "~/modules/identity/server/GoogleAuthGateway";
-import { StatusService } from "~/modules/system/application/StatusService";
-import { MigrationService } from "~/modules/system/server/MigrationService";
-import { TodoService } from "~/modules/todos/application/TodoService";
-import type { Config } from "~/shared/server/Config";
+} from "~/modules/identity/services/AuthService";
+import { MigrationService } from "~/modules/system/services/MigrationService";
+import { StatusService } from "~/modules/system/services/StatusService";
+import { TodoService } from "~/modules/todos/services/TodoService";
+import type { Config } from "~/shared/config/Config";
 
 export interface ApplicationGateways {
-  aiChat: IAiChatGateway;
-  cashFlowSpreadsheet: ICashFlowSpreadsheetGateway;
-  googleAuth: IGoogleAuthGateway;
-  speechToText: ISpeechToTextGateway;
-  storage: IStorageGateway;
-  webMessaging: IWebMessagingGateway;
-  whatsAppMessaging: IWhatsAppMessagingGateway;
+  aiChat: AiChatGateway;
+  cashFlowSpreadsheet: CashFlowSpreadsheetGateway;
+  googleAuth: AuthGateway;
+  speechToText: SpeechToTextGateway;
+  storage: StorageGateway;
+  webMessaging: WebMessagingGateway;
+  whatsAppMessaging: WhatsAppMessagingGateway;
 }
 
 export interface Application {
@@ -78,10 +78,11 @@ export function createApplication(
       overrides.gateways?.speechToText ??
       new OpenAiSpeechToTextGateway(config.openAi),
     storage: overrides.gateways?.storage ?? new R2StorageGateway(config.r2),
-    webMessaging: overrides.gateways?.webMessaging ?? new WebMessagingGateway(),
+    webMessaging:
+      overrides.gateways?.webMessaging ?? new LocalWebMessagingGateway(),
     whatsAppMessaging:
       overrides.gateways?.whatsAppMessaging ??
-      new WhatsAppMessagingGateway(config.whatsApp),
+      new MetaWhatsAppMessagingGateway(config.whatsApp),
   };
   let messagingService: MessagingService | undefined;
   const defaultChatCoordinator: IdentityChatCoordinator = {

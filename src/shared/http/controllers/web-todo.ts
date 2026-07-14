@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ServerBootstrap } from "~/infra/server-bootstrap";
-import { SaveTodoRequest } from "~/modules/todos/contracts/TodoContracts";
-import { toTodoResponse } from "~/modules/todos/server/TodoContractMapper";
+import { toTodoResponse } from "~/modules/todos/contracts/TodoContractMapper";
+import { SaveTodoRequest } from "~/modules/todos/entities/dtos/TodoDTO";
 import { Http } from "~/shared/http/utils/Http";
 
 export const Route = createFileRoute("/api/v1/web/todos/$todoId")({
