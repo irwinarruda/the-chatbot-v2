@@ -36,9 +36,7 @@ export const recordingSlice: StateCreator<
   recordingDuration: 0,
   ...compute("recording", get, (state) => ({
     canSelectAudioInput:
-      state.audioInputOptions.length >= 2 &&
-      !state.isChatSubmitting &&
-      !state.isRecording,
+      state.audioInputOptions.length >= 2 && !state.isRecording,
   })),
   async syncAudioInputs() {
     const devices = await audioInputService.listAudioInputs();

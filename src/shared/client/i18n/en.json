@@ -75,6 +75,7 @@
     "emptyState": "Send a message to start chatting",
     "you": "you",
     "bot": "bot",
+    "responding": "Thinking...",
     "showMoreTranscript": "Show transcription",
     "showLessTranscript": "Hide transcription",
     "placeholder": "Type a message...",

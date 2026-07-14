@@ -33,78 +33,122 @@ export const ChatMessage = memo(function ChatMessage({
 }: ChatMessageProps) {
   const isUser = message.userType === "user";
   const isAudio = message.type === "audio" && Boolean(message.mediaUrl);
+  const timestamp = new Date(message.createdAt).toLocaleTimeString(locale, {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  if (!isUser) {
+    return (
+      <div className="w-full py-2">
+        <div className="mb-1.5 flex items-center gap-2 text-2xs uppercase tracking-wider">
+          <span aria-hidden="true" className="font-bold text-term-green">
+            {">"}
+          </span>
+          <span className="font-semibold text-term-green">{botLabel}</span>
+          <span className="text-term-muted">{timestamp}</span>
+        </div>
+        <div className="pl-4">
+          <MessageContent
+            message={message}
+            theme={theme}
+            isAudio={isAudio}
+            isSending={isSending}
+            showMoreLabel={showMoreLabel}
+            showLessLabel={showLessLabel}
+            onButtonReply={onButtonReply}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
-      className={`flex w-fit flex-col ${
-        isAudio ? "max-w-[85%] sm:max-w-80" : "max-w-[85%] sm:max-w-[80%]"
-      } ${isUser ? "ml-auto" : "mr-auto"}`}
+      className={`ml-auto flex w-fit flex-col ${
+        isAudio ? "max-w-[88%] sm:max-w-80" : "max-w-[88%] sm:max-w-[75%]"
+      }`}
     >
-      <div
-        className={`mb-0.5 px-0.5 font-semibold text-2xs uppercase tracking-wider ${
-          isUser ? "text-right text-term-cyan" : "text-left text-term-green"
-        }`}
-      >
-        {isUser ? youLabel : botLabel}
+      <div className="mb-1 flex items-center justify-end gap-2 px-0.5 text-2xs uppercase tracking-wider">
+        <span className="font-semibold text-term-cyan">{youLabel}</span>
+        <span className="text-term-muted">{timestamp}</span>
       </div>
-      <div
-        className={`rounded-lg border px-3.5 py-2.5 ${
-          isUser
-            ? "border-term-green/20 bg-term-green/8"
-            : "border-term-border bg-term-bg"
-        }`}
-      >
-        {isAudio && message.mediaUrl ? (
-          <div className="flex flex-col gap-2">
-            <AudioWaveform src={message.mediaUrl} theme={theme} />
-            {message.transcript ? (
-              <AudioTranscript
-                text={message.transcript}
-                showMoreLabel={showMoreLabel}
-                showLessLabel={showLessLabel}
-              />
-            ) : null}
-          </div>
-        ) : message.type === "interactive" &&
-          message.userType === "bot" &&
-          message.buttonReplyOptions ? (
-          <div className="flex flex-col gap-2.5">
-            <FormattedChatText text={message.text ?? ""} />
-            <div className="flex flex-wrap gap-1.5">
-              {message.buttonReplyOptions.map((option) => (
-                <Button
-                  key={option}
-                  type="button"
-                  onClick={() => {
-                    void onButtonReply(option);
-                  }}
-                  disabled={isSending}
-                  variant="outline"
-                  size="sm"
-                  className="rounded-md border-term-blue/30 bg-term-blue/8 text-[0.8125rem] text-term-blue hover:border-term-cyan/40 hover:bg-term-cyan/10 hover:text-term-cyan"
-                >
-                  {option}
-                </Button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <FormattedChatText text={message.buttonReply ?? message.text ?? ""} />
-        )}
-      </div>
-      <div
-        className={`mt-0.5 px-0.5 text-2xs text-term-muted ${
-          isUser ? "text-right" : "text-left"
-        }`}
-      >
-        {new Date(message.createdAt).toLocaleTimeString(locale, {
-          hour: "2-digit",
-          minute: "2-digit",
-        })}
+      <div className="rounded-lg border border-term-green/20 bg-term-green/8 px-3.5 py-2.5">
+        <MessageContent
+          message={message}
+          theme={theme}
+          isAudio={isAudio}
+          isSending={isSending}
+          showMoreLabel={showMoreLabel}
+          showLessLabel={showLessLabel}
+          onButtonReply={onButtonReply}
+        />
       </div>
     </div>
   );
 });
+
+function MessageContent({
+  message,
+  theme,
+  isAudio,
+  isSending,
+  showMoreLabel,
+  showLessLabel,
+  onButtonReply,
+}: {
+  message: ChatMessageEntity;
+  theme: "dark" | "light";
+  isAudio: boolean;
+  isSending: boolean;
+  showMoreLabel: string;
+  showLessLabel: string;
+  onButtonReply: (text: string) => void;
+}) {
+  if (isAudio && message.mediaUrl) {
+    return (
+      <div className="flex flex-col gap-2">
+        <AudioWaveform src={message.mediaUrl} theme={theme} />
+        {message.transcript && (
+          <AudioTranscript
+            text={message.transcript}
+            showMoreLabel={showMoreLabel}
+            showLessLabel={showLessLabel}
+          />
+        )}
+      </div>
+    );
+  }
+  if (
+    message.type === "interactive" &&
+    message.userType === "bot" &&
+    message.buttonReplyOptions
+  ) {
+    return (
+      <div className="flex flex-col gap-3">
+        <FormattedChatText text={message.text ?? ""} />
+        <div className="flex flex-wrap gap-1.5">
+          {message.buttonReplyOptions.map((option) => (
+            <Button
+              key={option}
+              type="button"
+              onClick={() => {
+                void onButtonReply(option);
+              }}
+              disabled={isSending}
+              variant="outline"
+              size="sm"
+              className="rounded-md border-term-blue/30 bg-term-blue/8 text-[0.8125rem] text-term-blue hover:border-term-cyan/40 hover:bg-term-cyan/10 hover:text-term-cyan"
+            >
+              {option}
+            </Button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return <FormattedChatText text={message.buttonReply ?? message.text ?? ""} />;
+}
 
 function AudioTranscript({
   text,
@@ -151,12 +195,12 @@ function FormattedChatText({ text }: { text: string }) {
 
   if (blocks.length === 0) {
     return (
-      <p className="wrap-break-word m-0 whitespace-pre-wrap text-sm text-term-text leading-relaxed" />
+      <p className="wrap-break-word m-0 whitespace-pre-wrap text-sm text-term-text leading-6" />
     );
   }
 
   return (
-    <div className="wrap-break-word flex flex-col gap-2 text-sm text-term-text leading-relaxed">
+    <div className="wrap-break-word flex flex-col gap-2 text-sm text-term-text leading-6">
       {blocks.map((block) => (
         <MessageBlock key={getBlockKey(serializeBlock(block))} block={block} />
       ))}

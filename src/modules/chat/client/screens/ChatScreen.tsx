@@ -2,6 +2,7 @@ import { useNavigate, useRouter } from "@tanstack/react-router";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   ArrowDown,
+  ArrowUp,
   ListTodo,
   Mic,
   ReceiptText,
@@ -71,10 +72,16 @@ export function ChatScreen() {
   const isNearBottomRef = useRef(true);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [composerHeight, setComposerHeight] = useState(0);
+  const isAssistantResponding =
+    isChatSubmitting && chatMessages.at(-1)?.userType === "user";
+  const lastChatItemIndex = isAssistantResponding
+    ? chatMessages.length
+    : chatMessages.length - 1;
   const virtualizer = useVirtualizer({
-    count: chatMessages.length,
+    count: chatMessages.length + (isAssistantResponding ? 1 : 0),
     getScrollElement: () => parentRef.current,
     estimateSize: (index) => {
+      if (index === chatMessages.length) return 72;
       const msg = chatMessages[index];
       if (msg.type === "audio" && msg.mediaUrl) return 90;
       if (
@@ -116,6 +123,7 @@ export function ChatScreen() {
   }
 
   async function onSend() {
+    if (!canSendChatInput) return;
     if (inputElRef.current) inputElRef.current.style.height = "auto";
     await sendChatInput();
     inputElRef.current?.focus();
@@ -163,7 +171,7 @@ export function ChatScreen() {
   function onScrollToBottom() {
     isNearBottomRef.current = true;
     setShowScrollBtn(false);
-    virtualizer.scrollToIndex(chatMessages.length - 1, { align: "end" });
+    virtualizer.scrollToIndex(lastChatItemIndex, { align: "end" });
   }
 
   function onCancelRecording() {
@@ -186,9 +194,9 @@ export function ChatScreen() {
 
   useEffect(() => {
     if (isNearBottomRef.current && chatMessages.length > 0) {
-      virtualizer.scrollToIndex(chatMessages.length - 1, { align: "end" });
+      virtualizer.scrollToIndex(lastChatItemIndex, { align: "end" });
     }
-  }, [chatMessages.length, virtualizer]);
+  }, [chatMessages.length, lastChatItemIndex, virtualizer]);
 
   useEffect(() => {
     const inputEl = inputElRef.current;
@@ -203,13 +211,13 @@ export function ChatScreen() {
       setComposerHeight(entry.contentRect.height);
       if (isNearBottomRef.current && chatMessages.length > 0) {
         requestAnimationFrame(() => {
-          virtualizer.scrollToIndex(chatMessages.length - 1, { align: "end" });
+          virtualizer.scrollToIndex(lastChatItemIndex, { align: "end" });
         });
       }
     });
     observer.observe(composer);
     return () => observer.disconnect();
-  }, [chatMessages.length, virtualizer]);
+  }, [chatMessages.length, lastChatItemIndex, virtualizer]);
 
   useEffect(() => {
     let cancelled = false;
@@ -318,7 +326,7 @@ export function ChatScreen() {
       <div
         ref={parentRef}
         onScroll={onScroll}
-        className="relative flex-1 overflow-y-auto p-4 sm:p-5"
+        className="relative flex-1 overflow-y-auto px-3 py-4 sm:px-5 sm:py-6"
       >
         {chatMessages.length === 0 ? (
           <div className="flex h-full items-center justify-center text-sm text-term-muted">
@@ -328,6 +336,7 @@ export function ChatScreen() {
           </div>
         ) : (
           <div
+            className="mx-auto w-full max-w-3xl"
             style={{
               height: virtualizer.getTotalSize(),
               width: "100%",
@@ -335,6 +344,42 @@ export function ChatScreen() {
             }}
           >
             {virtualizer.getVirtualItems().map((virtualItem) => {
+              if (virtualItem.index === chatMessages.length) {
+                return (
+                  <div
+                    key="assistant-progress"
+                    ref={virtualizer.measureElement}
+                    data-index={virtualItem.index}
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "100%",
+                      transform: `translateY(${virtualItem.start}px)`,
+                    }}
+                  >
+                    <div
+                      role="status"
+                      aria-live="polite"
+                      className="flex items-center gap-2 py-2 text-2xs uppercase tracking-wider"
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="font-bold text-term-green"
+                      >
+                        {">"}
+                      </span>
+                      <span className="font-semibold text-term-green">
+                        {t.bot}
+                      </span>
+                      <span className="text-term-muted normal-case tracking-normal">
+                        {t.responding}
+                      </span>
+                      <span className="terminal-cursor h-3.5 w-1.5" />
+                    </div>
+                  </div>
+                );
+              }
               const message = chatMessages[virtualItem.index];
               return (
                 <div
@@ -388,10 +433,10 @@ export function ChatScreen() {
 
       <div
         ref={composerRef}
-        className="shrink-0 border-term-border border-t bg-linear-to-b from-term-chrome to-term-chrome/80 px-4 py-3"
+        className="shrink-0 bg-linear-to-t from-term-window via-term-window to-term-window/90 px-3 pt-2 pb-3 sm:px-5 sm:pb-4"
       >
         {isRecording ? (
-          <div className="flex flex-wrap items-center gap-2.5 py-1">
+          <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center gap-2.5 rounded-xl border border-term-red/30 bg-term-bg px-3 py-3">
             <span className="h-2 w-2 shrink-0 rounded-full bg-term-red motion-safe:animate-blink" />
             <span className="min-w-32 flex-1 text-sm text-term-red">
               {t.recording} {formatTime(recordingDuration)}
@@ -422,16 +467,20 @@ export function ChatScreen() {
         ) : (
           <form
             onSubmit={onSubmit}
-            className="group/form flex flex-col gap-1.5"
+            className="group/form mx-auto w-full max-w-3xl overflow-hidden rounded-xl border border-term-border bg-term-bg p-2 transition-all duration-200 focus-within:border-term-green focus-within:shadow-field"
           >
-            <div className="flex min-h-4.5 items-center justify-between gap-3 px-1 text-2xs text-term-muted opacity-75 transition-opacity duration-200 group-focus-within/form:opacity-100 group-hover/form:opacity-100">
-              <span className="hidden items-center gap-1.5 tracking-wide sm:inline-flex">
-                <span className="inline-block rounded border border-term-border bg-term-bg px-1.5 py-px text-[0.625rem] text-term-text tracking-wider">
-                  enter
-                </span>
-                <span className="opacity-50">.</span>
-                <span>{t.send}</span>
-              </span>
+            <Textarea
+              ref={inputElRef}
+              rows={1}
+              value={chatInput}
+              onChange={onInputChange}
+              onKeyDown={onInputKeyDown}
+              placeholder={t.placeholder}
+              autoComplete="off"
+              className="max-h-40 min-h-12 min-w-0 resize-none appearance-none overflow-y-auto rounded-none border-0 bg-transparent px-1.5 py-2 font-mono text-sm text-term-text leading-6 caret-term-green shadow-none ring-0 placeholder:text-term-muted/70 focus-visible:border-0 focus-visible:shadow-none focus-visible:outline-none focus-visible:ring-0 dark:bg-transparent"
+            />
+
+            <div className="flex min-h-8 items-center justify-between gap-3">
               <div
                 data-disabled={!canSelectAudioInput}
                 title={t.audioInputLabel}
@@ -445,7 +494,7 @@ export function ChatScreen() {
                 </span>
                 <NativeSelect
                   size="sm"
-                  className="w-full **:data-[slot=native-select-icon]:right-2 **:data-[slot=native-select-icon]:size-3 **:data-[slot=native-select]:h-6 **:data-[slot=native-select-icon]:text-term-muted [&_[data-slot=native-select]]:rounded [&_[data-slot=native-select]]:border-transparent [&_[data-slot=native-select]]:bg-transparent [&_[data-slot=native-select]]:py-0.5 [&_[data-slot=native-select]]:pr-7 [&_[data-slot=native-select]]:pl-7 [&_[data-slot=native-select]]:text-2xs [&_[data-slot=native-select]]:text-term-muted [&_[data-slot=native-select]]:transition-colors [&_[data-slot=native-select]]:hover:border-term-amber/25 [&_[data-slot=native-select]]:hover:bg-term-amber/8 [&_[data-slot=native-select]]:hover:text-term-amber [&_[data-slot=native-select]]:focus-visible:border-term-amber/40 [&_[data-slot=native-select]]:focus-visible:ring-0"
+                  className="w-full **:data-[slot=native-select-icon]:right-2 **:data-[slot=native-select-icon]:size-3 **:data-[slot=native-select]:h-7 **:data-[slot=native-select-icon]:text-term-muted [&_[data-slot=native-select]]:rounded-md [&_[data-slot=native-select]]:border-transparent [&_[data-slot=native-select]]:bg-transparent [&_[data-slot=native-select]]:py-0.5 [&_[data-slot=native-select]]:pr-7 [&_[data-slot=native-select]]:pl-7 [&_[data-slot=native-select]]:text-2xs [&_[data-slot=native-select]]:text-term-muted [&_[data-slot=native-select]]:transition-colors [&_[data-slot=native-select]]:hover:border-term-amber/25 [&_[data-slot=native-select]]:hover:bg-term-amber/8 [&_[data-slot=native-select]]:hover:text-term-amber [&_[data-slot=native-select]]:focus-visible:border-term-amber/40 [&_[data-slot=native-select]]:focus-visible:ring-0"
                   value={selectedAudioInputId}
                   onChange={onAudioInputChange}
                   disabled={!canSelectAudioInput}
@@ -467,30 +516,7 @@ export function ChatScreen() {
                   )}
                 </NativeSelect>
               </div>
-            </div>
-
-            <div
-              data-disabled={isChatSubmitting || undefined}
-              className="flex items-start gap-0 rounded-lg border border-term-border bg-term-bg pr-1.5 pl-3.5 transition-all duration-200 focus-within:border-term-green focus-within:shadow-[0_0_0_3px_rgba(80,223,170,0.12)] data-disabled:opacity-70"
-            >
-              <span
-                className="mr-3 inline-flex h-10 select-none items-center font-mono font-semibold text-base text-term-green leading-none"
-                style={{ textShadow: "0 0 8px rgba(80,223,170,0.35)" }}
-              >
-                {">"}
-              </span>
-              <Textarea
-                ref={inputElRef}
-                rows={1}
-                value={chatInput}
-                onChange={onInputChange}
-                onKeyDown={onInputKeyDown}
-                placeholder={t.placeholder}
-                disabled={isChatSubmitting}
-                autoComplete="off"
-                className="max-h-40 min-h-10 min-w-0 flex-1 resize-none overflow-y-auto rounded-none border-0 bg-transparent px-1.5 py-2.5 font-mono text-sm text-term-text caret-term-green shadow-none ring-0 placeholder:text-term-muted/70 focus-visible:border-0 focus-visible:shadow-none focus-visible:outline-none focus-visible:ring-0 disabled:cursor-not-allowed disabled:bg-transparent"
-              />
-              <div className="ml-1.5 inline-flex shrink-0 items-center gap-0.5 self-end py-1">
+              <div className="inline-flex shrink-0 items-center gap-1">
                 <Button
                   type="button"
                   onClick={onStartRecording}
@@ -499,7 +525,7 @@ export function ChatScreen() {
                   aria-label={t.startRecording}
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 rounded-md border-0 bg-transparent p-0 text-term-muted hover:bg-term-amber/10 hover:text-term-amber dark:hover:bg-term-amber/10"
+                  className="size-8 rounded-full border-0 bg-transparent p-0 text-term-muted hover:bg-term-amber/10 hover:text-term-amber dark:hover:bg-term-amber/10"
                 >
                   <Mic className="size-4" />
                 </Button>
@@ -510,9 +536,9 @@ export function ChatScreen() {
                   aria-label={t.send}
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 rounded-md border-0 bg-transparent p-0 text-term-muted hover:bg-term-green/10 hover:text-term-green enabled:text-term-green dark:hover:bg-term-green/10"
+                  className="size-8 rounded-full border-0 bg-term-green p-0 text-term-bg hover:bg-term-green-dim hover:text-term-bg disabled:bg-term-chrome disabled:text-term-muted"
                 >
-                  <Send className="size-4" />
+                  <ArrowUp className="size-4" />
                 </Button>
               </div>
             </div>

@@ -118,4 +118,45 @@ describe("chatSlice", () => {
 
     expect(store.getState().chatMessages).toEqual(messages);
   });
+
+  test("keeps the next draft editable while the assistant is responding", async () => {
+    let resolveSend: (messages: ChatMessage[]) => void = () => {};
+    const sendResult = new Promise<ChatMessage[]>((resolve) => {
+      resolveSend = resolve;
+    });
+    const service: WebChatClientService = {
+      async getCurrentUser() {
+        return {
+          id: crypto.randomUUID(),
+          name: "Irwin",
+          phoneNumber: "5511999999999",
+        };
+      },
+      async getMessages() {
+        return [];
+      },
+      async sendMessage() {
+        return sendResult;
+      },
+      async sendAudio() {
+        return [];
+      },
+      async logout() {},
+    };
+    const store = createStore(service);
+    await store.getState().bootstrapChat();
+    store.getState().setChatInput("First message");
+
+    const sending = store.getState().sendChatInput();
+    store.getState().setChatInput("My next thought");
+
+    expect(store.getState().chatInput).toBe("My next thought");
+    expect(store.getState().canSendChatInput).toBe(false);
+
+    resolveSend([createMessage({ text: "Answer" })]);
+    await sending;
+
+    expect(store.getState().chatInput).toBe("My next thought");
+    expect(store.getState().canSendChatInput).toBe(true);
+  });
 });
