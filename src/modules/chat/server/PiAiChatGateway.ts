@@ -17,9 +17,12 @@ import type {
   AiToolDefinition,
   IAiChatGateway,
 } from "~/modules/chat/application/ports/IAiChatGateway";
+import {
+  ReplyWithOptionsToolDTO,
+  replyWithOptionsToolName,
+} from "~/modules/chat/application/tools/ReplyWithOptionsToolDTO";
 import type { ConversationSummary } from "~/modules/chat/domain/ConversationSummary";
-import { MessageContentType } from "~/modules/chat/domain/enums/MessageContentType";
-import { AssistantTextParser } from "~/modules/chat/server/AssistantTextParser";
+import { mapPiAssistantResponse } from "~/modules/chat/server/mapPiAssistantResponse";
 import { PiMessageMapper } from "~/modules/chat/server/PiMessageMapper";
 import { PromptLoader, PromptLocale } from "~/modules/chat/server/PromptLoader";
 import { ValidationException } from "~/shared/errors/DomainErrors";
@@ -29,6 +32,16 @@ const summaryCandidateSchema = z.object({
   userProfile: z.array(z.string()),
   durableFacts: z.array(z.string()),
 });
+
+const replyWithOptionsTool: AiToolDefinition = {
+  name: replyWithOptionsToolName,
+  description: [
+    "Send the final user-visible assistant message with 1 to 3 selectable options.",
+    "Use this instead of writing choices in a text response.",
+    "This response is terminal: do not include text or call another tool in the same response.",
+  ].join("\n"),
+  inputSchema: ReplyWithOptionsToolDTO,
+};
 
 export class PiAiChatGateway implements IAiChatGateway {
   private models: MutableModels;
@@ -67,7 +80,7 @@ export class PiAiChatGateway implements IAiChatGateway {
       {
         systemPrompt,
         messages: PiMessageMapper.map(request.messages, this.model),
-        tools: request.tools.map((tool) => ({
+        tools: this.getToolDefinitions(request.tools).map((tool) => ({
           name: tool.name,
           description: tool.description,
           parameters: Type.Unsafe(this.toJsonSchema(tool)),
@@ -78,21 +91,9 @@ export class PiAiChatGateway implements IAiChatGateway {
     if (response.stopReason === "error" || response.stopReason === "aborted") {
       throw new Error(response.errorMessage ?? "The AI returned no response");
     }
-    const text = response.content
-      .filter((content) => content.type === "text")
-      .map((content) => content.text)
-      .join("\n\n")
-      .trim();
+    const mapped = mapPiAssistantResponse(response);
     return {
-      content: text ? AssistantTextParser.parse(text) : undefined,
-      toolCalls: response.content
-        .filter((content) => content.type === "toolCall")
-        .map((call) => ({
-          type: MessageContentType.ToolCall,
-          callId: call.id,
-          name: call.name,
-          arguments: call.arguments,
-        })),
+      ...mapped,
       finishReason: response.stopReason,
       usage: {
         inputTokens: response.usage.input,
@@ -106,7 +107,7 @@ export class PiAiChatGateway implements IAiChatGateway {
       request.channelAddress,
       request.memory,
     );
-    const tools = request.tools.map((tool) => ({
+    const tools = this.getToolDefinitions(request.tools).map((tool) => ({
       name: tool.name,
       description: tool.description,
       inputSchema: this.toJsonSchema(tool),
@@ -174,6 +175,15 @@ export class PiAiChatGateway implements IAiChatGateway {
   private toJsonSchema(tool: AiToolDefinition): Record<string, unknown> {
     const { $schema, ...schema } = z.toJSONSchema(tool.inputSchema);
     return schema;
+  }
+
+  private getToolDefinitions(tools: AiToolDefinition[]): AiToolDefinition[] {
+    if (tools.some((tool) => tool.name === replyWithOptionsToolName)) {
+      throw new ValidationException(
+        `Tool name ${replyWithOptionsToolName} is reserved for assistant output`,
+      );
+    }
+    return [...tools, replyWithOptionsTool];
   }
 
   private buildSystemPrompt(

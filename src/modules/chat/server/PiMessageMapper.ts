@@ -85,8 +85,8 @@ export class PiMessageMapper {
         }
         const text =
           content.type === MessageContentType.Button
-            ? `[Button][${(content.options ?? []).join(";")}]${content.text}`.trim()
-            : `[Text]${content.text}`.trim();
+            ? `${content.text}\n\nSelectable options: ${(content.options ?? []).join("; ")}`.trim()
+            : content.text;
         const last = mapped[mapped.length - 1];
         if (last?.role === "assistant") {
           last.content.push({ type: "text", text });

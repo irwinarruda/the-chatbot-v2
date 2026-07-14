@@ -49,7 +49,7 @@ describe("PiMessageMapper", () => {
     expect(messages[0]).toMatchObject({ role: "user", content: "hello" });
     expect(messages[1]).toMatchObject({
       role: "assistant",
-      content: [{ type: "text", text: "[Button][A;B]choose" }],
+      content: [{ type: "text", text: "choose\n\nSelectable options: A; B" }],
     });
     expect(messages[2]).toMatchObject({
       role: "user",
