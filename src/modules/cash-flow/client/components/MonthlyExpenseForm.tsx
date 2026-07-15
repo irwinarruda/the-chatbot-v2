@@ -13,12 +13,16 @@ export interface MonthlyExpenseFormValue {
 
 export function MonthlyExpenseForm({
   expense,
+  formId,
+  hideActions = false,
   isSubmitting,
   onCancel,
   onSubmit,
   t,
 }: {
   expense?: MonthlyExpense;
+  formId?: string;
+  hideActions?: boolean;
   isSubmitting: boolean;
   onCancel: () => void;
   onSubmit: (value: MonthlyExpenseFormValue) => void;
@@ -50,7 +54,7 @@ export function MonthlyExpenseForm({
   }
 
   return (
-    <form className="space-y-4" onSubmit={onFormSubmit}>
+    <form className="space-y-4" id={formId} onSubmit={onFormSubmit}>
       <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_11rem_8rem]">
         <label className="space-y-1.5" htmlFor={`${fieldId}-name`}>
           <span className="flex items-center gap-1.5 text-2xs text-term-muted uppercase tracking-wide">
@@ -62,6 +66,7 @@ export function MonthlyExpenseForm({
             maxLength={160}
             onChange={(event) => setName(event.target.value)}
             placeholder={t.namePlaceholder}
+            required
             value={name}
           />
         </label>
@@ -99,14 +104,16 @@ export function MonthlyExpenseForm({
         </label>
       </div>
       <p className="m-0 text-2xs text-term-muted">{t.optionalHint}</p>
-      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <Button onClick={onCancel} type="button" variant="outline">
-          {t.cancelAction}
-        </Button>
-        <Button disabled={isSubmitting || !name.trim()} type="submit">
-          {expense ? t.saveAction : t.createAction}
-        </Button>
-      </div>
+      {!hideActions && (
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button onClick={onCancel} type="button" variant="outline">
+            {t.cancelAction}
+          </Button>
+          <Button disabled={isSubmitting || !name.trim()} type="submit">
+            {expense ? t.saveAction : t.createAction}
+          </Button>
+        </div>
+      )}
     </form>
   );
 }

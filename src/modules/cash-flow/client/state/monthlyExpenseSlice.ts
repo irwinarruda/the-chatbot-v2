@@ -57,6 +57,8 @@ export function createMonthlyExpenseSlice(
     async bootstrapMonthlyExpenses(month) {
       set({
         isMonthlyExpenseBootstrapping: true,
+        monthlyExpenseMonth: month ?? "",
+        monthlyExpenses: [],
         monthlyExpenseError: undefined,
       });
       try {
@@ -76,7 +78,11 @@ export function createMonthlyExpenseSlice(
       if (isMonthlyExpenseSubmitting) return undefined;
       set({ isMonthlyExpenseSubmitting: true, monthlyExpenseError: undefined });
       try {
-        const expense = await service.create(dto);
+        const { monthlyExpenseMonth } = get();
+        const expense = await service.create({
+          ...dto,
+          month: monthlyExpenseMonth || undefined,
+        });
         set((state) => ({
           monthlyExpenses: sortMonthlyExpenses([
             ...state.monthlyExpenses,
@@ -97,7 +103,11 @@ export function createMonthlyExpenseSlice(
       if (isMonthlyExpenseSubmitting) return undefined;
       set({ isMonthlyExpenseSubmitting: true, monthlyExpenseError: undefined });
       try {
-        const expense = await service.update(id, dto);
+        const { monthlyExpenseMonth } = get();
+        const expense = await service.update(id, {
+          ...dto,
+          month: monthlyExpenseMonth || undefined,
+        });
         set((state) => ({
           monthlyExpenses: sortMonthlyExpenses(
             state.monthlyExpenses.map((item) =>
@@ -114,16 +124,16 @@ export function createMonthlyExpenseSlice(
       }
     },
     async archiveMonthlyExpense(id) {
-      const { isMonthlyExpenseSubmitting } = get();
+      const { isMonthlyExpenseSubmitting, monthlyExpenseMonth } = get();
       if (isMonthlyExpenseSubmitting) return false;
       set({ isMonthlyExpenseSubmitting: true, monthlyExpenseError: undefined });
       try {
         await service.archive(id);
-        set((state) => ({
-          monthlyExpenses: state.monthlyExpenses.filter(
-            (expense) => expense.id !== id,
-          ),
-        }));
+        const result = await service.list(monthlyExpenseMonth || undefined);
+        set({
+          monthlyExpenseMonth: result.month,
+          monthlyExpenses: result.expenses,
+        });
         return true;
       } catch {
         set({ monthlyExpenseError: "deleting" });

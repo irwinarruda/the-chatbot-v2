@@ -35,6 +35,7 @@ export const CreateMonthlyExpenseRequest = z.object({
   name: z.string().trim().min(1).max(160),
   expectedAmount: z.number().finite().positive().optional(),
   dueDay: z.number().int().min(1).max(31).optional(),
+  month: MonthlyExpenseMonth.optional(),
 });
 export type CreateMonthlyExpenseRequest = z.infer<
   typeof CreateMonthlyExpenseRequest
@@ -44,6 +45,7 @@ export const UpdateMonthlyExpenseRequest = z.object({
   name: z.string().trim().min(1).max(160).optional(),
   expectedAmount: z.number().finite().positive().nullable().optional(),
   dueDay: z.number().int().min(1).max(31).nullable().optional(),
+  month: MonthlyExpenseMonth.optional(),
 });
 export type UpdateMonthlyExpenseRequest = z.infer<
   typeof UpdateMonthlyExpenseRequest

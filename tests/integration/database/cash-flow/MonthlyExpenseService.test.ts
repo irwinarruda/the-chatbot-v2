@@ -52,20 +52,55 @@ describe("MonthlyExpenseService", () => {
     expect(paymentRows).toHaveLength(1);
   });
 
+  test("inherits the latest values while preserving month-specific edits", async () => {
+    const now = new Date("2026-09-20T12:00:00.000Z");
+    const service = new MonthlyExpenseService(orquestrator.database, () => now);
+    const user = await orquestrator.createUser();
+    const electricity = await service.createMonthlyExpense({
+      idUser: user.id,
+      name: "Electricity",
+      expectedAmount: 120,
+      dueDay: 10,
+      month: "2026-07",
+    });
+    await service.updateMonthlyExpense({
+      idUser: user.id,
+      id: electricity.expense.id,
+      expectedAmount: 180,
+      month: "2026-08",
+    });
+    await service.updateMonthlyExpense({
+      idUser: user.id,
+      id: electricity.expense.id,
+      expectedAmount: 140,
+      month: "2026-07",
+    });
+
+    const july = await service.listMonthlyExpenses(user.id, "2026-07");
+    const august = await service.listMonthlyExpenses(user.id, "2026-08");
+    const september = await service.listMonthlyExpenses(user.id, "2026-09");
+
+    expect(july[0]?.expense.expectedAmount).toBe(140);
+    expect(august[0]?.expense.expectedAmount).toBe(180);
+    expect(september[0]?.expense.expectedAmount).toBe(180);
+  });
+
   test("updates optional details and archives without deleting payment history", async () => {
-    const service = new MonthlyExpenseService(orquestrator.database);
+    const now = new Date("2026-07-20T12:00:00.000Z");
+    const service = new MonthlyExpenseService(orquestrator.database, () => now);
     const user = await orquestrator.createUser();
     const created = await service.createMonthlyExpense({
       idUser: user.id,
       name: "Internet",
       expectedAmount: 120,
       dueDay: 8,
+      month: "2026-06",
     });
     await service.setMonthlyExpensePaid(
       user.id,
       created.expense.id,
       true,
-      "2026-07",
+      "2026-06",
     );
 
     const updated = await service.updateMonthlyExpense({
@@ -74,6 +109,7 @@ describe("MonthlyExpenseService", () => {
       name: "Home internet",
       clearExpectedAmount: true,
       clearDueDay: true,
+      month: "2026-07",
     });
     expect(updated.expense).toMatchObject({ name: "Home internet" });
     expect(updated.expense.expectedAmount).toBeUndefined();
@@ -82,6 +118,15 @@ describe("MonthlyExpenseService", () => {
     await service.archiveMonthlyExpense(user.id, created.expense.id);
 
     expect(await service.listMonthlyExpenses(user.id)).toHaveLength(0);
+    const june = await service.listMonthlyExpenses(user.id, "2026-06");
+    expect(june[0]).toMatchObject({
+      isPaid: true,
+      expense: {
+        name: "Internet",
+        expectedAmount: 120,
+        dueDay: 8,
+      },
+    });
     const paymentRows = await orquestrator.database.sql`
       SELECT * FROM monthly_expense_payments
       WHERE id_monthly_expense = ${created.expense.id}

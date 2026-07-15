@@ -6,11 +6,13 @@ import { cn } from "~/shared/client/components/ui/lib";
 
 export function Dialog({
   children,
+  footer,
   onClose,
   open,
   title,
 }: {
   children: ReactNode;
+  footer?: ReactNode;
   onClose: () => void;
   open: boolean;
   title: string;
@@ -37,13 +39,13 @@ export function Dialog({
       <div
         aria-modal="true"
         className={cn(
-          "relative max-h-[calc(100dvh-env(safe-area-inset-top))] w-full max-w-2xl overflow-auto",
+          "relative flex max-h-[calc(100dvh-env(safe-area-inset-top))] w-full max-w-2xl flex-col overflow-hidden",
           "pointer-fine:max-h-[calc(100dvh-2rem)] pointer-fine:rounded-lg rounded-t-xl border border-term-border pointer-fine:border-b border-b-0 bg-term-window pb-[env(safe-area-inset-bottom)] pointer-fine:pb-0 shadow-2xl",
           "shadow-black/40",
         )}
         role="dialog"
       >
-        <div className="sticky top-0 z-10 flex items-center justify-between border-term-border border-b bg-term-chrome px-4 py-3">
+        <div className="z-10 flex shrink-0 items-center justify-between border-term-border border-b bg-term-chrome px-4 py-3">
           <h2 className="m-0 truncate pr-3 font-semibold text-sm text-term-bright">
             {title}
           </h2>
@@ -57,7 +59,12 @@ export function Dialog({
             <X />
           </Button>
         </div>
-        {children}
+        <div className="min-h-0 flex-1 overflow-auto">{children}</div>
+        {footer && (
+          <div className="shrink-0 border-term-border border-t bg-term-chrome/70 px-4 py-3">
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   );

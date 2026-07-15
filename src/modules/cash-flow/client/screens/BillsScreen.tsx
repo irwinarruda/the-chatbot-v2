@@ -1,6 +1,9 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import {
+  CalendarRange,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   CircleDollarSign,
   ListChecks,
   MessageSquare,
@@ -9,6 +12,12 @@ import {
   WalletCards,
 } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
+import {
+  type BillsSearch,
+  getCurrentBillsMonth,
+  shiftBillsMonth,
+  toBillsRouteSearch,
+} from "~/modules/cash-flow/client/BillsSearch";
 import { MonthlyExpenseDialog } from "~/modules/cash-flow/client/components/MonthlyExpenseDialog";
 import {
   MonthlyExpenseForm,
@@ -21,17 +30,13 @@ import { TerminalPageHeader } from "~/shared/client/components/terminal/Terminal
 import { TerminalWindow } from "~/shared/client/components/terminal/TerminalWindow";
 import { Alert, AlertDescription } from "~/shared/client/components/ui/alert";
 import { Button } from "~/shared/client/components/ui/button";
+import { Input } from "~/shared/client/components/ui/input";
 import { getDictionary } from "~/shared/client/i18n";
 import { usePrefs } from "~/shared/client/providers/usePrefs";
 import { useApp } from "~/shared/client/stores";
 
-const currentMonthFormatter = new Intl.DateTimeFormat("en-CA", {
-  timeZone: "America/Sao_Paulo",
-  year: "numeric",
-  month: "2-digit",
-});
-
-export function BillsScreen() {
+export function BillsScreen({ search }: { search: BillsSearch }) {
+  const navigate = useNavigate();
   const prefs = usePrefs();
   const monthlyExpenses = useApp((state) => state.monthlyExpenses);
   const month = useApp((state) => state.monthlyExpenseMonth);
@@ -50,6 +55,8 @@ export function BillsScreen() {
   const [editingExpense, setEditingExpense] = useState<MonthlyExpense>();
   const dictionary = getDictionary(prefs.locale);
   const t = dictionary.billsPage;
+  const currentMonth = getCurrentBillsMonth();
+  const selectedMonth = search.month ?? currentMonth;
   const paidCount = monthlyExpenses.filter((expense) => expense.isPaid).length;
   const unpaidCount = monthlyExpenses.length - paidCount;
   const progress =
@@ -69,13 +76,14 @@ export function BillsScreen() {
     prefs.locale === "pt-BR" ? "pt-BR" : "en-US",
     { style: "currency", currency: "BRL" },
   );
-  const monthLabel = month
-    ? new Intl.DateTimeFormat(prefs.locale === "pt-BR" ? "pt-BR" : "en-US", {
-        month: "long",
-        year: "numeric",
-        timeZone: "America/Sao_Paulo",
-      }).format(new Date(`${month}-15T12:00:00.000Z`))
-    : t.currentMonth;
+  const monthLabel = new Intl.DateTimeFormat(
+    prefs.locale === "pt-BR" ? "pt-BR" : "en-US",
+    {
+      month: "long",
+      year: "numeric",
+      timeZone: "America/Sao_Paulo",
+    },
+  ).format(new Date(`${selectedMonth}-15T12:00:00.000Z`));
   const errorMessages: Record<MonthlyExpenseErrorCode, string> = {
     loading: t.errorLoading,
     saving: t.errorSaving,
@@ -106,14 +114,25 @@ export function BillsScreen() {
     if (deleted) setEditingExpense(undefined);
   }
 
-  useEffect(() => {
-    void bootstrap();
-  }, [bootstrap]);
+  function onMonthSelect(nextMonth: string) {
+    if (!nextMonth) return;
+    setIsComposerOpen(false);
+    setEditingExpense(undefined);
+    navigate({
+      to: "/bills",
+      search: toBillsRouteSearch(nextMonth),
+    });
+  }
 
   useEffect(() => {
+    void bootstrap(selectedMonth);
+  }, [bootstrap, selectedMonth]);
+
+  useEffect(() => {
+    if (search.month) return;
     function refreshAfterMonthChange() {
-      const currentMonth = currentMonthFormatter.format(new Date()).slice(0, 7);
-      if (month && currentMonth !== month) void bootstrap();
+      const nextCurrentMonth = getCurrentBillsMonth();
+      if (month && nextCurrentMonth !== month) void bootstrap(nextCurrentMonth);
     }
     const interval = window.setInterval(refreshAfterMonthChange, 60_000);
     document.addEventListener("visibilitychange", refreshAfterMonthChange);
@@ -121,7 +140,7 @@ export function BillsScreen() {
       window.clearInterval(interval);
       document.removeEventListener("visibilitychange", refreshAfterMonthChange);
     };
-  }, [bootstrap, month]);
+  }, [bootstrap, month, search.month]);
 
   return (
     <TerminalWindow
@@ -131,12 +150,12 @@ export function BillsScreen() {
       mainClassName="items-stretch sm:items-start"
       title={t.windowTitle}
       wide
-      windowClassName="relative overflow-hidden"
+      windowClassName="relative overflow-hidden p-4 sm:p-9 md:p-10"
     >
       <TerminalPageHeader
         badge={
-          <div className="mt-4 flex flex-wrap justify-center gap-2 text-2xs">
-            <span className="border border-term-cyan/40 px-2 py-1 text-term-cyan capitalize">
+          <div className="mt-3 flex flex-wrap justify-center gap-2 text-2xs sm:mt-4">
+            <span className="hidden border border-term-cyan/40 px-2 py-1 text-term-cyan capitalize sm:inline-flex">
               {monthLabel}
             </span>
             <span className="border border-term-amber/40 px-2 py-1 text-term-amber">
@@ -165,8 +184,71 @@ export function BillsScreen() {
           </AlertDescription>
         </Alert>
       )}
+      <section
+        aria-label={t.monthNavigationLabel}
+        className="mb-4 border border-term-border bg-term-chrome/50 p-3"
+      >
+        <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-end gap-2 sm:grid-cols-[auto_minmax(0,12rem)_auto_auto]">
+          <Button
+            aria-label={t.previousMonth}
+            onClick={() => onMonthSelect(shiftBillsMonth(selectedMonth, -1))}
+            size="icon"
+            type="button"
+            variant="outline"
+          >
+            <ChevronLeft />
+          </Button>
+          <label className="space-y-1.5" htmlFor="bills-month">
+            <span className="flex items-center gap-1.5 text-2xs text-term-muted uppercase tracking-wide">
+              <CalendarRange className="size-3.5 text-term-cyan" />
+              {t.monthLabel}
+            </span>
+            <Input
+              id="bills-month"
+              max={currentMonth}
+              onChange={(event) => onMonthSelect(event.target.value)}
+              type="month"
+              value={selectedMonth}
+            />
+          </label>
+          <Button
+            aria-label={t.nextMonth}
+            disabled={selectedMonth >= currentMonth}
+            onClick={() => onMonthSelect(shiftBillsMonth(selectedMonth, 1))}
+            size="icon"
+            type="button"
+            variant="outline"
+          >
+            <ChevronRight />
+          </Button>
+          {search.month !== undefined && (
+            <Button
+              className="hidden sm:inline-flex"
+              onClick={() => onMonthSelect(currentMonth)}
+              type="button"
+              variant="outline"
+            >
+              {t.currentMonthAction}
+            </Button>
+          )}
+        </div>
+        <p className="mt-2 mb-0 hidden text-2xs text-term-muted sm:block">
+          {t.monthHistoryHint}
+        </p>
+        {search.month !== undefined && (
+          <Button
+            className="mt-2 w-full sm:hidden"
+            onClick={() => onMonthSelect(currentMonth)}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            {t.currentMonthAction}
+          </Button>
+        )}
+      </section>
       <section className="mb-4 overflow-hidden border border-term-border bg-term-bg/55">
-        <div className="flex flex-col gap-3 border-term-border border-b bg-term-chrome/60 p-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center justify-between gap-3 border-term-border border-b bg-term-chrome/60 p-3">
           <div>
             <div className="flex items-center gap-2 text-term-green text-xs uppercase tracking-wider">
               <ListChecks className="size-3.5" />
@@ -270,6 +352,7 @@ export function BillsScreen() {
         )}
       </section>
       <MonthlyExpenseDialog
+        canArchive={selectedMonth === currentMonth}
         expense={editingExpense}
         isSubmitting={isSubmitting}
         onClose={() => setEditingExpense(undefined)}
@@ -291,7 +374,7 @@ function SummaryItem({
   value: string;
 }) {
   return (
-    <div className="min-w-0 p-3">
+    <div className="min-w-0 p-2.5 sm:p-3">
       <div className="mb-1 flex items-center gap-1.5 text-2xs text-term-muted uppercase">
         {icon}
         <span className="truncate">{label}</span>

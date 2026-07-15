@@ -4,7 +4,7 @@ import { orquestrator } from "./orquestrator";
 describe("MigrationService", () => {
   test("testMigration", async () => {
     await orquestrator.wipeDatabase();
-    const migrationCount = 17;
+    const migrationCount = 18;
     let migrations =
       await orquestrator.migrationService.listPendingMigrations();
     expect(migrations.length).toBeGreaterThan(0);

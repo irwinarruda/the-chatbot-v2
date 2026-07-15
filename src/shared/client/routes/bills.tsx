@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { BillsScreen } from "~/modules/cash-flow/client";
+import { BillsScreen, normalizeBillsSearch } from "~/modules/cash-flow/client";
 import { requireWebAccess } from "~/shared/http/functions/require-web-access";
 
 export const Route = createFileRoute("/bills")({
@@ -7,8 +7,13 @@ export const Route = createFileRoute("/bills")({
     const authResult = await requireWebAccess();
     if (!authResult.ok) throw redirect({ to: "/chat/login" });
   },
-  component: BillsScreen,
+  validateSearch: normalizeBillsSearch,
+  component: BillsRoute,
   head: () => ({
     meta: [{ title: "Monthly bills - The Chatbot" }],
   }),
 });
+
+function BillsRoute() {
+  return <BillsScreen search={Route.useSearch()} />;
+}

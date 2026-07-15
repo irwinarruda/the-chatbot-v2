@@ -12,6 +12,7 @@ export interface CreateMonthlyExpenseDTO {
   name: string;
   expectedAmount?: number;
   dueDay?: number;
+  month?: string;
 }
 
 export interface UpdateMonthlyExpenseDTO {
@@ -22,4 +23,5 @@ export interface UpdateMonthlyExpenseDTO {
   clearExpectedAmount?: boolean;
   dueDay?: number;
   clearDueDay?: boolean;
+  month?: string;
 }
