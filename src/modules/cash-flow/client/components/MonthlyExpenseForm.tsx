@@ -58,7 +58,6 @@ export function MonthlyExpenseForm({
             {t.nameLabel}
           </span>
           <Input
-            autoFocus
             id={`${fieldId}-name`}
             maxLength={160}
             onChange={(event) => setName(event.target.value)}

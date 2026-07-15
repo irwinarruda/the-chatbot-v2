@@ -232,12 +232,25 @@
 
   body {
     margin: 0;
+    min-height: 100vh;
+    overflow-x: clip;
     font-family: var(--font-mono);
     color: var(--color-term-text);
     background: var(--color-term-bg);
     isolation: isolate;
+    overscroll-behavior-y: none;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    touch-action: manipulation;
   }
 
   :focus-visible {
@@ -275,6 +288,75 @@
   [data-theme="light"] ::selection {
     background: rgba(18, 165, 102, 0.18);
     color: var(--color-term-green);
+  }
+}
+
+.viewport-height {
+  height: 100vh;
+}
+
+.min-viewport-height {
+  min-height: 100vh;
+}
+
+.page-frame-min-height {
+  min-height: 100vh;
+}
+
+.chat-frame-height {
+  height: 100vh;
+}
+
+@media (min-width: 40rem) {
+  .page-frame-min-height {
+    min-height: calc(100vh - 3rem);
+  }
+
+  .chat-frame-height {
+    height: calc(100vh - 3rem);
+  }
+}
+
+@media (min-width: 48rem) {
+  .page-frame-min-height {
+    min-height: calc(100vh - 5rem);
+  }
+
+  .chat-frame-height {
+    height: calc(100vh - 5rem);
+  }
+}
+
+@supports (height: 100dvh) {
+  body,
+  .min-viewport-height,
+  .page-frame-min-height {
+    min-height: 100dvh;
+  }
+
+  .viewport-height,
+  .chat-frame-height {
+    height: 100dvh;
+  }
+
+  @media (min-width: 40rem) {
+    .page-frame-min-height {
+      min-height: calc(100dvh - 3rem);
+    }
+
+    .chat-frame-height {
+      height: calc(100dvh - 3rem);
+    }
+  }
+
+  @media (min-width: 48rem) {
+    .page-frame-min-height {
+      min-height: calc(100dvh - 5rem);
+    }
+
+    .chat-frame-height {
+      height: calc(100dvh - 5rem);
+    }
   }
 }
 

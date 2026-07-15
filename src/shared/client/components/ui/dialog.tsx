@@ -27,7 +27,7 @@ export function Dialog({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-3 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-end pointer-fine:items-center justify-center bg-black/65 pointer-fine:p-3 pt-[env(safe-area-inset-top)] backdrop-blur-sm">
       <button
         aria-label="Close"
         className="absolute inset-0 cursor-default"
@@ -37,8 +37,8 @@ export function Dialog({
       <div
         aria-modal="true"
         className={cn(
-          "relative max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-auto",
-          "rounded-lg border border-term-border bg-term-window shadow-2xl",
+          "relative max-h-[calc(100dvh-env(safe-area-inset-top))] w-full max-w-2xl overflow-auto",
+          "pointer-fine:max-h-[calc(100dvh-2rem)] pointer-fine:rounded-lg rounded-t-xl border border-term-border pointer-fine:border-b border-b-0 bg-term-window pb-[env(safe-area-inset-bottom)] pointer-fine:pb-0 shadow-2xl",
           "shadow-black/40",
         )}
         role="dialog"

@@ -49,7 +49,7 @@ export function TodoRow({
           <button
             className={cn(
               "pointer-events-auto relative inline-flex cursor-pointer items-center gap-1",
-              "border border-transparent px-1 py-0.5 text-2xs uppercase",
+              "min-h-10 pointer-fine:min-h-0 border border-transparent pointer-fine:px-1 px-2 pointer-fine:py-0.5 py-1 text-2xs uppercase",
               "transition-colors hover:border-current",
               isCompleted ? "text-term-green" : "text-term-amber",
             )}

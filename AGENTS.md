@@ -18,6 +18,12 @@ Always create migration files with `bun run migrate:create -- <name>`, then
 edit the generated file. Never create a migration file manually or invent its
 timestamp/filename.
 
+## Git
+
+All commit messages MUST follow the Conventional Commits specification. Use
+`<type>(<scope>): <description>` when a scope is useful, or
+`<type>: <description>` otherwise. Never create a non-conventional commit.
+
 ## Environment System
 
 Two-layer env loading is handled by the Vite/Vitest configs and infra scripts:

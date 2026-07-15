@@ -41,7 +41,7 @@ export function MonthlyExpenseRow({
         aria-label={expense.isPaid ? t.markUnpaid : t.markPaid}
         aria-pressed={expense.isPaid}
         className={cn(
-          "relative z-10 flex size-10 shrink-0 items-center justify-center rounded-md border",
+          "relative z-10 flex pointer-fine:size-10 size-11 shrink-0 items-center justify-center rounded-md border",
           "transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50",
           expense.isPaid
             ? "border-term-green/45 bg-term-green/12 text-term-green"

@@ -84,13 +84,13 @@ export function AudioWaveform({ src, theme = "dark" }: AudioWaveformProps) {
   ]);
 
   return (
-    <div className="flex min-w-55 max-w-70 items-center gap-2">
+    <div className="flex w-55 min-w-0 max-w-full items-center gap-2">
       <button
         type="button"
         onClick={onTogglePlayPause}
         disabled={!isReady}
         aria-label={isPlaying ? "Pause" : "Play"}
-        className="flex h-7.5 w-7.5 shrink-0 cursor-pointer items-center justify-center rounded-md border border-term-border bg-term-bg p-0 text-term-green transition-colors duration-200 hover:border-term-green/40 hover:bg-term-green/10 disabled:cursor-not-allowed disabled:opacity-40"
+        className="flex pointer-fine:size-7.5 size-11 shrink-0 cursor-pointer items-center justify-center rounded-md border border-term-border bg-term-bg p-0 text-term-green transition-colors duration-200 hover:border-term-green/40 hover:bg-term-green/10 disabled:cursor-not-allowed disabled:opacity-40"
       >
         {isPlaying ? <PauseIcon /> : <PlayIcon />}
       </button>

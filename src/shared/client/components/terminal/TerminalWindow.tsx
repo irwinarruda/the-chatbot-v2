@@ -60,7 +60,7 @@ export function TerminalWindow({
   return (
     <main
       className={cn(
-        "flex min-h-dvh items-start justify-center bg-term-bg p-0 sm:p-6 md:p-10",
+        "min-viewport-height flex w-full items-start justify-center overflow-x-clip bg-term-bg p-0 sm:p-6 md:p-10",
         mainClassName,
       )}
     >
@@ -71,8 +71,8 @@ export function TerminalWindow({
           frameClassName,
         )}
       >
-        <div className="flex items-center gap-3 border-b-0 bg-term-chrome px-3 py-2 sm:rounded-t-xl sm:border sm:border-term-border sm:px-4">
-          <div className="flex shrink-0 gap-2">
+        <div className="flex min-h-12 items-center gap-2 border-b-0 bg-term-chrome px-[max(0.75rem,env(safe-area-inset-left))] pt-[max(0.5rem,env(safe-area-inset-top))] pr-[max(0.75rem,env(safe-area-inset-right))] pb-2 sm:min-h-0 sm:gap-3 sm:rounded-t-xl sm:border sm:border-term-border sm:px-4 sm:py-2">
+          <div className="pointer-fine:flex hidden shrink-0 gap-2">
             <button
               type="button"
               onClick={onGoHome}
@@ -137,8 +137,8 @@ export function TerminalWindow({
                     aria-current={isActive ? "page" : undefined}
                     className={
                       isActive
-                        ? "font-medium text-term-green transition-colors duration-200 hover:text-term-cyan"
-                        : "text-term-blue transition-colors duration-200 hover:text-term-cyan"
+                        ? "inline-flex min-h-11 pointer-fine:min-h-0 items-center font-medium text-term-green transition-colors duration-200 hover:text-term-cyan"
+                        : "inline-flex min-h-11 pointer-fine:min-h-0 items-center text-term-blue transition-colors duration-200 hover:text-term-cyan"
                     }
                   >
                     {link.label}

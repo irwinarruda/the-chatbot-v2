@@ -253,8 +253,8 @@ export function ChatScreen() {
 
   if (isChatBootstrapping) {
     return (
-      <main className="flex min-h-dvh w-full items-stretch bg-term-bg">
-        <div className="flex h-dvh w-full flex-col">
+      <main className="min-viewport-height flex w-full items-stretch bg-term-bg">
+        <div className="viewport-height flex w-full flex-col">
           <div className="flex flex-1 items-center justify-center gap-2 bg-term-window text-sm text-term-muted">
             <span className="terminal-cursor" />
             <span>{t.loading}</span>
@@ -299,7 +299,7 @@ export function ChatScreen() {
         </>
       }
       mainClassName="items-stretch sm:items-center"
-      frameClassName="h-dvh sm:h-[calc(100dvh-3rem)] md:h-[calc(100dvh-5rem)]"
+      frameClassName="chat-frame-height"
       windowClassName="relative flex min-h-0 flex-1 flex-col overflow-hidden p-0 sm:p-0 md:p-0"
       showShadow={false}
     >
@@ -326,7 +326,7 @@ export function ChatScreen() {
       <div
         ref={parentRef}
         onScroll={onScroll}
-        className="relative flex-1 overflow-y-auto px-3 py-4 sm:px-5 sm:py-6"
+        className="relative flex-1 overflow-y-auto overscroll-y-contain px-[max(0.75rem,env(safe-area-inset-left))] py-4 pr-[max(0.75rem,env(safe-area-inset-right))] sm:px-5 sm:py-6"
       >
         {chatMessages.length === 0 ? (
           <div className="flex h-full items-center justify-center text-sm text-term-muted">
@@ -433,7 +433,7 @@ export function ChatScreen() {
 
       <div
         ref={composerRef}
-        className="shrink-0 bg-linear-to-t from-term-window via-term-window to-term-window/90 px-3 pt-2 pb-3 sm:px-5 sm:pb-4"
+        className="shrink-0 bg-linear-to-t from-term-window via-term-window to-term-window/90 px-[max(0.75rem,env(safe-area-inset-left))] pt-2 pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-5 sm:pb-4"
       >
         {isRecording ? (
           <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center gap-2.5 rounded-xl border border-term-red/30 bg-term-bg px-3 py-3">
@@ -476,8 +476,9 @@ export function ChatScreen() {
               onChange={onInputChange}
               onKeyDown={onInputKeyDown}
               placeholder={t.placeholder}
+              enterKeyHint="send"
               autoComplete="off"
-              className="max-h-40 min-h-12 min-w-0 resize-none appearance-none overflow-y-auto rounded-none border-0 bg-transparent px-1.5 py-2 font-mono text-sm text-term-text leading-6 caret-term-green shadow-none ring-0 placeholder:text-term-muted/70 focus-visible:border-0 focus-visible:shadow-none focus-visible:outline-none focus-visible:ring-0 dark:bg-transparent"
+              className="max-h-40 min-h-12 min-w-0 resize-none appearance-none overflow-y-auto rounded-none border-0 bg-transparent px-1.5 py-2 font-mono pointer-fine:text-sm text-base text-term-text leading-6 caret-term-green shadow-none ring-0 placeholder:text-term-muted/70 focus-visible:border-0 focus-visible:shadow-none focus-visible:outline-none focus-visible:ring-0 dark:bg-transparent"
             />
 
             <div className="flex min-h-8 items-center justify-between gap-3">
@@ -494,7 +495,7 @@ export function ChatScreen() {
                 </span>
                 <NativeSelect
                   size="sm"
-                  className="w-full **:data-[slot=native-select-icon]:right-2 **:data-[slot=native-select-icon]:size-3 **:data-[slot=native-select]:h-7 **:data-[slot=native-select-icon]:text-term-muted [&_[data-slot=native-select]]:rounded-md [&_[data-slot=native-select]]:border-transparent [&_[data-slot=native-select]]:bg-transparent [&_[data-slot=native-select]]:py-0.5 [&_[data-slot=native-select]]:pr-7 [&_[data-slot=native-select]]:pl-7 [&_[data-slot=native-select]]:text-2xs [&_[data-slot=native-select]]:text-term-muted [&_[data-slot=native-select]]:transition-colors [&_[data-slot=native-select]]:hover:border-term-amber/25 [&_[data-slot=native-select]]:hover:bg-term-amber/8 [&_[data-slot=native-select]]:hover:text-term-amber [&_[data-slot=native-select]]:focus-visible:border-term-amber/40 [&_[data-slot=native-select]]:focus-visible:ring-0"
+                  className="w-full **:data-[slot=native-select-icon]:right-2 **:data-[slot=native-select-icon]:size-3 **:data-[slot=native-select-icon]:text-term-muted [&_[data-slot=native-select]]:h-10 pointer-fine:[&_[data-slot=native-select]]:h-7 [&_[data-slot=native-select]]:rounded-md [&_[data-slot=native-select]]:border-transparent [&_[data-slot=native-select]]:bg-transparent [&_[data-slot=native-select]]:py-0.5 [&_[data-slot=native-select]]:pr-7 [&_[data-slot=native-select]]:pl-7 [&_[data-slot=native-select]]:text-base [&_[data-slot=native-select]]:text-term-muted pointer-fine:[&_[data-slot=native-select]]:text-2xs [&_[data-slot=native-select]]:transition-colors [&_[data-slot=native-select]]:hover:border-term-amber/25 [&_[data-slot=native-select]]:hover:bg-term-amber/8 [&_[data-slot=native-select]]:hover:text-term-amber [&_[data-slot=native-select]]:focus-visible:border-term-amber/40 [&_[data-slot=native-select]]:focus-visible:ring-0"
                   value={selectedAudioInputId}
                   onChange={onAudioInputChange}
                   disabled={!canSelectAudioInput}
@@ -525,7 +526,7 @@ export function ChatScreen() {
                   aria-label={t.startRecording}
                   variant="ghost"
                   size="icon"
-                  className="size-8 rounded-full border-0 bg-transparent p-0 text-term-muted hover:bg-term-amber/10 hover:text-term-amber dark:hover:bg-term-amber/10"
+                  className="pointer-fine:size-8 size-11 rounded-full border-0 bg-transparent p-0 text-term-muted hover:bg-term-amber/10 hover:text-term-amber dark:hover:bg-term-amber/10"
                 >
                   <Mic className="size-4" />
                 </Button>
@@ -536,7 +537,7 @@ export function ChatScreen() {
                   aria-label={t.send}
                   variant="ghost"
                   size="icon"
-                  className="size-8 rounded-full border-0 bg-term-green p-0 text-term-bg hover:bg-term-green-dim hover:text-term-bg disabled:bg-term-chrome disabled:text-term-muted"
+                  className="pointer-fine:size-8 size-11 rounded-full border-0 bg-term-green p-0 text-term-bg hover:bg-term-green-dim hover:text-term-bg disabled:bg-term-chrome disabled:text-term-muted"
                 >
                   <ArrowUp className="size-4" />
                 </Button>

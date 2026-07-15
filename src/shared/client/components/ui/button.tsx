@@ -21,15 +21,16 @@ const buttonVariants = cva(
       },
       size: {
         default:
-          "h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
-        xs: "h-6 gap-1 in-data-[slot=button-group]:rounded rounded px-2 text-xs has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-7 gap-1 in-data-[slot=button-group]:rounded rounded px-2.5 text-[0.8rem] has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
-        lg: "h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
-        icon: "size-8",
+          "h-11 pointer-fine:h-8 gap-1.5 pointer-fine:px-2.5 px-3 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
+        xs: "h-8 pointer-fine:h-6 min-w-8 pointer-fine:min-w-0 gap-1 in-data-[slot=button-group]:rounded rounded px-2 text-xs has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
+        sm: "h-10 pointer-fine:h-7 gap-1 in-data-[slot=button-group]:rounded rounded pointer-fine:px-2.5 px-3 text-[0.8rem] has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
+        lg: "h-11 pointer-fine:h-9 gap-1.5 pointer-fine:px-2.5 px-3 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
+        icon: "pointer-fine:size-8 size-11",
         "icon-xs":
-          "size-6 in-data-[slot=button-group]:rounded rounded [&_svg:not([class*='size-'])]:size-3",
-        "icon-sm": "size-7 in-data-[slot=button-group]:rounded rounded",
-        "icon-lg": "size-9",
+          "pointer-fine:size-6 size-9 in-data-[slot=button-group]:rounded rounded [&_svg:not([class*='size-'])]:size-3",
+        "icon-sm":
+          "pointer-fine:size-7 size-10 in-data-[slot=button-group]:rounded rounded",
+        "icon-lg": "pointer-fine:size-9 size-11",
       },
     },
     defaultVariants: {

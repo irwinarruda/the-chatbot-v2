@@ -98,7 +98,7 @@ export function TodoScreen({ search }: { search: TodoSearch }) {
       activePath="/todo"
       dictionary={dictionary}
       mainClassName="items-stretch sm:items-start"
-      frameClassName="min-h-dvh sm:min-h-[calc(100dvh-3rem)] md:min-h-[calc(100dvh-5rem)]"
+      frameClassName="page-frame-min-height"
       windowClassName="relative overflow-hidden"
     >
       <TerminalPageHeader
