@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
 import { loadModeEnv } from "../../plugins/env";
 import { StatusResponseDTO } from "../../src/modules/system/entities/dtos/StatusDTO";
+import { normalizeApiResponse } from "../../src/shared/client/utils/ApiResponseParser";
 
 const root = resolve(import.meta.dirname, "..", "..");
 const defaultProductionUrl = "https://the-chatbot.irwinarruda.com";
@@ -61,7 +62,9 @@ async function readDeployedCommit(endpoint: URL): Promise<string> {
   if (!response.ok) {
     throw new Error(`status endpoint returned HTTP ${response.status}`);
   }
-  const status = StatusResponseDTO.parse(await response.json());
+  const status = StatusResponseDTO.parse(
+    normalizeApiResponse(await response.json()),
+  );
   return status.deployment.commitSha;
 }
 
