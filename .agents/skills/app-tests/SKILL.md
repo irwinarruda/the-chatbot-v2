@@ -218,7 +218,8 @@ Keep architecture tests for the decisions that make the simplified shape real:
 - entity dependency direction;
 - Services and gateways do not import client code;
 - each gateway directory contains `index.ts`;
-- DTO declarations live in an `entities/dtos/` directory;
+- every DTO declaration uses the uppercase `DTO` suffix and lives in an
+  `entities/dtos/` directory;
 - `contracts/` contains no Zod schema declarations.
 
 ## Checklist

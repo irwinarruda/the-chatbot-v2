@@ -1,7 +1,7 @@
 import type {
   AuthGateway,
-  GoogleTokens,
-  GoogleUserInfo,
+  GoogleTokensDTO,
+  GoogleUserInfoDTO,
 } from "~/modules/identity/gateway/AuthGateway";
 import { buildScopes } from "~/modules/identity/gateway/AuthGateway/GoogleAuthScopes";
 import type { GoogleConfig } from "~/shared/config/Config";
@@ -46,7 +46,7 @@ export class TestAuthGateway implements AuthGateway {
   async exchangeCodeForTokens(
     code: string,
     _redirectTarget: "app" | "web" = "app",
-  ): Promise<GoogleTokens> {
+  ): Promise<GoogleTokensDTO> {
     if (code !== "rightCode") {
       throw new DeveloperException(
         "[exchangeCodeForTokens]",
@@ -60,7 +60,7 @@ export class TestAuthGateway implements AuthGateway {
     };
   }
 
-  async getUserInfo(_accessToken: string): Promise<GoogleUserInfo> {
+  async getUserInfo(_accessToken: string): Promise<GoogleUserInfoDTO> {
     return {
       email: "savegooglecredentials@example.com",
       name: "Save Google Credentials User",
@@ -70,7 +70,7 @@ export class TestAuthGateway implements AuthGateway {
   async refreshToken(
     accessToken: string,
     refreshToken: string,
-  ): Promise<GoogleTokens> {
+  ): Promise<GoogleTokensDTO> {
     if (accessToken !== "ya29.a0ARrdaM9test_access_token_123456789") {
       throw new DeveloperException("[refreshToken]", "Wrong accessToken");
     }

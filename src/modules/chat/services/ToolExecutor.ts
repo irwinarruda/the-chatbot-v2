@@ -7,7 +7,7 @@ import type {
   ToolCallContent,
   ToolResultContent,
 } from "~/modules/chat/entities/Message";
-import type { AiToolDefinition } from "~/modules/chat/gateway/AiChatGateway";
+import type { AiToolDefinitionDTO } from "~/modules/chat/gateway/AiChatGateway";
 import { AppError } from "~/shared/errors/ApplicationErrors";
 
 export interface AiToolContext {
@@ -15,7 +15,7 @@ export interface AiToolContext {
   sourceMessage: Message;
 }
 
-export interface RegisteredTool extends AiToolDefinition {
+export interface RegisteredTool extends AiToolDefinitionDTO {
   mutating: boolean;
   run(args: unknown, context: AiToolContext): Promise<unknown>;
 }
@@ -27,7 +27,7 @@ export class ToolExecutor {
     this.tools = tools;
   }
 
-  getDefinitions(): AiToolDefinition[] {
+  getDefinitions(): AiToolDefinitionDTO[] {
     return this.tools.map(({ name, description, inputSchema }) => ({
       name,
       description,

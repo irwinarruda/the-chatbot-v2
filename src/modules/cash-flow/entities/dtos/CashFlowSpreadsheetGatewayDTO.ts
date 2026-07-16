@@ -1,4 +1,4 @@
-export interface AddTransactionDTO extends Transaction {
+export interface AddTransactionDTO extends TransactionDTO {
   sheetAccessToken: string;
 }
 
@@ -11,7 +11,7 @@ export interface SheetConfigDTO {
   sheetAccessToken: string;
 }
 
-export interface Transaction {
+export interface TransactionDTO {
   sheetId: string;
   date: Date;
   value: number;
@@ -20,7 +20,7 @@ export interface Transaction {
   bankAccount: string;
 }
 
-export interface BankAccountStatus {
+export interface BankAccountStatusDTO {
   bankAccount: string;
   balance: number;
 }

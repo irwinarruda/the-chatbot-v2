@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ServerBootstrap } from "~/infra/server-bootstrap";
 import { toTodoResponse } from "~/modules/todos/contracts/TodoContractMapper";
-import { SaveTodoRequest } from "~/modules/todos/entities/dtos/TodoDTO";
+import { SaveTodoRequestDTO } from "~/modules/todos/entities/dtos/TodoDTO";
 import { Http } from "~/shared/http/utils/Http";
 
 export const Route = createFileRoute("/api/v1/web/todos/$todoId")({
@@ -17,7 +17,7 @@ export const Route = createFileRoute("/api/v1/web/todos/$todoId")({
       },
       async PATCH({ request, context, params }) {
         const todoService = ServerBootstrap.getApplication().services.todos;
-        const body = SaveTodoRequest.parse(await request.json());
+        const body = SaveTodoRequestDTO.parse(await request.json());
         const patch: Parameters<typeof todoService.updateTodo>[0] = {
           idUser: context.webAuth.userId,
           id: params.todoId,

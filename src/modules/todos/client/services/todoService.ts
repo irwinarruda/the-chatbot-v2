@@ -1,26 +1,18 @@
+import type { TodoFiltersDTO } from "~/modules/todos/client/entities/dtos/TodoFiltersDTO";
 import {
-  type SaveTodoRequest,
-  type TodoDueFilter,
-  TodoItemResponse,
-  TodoResponse,
-  type TodoStatus,
-  TodosResponse,
+  type SaveTodoRequestDTO,
+  TodoItemResponseDTO,
+  TodoResponseDTO,
+  TodosResponseDTO,
 } from "~/modules/todos/entities/dtos/TodoDTO";
 import {
   normalizeApiResponse,
   parseApiResponse,
 } from "~/shared/client/utils/ApiResponseParser";
-import { ApiErrorResponse } from "~/shared/entities/dtos/ApiErrorDTO";
-
-export interface TodoFilters {
-  q?: string;
-  dueDate?: string;
-  due?: TodoDueFilter;
-  status?: "all" | TodoStatus;
-}
+import { ApiErrorResponseDTO } from "~/shared/entities/dtos/ApiErrorDTO";
 
 async function parseError(response: Response): Promise<Error> {
-  const body = ApiErrorResponse.safeParse(
+  const body = ApiErrorResponseDTO.safeParse(
     normalizeApiResponse(await response.json()),
   );
   return new Error(
@@ -28,12 +20,12 @@ async function parseError(response: Response): Promise<Error> {
   );
 }
 
-export function parseTodo(data: unknown): TodoResponse {
-  return parseApiResponse(TodoResponse, data);
+export function parseTodo(data: unknown): TodoResponseDTO {
+  return parseApiResponse(TodoResponseDTO, data);
 }
 
 export const todoService = {
-  async listTodos(filters: TodoFilters = {}): Promise<TodoResponse[]> {
+  async listTodos(filters: TodoFiltersDTO = {}): Promise<TodoResponseDTO[]> {
     const params = new URLSearchParams();
     if (filters.q) params.set("q", filters.q);
     if (filters.dueDate) params.set("dueDate", filters.dueDate);
@@ -44,33 +36,36 @@ export const todoService = {
     const url = `/api/v1/web/todos${params.size ? `?${params}` : ""}`;
     const response = await fetch(url);
     if (!response.ok) throw await parseError(response);
-    return parseApiResponse(TodosResponse, await response.json()).todos;
+    return parseApiResponse(TodosResponseDTO, await response.json()).todos;
   },
 
-  async getTodo(id: string): Promise<TodoResponse> {
+  async getTodo(id: string): Promise<TodoResponseDTO> {
     const response = await fetch(`/api/v1/web/todos/${id}`);
     if (!response.ok) throw await parseError(response);
-    return parseApiResponse(TodoItemResponse, await response.json()).todo;
+    return parseApiResponse(TodoItemResponseDTO, await response.json()).todo;
   },
 
-  async createTodo(dto: SaveTodoRequest): Promise<TodoResponse> {
+  async createTodo(dto: SaveTodoRequestDTO): Promise<TodoResponseDTO> {
     const response = await fetch("/api/v1/web/todos", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(dto),
     });
     if (!response.ok) throw await parseError(response);
-    return parseApiResponse(TodoItemResponse, await response.json()).todo;
+    return parseApiResponse(TodoItemResponseDTO, await response.json()).todo;
   },
 
-  async updateTodo(id: string, dto: SaveTodoRequest): Promise<TodoResponse> {
+  async updateTodo(
+    id: string,
+    dto: SaveTodoRequestDTO,
+  ): Promise<TodoResponseDTO> {
     const response = await fetch(`/api/v1/web/todos/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(dto),
     });
     if (!response.ok) throw await parseError(response);
-    return parseApiResponse(TodoItemResponse, await response.json()).todo;
+    return parseApiResponse(TodoItemResponseDTO, await response.json()).todo;
   },
 
   async deleteTodo(id: string): Promise<void> {

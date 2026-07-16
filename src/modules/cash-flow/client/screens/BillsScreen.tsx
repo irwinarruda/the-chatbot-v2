@@ -25,7 +25,7 @@ import {
 } from "~/modules/cash-flow/client/components/MonthlyExpenseForm";
 import { MonthlyExpenseRow } from "~/modules/cash-flow/client/components/MonthlyExpenseRow";
 import type { MonthlyExpenseErrorCode } from "~/modules/cash-flow/client/state/monthlyExpenseSlice";
-import type { MonthlyExpense } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
+import type { MonthlyExpenseDTO } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
 import { TerminalPageHeader } from "~/shared/client/components/terminal/TerminalPageHeader";
 import { TerminalWindow } from "~/shared/client/components/terminal/TerminalWindow";
 import { Alert, AlertDescription } from "~/shared/client/components/ui/alert";
@@ -52,7 +52,7 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
   const setPaid = useApp((state) => state.setMonthlyExpensePaid);
   const clearError = useApp((state) => state.clearMonthlyExpenseError);
   const [isComposerOpen, setIsComposerOpen] = useState(false);
-  const [editingExpense, setEditingExpense] = useState<MonthlyExpense>();
+  const [editingExpense, setEditingExpense] = useState<MonthlyExpenseDTO>();
   const dictionary = getDictionary(prefs.locale);
   const t = dictionary.billsPage;
   const currentMonth = getCurrentBillsMonth();

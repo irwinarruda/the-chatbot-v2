@@ -5,14 +5,14 @@ import {
   type WebChatClientService,
   webChatService,
 } from "~/modules/chat/client/services/webChatService";
-import type { ChatMessage } from "~/modules/chat/entities/dtos/ChatDTO";
-import type { CurrentUser } from "~/modules/identity/entities/dtos/IdentityDTO";
+import type { ChatMessageDTO } from "~/modules/chat/entities/dtos/ChatDTO";
+import type { CurrentUserDTO } from "~/modules/identity/entities/dtos/IdentityDTO";
 
 export type ChatErrorCode = "loading" | "sending" | "microphone";
 
 export type ChatSlice = {
-  currentUser?: CurrentUser;
-  chatMessages: ChatMessage[];
+  currentUser?: CurrentUserDTO;
+  chatMessages: ChatMessageDTO[];
   chatInput: string;
   chatError?: ChatErrorCode;
 
@@ -96,7 +96,7 @@ export function createChatSlice(
         const text = chatInput.trim();
         if (!text || isChatSubmitting) return;
         set({ isChatSubmitting: true, chatInput: "" });
-        const optimistic: ChatMessage = {
+        const optimistic: ChatMessageDTO = {
           id: crypto.randomUUID(),
           type: "text",
           userType: "user",
@@ -120,7 +120,7 @@ export function createChatSlice(
         const { isChatSubmitting } = get();
         if (isChatSubmitting) return;
         set({ isChatSubmitting: true });
-        const optimistic: ChatMessage = {
+        const optimistic: ChatMessageDTO = {
           id: crypto.randomUUID(),
           type: "interactive",
           userType: "user",

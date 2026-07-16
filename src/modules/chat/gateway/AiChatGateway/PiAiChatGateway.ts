@@ -14,13 +14,13 @@ import {
   replyWithOptionsToolName,
 } from "~/modules/chat/entities/dtos/ReplyWithOptionsToolDTO";
 import type {
-  AiChatContextMessage,
+  AiChatContextMessageDTO,
   AiChatGateway,
-  AiCompletionRequest,
-  AiCompletionResponse,
-  AiInputEstimateRequest,
-  AiSummaryCandidate,
-  AiToolDefinition,
+  AiCompletionRequestDTO,
+  AiCompletionResponseDTO,
+  AiInputEstimateRequestDTO,
+  AiSummaryCandidateDTO,
+  AiToolDefinitionDTO,
 } from "~/modules/chat/gateway/AiChatGateway";
 import { mapPiAssistantResponse } from "~/modules/chat/gateway/AiChatGateway/mapPiAssistantResponse";
 import { PiMessageMapper } from "~/modules/chat/gateway/AiChatGateway/PiMessageMapper";
@@ -33,7 +33,7 @@ const summaryCandidateSchema = z.object({
   durableFacts: z.array(z.string()),
 });
 
-const replyWithOptionsTool: AiToolDefinition = {
+const replyWithOptionsTool: AiToolDefinitionDTO = {
   name: replyWithOptionsToolName,
   description: [
     "Send the final user-visible assistant message with 1 to 3 selectable options.",
@@ -70,7 +70,9 @@ export class PiAiChatGateway implements AiChatGateway {
     return this.model.contextWindow;
   }
 
-  async complete(request: AiCompletionRequest): Promise<AiCompletionResponse> {
+  async complete(
+    request: AiCompletionRequestDTO,
+  ): Promise<AiCompletionResponseDTO> {
     const systemPrompt = this.buildSystemPrompt(
       request.channelAddress,
       request.memory,
@@ -102,7 +104,7 @@ export class PiAiChatGateway implements AiChatGateway {
     };
   }
 
-  estimateInputTokens(request: AiInputEstimateRequest): number {
+  estimateInputTokens(request: AiInputEstimateRequestDTO): number {
     const systemPrompt = this.buildSystemPrompt(
       request.channelAddress,
       request.memory,
@@ -138,9 +140,9 @@ export class PiAiChatGateway implements AiChatGateway {
   }
 
   async generateSummary(
-    messages: AiChatContextMessage[],
+    messages: AiChatContextMessageDTO[],
     existingSummary?: ConversationSummary,
-  ): Promise<AiSummaryCandidate> {
+  ): Promise<AiSummaryCandidateDTO> {
     const existingSummaryText = existingSummary
       ? JSON.stringify({
           userProfile: existingSummary.userProfile,
@@ -172,12 +174,14 @@ export class PiAiChatGateway implements AiChatGateway {
     return candidate.data;
   }
 
-  private toJsonSchema(tool: AiToolDefinition): Record<string, unknown> {
+  private toJsonSchema(tool: AiToolDefinitionDTO): Record<string, unknown> {
     const { $schema, ...schema } = z.toJSONSchema(tool.inputSchema);
     return schema;
   }
 
-  private getToolDefinitions(tools: AiToolDefinition[]): AiToolDefinition[] {
+  private getToolDefinitions(
+    tools: AiToolDefinitionDTO[],
+  ): AiToolDefinitionDTO[] {
     if (tools.some((tool) => tool.name === replyWithOptionsToolName)) {
       throw new ValidationException(
         `Tool name ${replyWithOptionsToolName} is reserved for assistant output`,

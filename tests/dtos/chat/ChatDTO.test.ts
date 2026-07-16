@@ -8,7 +8,7 @@ import {
   toChatMessagesResponse,
 } from "~/modules/chat/contracts/ChatContractMapper";
 import { Chat } from "~/modules/chat/entities/Chat";
-import { SendWebMessageRequest } from "~/modules/chat/entities/dtos/ChatDTO";
+import { SendWebMessageRequestDTO } from "~/modules/chat/entities/dtos/ChatDTO";
 import { ChatChannel } from "~/modules/chat/entities/enums/ChatChannel";
 import { Printable } from "~/shared/http/utils/Printable";
 
@@ -37,7 +37,7 @@ describe("Chat contracts", () => {
   });
 
   test("web message requests still require UUID client correlation", () => {
-    const result = SendWebMessageRequest.safeParse({
+    const result = SendWebMessageRequestDTO.safeParse({
       text: "hello",
       clientMessageId: "legacy-provider-message-id",
     });

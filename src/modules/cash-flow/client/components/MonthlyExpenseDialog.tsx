@@ -4,7 +4,7 @@ import {
   MonthlyExpenseForm,
   type MonthlyExpenseFormValue,
 } from "~/modules/cash-flow/client/components/MonthlyExpenseForm";
-import type { MonthlyExpense } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
+import type { MonthlyExpenseDTO } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
 import { Button } from "~/shared/client/components/ui/button";
 import { Dialog } from "~/shared/client/components/ui/dialog";
 import type { Dictionary } from "~/shared/client/i18n";
@@ -19,7 +19,7 @@ export function MonthlyExpenseDialog({
   t,
 }: {
   canArchive: boolean;
-  expense?: MonthlyExpense;
+  expense?: MonthlyExpenseDTO;
   isSubmitting: boolean;
   onClose: () => void;
   onDelete: () => void;

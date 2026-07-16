@@ -1,10 +1,11 @@
 import type { StateCreator } from "zustand";
 import { compute } from "zustand-computed-state";
-import {
-  type TodoFilters,
-  todoService,
-} from "~/modules/todos/client/services/todoService";
-import type { Todo, TodoStatus } from "~/modules/todos/entities/dtos/TodoDTO";
+import type { TodoFiltersDTO } from "~/modules/todos/client/entities/dtos/TodoFiltersDTO";
+import { todoService } from "~/modules/todos/client/services/todoService";
+import type {
+  TodoDTO,
+  TodoStatusDTO,
+} from "~/modules/todos/entities/dtos/TodoDTO";
 
 export type TodoErrorCode = "loading" | "saving" | "deleting";
 
@@ -12,12 +13,12 @@ export interface TodoDraft {
   name: string;
   description: string;
   dueDate: string;
-  status: TodoStatus;
+  status: TodoStatusDTO;
 }
 
 export interface TodoSlice {
-  todos: Todo[];
-  selectedTodo?: Todo;
+  todos: TodoDTO[];
+  selectedTodo?: TodoDTO;
   todoDraft: TodoDraft;
   isTodoBootstrapping: boolean;
   isTodoSubmitting: boolean;
@@ -26,15 +27,15 @@ export interface TodoSlice {
   pendingTodoCount: number;
   completedTodoCount: number;
   canSaveTodoDraft: boolean;
-  bootstrapTodos: (filters?: TodoFilters) => Promise<void>;
+  bootstrapTodos: (filters?: TodoFiltersDTO) => Promise<void>;
   setTodoDraft: (patch: Partial<TodoDraft>) => void;
   resetTodoDraft: () => void;
-  createTodoFromDraft: () => Promise<Todo | undefined>;
-  loadTodo: (id: string) => Promise<Todo | undefined>;
+  createTodoFromDraft: () => Promise<TodoDTO | undefined>;
+  loadTodo: (id: string) => Promise<TodoDTO | undefined>;
   updateTodo: (
     id: string,
     patch: Partial<Omit<TodoDraft, "dueDate">> & { dueDate?: string },
-  ) => Promise<Todo | undefined>;
+  ) => Promise<TodoDTO | undefined>;
   deleteTodo: (id: string) => Promise<void>;
   clearTodoError: () => void;
 }

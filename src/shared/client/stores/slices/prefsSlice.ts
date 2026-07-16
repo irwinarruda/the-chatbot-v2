@@ -1,16 +1,16 @@
 import type { StateCreator } from "zustand";
 import type { HydratePrefsDTO } from "~/shared/client/entities/dtos/HydratePrefsDTO";
 import type { Locale } from "~/shared/client/i18n";
-import type { Prefs, Theme } from "~/shared/client/services/prefsService";
+import type { PrefsDTO, ThemeDTO } from "~/shared/client/services/prefsService";
 import {
   DEFAULT_PREFS,
   prefsService,
 } from "~/shared/client/services/prefsService";
 
-export type { Prefs, Theme };
+export type { PrefsDTO, ThemeDTO };
 
 export type PrefsSlice = {
-  prefs: Prefs;
+  prefs: PrefsDTO;
   isPrefsHydrated: boolean;
   hydratePrefs: (dto: HydratePrefsDTO) => void;
   toggleTheme: () => Promise<void>;
@@ -27,7 +27,7 @@ export const prefsSlice: StateCreator<PrefsSlice> = (set, get) => ({
   },
   async toggleTheme() {
     const { prefs } = get();
-    const next: Prefs = {
+    const next: PrefsDTO = {
       ...prefs,
       theme: prefs.theme === "light" ? "dark" : "light",
     };
@@ -36,7 +36,7 @@ export const prefsSlice: StateCreator<PrefsSlice> = (set, get) => ({
   },
   async toggleLocale() {
     const { prefs } = get();
-    const next: Prefs = {
+    const next: PrefsDTO = {
       ...prefs,
       locale: prefs.locale === "pt-BR" ? "en" : "pt-BR",
     };

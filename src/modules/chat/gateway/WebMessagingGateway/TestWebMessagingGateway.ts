@@ -5,7 +5,7 @@ import type {
   SendTextMessageDTO,
 } from "~/modules/chat/gateway/MessagingGateway";
 import type {
-  WebIncomingMessageBody,
+  WebIncomingMessageBodyDTO,
   WebMessagingGateway,
 } from "~/modules/chat/gateway/WebMessagingGateway";
 import { ValidationException } from "~/shared/errors/DomainErrors";
@@ -70,7 +70,7 @@ export class TestWebMessagingGateway implements WebMessagingGateway {
     };
   }
 
-  private parseIncomingMessageBody(body: unknown): WebIncomingMessageBody {
+  private parseIncomingMessageBody(body: unknown): WebIncomingMessageBodyDTO {
     if (!body || typeof body !== "object") {
       throw new ValidationException(
         "Request body must be a JSON object",

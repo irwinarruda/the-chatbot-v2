@@ -1,11 +1,19 @@
 import { BsuidUtils } from "~/modules/identity/entities/BsuidUtils";
 import { Credential } from "~/modules/identity/entities/Credentials";
+import type {
+  GoogleLoginResultDTO,
+  GoogleRedirectResultDTO,
+  SyncUserChatAddressesDTO,
+  WebAuthTokenPayloadDTO,
+  WebGoogleLoginResultDTO,
+  WebGoogleRedirectResultDTO,
+} from "~/modules/identity/entities/dtos/IdentityDTO";
 import { PhoneNumberUtils } from "~/modules/identity/entities/PhoneNumberUtils";
 import { User } from "~/modules/identity/entities/User";
 import type {
   AuthGateway,
-  GoogleTokens,
-  GoogleUserInfo,
+  GoogleTokensDTO,
+  GoogleUserInfoDTO,
 } from "~/modules/identity/gateway/AuthGateway";
 import { Encryption } from "~/modules/identity/services/Encryption";
 import { Jwt } from "~/modules/identity/services/Jwt";
@@ -18,34 +26,11 @@ import {
 import { ValidationException } from "~/shared/errors/DomainErrors";
 import type { DatabaseGateway } from "~/shared/gateway/DatabaseGateway";
 
-export interface WebAuthTokenPayload {
-  userId: string;
-  email: string;
-  phoneNumber?: string;
-}
-
-export interface SyncUserChatAddresses {
-  idUser: string;
-  email?: string;
-  phoneNumber?: string;
-  bsuid?: string;
-}
-
 export interface IdentityChatCoordinator {
   deleteChat(channelAddress: string): Promise<void>;
   sendSignedInMessage(channelAddress: string): Promise<void>;
-  syncUserChatAddresses(data: SyncUserChatAddresses): Promise<void>;
+  syncUserChatAddresses(data: SyncUserChatAddressesDTO): Promise<void>;
 }
-
-export type GoogleLoginResult =
-  | { type: "redirect"; url: string }
-  | { type: "alreadySignedIn" };
-
-export type WebGoogleLoginResult = { type: "redirect"; url: string };
-
-export type GoogleRedirectResult = { type: "success" };
-
-export type WebGoogleRedirectResult = string;
 
 type GoogleAuthTarget = "app" | "web";
 
@@ -77,7 +62,7 @@ export class AuthService {
     return this.googleAuthGateway.getAppLoginUrl(appAddress);
   }
 
-  async handleGoogleLogin(appAddress: string): Promise<GoogleLoginResult> {
+  async handleGoogleLogin(appAddress: string): Promise<GoogleLoginResultDTO> {
     if (!appAddress) {
       throw new ValidationException("Login provider ID is required");
     }
@@ -100,7 +85,7 @@ export class AuthService {
   async handleGoogleRedirect(
     state: string,
     code: string,
-  ): Promise<GoogleRedirectResult> {
+  ): Promise<GoogleRedirectResultDTO> {
     const appAddress = this.decryptAppAddress(state);
     const userToken = await this.googleAuthGateway.exchangeCodeForTokens(
       code,
@@ -113,7 +98,7 @@ export class AuthService {
     return { type: "success" };
   }
 
-  async handleWebGoogleLogin(): Promise<WebGoogleLoginResult> {
+  async handleWebGoogleLogin(): Promise<WebGoogleLoginResultDTO> {
     const url = this.googleAuthGateway.createAuthorizationCodeUrl(
       undefined,
       "web",
@@ -123,7 +108,7 @@ export class AuthService {
 
   async handleWebGoogleRedirect(
     code: string,
-  ): Promise<WebGoogleRedirectResult> {
+  ): Promise<WebGoogleRedirectResultDTO> {
     const userToken = await this.googleAuthGateway.exchangeCodeForTokens(
       code,
       "web",
@@ -185,9 +170,9 @@ export class AuthService {
       );
     }
     const jwt = new Jwt(this.jwtConfig);
-    let payload: WebAuthTokenPayload;
+    let payload: WebAuthTokenPayloadDTO;
     try {
-      payload = await jwt.verify<WebAuthTokenPayload>(token);
+      payload = await jwt.verify<WebAuthTokenPayloadDTO>(token);
     } catch {
       throw new UnauthorizedException(
         "Invalid or expired authentication token",
@@ -245,8 +230,8 @@ export class AuthService {
 
   async saveUserFromGoogleAuth(
     appAddress: string,
-    userToken: GoogleTokens,
-    userinfo: GoogleUserInfo,
+    userToken: GoogleTokensDTO,
+    userinfo: GoogleUserInfoDTO,
     target: GoogleAuthTarget = "app",
   ): Promise<User> {
     const email = userinfo.email.toLowerCase();

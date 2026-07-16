@@ -1,6 +1,6 @@
 import { Calendar, CheckCircle2, Circle, Trash2, Volume2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { Todo } from "~/modules/todos/entities/dtos/TodoDTO";
+import type { TodoDTO } from "~/modules/todos/entities/dtos/TodoDTO";
 import { AudioWaveform } from "~/shared/client/components/AudioWaveform";
 import { Button } from "~/shared/client/components/ui/button";
 import { Dialog } from "~/shared/client/components/ui/dialog";
@@ -28,16 +28,16 @@ export function TodoDetailDialog({
     name: string;
     description: string;
     dueDate?: string;
-    status: Todo["status"];
+    status: TodoDTO["status"];
   }) => void;
   open: boolean;
   t: Dictionary["todoPage"];
-  todo?: Todo;
+  todo?: TodoDTO;
 }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
-  const [status, setStatus] = useState<Todo["status"]>("Pending");
+  const [status, setStatus] = useState<TodoDTO["status"]>("Pending");
   const source = todo?.sourceMessage;
   const modalTitle = todo?.name ?? t.detailTitle;
 
@@ -64,7 +64,7 @@ export function TodoDetailDialog({
               <NativeSelect
                 className="w-full md:w-40"
                 onChange={(event) =>
-                  setStatus(event.target.value as Todo["status"])
+                  setStatus(event.target.value as TodoDTO["status"])
                 }
                 value={status}
               >

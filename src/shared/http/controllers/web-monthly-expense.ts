@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ServerBootstrap } from "~/infra/server-bootstrap";
 import { toMonthlyExpenseResponse } from "~/modules/cash-flow/contracts/MonthlyExpenseContractMapper";
-import { UpdateMonthlyExpenseRequest } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
+import { UpdateMonthlyExpenseRequestDTO } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
 import { Http } from "~/shared/http/utils/Http";
 
 export const Route = createFileRoute("/api/v1/web/monthly-expenses/$expenseId")(
@@ -11,7 +11,9 @@ export const Route = createFileRoute("/api/v1/web/monthly-expenses/$expenseId")(
         async PATCH({ request, context, params }) {
           const service =
             ServerBootstrap.getApplication().services.monthlyExpenses;
-          const body = UpdateMonthlyExpenseRequest.parse(await request.json());
+          const body = UpdateMonthlyExpenseRequestDTO.parse(
+            await request.json(),
+          );
           const expense = await service.updateMonthlyExpense({
             idUser: context.webAuth.userId,
             id: params.expenseId,

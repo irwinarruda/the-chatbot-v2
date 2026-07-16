@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ServerBootstrap } from "~/infra/server-bootstrap";
 import { toChatMessagesResponse } from "~/modules/chat/contracts/ChatContractMapper";
-import { SendWebMessageRequest } from "~/modules/chat/entities/dtos/ChatDTO";
+import { SendWebMessageRequestDTO } from "~/modules/chat/entities/dtos/ChatDTO";
 import { ChatChannel } from "~/modules/chat/entities/enums/ChatChannel";
 import { Http } from "~/shared/http/utils/Http";
 
@@ -22,7 +22,7 @@ export const Route = createFileRoute("/api/v1/web/messages")({
           ServerBootstrap.getApplication().services.messaging;
         const chat = await messagingService.receiveWebMessage(
           context.webAuth.email,
-          SendWebMessageRequest.parse(await request.json()),
+          SendWebMessageRequestDTO.parse(await request.json()),
         );
         return Http.json(toChatMessagesResponse(chat));
       },

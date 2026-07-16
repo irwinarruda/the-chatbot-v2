@@ -1,28 +1,21 @@
 import type { ConversationSummary } from "~/modules/chat/entities/ConversationSummary";
 import { MessageContentType } from "~/modules/chat/entities/enums/MessageContentType";
 import { MessageRole } from "~/modules/chat/entities/enums/MessageRole";
-import type { ToolCallContent } from "~/modules/chat/entities/Message";
 import type {
-  AiChatContextMessage,
+  AiChatContextMessageDTO,
   AiChatGateway,
-  AiCompletionRequest,
-  AiCompletionResponse,
-  AiInputEstimateRequest,
-  AiSummaryCandidate,
-  AssistantChannelContent,
+  AiCompletionRequestDTO,
+  AiCompletionResponseDTO,
+  AiInputEstimateRequestDTO,
+  AiSummaryCandidateDTO,
+  TestAiScriptedResponseDTO,
 } from "~/modules/chat/gateway/AiChatGateway";
-
-export interface TestAiScriptedResponse {
-  content?: AssistantChannelContent;
-  toolCalls: ToolCallContent[];
-  finishReason: string;
-}
 
 export class TestAiChatGateway implements AiChatGateway {
   lastChannelAddress?: string;
-  lastRequest?: AiCompletionRequest;
-  requests: AiCompletionRequest[] = [];
-  scriptedResponses: TestAiScriptedResponse[] = [];
+  lastRequest?: AiCompletionRequestDTO;
+  requests: AiCompletionRequestDTO[] = [];
+  scriptedResponses: TestAiScriptedResponseDTO[] = [];
   scriptedTexts: string[] = [];
   summaryError?: Error;
   summaryCalls = 0;
@@ -32,7 +25,9 @@ export class TestAiChatGateway implements AiChatGateway {
     return this.contextWindowTokens;
   }
 
-  async complete(request: AiCompletionRequest): Promise<AiCompletionResponse> {
+  async complete(
+    request: AiCompletionRequestDTO,
+  ): Promise<AiCompletionResponseDTO> {
     this.lastChannelAddress = request.channelAddress;
     this.lastRequest = request;
     this.requests.push(request);
@@ -57,7 +52,7 @@ export class TestAiChatGateway implements AiChatGateway {
     };
   }
 
-  estimateInputTokens(request: AiInputEstimateRequest): number {
+  estimateInputTokens(request: AiInputEstimateRequestDTO): number {
     return Math.ceil(JSON.stringify(request).length / 3);
   }
 
@@ -69,9 +64,9 @@ export class TestAiChatGateway implements AiChatGateway {
   }
 
   async generateSummary(
-    messages: AiChatContextMessage[],
+    messages: AiChatContextMessageDTO[],
     existingSummary?: ConversationSummary,
-  ): Promise<AiSummaryCandidate> {
+  ): Promise<AiSummaryCandidateDTO> {
     this.summaryCalls += 1;
     if (this.summaryError) throw this.summaryError;
     return {
@@ -83,7 +78,7 @@ export class TestAiChatGateway implements AiChatGateway {
     };
   }
 
-  private messageText(message?: AiChatContextMessage): string {
+  private messageText(message?: AiChatContextMessageDTO): string {
     if (!message) return "";
     const content = message.content;
     if (content.type === MessageContentType.Audio) {

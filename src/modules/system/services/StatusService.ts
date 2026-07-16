@@ -1,20 +1,27 @@
 import { Status } from "~/modules/system/entities/Status";
-import type { AiConfig, DatabaseConfig } from "~/shared/config/Config";
+import type {
+  AiConfig,
+  DatabaseConfig,
+  DeploymentConfig,
+} from "~/shared/config/Config";
 import type { DatabaseGateway } from "~/shared/gateway/DatabaseGateway";
 
 export class StatusService {
   private database: DatabaseGateway;
   private databaseConfig: DatabaseConfig;
   private aiConfig: AiConfig;
+  private deploymentConfig: DeploymentConfig;
 
   constructor(
     database: DatabaseGateway,
     databaseConfig: DatabaseConfig,
     aiConfig: AiConfig,
+    deploymentConfig: DeploymentConfig,
   ) {
     this.database = database;
     this.databaseConfig = databaseConfig;
     this.aiConfig = aiConfig;
+    this.deploymentConfig = deploymentConfig;
   }
 
   async getStatus(): Promise<Status> {
@@ -38,6 +45,7 @@ export class StatusService {
       maxConnections,
       openConnections,
       this.aiConfig.model,
+      this.deploymentConfig.commitSha,
     );
   }
 }

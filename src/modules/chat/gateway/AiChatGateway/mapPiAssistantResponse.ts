@@ -4,12 +4,12 @@ import {
   replyWithOptionsToolName,
 } from "~/modules/chat/entities/dtos/ReplyWithOptionsToolDTO";
 import { MessageContentType } from "~/modules/chat/entities/enums/MessageContentType";
-import type { AiCompletionResponse } from "~/modules/chat/gateway/AiChatGateway";
+import type { AiCompletionResponseDTO } from "~/modules/chat/gateway/AiChatGateway";
 import { ValidationException } from "~/shared/errors/DomainErrors";
 
 export function mapPiAssistantResponse(
   response: AssistantMessage,
-): Pick<AiCompletionResponse, "content" | "toolCalls"> {
+): Pick<AiCompletionResponseDTO, "content" | "toolCalls"> {
   const text = response.content
     .filter((content) => content.type === "text")
     .map((content) => content.text)

@@ -8,16 +8,22 @@ export interface AiStatus {
   modelName: string;
 }
 
+export interface DeploymentStatus {
+  commitSha: string;
+}
+
 export class Status {
   updatedAt: Date;
   database: DatabaseStatus;
   ai: AiStatus;
+  deployment: DeploymentStatus;
 
   constructor(
     version: string,
     maxConnections: number,
     openConnections: number,
     modelName: string,
+    commitSha: string,
   ) {
     this.updatedAt = new Date();
     this.database = {
@@ -27,6 +33,9 @@ export class Status {
     };
     this.ai = {
       modelName,
+    };
+    this.deployment = {
+      commitSha,
     };
   }
 }

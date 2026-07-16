@@ -5,7 +5,7 @@ import { CreateMonthlyExpenseToolDTO } from "~/modules/cash-flow/entities/dtos/C
 import { GetBankAccountsStatusToolDTO } from "~/modules/cash-flow/entities/dtos/GetBankAccountsStatusToolDTO";
 import { GetLatestTransactionsToolDTO } from "~/modules/cash-flow/entities/dtos/GetLatestTransactionsToolDTO";
 import { ListMonthlyExpensesToolDTO } from "~/modules/cash-flow/entities/dtos/ListMonthlyExpensesToolDTO";
-import type { MonthlyExpenseItem } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseServiceDTO";
+import type { MonthlyExpenseItemDTO } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseServiceDTO";
 import { PhoneNumberToolDTO } from "~/modules/cash-flow/entities/dtos/PhoneNumberToolDTO";
 import { SetMonthlyExpensePaidToolDTO } from "~/modules/cash-flow/entities/dtos/SetMonthlyExpensePaidToolDTO";
 import { SyncBankAccountBalanceToolDTO } from "~/modules/cash-flow/entities/dtos/SyncBankAccountBalanceToolDTO";
@@ -448,7 +448,7 @@ export class AiToolService extends ToolExecutor {
           } else {
             await this.cashFlowService.addEarning(transaction);
           }
-          let unpaidMonthlyExpenses: MonthlyExpenseItem[] = [];
+          let unpaidMonthlyExpenses: MonthlyExpenseItemDTO[] = [];
           if (input.type === "Expense") {
             const monthlyExpenses =
               await this.monthlyExpenseService.listMonthlyExpenses(user.id);

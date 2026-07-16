@@ -1,19 +1,19 @@
 import {
-  type CreateMonthlyExpenseRequest,
-  MonthlyExpenseItemResponse,
-  MonthlyExpenseResponse,
-  MonthlyExpensesResponse,
-  type SetMonthlyExpensePaidRequest,
-  type UpdateMonthlyExpenseRequest,
+  type CreateMonthlyExpenseRequestDTO,
+  MonthlyExpenseItemResponseDTO,
+  MonthlyExpenseResponseDTO,
+  MonthlyExpensesResponseDTO,
+  type SetMonthlyExpensePaidRequestDTO,
+  type UpdateMonthlyExpenseRequestDTO,
 } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
 import {
   normalizeApiResponse,
   parseApiResponse,
 } from "~/shared/client/utils/ApiResponseParser";
-import { ApiErrorResponse } from "~/shared/entities/dtos/ApiErrorDTO";
+import { ApiErrorResponseDTO } from "~/shared/entities/dtos/ApiErrorDTO";
 
 async function parseError(response: Response): Promise<Error> {
-  const body = ApiErrorResponse.safeParse(
+  const body = ApiErrorResponseDTO.safeParse(
     normalizeApiResponse(await response.json()),
   );
   return new Error(
@@ -21,22 +21,24 @@ async function parseError(response: Response): Promise<Error> {
   );
 }
 
-export function parseMonthlyExpense(data: unknown): MonthlyExpenseResponse {
-  return parseApiResponse(MonthlyExpenseResponse, data);
+export function parseMonthlyExpense(data: unknown): MonthlyExpenseResponseDTO {
+  return parseApiResponse(MonthlyExpenseResponseDTO, data);
 }
 
 export interface MonthlyExpenseClientService {
-  list(month?: string): Promise<MonthlyExpensesResponse>;
-  create(dto: CreateMonthlyExpenseRequest): Promise<MonthlyExpenseResponse>;
+  list(month?: string): Promise<MonthlyExpensesResponseDTO>;
+  create(
+    dto: CreateMonthlyExpenseRequestDTO,
+  ): Promise<MonthlyExpenseResponseDTO>;
   update(
     id: string,
-    dto: UpdateMonthlyExpenseRequest,
-  ): Promise<MonthlyExpenseResponse>;
+    dto: UpdateMonthlyExpenseRequestDTO,
+  ): Promise<MonthlyExpenseResponseDTO>;
   archive(id: string): Promise<void>;
   setPaid(
     id: string,
-    dto: SetMonthlyExpensePaidRequest,
-  ): Promise<MonthlyExpenseResponse>;
+    dto: SetMonthlyExpensePaidRequestDTO,
+  ): Promise<MonthlyExpenseResponseDTO>;
 }
 
 export const monthlyExpenseService: MonthlyExpenseClientService = {
@@ -46,7 +48,7 @@ export const monthlyExpenseService: MonthlyExpenseClientService = {
     const url = `/api/v1/web/monthly-expenses${params.size ? `?${params}` : ""}`;
     const response = await fetch(url);
     if (!response.ok) throw await parseError(response);
-    return parseApiResponse(MonthlyExpensesResponse, await response.json());
+    return parseApiResponse(MonthlyExpensesResponseDTO, await response.json());
   },
 
   async create(dto) {
@@ -56,8 +58,10 @@ export const monthlyExpenseService: MonthlyExpenseClientService = {
       body: JSON.stringify(dto),
     });
     if (!response.ok) throw await parseError(response);
-    return parseApiResponse(MonthlyExpenseItemResponse, await response.json())
-      .expense;
+    return parseApiResponse(
+      MonthlyExpenseItemResponseDTO,
+      await response.json(),
+    ).expense;
   },
 
   async update(id, dto) {
@@ -67,8 +71,10 @@ export const monthlyExpenseService: MonthlyExpenseClientService = {
       body: JSON.stringify(dto),
     });
     if (!response.ok) throw await parseError(response);
-    return parseApiResponse(MonthlyExpenseItemResponse, await response.json())
-      .expense;
+    return parseApiResponse(
+      MonthlyExpenseItemResponseDTO,
+      await response.json(),
+    ).expense;
   },
 
   async archive(id) {
@@ -85,7 +91,9 @@ export const monthlyExpenseService: MonthlyExpenseClientService = {
       body: JSON.stringify(dto),
     });
     if (!response.ok) throw await parseError(response);
-    return parseApiResponse(MonthlyExpenseItemResponse, await response.json())
-      .expense;
+    return parseApiResponse(
+      MonthlyExpenseItemResponseDTO,
+      await response.json(),
+    ).expense;
   },
 };

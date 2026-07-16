@@ -1,8 +1,8 @@
 import { google } from "googleapis";
 import type {
   AuthGateway,
-  GoogleTokens,
-  GoogleUserInfo,
+  GoogleTokensDTO,
+  GoogleUserInfoDTO,
 } from "~/modules/identity/gateway/AuthGateway";
 import { buildScopes } from "~/modules/identity/gateway/AuthGateway/GoogleAuthScopes";
 import type { GoogleConfig } from "~/shared/config/Config";
@@ -48,7 +48,7 @@ export class GoogleAuthGateway implements AuthGateway {
   async exchangeCodeForTokens(
     code: string,
     redirectTarget: "app" | "web" = "app",
-  ): Promise<GoogleTokens> {
+  ): Promise<GoogleTokensDTO> {
     const { tokens } =
       await this.getOAuth2Client(redirectTarget).getToken(code);
     if (!tokens.access_token) {
@@ -63,7 +63,7 @@ export class GoogleAuthGateway implements AuthGateway {
     };
   }
 
-  async getUserInfo(accessToken: string): Promise<GoogleUserInfo> {
+  async getUserInfo(accessToken: string): Promise<GoogleUserInfoDTO> {
     this.oauth2Client.setCredentials({ access_token: accessToken });
     const oauth2 = google.oauth2({ version: "v2", auth: this.oauth2Client });
     const { data } = await oauth2.userinfo.get();
@@ -76,7 +76,7 @@ export class GoogleAuthGateway implements AuthGateway {
   async refreshToken(
     accessToken: string,
     refreshToken: string,
-  ): Promise<GoogleTokens> {
+  ): Promise<GoogleTokensDTO> {
     this.oauth2Client.setCredentials({
       access_token: accessToken,
       refresh_token: refreshToken,

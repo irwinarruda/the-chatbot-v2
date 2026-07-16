@@ -9,7 +9,9 @@ export type {
   ReceiveMessageDTO,
   ReceiveTextMessageDTO,
   SendInteractiveButtonMessageDTO,
+  SendMessageRecipientDTO,
   SendTextMessageDTO,
+  WebIncomingMessageBodyDTO,
 } from "~/modules/chat/entities/dtos/MessagingGatewayDTO";
 
 export interface MessagingGateway {

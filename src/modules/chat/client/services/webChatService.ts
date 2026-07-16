@@ -1,37 +1,38 @@
 import type { SendWebAudioDTO } from "~/modules/chat/client/entities/dtos/SendWebAudioDTO";
 import type { SendWebMessageDTO } from "~/modules/chat/client/entities/dtos/SendWebMessageDTO";
 import {
-  ChannelMessageResponse,
-  ChatMessagesResponse,
+  ChannelMessageResponseDTO,
+  type ChatMessageDTO,
+  ChatMessagesResponseDTO,
 } from "~/modules/chat/entities/dtos/ChatDTO";
-import { CurrentUserResponse as IdentityCurrentUserResponse } from "~/modules/identity/entities/dtos/IdentityDTO";
+import {
+  type CurrentUserDTO,
+  CurrentUserResponseDTO,
+} from "~/modules/identity/entities/dtos/IdentityDTO";
 import {
   normalizeApiResponse,
   parseApiResponse,
 } from "~/shared/client/utils/ApiResponseParser";
-import { ApiErrorResponse } from "~/shared/entities/dtos/ApiErrorDTO";
-
-export type ChatMessage = ChannelMessageResponse;
-export type CurrentUser = IdentityCurrentUserResponse;
+import { ApiErrorResponseDTO } from "~/shared/entities/dtos/ApiErrorDTO";
 
 export interface WebChatClientService {
-  getCurrentUser(): Promise<CurrentUser>;
-  getMessages(): Promise<ChatMessage[]>;
-  sendMessage(dto: SendWebMessageDTO): Promise<ChatMessage[]>;
-  sendAudio(dto: SendWebAudioDTO): Promise<ChatMessage[]>;
+  getCurrentUser(): Promise<CurrentUserDTO>;
+  getMessages(): Promise<ChatMessageDTO[]>;
+  sendMessage(dto: SendWebMessageDTO): Promise<ChatMessageDTO[]>;
+  sendAudio(dto: SendWebAudioDTO): Promise<ChatMessageDTO[]>;
   logout(): Promise<void>;
 }
 
-export function parseChatMessage(data: unknown): ChatMessage {
-  return parseApiResponse(ChannelMessageResponse, data);
+export function parseChatMessage(data: unknown): ChatMessageDTO {
+  return parseApiResponse(ChannelMessageResponseDTO, data);
 }
 
-export function parseCurrentUser(data: unknown): CurrentUser {
-  return parseApiResponse(IdentityCurrentUserResponse, data);
+export function parseCurrentUser(data: unknown): CurrentUserDTO {
+  return parseApiResponse(CurrentUserResponseDTO, data);
 }
 
-export function parseChatMessages(data: unknown): ChatMessage[] {
-  return parseApiResponse(ChatMessagesResponse, data).messages;
+export function parseChatMessages(data: unknown): ChatMessageDTO[] {
+  return parseApiResponse(ChatMessagesResponseDTO, data).messages;
 }
 
 export class WebChatAuthError extends Error {
@@ -52,7 +53,7 @@ export class WebChatApiError extends Error {
 }
 
 async function parseError(response: Response): Promise<WebChatApiError> {
-  const body = ApiErrorResponse.safeParse(
+  const body = ApiErrorResponseDTO.safeParse(
     normalizeApiResponse(await response.json()),
   );
   return new WebChatApiError(
@@ -62,7 +63,7 @@ async function parseError(response: Response): Promise<WebChatApiError> {
 }
 
 export const webChatService: WebChatClientService = {
-  async getCurrentUser(): Promise<CurrentUser> {
+  async getCurrentUser(): Promise<CurrentUserDTO> {
     const response = await fetch("/api/v1/web/auth/me");
     if (response.status === 401) {
       throw new WebChatAuthError("unauthorized");
@@ -74,13 +75,13 @@ export const webChatService: WebChatClientService = {
     return parseCurrentUser(await response.json());
   },
 
-  async getMessages(): Promise<ChatMessage[]> {
+  async getMessages(): Promise<ChatMessageDTO[]> {
     const response = await fetch("/api/v1/web/messages");
     if (!response.ok) throw await parseError(response);
     return parseChatMessages(await response.json());
   },
 
-  async sendMessage(dto: SendWebMessageDTO): Promise<ChatMessage[]> {
+  async sendMessage(dto: SendWebMessageDTO): Promise<ChatMessageDTO[]> {
     const response = await fetch("/api/v1/web/messages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -90,7 +91,7 @@ export const webChatService: WebChatClientService = {
     return parseChatMessages(await response.json());
   },
 
-  async sendAudio(dto: SendWebAudioDTO): Promise<ChatMessage[]> {
+  async sendAudio(dto: SendWebAudioDTO): Promise<ChatMessageDTO[]> {
     const response = await fetch("/api/v1/web/audio", {
       method: "POST",
       headers: {

@@ -1,6 +1,6 @@
 import type {
   CreateMonthlyExpenseDTO,
-  MonthlyExpenseItem,
+  MonthlyExpenseItemDTO,
   UpdateMonthlyExpenseDTO,
 } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseServiceDTO";
 import { MonthlyExpense } from "~/modules/cash-flow/entities/MonthlyExpense";
@@ -28,7 +28,7 @@ export class MonthlyExpenseService {
   async listMonthlyExpenses(
     idUser: string,
     month = this.currentMonth(),
-  ): Promise<MonthlyExpenseItem[]> {
+  ): Promise<MonthlyExpenseItemDTO[]> {
     this.validateMonth(month);
     const monthDate = `${month}-01`;
     const rows = await this.database.sql<DbMonthlyExpenseItem[]>`
@@ -76,7 +76,7 @@ export class MonthlyExpenseService {
 
   async createMonthlyExpense(
     dto: CreateMonthlyExpenseDTO,
-  ): Promise<MonthlyExpenseItem> {
+  ): Promise<MonthlyExpenseItemDTO> {
     const expense = new MonthlyExpense(dto);
     const month = dto.month ?? this.currentMonth();
     this.validateMonth(month);
@@ -125,7 +125,7 @@ export class MonthlyExpenseService {
 
   async updateMonthlyExpense(
     dto: UpdateMonthlyExpenseDTO,
-  ): Promise<MonthlyExpenseItem> {
+  ): Promise<MonthlyExpenseItemDTO> {
     const month = dto.month ?? this.currentMonth();
     this.validateMonth(month);
     const item = await this.getMonthlyExpense(dto.idUser, dto.id, month);
@@ -207,7 +207,7 @@ export class MonthlyExpenseService {
     id: string,
     isPaid: boolean,
     month = this.currentMonth(),
-  ): Promise<MonthlyExpenseItem> {
+  ): Promise<MonthlyExpenseItemDTO> {
     this.validateMonth(month);
     await this.getMonthlyExpense(idUser, id, month);
     if (isPaid) {
@@ -237,7 +237,7 @@ export class MonthlyExpenseService {
     idUser: string,
     id: string,
     month = this.currentMonth(),
-  ): Promise<MonthlyExpenseItem> {
+  ): Promise<MonthlyExpenseItemDTO> {
     this.validateMonth(month);
     const monthDate = `${month}-01`;
     const rows = await this.database.sql<DbMonthlyExpenseItem[]>`
@@ -290,7 +290,7 @@ export class MonthlyExpenseService {
   private mapItem(
     row: DbMonthlyExpenseItem,
     month: string,
-  ): MonthlyExpenseItem {
+  ): MonthlyExpenseItemDTO {
     return {
       expense: this.mapExpense(row),
       month,

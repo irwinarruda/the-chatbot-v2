@@ -2,10 +2,10 @@ import type {
   AddEarningDTO,
   AddExpenseDTO,
   AddTransactionDTO,
-  BankAccountStatus,
+  BankAccountStatusDTO,
   CashFlowSpreadsheetGateway,
   SheetConfigDTO,
-  Transaction,
+  TransactionDTO,
 } from "~/modules/cash-flow/gateway/CashFlowSpreadsheetGateway";
 import type { GoogleSheetsConfig } from "~/shared/config/Config";
 import { ServiceException } from "~/shared/errors/ApplicationErrors";
@@ -14,7 +14,7 @@ import { ValidationException } from "~/shared/errors/DomainErrors";
 export class TestCashFlowSpreadsheetGateway
   implements CashFlowSpreadsheetGateway
 {
-  private static transactions: Transaction[] = [];
+  private static transactions: TransactionDTO[] = [];
   validSheetId: string;
 
   constructor(googleSheetsConfig: GoogleSheetsConfig) {
@@ -84,7 +84,7 @@ export class TestCashFlowSpreadsheetGateway
 
   async getAllTransactions(
     sheetConfig: SheetConfigDTO,
-  ): Promise<Transaction[]> {
+  ): Promise<TransactionDTO[]> {
     TestCashFlowSpreadsheetGateway.validateAccessToken(
       sheetConfig.sheetAccessToken,
     );
@@ -100,7 +100,7 @@ export class TestCashFlowSpreadsheetGateway
   async getLatestTransactions(
     sheetConfig: SheetConfigDTO,
     limit: number,
-  ): Promise<Transaction[]> {
+  ): Promise<TransactionDTO[]> {
     TestCashFlowSpreadsheetGateway.validateAccessToken(
       sheetConfig.sheetAccessToken,
     );
@@ -118,7 +118,7 @@ export class TestCashFlowSpreadsheetGateway
 
   async getLastTransaction(
     sheetConfig: SheetConfigDTO,
-  ): Promise<Transaction | undefined> {
+  ): Promise<TransactionDTO | undefined> {
     const [last] = await this.getLatestTransactions(sheetConfig, 1);
     return last;
   }
@@ -178,7 +178,7 @@ export class TestCashFlowSpreadsheetGateway
   async getBankAccountsStatus(
     sheetConfig: SheetConfigDTO,
     date = new Date(),
-  ): Promise<BankAccountStatus[]> {
+  ): Promise<BankAccountStatusDTO[]> {
     TestCashFlowSpreadsheetGateway.validateAccessToken(
       sheetConfig.sheetAccessToken,
     );

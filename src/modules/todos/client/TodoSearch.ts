@@ -1,16 +1,16 @@
 import type {
-  TodoDueFilter,
-  TodoStatus,
+  TodoDueFilterDTO,
+  TodoStatusDTO,
 } from "~/modules/todos/entities/dtos/TodoDTO";
 
 export type TodoSearch = {
   q?: string;
   dueDate?: string;
-  due?: TodoDueFilter;
-  status?: "all" | TodoStatus;
+  due?: TodoDueFilterDTO;
+  status?: "all" | TodoStatusDTO;
 };
 
-export const DEFAULT_TODO_STATUS: TodoStatus = "Pending";
+export const DEFAULT_TODO_STATUS: TodoStatusDTO = "Pending";
 
 export function normalizeTodoSearch(
   search: Record<string, unknown>,

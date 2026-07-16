@@ -1,5 +1,5 @@
 import { Calendar, CheckCircle2, Circle } from "lucide-react";
-import type { Todo } from "~/modules/todos/entities/dtos/TodoDTO";
+import type { TodoDTO } from "~/modules/todos/entities/dtos/TodoDTO";
 import { cn } from "~/shared/client/components/ui/lib";
 
 export function TodoRow({
@@ -11,7 +11,7 @@ export function TodoRow({
   noDueDateLabel: string;
   onClick: () => void;
   onToggleStatus: () => void;
-  todo: Todo;
+  todo: TodoDTO;
 }) {
   const isCompleted = todo.status === "Completed";
   const dueDate = todo.dueDate

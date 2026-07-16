@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { DEFAULT_TODO_STATUS } from "~/modules/todos/client/TodoSearch";
 import { useDebouncedValue } from "~/modules/todos/client/utils/useDebouncedValue";
 import type {
-  TodoDueFilter,
-  TodoStatus,
+  TodoDueFilterDTO,
+  TodoStatusDTO,
 } from "~/modules/todos/entities/dtos/TodoDTO";
 import { Button } from "~/shared/client/components/ui/button";
 import { Input } from "~/shared/client/components/ui/input";
@@ -18,8 +18,8 @@ import type { Dictionary } from "~/shared/client/i18n";
 export type TodoFilterValues = {
   q: string;
   dueDate: string;
-  due: TodoDueFilter;
-  status: "all" | TodoStatus;
+  due: TodoDueFilterDTO;
+  status: "all" | TodoStatusDTO;
 };
 
 function areTodoFiltersEqual(
@@ -103,7 +103,7 @@ export function TodoFilters({
           className="w-full md:w-40"
           onChange={(event) =>
             onChangeDraftFilters({
-              status: event.target.value as "all" | TodoStatus,
+              status: event.target.value as "all" | TodoStatusDTO,
             })
           }
           value={draftFilters.status}
@@ -131,7 +131,9 @@ export function TodoFilters({
         <NativeSelect
           className="w-full"
           onChange={(event) =>
-            onChangeDraftFilters({ due: event.target.value as TodoDueFilter })
+            onChangeDraftFilters({
+              due: event.target.value as TodoDueFilterDTO,
+            })
           }
           value={draftFilters.due}
         >

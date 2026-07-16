@@ -6,9 +6,9 @@ import type {
   CashFlowTransferDTO,
 } from "~/modules/cash-flow/entities/dtos/CashFlowServiceDTO";
 import type {
-  BankAccountStatus,
+  BankAccountStatusDTO,
   SheetConfigDTO,
-  Transaction,
+  TransactionDTO,
 } from "~/modules/cash-flow/entities/dtos/CashFlowSpreadsheetGatewayDTO";
 import { CashFlowSpreadsheetType } from "~/modules/cash-flow/entities/enums/CashFlowSpreadsheetType";
 import type { CashFlowSpreadsheetGateway } from "~/modules/cash-flow/gateway/CashFlowSpreadsheetGateway";
@@ -54,7 +54,7 @@ export class CashFlowService {
     await this.createCashFlowSpreadsheet(sheet);
   }
 
-  async getAllTransactions(phoneNumber: string): Promise<Transaction[]> {
+  async getAllTransactions(phoneNumber: string): Promise<TransactionDTO[]> {
     const { sheet, credential } = await this.getUserAndSheet(phoneNumber);
     return await this.spreadsheetResource.getAllTransactions({
       sheetId: sheet.idSheet,
@@ -65,7 +65,7 @@ export class CashFlowService {
   async getLatestTransactions(
     phoneNumber: string,
     limit?: number,
-  ): Promise<Transaction[]> {
+  ): Promise<TransactionDTO[]> {
     const { sheet, credential } = await this.getUserAndSheet(phoneNumber);
     const normalizedLimit =
       typeof limit !== "number" || !Number.isFinite(limit) || limit <= 0
@@ -79,7 +79,7 @@ export class CashFlowService {
 
   async getLastTransaction(
     phoneNumber: string,
-  ): Promise<Transaction | undefined> {
+  ): Promise<TransactionDTO | undefined> {
     const { sheet, credential } = await this.getUserAndSheet(phoneNumber);
     return await this.spreadsheetResource.getLastTransaction({
       sheetId: sheet.idSheet,
@@ -201,7 +201,7 @@ export class CashFlowService {
   async getBankAccountsStatus(
     phoneNumber: string,
     date = new Date(),
-  ): Promise<BankAccountStatus[]> {
+  ): Promise<BankAccountStatusDTO[]> {
     const { sheet, credential } = await this.getUserAndSheet(phoneNumber);
     return await this.spreadsheetResource.getBankAccountsStatus(
       { sheetId: sheet.idSheet, sheetAccessToken: credential.accessToken },

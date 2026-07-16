@@ -4,7 +4,7 @@ import type { AudioInputOption } from "~/modules/chat/client/entities/AudioInput
 import { audioInputService } from "~/modules/chat/client/services/audioInputService";
 import { audioRecordingService } from "~/modules/chat/client/services/audioRecordingService";
 import { webChatService } from "~/modules/chat/client/services/webChatService";
-import type { ChatMessage } from "~/modules/chat/entities/dtos/ChatDTO";
+import type { ChatMessageDTO } from "~/modules/chat/entities/dtos/ChatDTO";
 
 export interface RecordingSlice {
   audioInputOptions: AudioInputOption[];
@@ -20,7 +20,7 @@ export interface RecordingSlice {
 
 type RecordingState = RecordingSlice & {
   chatError?: "loading" | "sending" | "microphone";
-  chatMessages: ChatMessage[];
+  chatMessages: ChatMessageDTO[];
   isChatSubmitting: boolean;
 };
 
@@ -60,7 +60,7 @@ export const recordingSlice: StateCreator<
         onTick: (duration) => set({ recordingDuration: duration }),
         onRecorded: async ({ blob, url }) => {
           set({ isChatSubmitting: true });
-          const optimistic: ChatMessage = {
+          const optimistic: ChatMessageDTO = {
             id: crypto.randomUUID(),
             type: "audio",
             userType: "user",

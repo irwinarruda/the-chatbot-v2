@@ -3,10 +3,10 @@ import type {
   AddEarningDTO,
   AddExpenseDTO,
   AddTransactionDTO,
-  BankAccountStatus,
+  BankAccountStatusDTO,
   CashFlowSpreadsheetGateway,
   SheetConfigDTO,
-  Transaction,
+  TransactionDTO,
 } from "~/modules/cash-flow/gateway/CashFlowSpreadsheetGateway";
 import type { GoogleConfig, GoogleSheetsConfig } from "~/shared/config/Config";
 import { ServiceException } from "~/shared/errors/ApplicationErrors";
@@ -123,7 +123,7 @@ export class GoogleCashFlowSpreadsheetGateway
 
   async getAllTransactions(
     sheetConfig: SheetConfigDTO,
-  ): Promise<Transaction[]> {
+  ): Promise<TransactionDTO[]> {
     return this.withRetry(async () => {
       const sheetsService = this.getSheetsService(
         sheetConfig.sheetId,
@@ -154,7 +154,7 @@ export class GoogleCashFlowSpreadsheetGateway
   async getLatestTransactions(
     sheetConfig: SheetConfigDTO,
     limit: number,
-  ): Promise<Transaction[]> {
+  ): Promise<TransactionDTO[]> {
     const transactions = await this.getAllTransactions(sheetConfig);
     const safeLimit = Math.max(0, Math.floor(limit));
     if (safeLimit === 0 || transactions.length === 0) return [];
@@ -163,7 +163,7 @@ export class GoogleCashFlowSpreadsheetGateway
 
   async getLastTransaction(
     sheetConfig: SheetConfigDTO,
-  ): Promise<Transaction | undefined> {
+  ): Promise<TransactionDTO | undefined> {
     const [last] = await this.getLatestTransactions(sheetConfig, 1);
     return last;
   }
@@ -260,7 +260,7 @@ export class GoogleCashFlowSpreadsheetGateway
   async getBankAccountsStatus(
     sheetConfig: SheetConfigDTO,
     date = new Date(),
-  ): Promise<BankAccountStatus[]> {
+  ): Promise<BankAccountStatusDTO[]> {
     return this.withRetry(async () => {
       const sheetsService = this.getSheetsService(
         sheetConfig.sheetId,

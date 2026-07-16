@@ -7,13 +7,13 @@ import {
   type ChatSlice,
   createChatSlice,
 } from "~/modules/chat/client/state/chatSlice";
-import type { ChatMessage } from "~/modules/chat/entities/dtos/ChatDTO";
+import type { ChatMessageDTO } from "~/modules/chat/entities/dtos/ChatDTO";
 
 type TestChatState = ChatSlice & {
   stopRecording: (shouldSend: boolean) => void;
 };
 
-function createMessage(patch: Partial<ChatMessage> = {}): ChatMessage {
+function createMessage(patch: Partial<ChatMessageDTO> = {}): ChatMessageDTO {
   return {
     id: crypto.randomUUID(),
     type: "text",
@@ -35,8 +35,8 @@ function createStore(service: WebChatClientService) {
 
 describe("chatSlice", () => {
   test("replaces the optimistic message with the authoritative send result", async () => {
-    let resolveSend: (messages: ChatMessage[]) => void = () => {};
-    const sendResult = new Promise<ChatMessage[]>((resolve) => {
+    let resolveSend: (messages: ChatMessageDTO[]) => void = () => {};
+    const sendResult = new Promise<ChatMessageDTO[]>((resolve) => {
       resolveSend = resolve;
     });
     let sentMessage: SendWebMessageDTO | undefined;
@@ -120,8 +120,8 @@ describe("chatSlice", () => {
   });
 
   test("keeps the next draft editable while the assistant is responding", async () => {
-    let resolveSend: (messages: ChatMessage[]) => void = () => {};
-    const sendResult = new Promise<ChatMessage[]>((resolve) => {
+    let resolveSend: (messages: ChatMessageDTO[]) => void = () => {};
+    const sendResult = new Promise<ChatMessageDTO[]>((resolve) => {
       resolveSend = resolve;
     });
     const service: WebChatClientService = {

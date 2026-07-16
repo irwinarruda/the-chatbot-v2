@@ -2,10 +2,10 @@ import { existsSync, readFileSync } from "fs";
 import { Marked, Renderer } from "marked";
 import { join } from "path";
 import { Paths } from "~/infra/paths";
-import type { Prefs } from "~/shared/entities/dtos/PrefsDTO";
+import type { PrefsDTO } from "~/shared/entities/dtos/PrefsDTO";
 import { NotFoundException } from "~/shared/errors/ApplicationErrors";
 
-type Locale = Prefs["locale"];
+type Locale = PrefsDTO["locale"];
 
 export class PostLoader {
   private static cache = new Map<string, string>();

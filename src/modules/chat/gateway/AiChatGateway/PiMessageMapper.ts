@@ -2,7 +2,7 @@ import type { Model, Message as PiMessage, Usage } from "@earendil-works/pi-ai";
 import { MessageContentType } from "~/modules/chat/entities/enums/MessageContentType";
 import { MessageRole } from "~/modules/chat/entities/enums/MessageRole";
 import { ToolResultStatus } from "~/modules/chat/entities/enums/ToolResultStatus";
-import type { AiChatContextMessage } from "~/modules/chat/gateway/AiChatGateway";
+import type { AiChatContextMessageDTO } from "~/modules/chat/gateway/AiChatGateway";
 import { ValidationException } from "~/shared/errors/DomainErrors";
 
 export class PiMessageMapper {
@@ -21,7 +21,10 @@ export class PiMessageMapper {
     },
   };
 
-  static map(messages: AiChatContextMessage[], model: Model<any>): PiMessage[] {
+  static map(
+    messages: AiChatContextMessageDTO[],
+    model: Model<any>,
+  ): PiMessage[] {
     const mapped: PiMessage[] = [];
     const toolNames = new Map<string, string>();
     for (const message of messages) {

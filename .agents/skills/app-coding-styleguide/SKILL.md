@@ -83,7 +83,7 @@ A one-use private helper that merely shortens a method is usually missed localit
 
 ## DTOs and runtime schemas
 
-Declare every type, interface, or schema whose name ends in `DTO` inside an
+Name every DTO with an uppercase `DTO` suffix and declare it inside an
 `entities/dtos/` directory. Browser-only DTOs may use the feature's
 `client/entities/dtos/`; module API, Service, gateway, and tool DTOs use the
 module-root `entities/dtos/`.
@@ -91,17 +91,18 @@ module-root `entities/dtos/`.
 Use Zod when data crosses an owned runtime boundary such as HTTP, SSE, untrusted
 storage, tool input, or environment input.
 
-Export the schema value and inferred type with the same PascalCase name. Use a suffix
-that describes the owned boundary role (`Request`, `Response`, or `Event`) rather
-than vague `Schema` or `DTO` suffixes:
+Export the schema value and inferred type with the same PascalCase name. Put a
+specific boundary role before the required `DTO` suffix, such as `RequestDTO`,
+`ResponseDTO`, or `EventDTO`. Never use `Request`, `Response`, or `Event` alone for
+a DTO, and never use the mixed-case `Dto` spelling:
 
 ```ts
-export const CreateTodoRequest = z.object({
+export const CreateTodoRequestDTO = z.object({
   name: z.string().trim().min(1),
   dueDate: z.iso.datetime().optional(),
 });
 
-export type CreateTodoRequest = z.infer<typeof CreateTodoRequest>;
+export type CreateTodoRequestDTO = z.infer<typeof CreateTodoRequestDTO>;
 ```
 
 Keep the schema in the owning module's `entities/dtos/`. Put it in
@@ -112,7 +113,7 @@ Do not maintain a handwritten interface beside the schema. Do not assert
 
 Internal commands that never cross a runtime trust boundary may be plain types.
 
-AI tool inputs use an explicit `DTO` suffix. Export the Zod schema and inferred type
+AI tool inputs use the same required `DTO` suffix. Export the Zod schema and inferred type
 with the same `*ToolDTO` name from the owning module's `entities/dtos/` folder, even when the
 schema is an empty object. Tool registries import and parse these DTOs; never define
 tool input schemas inline or introduce a shared generic empty-input DTO.

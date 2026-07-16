@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ship Production"
+  short_description: "Publish and verify The Chatbot production"
+  default_prompt: "Use $ship-production to publish this change to main, migrate production, and verify it in the in-app browser."

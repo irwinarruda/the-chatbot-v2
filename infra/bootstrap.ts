@@ -142,7 +142,12 @@ export function createApplication(
       monthlyExpenses: monthlyExpenseService,
       messaging: messagingService,
       migration: new MigrationService(database, config.database, config.auth),
-      status: new StatusService(database, config.database, config.ai),
+      status: new StatusService(
+        database,
+        config.database,
+        config.ai,
+        config.deployment,
+      ),
       todos: todoService,
       tools: aiToolService,
     },

@@ -1,13 +1,12 @@
-export interface GoogleTokens {
-  accessToken: string;
-  refreshToken: string;
-  expiresInSeconds: number | undefined;
-}
+import type {
+  GoogleTokensDTO,
+  GoogleUserInfoDTO,
+} from "~/modules/identity/entities/dtos/AuthGatewayDTO";
 
-export interface GoogleUserInfo {
-  name: string;
-  email: string;
-}
+export type {
+  GoogleTokensDTO,
+  GoogleUserInfoDTO,
+} from "~/modules/identity/entities/dtos/AuthGatewayDTO";
 
 export interface AuthGateway {
   getAppLoginUrl(id: string): string;
@@ -18,10 +17,10 @@ export interface AuthGateway {
   exchangeCodeForTokens(
     code: string,
     redirectTarget?: "app" | "web",
-  ): Promise<GoogleTokens>;
-  getUserInfo(accessToken: string): Promise<GoogleUserInfo>;
+  ): Promise<GoogleTokensDTO>;
+  getUserInfo(accessToken: string): Promise<GoogleUserInfoDTO>;
   refreshToken(
     accessToken: string,
     refreshToken: string,
-  ): Promise<GoogleTokens>;
+  ): Promise<GoogleTokensDTO>;
 }

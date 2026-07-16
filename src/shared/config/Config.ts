@@ -7,6 +7,11 @@ export const databaseConfigSchema = z.object({
 });
 export type DatabaseConfig = z.infer<typeof databaseConfigSchema>;
 
+export const deploymentConfigSchema = z.object({
+  commitSha: z.string().default("unknown"),
+});
+export type DeploymentConfig = z.infer<typeof deploymentConfigSchema>;
+
 export const encryptionConfigSchema = z.object({
   text32Bytes: z.string().min(1),
   text16Bytes: z.string().min(1),
@@ -88,6 +93,7 @@ export type JwtConfig = z.infer<typeof jwtConfigSchema>;
 
 export const configSchema = z.object({
   database: databaseConfigSchema,
+  deployment: deploymentConfigSchema,
   encryption: encryptionConfigSchema,
   google: googleConfigSchema,
   whatsApp: whatsAppConfigSchema,
@@ -108,6 +114,9 @@ export function loadConfig(): Config {
       connectionString: process.env.DATABASE_CONNECTION_STRING,
       name: process.env.DATABASE_NAME,
       serverVersion: process.env.DATABASE_SERVER_VERSION,
+    },
+    deployment: {
+      commitSha: process.env.VERCEL_GIT_COMMIT_SHA,
     },
     encryption: {
       text32Bytes: process.env.ENCRYPTION_TEXT_32_BYTES,

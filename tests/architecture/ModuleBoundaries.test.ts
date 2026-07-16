@@ -74,6 +74,24 @@ describe("module boundaries", () => {
     expect(violations).toEqual([]);
   });
 
+  test("DTO directory declarations use the uppercase DTO suffix", () => {
+    const files = globSync([
+      "src/modules/*/entities/dtos/**/*.ts",
+      "src/modules/*/client/entities/dtos/**/*.ts",
+      "src/shared/entities/dtos/**/*.ts",
+      "src/shared/client/entities/dtos/**/*.ts",
+    ]);
+    const violations = files.flatMap((file) => {
+      const source = readFileSync(file, "utf8");
+      return [...source.matchAll(/export (?:const|interface|type) ([A-Z]\w*)/g)]
+        .map((match) => match[1])
+        .filter((name) => !name.endsWith("DTO"))
+        .map((name) => `${file}:${name}`);
+    });
+
+    expect(violations).toEqual([]);
+  });
+
   test("contracts contain mappers rather than DTO schemas", () => {
     const files = globSync("src/modules/*/contracts/**/*.ts");
     const violations = files.filter((file) =>

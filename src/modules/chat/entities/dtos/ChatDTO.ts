@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const ChannelMessageResponse = z.object({
+export const ChannelMessageResponseDTO = z.object({
   id: z.string().uuid(),
   clientMessageId: z.string().min(1).optional(),
   type: z.enum(["text", "interactive", "audio"]),
@@ -14,16 +14,18 @@ export const ChannelMessageResponse = z.object({
   createdAt: z.iso.datetime(),
 });
 
-export type ChannelMessageResponse = z.infer<typeof ChannelMessageResponse>;
-export type ChatMessage = ChannelMessageResponse;
+export type ChannelMessageResponseDTO = z.infer<
+  typeof ChannelMessageResponseDTO
+>;
+export type ChatMessageDTO = ChannelMessageResponseDTO;
 
-export const ChatMessagesResponse = z.object({
-  messages: z.array(ChannelMessageResponse),
+export const ChatMessagesResponseDTO = z.object({
+  messages: z.array(ChannelMessageResponseDTO),
 });
 
-export type ChatMessagesResponse = z.infer<typeof ChatMessagesResponse>;
+export type ChatMessagesResponseDTO = z.infer<typeof ChatMessagesResponseDTO>;
 
-export const SendWebMessageRequest = z.union([
+export const SendWebMessageRequestDTO = z.union([
   z.object({
     text: z.string().trim().min(1),
     clientMessageId: z.string().uuid(),
@@ -34,4 +36,4 @@ export const SendWebMessageRequest = z.union([
   }),
 ]);
 
-export type SendWebMessageRequest = z.infer<typeof SendWebMessageRequest>;
+export type SendWebMessageRequestDTO = z.infer<typeof SendWebMessageRequestDTO>;

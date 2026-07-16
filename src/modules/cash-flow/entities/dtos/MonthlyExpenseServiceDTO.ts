@@ -1,6 +1,6 @@
 import type { MonthlyExpense } from "~/modules/cash-flow/entities/MonthlyExpense";
 
-export interface MonthlyExpenseItem {
+export interface MonthlyExpenseItemDTO {
   expense: MonthlyExpense;
   month: string;
   isPaid: boolean;

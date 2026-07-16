@@ -69,13 +69,12 @@ reintroduce them.
 `entities/` owns stateful entities, value objects, enums, and the module's data
 vocabulary.
 
-All declarations whose names end in `DTO` must live in an `entities/dtos/`
-directory. This includes Service inputs, gateway inputs, AI tool inputs, and
-browser-only DTOs.
-
-HTTP requests, responses, and SSE events are also DTOs even when their names use
-`Request`, `Response`, or `Event`. Put their Zod schemas under the owning module's
-`entities/dtos/` directory.
+Every DTO declaration must use an uppercase `DTO` suffix and live in an
+`entities/dtos/` directory. Put a more specific boundary role before that suffix:
+`CreateTodoRequestDTO`, `TodoResponseDTO`, and `ChatEventDTO`. This applies to
+Service inputs, gateway inputs, AI tool inputs, HTTP requests/responses, SSE
+events, and browser-only DTOs. Never omit `DTO` merely because the name already
+ends in `Request`, `Response`, or `Event`.
 
 Keep entity code independent of Services, gateways, HTTP, provider SDKs, React,
 Zustand, TanStack, and `infra`.

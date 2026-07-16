@@ -3,20 +3,7 @@ import type {
   ReceiveMessageDTO,
 } from "~/modules/chat/gateway/MessagingGateway";
 
-export type WebIncomingMessageBody =
-  | {
-      text: string;
-      clientMessageId: string;
-    }
-  | {
-      buttonReply: string;
-      clientMessageId: string;
-    }
-  | {
-      audioBuffer: Buffer;
-      mimeType: string;
-      clientMessageId: string;
-    };
+export type { WebIncomingMessageBodyDTO } from "~/modules/chat/gateway/MessagingGateway";
 
 export interface WebMessagingGateway extends MessagingGateway {
   receiveWebMessage(

@@ -1,13 +1,13 @@
 import { describe, expect, test } from "vitest";
 import { parseMonthlyExpense } from "~/modules/cash-flow/client/services/monthlyExpenseService";
 import { toMonthlyExpenseResponse } from "~/modules/cash-flow/contracts/MonthlyExpenseContractMapper";
-import type { MonthlyExpenseItem } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseServiceDTO";
+import type { MonthlyExpenseItemDTO } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseServiceDTO";
 import { MonthlyExpense } from "~/modules/cash-flow/entities/MonthlyExpense";
 import { Printable } from "~/shared/http/utils/Printable";
 
 describe("Monthly expense contracts", () => {
   test("maps serialized monthly bills through the client contract", () => {
-    const item: MonthlyExpenseItem = {
+    const item: MonthlyExpenseItemDTO = {
       expense: new MonthlyExpense({
         idUser: crypto.randomUUID(),
         name: "Electricity",

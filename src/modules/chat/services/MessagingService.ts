@@ -9,9 +9,9 @@ import type { MessageRole } from "~/modules/chat/entities/enums/MessageRole";
 import { ToolResultStatus } from "~/modules/chat/entities/enums/ToolResultStatus";
 import { Message } from "~/modules/chat/entities/Message";
 import type {
-  AiChatContextMessage,
+  AiChatContextMessageDTO,
   AiChatGateway,
-  AiToolDefinition,
+  AiToolDefinitionDTO,
 } from "~/modules/chat/gateway/AiChatGateway";
 import type {
   MessagingGateway,
@@ -19,6 +19,7 @@ import type {
   ReceiveInteractiveButtonMessageDTO,
   ReceiveMessageDTO,
   ReceiveTextMessageDTO,
+  SendMessageRecipientDTO,
 } from "~/modules/chat/gateway/MessagingGateway";
 import type { SpeechToTextGateway } from "~/modules/chat/gateway/SpeechToTextGateway";
 import type { StorageGateway } from "~/modules/chat/gateway/StorageGateway";
@@ -30,11 +31,9 @@ import {
   MessageTemplate,
 } from "~/modules/chat/utils/MessageLoader";
 import { BsuidUtils } from "~/modules/identity/entities/BsuidUtils";
+import type { SyncUserChatAddressesDTO } from "~/modules/identity/entities/dtos/IdentityDTO";
 import { PhoneNumberUtils } from "~/modules/identity/entities/PhoneNumberUtils";
-import type {
-  AuthService,
-  SyncUserChatAddresses,
-} from "~/modules/identity/services/AuthService";
+import type { AuthService } from "~/modules/identity/services/AuthService";
 import type { AiConfig } from "~/shared/config/Config";
 import {
   AppError,
@@ -42,11 +41,6 @@ import {
 } from "~/shared/errors/ApplicationErrors";
 import { ValidationException } from "~/shared/errors/DomainErrors";
 import type { DatabaseGateway } from "~/shared/gateway/DatabaseGateway";
-
-export interface SendMessageRecipient {
-  channel: ChatChannel;
-  toAddress: string;
-}
 
 export class MessagingService {
   private database: DatabaseGateway;
@@ -197,7 +191,7 @@ export class MessagingService {
     message: Message,
     channel: ChatChannel,
   ): Promise<void> {
-    const recipient: SendMessageRecipient = {
+    const recipient: SendMessageRecipientDTO = {
       channel,
       toAddress: chat.getChannelAddress(),
     };
@@ -248,7 +242,7 @@ export class MessagingService {
   }
 
   async sendTextMessage(
-    recipient: string | SendMessageRecipient,
+    recipient: string | SendMessageRecipientDTO,
     text: string,
     chat?: Chat,
     options?: AssistantMessageOptions,
@@ -271,7 +265,7 @@ export class MessagingService {
   }
 
   async sendButtonReplyMessage(
-    recipient: string | SendMessageRecipient,
+    recipient: string | SendMessageRecipientDTO,
     text: string,
     options: string[],
     chat?: Chat,
@@ -352,7 +346,7 @@ export class MessagingService {
     );
   }
 
-  async syncUserChatAddresses(dto: SyncUserChatAddresses): Promise<void> {
+  async syncUserChatAddresses(dto: SyncUserChatAddressesDTO): Promise<void> {
     const phoneNumber = dto.phoneNumber
       ? PhoneNumberUtils.addDigitNine(dto.phoneNumber)
       : null;
@@ -375,7 +369,7 @@ export class MessagingService {
   private async runAiAgent(
     chat: Chat,
     sourceMessage: Message,
-    recipient: SendMessageRecipient,
+    recipient: SendMessageRecipientDTO,
   ): Promise<void> {
     for (const message of chat.messages) {
       if (
@@ -483,8 +477,8 @@ export class MessagingService {
   private async sendAssistantContent(
     chat: Chat,
     sourceMessage: Message,
-    recipient: SendMessageRecipient,
-    content?: import("~/modules/chat/gateway/AiChatGateway").AssistantChannelContent,
+    recipient: SendMessageRecipientDTO,
+    content?: import("~/modules/chat/gateway/AiChatGateway").AssistantChannelContentDTO,
   ): Promise<void> {
     if (content?.type === MessageContentType.Button) {
       await this.sendButtonReplyMessage(
@@ -504,8 +498,8 @@ export class MessagingService {
   private async buildModelContext(
     chat: Chat,
     channelAddress: string,
-    tools: AiToolDefinition[],
-  ): Promise<AiChatContextMessage[]> {
+    tools: AiToolDefinitionDTO[],
+  ): Promise<AiChatContextMessageDTO[]> {
     const inputBudget =
       this.aiChatGateway.getContextWindowTokens() -
       this.aiConfig.maxOutputTokens -

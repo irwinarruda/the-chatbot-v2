@@ -30,3 +30,23 @@ export interface ReceiveAudioMessageDTO extends ReceiveMessageDTO {
   mediaId: string;
   mimeType: string;
 }
+
+export type WebIncomingMessageBodyDTO =
+  | {
+      text: string;
+      clientMessageId: string;
+    }
+  | {
+      buttonReply: string;
+      clientMessageId: string;
+    }
+  | {
+      audioBuffer: Buffer;
+      mimeType: string;
+      clientMessageId: string;
+    };
+
+export interface SendMessageRecipientDTO {
+  channel: ChatChannel;
+  toAddress: string;
+}

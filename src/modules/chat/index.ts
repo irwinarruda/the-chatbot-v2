@@ -1,8 +1,8 @@
 export { Chat } from "./entities/Chat";
 export {
-  ChannelMessageResponse,
-  ChatMessagesResponse,
-  SendWebMessageRequest,
+  ChannelMessageResponseDTO,
+  ChatMessagesResponseDTO,
+  SendWebMessageRequestDTO,
 } from "./entities/dtos/ChatDTO";
 export { Message } from "./entities/Message";
 export { MessagingService } from "./services/MessagingService";

@@ -8,7 +8,7 @@ import type {
   SendTextMessageDTO,
 } from "~/modules/chat/gateway/MessagingGateway";
 import type {
-  WebIncomingMessageBody,
+  WebIncomingMessageBodyDTO,
   WebMessagingGateway,
 } from "~/modules/chat/gateway/WebMessagingGateway";
 import { NotFoundException } from "~/shared/errors/ApplicationErrors";
@@ -83,7 +83,7 @@ export class LocalWebMessagingGateway implements WebMessagingGateway {
 
   private createAudioMessage(
     webAddress: string,
-    body: Extract<WebIncomingMessageBody, { audioBuffer: Buffer }>,
+    body: Extract<WebIncomingMessageBodyDTO, { audioBuffer: Buffer }>,
   ): ReceiveAudioMessageDTO {
     const mediaId = crypto.randomUUID();
     this.mediaById.set(mediaId, body.audioBuffer);
@@ -105,7 +105,7 @@ export class LocalWebMessagingGateway implements WebMessagingGateway {
     };
   }
 
-  private parseIncomingMessageBody(body: unknown): WebIncomingMessageBody {
+  private parseIncomingMessageBody(body: unknown): WebIncomingMessageBodyDTO {
     if (!body || typeof body !== "object") {
       throw new ValidationException(
         "Request body must be a JSON object",

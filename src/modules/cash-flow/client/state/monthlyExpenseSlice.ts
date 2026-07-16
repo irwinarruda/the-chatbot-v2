@@ -4,36 +4,38 @@ import {
   monthlyExpenseService,
 } from "~/modules/cash-flow/client/services/monthlyExpenseService";
 import type {
-  CreateMonthlyExpenseRequest,
-  MonthlyExpense,
-  UpdateMonthlyExpenseRequest,
+  CreateMonthlyExpenseRequestDTO,
+  MonthlyExpenseDTO,
+  UpdateMonthlyExpenseRequestDTO,
 } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
 
 export type MonthlyExpenseErrorCode = "loading" | "saving" | "deleting";
 
 export interface MonthlyExpenseSlice {
-  monthlyExpenses: MonthlyExpense[];
+  monthlyExpenses: MonthlyExpenseDTO[];
   monthlyExpenseMonth: string;
   isMonthlyExpenseBootstrapping: boolean;
   isMonthlyExpenseSubmitting: boolean;
   monthlyExpenseError?: MonthlyExpenseErrorCode;
   bootstrapMonthlyExpenses: (month?: string) => Promise<void>;
   createMonthlyExpense: (
-    dto: CreateMonthlyExpenseRequest,
-  ) => Promise<MonthlyExpense | undefined>;
+    dto: CreateMonthlyExpenseRequestDTO,
+  ) => Promise<MonthlyExpenseDTO | undefined>;
   updateMonthlyExpense: (
     id: string,
-    dto: UpdateMonthlyExpenseRequest,
-  ) => Promise<MonthlyExpense | undefined>;
+    dto: UpdateMonthlyExpenseRequestDTO,
+  ) => Promise<MonthlyExpenseDTO | undefined>;
   archiveMonthlyExpense: (id: string) => Promise<boolean>;
   setMonthlyExpensePaid: (
     id: string,
     isPaid: boolean,
-  ) => Promise<MonthlyExpense | undefined>;
+  ) => Promise<MonthlyExpenseDTO | undefined>;
   clearMonthlyExpenseError: () => void;
 }
 
-function sortMonthlyExpenses(expenses: MonthlyExpense[]): MonthlyExpense[] {
+function sortMonthlyExpenses(
+  expenses: MonthlyExpenseDTO[],
+): MonthlyExpenseDTO[] {
   return [...expenses].sort((first, second) => {
     if (first.isPaid !== second.isPaid) return first.isPaid ? 1 : -1;
     if (first.dueDay === undefined && second.dueDay !== undefined) return 1;

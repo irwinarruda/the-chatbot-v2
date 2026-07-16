@@ -1,13 +1,13 @@
 import {
-  MonthlyExpenseResponse,
-  type MonthlyExpenseResponse as MonthlyExpenseResponseType,
+  MonthlyExpenseResponseDTO,
+  type MonthlyExpenseResponseDTO as MonthlyExpenseResponseType,
 } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
-import type { MonthlyExpenseItem } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseServiceDTO";
+import type { MonthlyExpenseItemDTO } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseServiceDTO";
 
 export function toMonthlyExpenseResponse(
-  item: MonthlyExpenseItem,
+  item: MonthlyExpenseItemDTO,
 ): MonthlyExpenseResponseType {
-  return MonthlyExpenseResponse.parse({
+  return MonthlyExpenseResponseDTO.parse({
     id: item.expense.id,
     name: item.expense.name,
     expectedAmount: item.expense.expectedAmount,

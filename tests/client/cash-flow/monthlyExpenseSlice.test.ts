@@ -5,9 +5,11 @@ import {
   createMonthlyExpenseSlice,
   type MonthlyExpenseSlice,
 } from "~/modules/cash-flow/client/state/monthlyExpenseSlice";
-import type { MonthlyExpense } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
+import type { MonthlyExpenseDTO } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
 
-function createExpense(patch: Partial<MonthlyExpense> = {}): MonthlyExpense {
+function createExpense(
+  patch: Partial<MonthlyExpenseDTO> = {},
+): MonthlyExpenseDTO {
   return {
     id: crypto.randomUUID(),
     name: "Rent",

@@ -4,7 +4,7 @@ import {
   type WhatsAppInlineNode,
   WhatsAppMessageParser,
 } from "~/modules/chat/client/utils/WhatsAppMessageParser";
-import type { ChatMessage as ChatMessageEntity } from "~/modules/chat/entities/dtos/ChatDTO";
+import type { ChatMessageDTO as ChatMessageEntity } from "~/modules/chat/entities/dtos/ChatDTO";
 import { AudioWaveform } from "~/shared/client/components/AudioWaveform";
 import { Button } from "~/shared/client/components/ui/button";
 

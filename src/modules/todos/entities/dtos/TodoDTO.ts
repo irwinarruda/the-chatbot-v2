@@ -1,47 +1,47 @@
 import { z } from "zod";
-import { ChannelMessageResponse } from "~/modules/chat/entities/dtos/ChatDTO";
+import { ChannelMessageResponseDTO } from "~/modules/chat/entities/dtos/ChatDTO";
 
-export const TodoStatus = z.enum(["Pending", "Completed"]);
-export type TodoStatus = z.infer<typeof TodoStatus>;
+export const TodoStatusDTO = z.enum(["Pending", "Completed"]);
+export type TodoStatusDTO = z.infer<typeof TodoStatusDTO>;
 
-export const TodoDueFilter = z.enum([
+export const TodoDueFilterDTO = z.enum([
   "all",
   "with_due_date",
   "without_due_date",
 ]);
-export type TodoDueFilter = z.infer<typeof TodoDueFilter>;
+export type TodoDueFilterDTO = z.infer<typeof TodoDueFilterDTO>;
 
-export const TodoResponse = z.object({
+export const TodoResponseDTO = z.object({
   id: z.string().uuid(),
-  sourceMessage: ChannelMessageResponse.optional(),
+  sourceMessage: ChannelMessageResponseDTO.optional(),
   name: z.string(),
   description: z.string(),
   dueDate: z.iso.datetime().optional(),
-  status: TodoStatus,
+  status: TodoStatusDTO,
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 });
 
-export type TodoResponse = z.infer<typeof TodoResponse>;
-export type Todo = TodoResponse;
+export type TodoResponseDTO = z.infer<typeof TodoResponseDTO>;
+export type TodoDTO = TodoResponseDTO;
 
-export const TodosResponse = z.object({ todos: z.array(TodoResponse) });
-export type TodosResponse = z.infer<typeof TodosResponse>;
+export const TodosResponseDTO = z.object({ todos: z.array(TodoResponseDTO) });
+export type TodosResponseDTO = z.infer<typeof TodosResponseDTO>;
 
-export const TodoItemResponse = z.object({ todo: TodoResponse });
-export type TodoItemResponse = z.infer<typeof TodoItemResponse>;
+export const TodoItemResponseDTO = z.object({ todo: TodoResponseDTO });
+export type TodoItemResponseDTO = z.infer<typeof TodoItemResponseDTO>;
 
-export const SaveTodoRequest = z.object({
+export const SaveTodoRequestDTO = z.object({
   name: z.string().trim().min(1).optional(),
   description: z.string().optional(),
   dueDate: z.iso.datetime().optional(),
-  status: TodoStatus.optional(),
+  status: TodoStatusDTO.optional(),
 });
 
-export type SaveTodoRequest = z.infer<typeof SaveTodoRequest>;
+export type SaveTodoRequestDTO = z.infer<typeof SaveTodoRequestDTO>;
 
-export const CreateTodoRequest = SaveTodoRequest.extend({
+export const CreateTodoRequestDTO = SaveTodoRequestDTO.extend({
   name: z.string().trim().min(1),
 });
 
-export type CreateTodoRequest = z.infer<typeof CreateTodoRequest>;
+export type CreateTodoRequestDTO = z.infer<typeof CreateTodoRequestDTO>;

@@ -2,7 +2,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { TodoDetailDialog } from "~/modules/todos/client/components/TodoDetailDialog";
 import type { TodoSearch } from "~/modules/todos/client/TodoSearch";
-import type { TodoStatus } from "~/modules/todos/entities/dtos/TodoDTO";
+import type { TodoStatusDTO } from "~/modules/todos/entities/dtos/TodoDTO";
 import { getDictionary } from "~/shared/client/i18n";
 import { usePrefs } from "~/shared/client/providers/usePrefs";
 import { useApp } from "~/shared/client/stores";
@@ -33,7 +33,7 @@ export function TodoDetailScreen({
     name: string;
     description: string;
     dueDate?: string;
-    status: TodoStatus;
+    status: TodoStatusDTO;
   }) {
     if (!selectedTodo) return;
     await updateTodo(selectedTodo.id, patch);

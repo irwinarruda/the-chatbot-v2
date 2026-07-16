@@ -40,24 +40,26 @@ Every external boundary must answer:
 
 Put DTO declarations under an `entities/dtos/` directory. This applies to Service
 inputs, gateway inputs, AI tool inputs, HTTP requests/responses, SSE events, and
-browser-only DTOs.
+browser-only DTOs. Every DTO name ends in uppercase `DTO`; put the transport role
+before it (`RequestDTO`, `ResponseDTO`, or `EventDTO`). A role suffix never replaces
+the `DTO` suffix.
 
 Use Zod when data crosses an owned runtime boundary. Export the schema value and its
 inferred type with the same PascalCase name:
 
 ```ts
-export const CreateTodoRequest = z.object({
+export const CreateTodoRequestDTO = z.object({
   name: z.string().trim().min(1),
 });
 
-export type CreateTodoRequest = z.infer<typeof CreateTodoRequest>;
+export type CreateTodoRequestDTO = z.infer<typeof CreateTodoRequestDTO>;
 ```
 
 The schema value is the runtime parser; the same-named type is the compile-time
 contract. Do not add a parallel handwritten interface.
 
 Internal trusted DTOs may be plain types or interfaces when runtime parsing adds no
-value. They still live under `entities/dtos/` when named `*DTO`.
+value. They still use the `DTO` suffix and live under `entities/dtos/`.
 
 Do not:
 

@@ -13,6 +13,9 @@ describe("StatusService", () => {
     expect(dto.database.maxConnections).toBeGreaterThan(0);
     expect(dto.database.openConnections).toBeGreaterThanOrEqual(1);
     expect(dto.ai.modelName).toBe(orquestrator.aiConfig.model);
+    expect(dto.deployment.commitSha).toBe(
+      orquestrator.config.deployment.commitSha,
+    );
   });
 
   test("getStatus falls back to defaults when database metadata is missing", async () => {
@@ -25,6 +28,7 @@ describe("StatusService", () => {
       { sql } as unknown as typeof orquestrator.database,
       orquestrator.databaseConfig,
       orquestrator.aiConfig,
+      orquestrator.config.deployment,
     );
 
     const dto = await service.getStatus();
@@ -33,5 +37,8 @@ describe("StatusService", () => {
     expect(dto.database.maxConnections).toBe(0);
     expect(dto.database.openConnections).toBe(0);
     expect(dto.ai.modelName).toBe(orquestrator.aiConfig.model);
+    expect(dto.deployment.commitSha).toBe(
+      orquestrator.config.deployment.commitSha,
+    );
   });
 });
