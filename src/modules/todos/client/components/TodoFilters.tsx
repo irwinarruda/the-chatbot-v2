@@ -145,7 +145,7 @@ export function TodoFilters({
             }}
             value={draftFilters.status}
           >
-            <SelectTrigger id="todo-filter-status" className="w-full rounded">
+            <SelectTrigger id="todo-filter-status" className="w-full">
               <SelectValue>
                 {getStatusLabel(draftFilters.status, t)}
               </SelectValue>
@@ -189,7 +189,7 @@ export function TodoFilters({
             }}
             value={draftFilters.due}
           >
-            <SelectTrigger id="todo-filter-due" className="w-full rounded">
+            <SelectTrigger id="todo-filter-due" className="w-full">
               <SelectValue>{getDueLabel(draftFilters.due, t)}</SelectValue>
             </SelectTrigger>
             <SelectContent align="start">

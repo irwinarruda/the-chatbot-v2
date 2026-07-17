@@ -79,7 +79,7 @@ export function TerminalResponsiveOverlay({
           )}
           showCloseButton={false}
         >
-          <DialogHeader className="shrink-0 border-term-border border-b bg-term-chrome/75 px-4 py-3">
+          <DialogHeader className="shrink-0 border-term-border border-b px-4 py-3">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 space-y-1">
                 <DialogTitle className="font-semibold text-sm text-term-bright">
@@ -113,7 +113,7 @@ export function TerminalResponsiveOverlay({
             {children}
           </div>
           {footer && (
-            <DialogFooter className="m-0 shrink-0 rounded-none border-term-border bg-term-chrome/60">
+            <DialogFooter className="m-0 shrink-0 rounded-none border-term-border bg-transparent">
               {footer}
             </DialogFooter>
           )}
@@ -135,7 +135,7 @@ export function TerminalResponsiveOverlay({
           contentClassName,
         )}
       >
-        <DrawerHeader className="gap-1 border-term-border border-b bg-term-chrome/75 pt-2 pr-[max(1rem,env(safe-area-inset-right))] pb-3 pl-[max(1rem,env(safe-area-inset-left))] text-left">
+        <DrawerHeader className="gap-1 border-term-border border-b pt-2 pr-[max(1rem,env(safe-area-inset-right))] pb-3 pl-[max(1rem,env(safe-area-inset-left))] text-left">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 space-y-1">
               <DrawerTitle className="font-semibold text-sm text-term-bright">
@@ -170,7 +170,7 @@ export function TerminalResponsiveOverlay({
           {children}
         </div>
         {footer && (
-          <DrawerFooter className="shrink-0 border-term-border border-t bg-term-chrome/60 pt-3 pr-[max(1rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))]">
+          <DrawerFooter className="shrink-0 border-term-border border-t pt-3 pr-[max(1rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))]">
             {footer}
           </DrawerFooter>
         )}

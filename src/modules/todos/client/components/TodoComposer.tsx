@@ -105,10 +105,7 @@ export function TodoComposer({
                   }}
                   value={draft.status}
                 >
-                  <SelectTrigger
-                    id="todo-create-status"
-                    className="w-full rounded"
-                  >
+                  <SelectTrigger id="todo-create-status" className="w-full">
                     <SelectValue>{statusLabel}</SelectValue>
                   </SelectTrigger>
                   <SelectContent align="start">

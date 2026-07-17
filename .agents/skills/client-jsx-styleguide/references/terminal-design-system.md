@@ -74,12 +74,12 @@ When adding themed UI:
 ### Fonts
 
 - `--font-mono`: `"JetBrains Mono", ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace`.
-- `--font-serif`: `Georgia, "Times New Roman", serif`.
-- Local font file: `/fonts/jetbrains-mono-latin.woff2`.
-- `@font-face` uses JetBrains Mono weights `300 700`, `font-display: block`, and a Latin unicode range.
-- The app preloads the font from the root document.
+- `--font-sans`: `"IBM Plex Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`.
+- Local font files: `/fonts/jetbrains-mono-latin.woff2`, `/fonts/ibm-plex-sans-latin.woff2`, `/fonts/ibm-plex-sans-latin-ext.woff2`.
+- `@font-face` uses JetBrains Mono weights `300 700` and IBM Plex Sans weights `100 700`, both with `font-display: block` and Latin (plus Latin-ext for Plex) unicode ranges.
+- The app preloads both primary fonts from the root document.
 - Use monospace for UI, nav, chrome, buttons, inputs, chat, todo, metadata, and headings.
-- Use serif only for longer markdown/prose body content inside `.terminal-prose` paragraphs and list items.
+- Use IBM Plex Sans for body copy, descriptions, and longer `.terminal-prose` paragraphs/list items.
 
 ### Surface colors
 
@@ -537,11 +537,11 @@ Current selectors:
 - `h1`: mono, green, `1.5rem`, bold, tight, margin bottom `0.375rem`.
 - `h2`: mono, green, `1.125rem`, semibold, bottom border `term-border`, `margin: 2rem 0 0.75rem`, `padding-bottom: 0.5rem`, letter spacing `-0.01em`.
 - `h3`: mono, cyan, `1rem`, medium, `margin: 1.5rem 0 0.5rem`.
-- `p`: serif, `1.125rem`, line-height `1.75`, `margin-bottom: 1rem`, text color `term-text`.
+- `p`: IBM Plex Sans, `1.125rem`, line-height `1.75`, `margin-bottom: 1rem`, text color `term-text`.
 - `strong`: `term-bright`, weight 600.
 - `em`: `term-amber`, italic.
 - `ul`/`ol`: no native list style, `padding-left: 1.5rem`, `margin-bottom: 1rem`.
-- `li`: relative, serif, `1.125rem`, line-height `1.75`, `padding-left: 1.25rem`, `margin-bottom: 0.625rem`.
+- `li`: relative, IBM Plex Sans, `1.125rem`, line-height `1.75`, `padding-left: 1.25rem`, `margin-bottom: 0.625rem`.
 - `ul li::before`: content `>`, green, semibold, monospace.
 - `ol li::before`: green monospace counter.
 - `a`: blue, underlined, underline offset 2px, hover cyan.
@@ -702,6 +702,6 @@ If adding longer content pages, include a skip-to-content link hidden above view
 - Do not replace the terminal frame with a generic page layout.
 - Do not use large border radii by default; stay around `rounded`, `rounded-md`, `rounded-lg`, `rounded-xl` for the terminal shell.
 - Do not remove visible focus states.
-- Do not use serif fonts in normal app UI; reserve serif for prose content.
+- Do not use generic system UI fonts for body copy; keep IBM Plex Sans as `--font-sans` and JetBrains Mono as `--font-mono`.
 - Do not scatter CSS into new global selectors for component-specific styling when Tailwind utilities will do.
 - Do not edit generated files like `src/routeTree.gen.ts`.

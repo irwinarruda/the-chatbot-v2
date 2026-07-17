@@ -1,5 +1,5 @@
 import { Link, useRouter } from "@tanstack/react-router";
-import { MenuIcon } from "lucide-react";
+import { MenuIcon, Moon, Sun } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { TerminalChromeButton } from "~/shared/client/components/terminal/TerminalChromeButton";
 import { TerminalResponsiveOverlay } from "~/shared/client/components/terminal/TerminalResponsiveOverlay";
@@ -181,7 +181,11 @@ export function TerminalWindow({
                     onClick={toggleTheme}
                     title={themeLabel}
                   >
-                    {prefs.theme === "light" ? "☀" : "☽"}
+                    {prefs.theme === "light" ? (
+                      <Sun className="size-3" />
+                    ) : (
+                      <Moon className="size-3" />
+                    )}
                   </TerminalChromeButton>
                 </>
               )}

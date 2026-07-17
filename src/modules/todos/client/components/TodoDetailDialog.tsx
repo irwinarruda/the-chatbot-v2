@@ -167,9 +167,9 @@ export function TodoDetailDialog({
       {!todo ? (
         <div aria-live="polite" className="space-y-3" role="status">
           <span className="sr-only">{t.loading}</span>
-          <Skeleton className="h-14 w-full rounded" />
-          <Skeleton className="h-28 w-full rounded" />
-          <Skeleton className="h-14 w-full rounded" />
+          <Skeleton className="h-14 w-full rounded-lg" />
+          <Skeleton className="h-28 w-full rounded-lg" />
+          <Skeleton className="h-14 w-full rounded-lg" />
         </div>
       ) : (
         <form
@@ -205,10 +205,7 @@ export function TodoDetailDialog({
                   }}
                   value={status}
                 >
-                  <SelectTrigger
-                    id="todo-detail-status"
-                    className="w-full rounded"
-                  >
+                  <SelectTrigger id="todo-detail-status" className="w-full">
                     <SelectValue>{statusLabel}</SelectValue>
                   </SelectTrigger>
                   <SelectContent align="start">
