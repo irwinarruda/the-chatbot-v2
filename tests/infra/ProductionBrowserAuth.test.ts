@@ -26,9 +26,9 @@ interface ProductionBrowserAuthResult {
 }
 
 describe("production browser authentication", () => {
-  test("upgrades a saved legacy token into the current production cookie contract", async () => {
+  test("refreshes an expired current-contract token into a production cookie", async () => {
     const helper = await loadProductionBrowserAuthModule();
-    const savedToken = await createLegacyToken();
+    const savedToken = await createExpiredCurrentContractToken();
 
     const result = await helper.createProductionWebAuthCookie({
       values: {
@@ -80,7 +80,7 @@ describe("production browser authentication", () => {
     expect(result.cookie.name).toBe("__Host-web_auth_token");
   });
 
-  test("rejects a legacy saved token when it cannot refresh it", async () => {
+  test("rejects a legacy saved token even when JWT_SECRET is available", async () => {
     const helper = await loadProductionBrowserAuthModule();
     const savedToken = await createLegacyToken();
 
@@ -89,11 +89,11 @@ describe("production browser authentication", () => {
         values: {
           PRODUCTION_WEB_AUTH_TOKEN: savedToken,
           PRODUCTION_URL: "https://the-chatbot.example.com",
+          JWT_SECRET,
+          JWT_EXPIRES_IN: "7d",
         },
       }),
-    ).rejects.toThrow(
-      "PRODUCTION_WEB_AUTH_TOKEN uses the legacy web auth contract",
-    );
+    ).rejects.toThrow("must use purpose web-auth");
   });
 });
 
@@ -115,5 +115,21 @@ async function createLegacyToken(): Promise<string> {
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("7d")
+    .sign(new TextEncoder().encode(JWT_SECRET));
+}
+
+async function createExpiredCurrentContractToken(): Promise<string> {
+  const issuedAt = Math.floor(Date.now() / 1_000) - 60;
+  return new SignJWT({
+    userId: "production-user-id",
+    email: "production@example.com",
+    phoneNumber: "5511999999999",
+    purpose: "web-auth",
+  })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt(issuedAt)
+    .setIssuer("the-chatbot")
+    .setAudience("the-chatbot-web")
+    .setExpirationTime(issuedAt + 1)
     .sign(new TextEncoder().encode(JWT_SECRET));
 }

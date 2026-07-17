@@ -250,13 +250,11 @@ never include the secret in an error. Rotation:
 
 ## Implementation sequence
 
-1. Add strict encrypted-secret config and the AES-GCM gateway.
-2. Add envelope columns and encrypted-first dual-read code.
+1. Add strict encrypted-secret config and the AES-GCM service.
+2. Hard-cut credentials to envelope-only storage (done: migration deletes rows,
+   drops plaintext columns, adds `token_envelope`; no dual-read shipped).
 3. Write only encrypted envelopes for new and updated credentials.
-4. Backfill existing credential rows and verify coverage.
-5. Drop plaintext columns and remove the temporary fallback in a later contract
-   deployment.
-6. Exercise a key rotation in non-production before declaring the design complete.
+4. Exercise a key rotation in non-production before declaring the design complete.
 
 ## Tests
 

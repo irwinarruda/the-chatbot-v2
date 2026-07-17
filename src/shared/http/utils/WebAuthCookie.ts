@@ -14,32 +14,18 @@ export function setWebAuthCookie(
   request: Request,
   token: string,
 ): void {
-  const secure = isSecureRequest(request);
-  if (secure) {
-    Cookie.delete(headers, LOCAL_WEB_AUTH_COOKIE_NAME, {
-      secure: true,
-      sameSite: "Lax",
-    });
-  }
   Cookie.set(headers, webAuthCookieName(request), token, {
     maxAge: WEB_AUTH_COOKIE_MAX_AGE_SECONDS,
-    secure,
+    secure: isSecureRequest(request),
     sameSite: "Lax",
   });
 }
 
 export function deleteWebAuthCookie(headers: Headers, request: Request): void {
-  const secure = isSecureRequest(request);
   Cookie.delete(headers, webAuthCookieName(request), {
-    secure,
+    secure: isSecureRequest(request),
     sameSite: "Lax",
   });
-  if (secure) {
-    Cookie.delete(headers, LOCAL_WEB_AUTH_COOKIE_NAME, {
-      secure: true,
-      sameSite: "Lax",
-    });
-  }
 }
 
 function webAuthCookieName(request: Request): string {

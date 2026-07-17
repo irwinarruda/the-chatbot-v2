@@ -152,10 +152,11 @@ describe("web JSON requests", () => {
 });
 
 describe("web auth cookie", () => {
-  test("HTTPS uses a hardened host-only cookie and ignores the legacy name", () => {
+  test("HTTPS uses a hardened host-only cookie and ignores the non-prefixed name", () => {
     const request = new Request("https://app.example.com/api/v1/web/auth/me", {
       headers: {
-        Cookie: "web_auth_token=legacy; __Host-web_auth_token=current-session",
+        Cookie:
+          "web_auth_token=local-name; __Host-web_auth_token=current-session",
       },
     });
     const headers = new Headers();

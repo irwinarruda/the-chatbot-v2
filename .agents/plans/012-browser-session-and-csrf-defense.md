@@ -58,9 +58,9 @@ Production HTTPS uses `__Host-web_auth_token` with:
 Local HTTP development uses the non-prefixed `web_auth_token` cookie because the
 `__Host-` prefix requires HTTPS.
 
-The application does not accept the legacy production `web_auth_token` cookie over
-HTTPS. Login and logout clear that legacy cookie while setting or deleting the new
-one. This creates a deliberate one-time production logout at deployment.
+The application does not accept the non-prefixed `web_auth_token` cookie over
+HTTPS. HTTPS reads and writes only `__Host-web_auth_token`. The one-time deploy
+logout / legacy-cookie purge step has already been completed and removed.
 
 ### 2. Require same-origin proof for unsafe web requests
 
@@ -136,7 +136,7 @@ They must create a JWT only after the matching OAuth transaction is validated.
 - per-session logout revocation;
 - session cleanup jobs, idle expiry, or rotation;
 - synchronizer or double-submit CSRF tokens;
-- accepting both legacy and hardened production cookie names;
+- accepting both HTTP and HTTPS cookie names on the same request protocol;
 - a new authentication gateway or authentication subsystem.
 
 ## Accepted residual risk
@@ -200,7 +200,7 @@ No migration is created.
 - production cookies contain no `Domain` or `SameSite=None`;
 - local HTTP uses the non-prefixed cookie without `Secure`;
 - deletion preserves the active cookie's path and security attributes;
-- HTTPS authentication ignores the legacy cookie name.
+- HTTPS authentication uses only `__Host-web_auth_token`.
 
 ### JWT and user tests
 

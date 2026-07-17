@@ -206,7 +206,6 @@ export class Orquestrator {
       WHERE (
         c.whatsapp_address = ${channelAddress}
         OR c.whatsapp_address = ${normalizedId}
-        OR c.phone_number = ${normalizedId}
         OR c.web_address = ${channelAddress}
       )
       AND c.is_deleted = false

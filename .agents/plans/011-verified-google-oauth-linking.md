@@ -292,9 +292,8 @@ on the full credential migration.
 5. Make state and PKCE mandatory in the gateway contract.
 6. Add web transaction cookies/state/PKCE and clear them after callback.
 7. Make OAuth clients request-local.
-8. Remove the old encrypted-address compatibility path after all issued links have
-   exceeded their former useful lifetime. Since the old state has no TTL, choose a
-   hard cutover; do not keep accepting it indefinitely.
+8. Hard-cut the old encrypted-address OAuth state path (done: challenge table only;
+   `Encryption.ts` removed).
 9. Rotate/invalidate any identity link known to have been created during testing or
    from an unverified flow.
 

@@ -30,6 +30,21 @@ function requireIdentity(payload) {
   if (typeof payload.email !== "string" || !payload.email) {
     throw new Error("PRODUCTION_WEB_AUTH_TOKEN has no email");
   }
+  if (payload.purpose !== "web-auth") {
+    throw new Error(
+      "PRODUCTION_WEB_AUTH_TOKEN must use purpose web-auth; save a new __Host-web_auth_token value",
+    );
+  }
+  if (payload.iss !== webAuthTokenIssuer) {
+    throw new Error(
+      "PRODUCTION_WEB_AUTH_TOKEN must use the current issuer; save a new __Host-web_auth_token value",
+    );
+  }
+  if (payload.aud !== webAuthTokenAudience) {
+    throw new Error(
+      "PRODUCTION_WEB_AUTH_TOKEN must use the current audience; save a new __Host-web_auth_token value",
+    );
+  }
   const identity = {
     userId: payload.userId,
     email: payload.email,
@@ -43,13 +58,16 @@ function requireIdentity(payload) {
 
 async function refreshToken(savedToken, jwtSecret, expiresIn) {
   const decoded = decodeJwt(savedToken);
+  requireIdentity(decoded);
   if (typeof decoded.iat !== "number") {
     throw new Error("PRODUCTION_WEB_AUTH_TOKEN has no issued-at timestamp");
   }
   const secret = new TextEncoder().encode(jwtSecret);
-  const verificationDate = new Date((decoded.iat + 1) * 1_000);
+  const verificationDate = new Date(decoded.iat * 1_000);
   const verified = await jwtVerify(savedToken, secret, {
     algorithms: ["HS256"],
+    issuer: webAuthTokenIssuer,
+    audience: webAuthTokenAudience,
     currentDate: verificationDate,
   });
   const identity = requireIdentity(verified.payload);
@@ -64,21 +82,12 @@ async function refreshToken(savedToken, jwtSecret, expiresIn) {
 
 function assertTokenIsActive(token) {
   const payload = decodeJwt(token);
+  requireIdentity(payload);
   if (typeof payload.exp !== "number" || payload.exp <= Date.now() / 1_000) {
     throw new Error(
       "PRODUCTION_WEB_AUTH_TOKEN is expired and JWT_SECRET is not configured in .env.production",
     );
   }
-  if (
-    payload.purpose !== "web-auth" ||
-    payload.iss !== webAuthTokenIssuer ||
-    payload.aud !== webAuthTokenAudience
-  ) {
-    throw new Error(
-      "PRODUCTION_WEB_AUTH_TOKEN uses the legacy web auth contract; configure JWT_SECRET to refresh it or save a new __Host-web_auth_token value",
-    );
-  }
-  requireIdentity(payload);
   return token;
 }
 

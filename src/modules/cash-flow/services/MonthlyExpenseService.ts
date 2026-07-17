@@ -85,17 +85,11 @@ export class MonthlyExpenseService {
         INSERT INTO monthly_expenses (
           id,
           id_user,
-          name,
-          expected_amount,
-          due_day,
           created_at,
           updated_at
         ) VALUES (
           ${expense.id},
           ${expense.idUser},
-          ${expense.name},
-          ${expense.expectedAmount ?? null},
-          ${expense.dueDay ?? null},
           ${expense.createdAt},
           ${expense.updatedAt}
         )
@@ -170,18 +164,9 @@ export class MonthlyExpenseService {
       `;
       await sql`
         UPDATE monthly_expenses SET
-          name = ${expense.name},
-          expected_amount = ${expense.expectedAmount ?? null},
-          due_day = ${expense.dueDay ?? null},
           updated_at = ${expense.updatedAt}
         WHERE id = ${expense.id}
         AND id_user = ${expense.idUser}
-        AND NOT EXISTS (
-          SELECT 1
-          FROM monthly_expense_versions
-          WHERE id_monthly_expense = ${expense.id}
-          AND month > ${monthDate}::date
-        )
       `;
     });
     return this.getMonthlyExpense(dto.idUser, dto.id, month);

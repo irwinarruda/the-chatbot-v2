@@ -29,9 +29,10 @@ promotion exception when explicitly promoting an uncommitted artifact.
 - Require `PRODUCTION_WEB_AUTH_TOKEN` in `.env.production` before authenticated
   browser checks. Never print or echo it.
 - Prefer also keeping the production `JWT_SECRET` in `.env.production`. The
-  browser helper can then refresh an expired or legacy saved token locally into
-  the current issuer, audience, and `purpose: "web-auth"` contract. Without that
-  secret, the saved token must still be valid and already use the current contract.
+  browser helper can then refresh an expired saved token that already uses the
+  current issuer, audience, and `purpose: "web-auth"` contract. Without that
+  secret, the saved token must still be valid and already use the current
+  contract. Legacy tokens without those claims are rejected.
 
 For the one-time user setup, log in manually, copy only the
 `__Host-web_auth_token` cookie value into `PRODUCTION_WEB_AUTH_TOKEN` in

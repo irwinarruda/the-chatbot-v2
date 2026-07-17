@@ -880,7 +880,6 @@ export class MessagingService {
 interface DbChat {
   id: string;
   id_user: string | null;
-  phone_number: string | null;
   whatsapp_address: string | null;
   web_address: string | null;
   channel: string;
