@@ -1,3 +1,4 @@
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { BsuidUtils } from "~/modules/identity/entities/BsuidUtils";
 import { Credential } from "~/modules/identity/entities/Credentials";
 import type {
@@ -15,9 +16,9 @@ import type {
   GoogleTokensDTO,
   GoogleUserInfoDTO,
 } from "~/modules/identity/gateway/AuthGateway";
-import { Encryption } from "~/modules/identity/services/Encryption";
+import type { GoogleCredentialEncryptionService } from "~/modules/identity/services/GoogleCredentialEncryptionService";
 import { Jwt } from "~/modules/identity/services/Jwt";
-import type { EncryptionConfig, JwtConfig } from "~/shared/config/Config";
+import type { JwtConfig } from "~/shared/config/Config";
 import {
   DeveloperException,
   NotFoundException,
@@ -32,53 +33,81 @@ export interface IdentityChatCoordinator {
   syncUserChatAddresses(data: SyncUserChatAddressesDTO): Promise<void>;
 }
 
-type GoogleAuthTarget = "app" | "web";
+const APP_LOGIN_CHALLENGE_TTL_MS = 10 * 60 * 1000;
 
 export class AuthService {
   private database: DatabaseGateway;
-  private encryptionConfig: EncryptionConfig;
   private jwtConfig: JwtConfig;
   private googleAuthGateway: AuthGateway;
+  private googleCredentialEncryptionService: GoogleCredentialEncryptionService;
   private chatCoordinator: IdentityChatCoordinator;
 
   constructor(
     database: DatabaseGateway,
-    encryptionConfig: EncryptionConfig,
     jwtConfig: JwtConfig,
     googleAuthGateway: AuthGateway,
+    googleCredentialEncryptionService: GoogleCredentialEncryptionService,
     chatCoordinator: IdentityChatCoordinator,
   ) {
     this.database = database;
-    this.encryptionConfig = encryptionConfig;
     this.jwtConfig = jwtConfig;
     this.googleAuthGateway = googleAuthGateway;
+    this.googleCredentialEncryptionService = googleCredentialEncryptionService;
     this.chatCoordinator = chatCoordinator;
   }
 
-  getAppLoginUrl(appAddress: string): string {
-    if (!appAddress) {
+  async getAppLoginUrl(channelAddress: string): Promise<string> {
+    if (!channelAddress) {
       throw new ValidationException("Login provider ID is required");
     }
-    return this.googleAuthGateway.getAppLoginUrl(appAddress);
+    const challenge = randomBytes(16).toString("base64url");
+    const createdAt = new Date();
+    const expiresAt = new Date(
+      createdAt.getTime() + APP_LOGIN_CHALLENGE_TTL_MS,
+    );
+    await this.database.sql`
+      DELETE FROM google_auth_challenges
+      WHERE expires_at <= NOW()
+    `;
+    await this.database.sql`
+      INSERT INTO google_auth_challenges (
+        id,
+        token_hash,
+        channel_address,
+        expires_at,
+        created_at
+      )
+      VALUES (
+        ${randomUUID()},
+        ${this.hashAppLoginChallenge(challenge)},
+        ${channelAddress},
+        ${expiresAt},
+        ${createdAt}
+      )
+    `;
+    return this.googleAuthGateway.getAppLoginUrl(challenge);
   }
 
-  async handleGoogleLogin(appAddress: string): Promise<GoogleLoginResultDTO> {
-    if (!appAddress) {
-      throw new ValidationException("Login provider ID is required");
-    }
-    const user = await this.getUserByChatChannelAddress(appAddress);
+  async handleGoogleLogin(challenge: string): Promise<GoogleLoginResultDTO> {
+    const appChallenge = await this.getActiveAppLoginChallenge(challenge);
+    const user = await this.getUserByChatChannelAddress(
+      appChallenge.channel_address,
+    );
     if (user?.googleCredential) {
-      await this.refreshGoogleCredential(user);
-      await this.chatCoordinator.syncUserChatAddresses({
-        idUser: user.id,
-        email: user.email,
-        phoneNumber: user.phoneNumber,
-        bsuid: user.bsuid,
-      });
+      const consumed = await this.database.sql<{ id: string }[]>`
+        UPDATE google_auth_challenges
+        SET consumed_at = ${new Date()}
+        WHERE token_hash = ${this.hashAppLoginChallenge(challenge)}
+          AND consumed_at IS NULL
+          AND expires_at > NOW()
+        RETURNING id
+      `;
+      if (!consumed[0]) {
+        throw this.createInvalidAppLoginChallengeError();
+      }
       return { type: "alreadySignedIn" };
     }
-    const state = this.encryptAppAddress(appAddress);
-    const url = this.googleAuthGateway.createAuthorizationCodeUrl(state);
+    const url = this.googleAuthGateway.createAuthorizationCodeUrl(challenge);
     return { type: "redirect", url };
   }
 
@@ -86,7 +115,7 @@ export class AuthService {
     state: string,
     code: string,
   ): Promise<GoogleRedirectResultDTO> {
-    const appAddress = this.decryptAppAddress(state);
+    await this.getActiveAppLoginChallenge(state);
     const userToken = await this.googleAuthGateway.exchangeCodeForTokens(
       code,
       "app",
@@ -94,7 +123,34 @@ export class AuthService {
     const userinfo = await this.googleAuthGateway.getUserInfo(
       userToken.accessToken,
     );
-    await this.saveUserFromGoogleAuth(appAddress, userToken, userinfo, "app");
+    const result = await this.database.transaction(async (sql) => {
+      const appChallenge = await this.getActiveAppLoginChallenge(
+        state,
+        sql,
+        true,
+      );
+      const saved = await this.saveUserFromGoogleAuth(
+        appChallenge.channel_address,
+        userToken,
+        userinfo,
+        sql,
+      );
+      await sql`
+        UPDATE google_auth_challenges
+        SET consumed_at = ${new Date()}
+        WHERE id = ${appChallenge.id}
+      `;
+      return saved;
+    });
+    await this.chatCoordinator.syncUserChatAddresses({
+      idUser: result.user.id,
+      email: result.user.email,
+      phoneNumber: result.user.phoneNumber,
+      bsuid: result.user.bsuid,
+    });
+    if (result.created) {
+      await this.chatCoordinator.sendSignedInMessage(result.channelAddress);
+    }
     return { type: "success" };
   }
 
@@ -124,17 +180,25 @@ export class AuthService {
       );
     }
     if (!user.googleCredential) {
-      throw new NotFoundException(
-        "User not found",
-        "Register this Google account in the app before signing in on the web.",
+      user.createGoogleCredential(
+        userToken.accessToken,
+        userToken.refreshToken,
+        userToken.expiresInSeconds,
       );
+      if (!user.googleCredential) {
+        throw new DeveloperException(
+          "createGoogleCredential must always create a google credential",
+        );
+      }
+      await this.createGoogleCredential(user.googleCredential);
+    } else {
+      user.updateGoogleCredential(
+        userToken.accessToken,
+        userToken.refreshToken,
+        userToken.expiresInSeconds,
+      );
+      await this.saveGoogleCredential(user.googleCredential);
     }
-    user.updateGoogleCredential(
-      userToken.accessToken,
-      userToken.refreshToken,
-      userToken.expiresInSeconds,
-    );
-    await this.saveGoogleCredential(user.googleCredential);
     await this.chatCoordinator.syncUserChatAddresses({
       idUser: user.id,
       email: user.email,
@@ -179,14 +243,14 @@ export class AuthService {
         "Please log in again.",
       );
     }
-    if (!payload.userId || !payload.email) {
+    if (!payload.userId || !payload.email || payload.purpose !== "web-auth") {
       throw new UnauthorizedException(
         "Invalid authentication token",
         "Please log in again.",
       );
     }
     const user = await this.getUserById(payload.userId);
-    if (!user || user.email !== payload.email) {
+    if (!user || user.email !== payload.email || user.isInactive) {
       throw new UnauthorizedException(
         "Invalid authentication token",
         "Please log in again.",
@@ -201,42 +265,22 @@ export class AuthService {
       userId: user.id,
       email: user.email,
       phoneNumber: user.phoneNumber,
+      purpose: "web-auth",
     });
   }
 
-  private encryptAppAddress(appAddress: string): string {
-    if (!appAddress) {
-      throw new ValidationException("Login provider ID is required");
-    }
-    const encryption = new Encryption(this.encryptionConfig);
-    return encryption.encrypt(appAddress);
-  }
-
-  private decryptAppAddress(state: string): string {
-    if (!state) {
-      throw new ValidationException("Login provider ID is required");
-    }
-    const encryption = new Encryption(this.encryptionConfig);
-    const decrypted = encryption.decrypt(state);
-    try {
-      const parsed: unknown = JSON.parse(decrypted);
-      if (typeof parsed === "object" && parsed !== null) {
-        const { id } = parsed as { id?: string };
-        if (id) return id;
-      }
-    } catch {}
-    return decrypted;
-  }
-
-  async saveUserFromGoogleAuth(
-    appAddress: string,
+  private async saveUserFromGoogleAuth(
+    channelAddress: string,
     userToken: GoogleTokensDTO,
     userinfo: GoogleUserInfoDTO,
-    target: GoogleAuthTarget = "app",
-  ): Promise<User> {
+    sql: DatabaseGateway["sql"],
+  ): Promise<GoogleAuthUserSaveResult> {
     const email = userinfo.email.toLowerCase();
-    const userByEmail = await this.getUserByEmail(email);
-    const aliasUser = await this.getUserByChatChannelAddress(appAddress);
+    const userByEmail = await this.findUserByEmail(email, sql);
+    const aliasUser = await this.findUserByChatChannelAddress(
+      channelAddress,
+      sql,
+    );
     if (userByEmail && aliasUser && userByEmail.id !== aliasUser.id) {
       throw new UnauthorizedException(
         "The logged in Google account does not match this WhatsApp identity.",
@@ -251,38 +295,25 @@ export class AuthService {
       );
     }
     if (!user) {
-      if (target === "web") {
-        throw new NotFoundException(
-          "User not found",
-          "Register this phone number in the app before signing in on the web.",
-        );
-      }
-      const phoneNumber = BsuidUtils.containsLetter(appAddress)
+      const phoneNumber = BsuidUtils.containsLetter(channelAddress)
         ? undefined
-        : PhoneNumberUtils.addDigitNine(appAddress);
+        : PhoneNumberUtils.addDigitNine(channelAddress);
       user = new User(userinfo.name, phoneNumber, email);
-      if (BsuidUtils.containsLetter(appAddress)) {
-        user.bsuid = appAddress;
+      if (BsuidUtils.containsLetter(channelAddress)) {
+        user.bsuid = channelAddress;
       }
       user.createGoogleCredential(
         userToken.accessToken,
         userToken.refreshToken,
         userToken.expiresInSeconds,
       );
-      await this.createUser(user);
-      await this.chatCoordinator.syncUserChatAddresses({
-        idUser: user.id,
-        email: user.email,
-        phoneNumber: user.phoneNumber,
-        bsuid: user.bsuid,
-      });
-      await this.chatCoordinator.sendSignedInMessage(appAddress);
-      return user;
+      await this.insertUser(user, sql);
+      return { user, channelAddress, created: true };
     }
-    if (BsuidUtils.containsLetter(appAddress)) {
-      user.bsuid = appAddress;
+    if (BsuidUtils.containsLetter(channelAddress)) {
+      user.bsuid = channelAddress;
     } else {
-      user.phoneNumber ??= PhoneNumberUtils.addDigitNine(appAddress);
+      user.phoneNumber ??= PhoneNumberUtils.addDigitNine(channelAddress);
     }
     if (!user.googleCredential) {
       user.createGoogleCredential(
@@ -296,11 +327,9 @@ export class AuthService {
         );
       }
       const googleCredential = user.googleCredential;
-      await this.database.transaction(async (sql) => {
-        await this.createGoogleCredential(googleCredential, sql);
-        if (!user.email) user.updateEmail(email);
-        await this.saveUser(user, sql);
-      });
+      await this.createGoogleCredential(googleCredential, sql);
+      if (!user.email) user.updateEmail(email);
+      await this.saveUser(user, sql);
     } else {
       user.updateGoogleCredential(
         userToken.accessToken,
@@ -308,48 +337,22 @@ export class AuthService {
         userToken.expiresInSeconds,
       );
       const googleCredential = user.googleCredential;
-      await this.database.transaction(async (sql) => {
-        await this.saveGoogleCredential(googleCredential, sql);
-        if (!user.email) user.updateEmail(email);
-        await this.saveUser(user, sql);
-      });
+      await this.saveGoogleCredential(googleCredential, sql);
+      if (!user.email) user.updateEmail(email);
+      await this.saveUser(user, sql);
     }
-    await this.chatCoordinator.syncUserChatAddresses({
-      idUser: user.id,
-      email: user.email,
-      phoneNumber: user.phoneNumber,
-      bsuid: user.bsuid,
-    });
-    return user;
+    return { user, channelAddress, created: false };
   }
 
   async createUser(user: User): Promise<User> {
-    const email = user.email ?? null;
-    const phoneNumber = user.phoneNumber ?? null;
-    const bsuid = user.bsuid ?? null;
     await this.database.transaction(async (sql) => {
-      await sql`
-        INSERT INTO users (id, name, phone_number, email, bsuid, created_at, updated_at)
-        VALUES (${user.id}, ${user.name}, ${phoneNumber}, ${email}, ${bsuid}, ${user.createdAt}, ${user.updatedAt})
-      `;
-      if (user.googleCredential) {
-        await this.createGoogleCredential(user.googleCredential, sql);
-      }
+      await this.insertUser(user, sql);
     });
     return user;
   }
 
   async getUserByChatChannelAddress(id: string): Promise<User | undefined> {
-    const dbUsers = await this.database.sql<DbUser[]>`
-      SELECT * FROM users
-      WHERE bsuid = ${id}
-        OR phone_number = ${id}
-        OR lower(email) = ${id.toLowerCase()}
-      LIMIT 1
-    `;
-    const dbUser = dbUsers[0];
-    if (!dbUser) return undefined;
-    return this.hydrateUser(dbUser);
+    return this.findUserByChatChannelAddress(id, this.database.sql);
   }
 
   async getUserByPhoneNumber(phoneNumber: string): Promise<User | undefined> {
@@ -383,13 +386,7 @@ export class AuthService {
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const dbUsers = await this.database.sql<DbUser[]>`
-      SELECT * FROM users
-      WHERE lower(email) = ${email.toLowerCase()}
-    `;
-    const dbUser = dbUsers[0];
-    if (!dbUser) return undefined;
-    return this.hydrateUser(dbUser);
+    return this.findUserByEmail(email, this.database.sql);
   }
 
   async getUsers(): Promise<User[]> {
@@ -424,7 +421,98 @@ export class AuthService {
     await this.chatCoordinator.deleteChat(channelAddress);
   }
 
-  async saveUser(
+  private async findUserByChatChannelAddress(
+    id: string,
+    sql: DatabaseGateway["sql"],
+  ): Promise<User | undefined> {
+    const dbUsers = await sql<DbUser[]>`
+      SELECT * FROM users
+      WHERE bsuid = ${id}
+        OR phone_number = ${id}
+        OR lower(email) = ${id.toLowerCase()}
+      LIMIT 1
+    `;
+    const dbUser = dbUsers[0];
+    if (!dbUser) return undefined;
+    return this.hydrateUser(dbUser, sql);
+  }
+
+  private async findUserByEmail(
+    email: string,
+    sql: DatabaseGateway["sql"],
+  ): Promise<User | undefined> {
+    const dbUsers = await sql<DbUser[]>`
+      SELECT * FROM users
+      WHERE lower(email) = ${email.toLowerCase()}
+    `;
+    const dbUser = dbUsers[0];
+    if (!dbUser) return undefined;
+    return this.hydrateUser(dbUser, sql);
+  }
+
+  private async getActiveAppLoginChallenge(
+    challenge: string,
+    sql: DatabaseGateway["sql"] = this.database.sql,
+    lock = false,
+  ): Promise<DbGoogleAuthChallenge> {
+    if (!/^[A-Za-z0-9_-]{22}$/.test(challenge)) {
+      throw this.createInvalidAppLoginChallengeError();
+    }
+    const tokenHash = this.hashAppLoginChallenge(challenge);
+    let challenges: DbGoogleAuthChallenge[];
+    if (lock) {
+      challenges = await sql<DbGoogleAuthChallenge[]>`
+        SELECT *
+        FROM google_auth_challenges
+        WHERE token_hash = ${tokenHash}
+          AND consumed_at IS NULL
+          AND expires_at > NOW()
+        FOR UPDATE
+      `;
+    } else {
+      challenges = await sql<DbGoogleAuthChallenge[]>`
+        SELECT *
+        FROM google_auth_challenges
+        WHERE token_hash = ${tokenHash}
+          AND consumed_at IS NULL
+          AND expires_at > NOW()
+      `;
+    }
+    const appChallenge = challenges[0];
+    if (!appChallenge) {
+      throw this.createInvalidAppLoginChallengeError();
+    }
+    return appChallenge;
+  }
+
+  private hashAppLoginChallenge(challenge: string): Buffer {
+    return createHash("sha256").update(challenge).digest();
+  }
+
+  private createInvalidAppLoginChallengeError(): UnauthorizedException {
+    return new UnauthorizedException(
+      "Invalid or expired login link",
+      "Request a new login link in WhatsApp and try again.",
+    );
+  }
+
+  private async insertUser(
+    user: User,
+    sql: DatabaseGateway["sql"],
+  ): Promise<void> {
+    const email = user.email ?? null;
+    const phoneNumber = user.phoneNumber ?? null;
+    const bsuid = user.bsuid ?? null;
+    await sql`
+      INSERT INTO users (id, name, phone_number, email, bsuid, created_at, updated_at)
+      VALUES (${user.id}, ${user.name}, ${phoneNumber}, ${email}, ${bsuid}, ${user.createdAt}, ${user.updatedAt})
+    `;
+    if (user.googleCredential) {
+      await this.createGoogleCredential(user.googleCredential, sql);
+    }
+  }
+
+  private async saveUser(
     user: User,
     sql: DatabaseGateway["sql"] = this.database.sql,
   ): Promise<void> {
@@ -450,11 +538,12 @@ export class AuthService {
   ): Promise<void> {
     const expiresInSeconds = googleCredential.expiresInSeconds ?? null;
     const expirationDate = googleCredential.expirationDate ?? null;
+    const tokenEnvelope =
+      this.googleCredentialEncryptionService.encrypt(googleCredential);
     await sql`
       UPDATE google_credentials
       SET
-        access_token = ${googleCredential.accessToken},
-        refresh_token = ${googleCredential.refreshToken},
+        token_envelope = ${sql.json(tokenEnvelope)},
         expires_in_seconds = ${expiresInSeconds},
         expiration_date = ${expirationDate},
         updated_at = ${googleCredential.updatedAt}
@@ -468,30 +557,58 @@ export class AuthService {
   ): Promise<void> {
     const expiresInSeconds = googleCredential.expiresInSeconds ?? null;
     const expirationDate = googleCredential.expirationDate ?? null;
+    const tokenEnvelope =
+      this.googleCredentialEncryptionService.encrypt(googleCredential);
     await sql`
-      INSERT INTO google_credentials (id, id_user, access_token, refresh_token, expires_in_seconds, expiration_date, created_at, updated_at)
-      VALUES (${googleCredential.id}, ${googleCredential.idUser}, ${googleCredential.accessToken}, ${googleCredential.refreshToken}, ${expiresInSeconds}, ${expirationDate}, ${googleCredential.createdAt}, ${googleCredential.updatedAt})
+      INSERT INTO google_credentials (
+        id,
+        id_user,
+        token_envelope,
+        expires_in_seconds,
+        expiration_date,
+        created_at,
+        updated_at
+      )
+      VALUES (
+        ${googleCredential.id},
+        ${googleCredential.idUser},
+        ${sql.json(tokenEnvelope)},
+        ${expiresInSeconds},
+        ${expirationDate},
+        ${googleCredential.createdAt},
+        ${googleCredential.updatedAt}
+      )
     `;
   }
 
-  private async hydrateUser(dbUser: DbUser): Promise<User> {
-    const dbCredentials = await this.database.sql<DbGoogleCredential[]>`
+  private async hydrateUser(
+    dbUser: DbUser,
+    sql: DatabaseGateway["sql"] = this.database.sql,
+  ): Promise<User> {
+    const dbCredentials = await sql<DbGoogleCredential[]>`
       SELECT * FROM google_credentials
       WHERE id_user = ${dbUser.id}
     `;
     const dbCred = dbCredentials[0];
-    const googleCredential = dbCred
-      ? Credential.restore({
-          id: dbCred.id,
-          idUser: dbCred.id_user,
-          accessToken: dbCred.access_token,
-          refreshToken: dbCred.refresh_token,
-          expiresInSeconds: dbCred.expires_in_seconds ?? undefined,
-          expirationDate: dbCred.expiration_date ?? undefined,
-          createdAt: dbCred.created_at,
-          updatedAt: dbCred.updated_at,
-        })
-      : undefined;
+    let googleCredential: Credential | undefined;
+    if (dbCred) {
+      const { accessToken, refreshToken } =
+        this.googleCredentialEncryptionService.decrypt(
+          dbCred.token_envelope,
+          dbCred.id,
+          dbCred.id_user,
+        );
+      googleCredential = Credential.restore({
+        id: dbCred.id,
+        idUser: dbCred.id_user,
+        accessToken,
+        refreshToken,
+        expiresInSeconds: dbCred.expires_in_seconds ?? undefined,
+        expirationDate: dbCred.expiration_date ?? undefined,
+        createdAt: dbCred.created_at,
+        updatedAt: dbCred.updated_at,
+      });
+    }
     return User.restore({
       id: dbUser.id,
       name: dbUser.name,
@@ -520,10 +637,24 @@ interface DbUser {
 interface DbGoogleCredential {
   id: string;
   id_user: string;
-  access_token: string;
-  refresh_token: string;
+  token_envelope: unknown;
   expires_in_seconds: number | null;
   expiration_date: Date | null;
   created_at: Date;
   updated_at: Date;
+}
+
+interface DbGoogleAuthChallenge {
+  id: string;
+  token_hash: Buffer;
+  channel_address: string;
+  expires_at: Date;
+  consumed_at: Date | null;
+  created_at: Date;
+}
+
+interface GoogleAuthUserSaveResult {
+  user: User;
+  channelAddress: string;
+  created: boolean;
 }

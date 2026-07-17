@@ -1,11 +1,11 @@
 import type { CashFlowAddExpenseDTO } from "~/modules/cash-flow/entities/dtos/CashFlowServiceDTO";
 import { User } from "~/modules/identity/entities/User";
-import { Encryption } from "~/modules/identity/services/Encryption";
 import {
   NotFoundException,
   ServiceException,
 } from "~/shared/errors/ApplicationErrors";
 import { ValidationException } from "~/shared/errors/DomainErrors";
+import { createAppGoogleLoginState } from "./createAppGoogleLoginState";
 import { orquestrator } from "./orquestrator";
 
 describe("CashFlowService", () => {
@@ -17,11 +17,11 @@ describe("CashFlowService", () => {
     const user = new User("Test User", phoneNumber);
     user.bsuid = phoneNumber;
     await orquestrator.authService.createUser(user);
-    const encryption = new Encryption(orquestrator.encryptionConfig);
-    await orquestrator.authService.handleGoogleRedirect(
-      encryption.encrypt(phoneNumber),
-      "rightCode",
+    const state = await createAppGoogleLoginState(
+      orquestrator.authService,
+      phoneNumber,
     );
+    await orquestrator.authService.handleGoogleRedirect(state, "rightCode");
   }
 
   async function setupUserWithSpreadsheet(

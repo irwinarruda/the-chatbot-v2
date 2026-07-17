@@ -1,6 +1,6 @@
-import { Cookie } from "~/infra/cookie";
 import { ServerBootstrap } from "~/infra/server-bootstrap";
 import type { WebAuthTokenPayloadDTO } from "~/modules/identity/entities/dtos/IdentityDTO";
+import { getWebAuthToken } from "~/shared/http/utils/WebAuthCookie";
 
 export interface WebAuthContext {
   webAuth: WebAuthTokenPayloadDTO;
@@ -8,14 +8,15 @@ export interface WebAuthContext {
 
 export class WebAuth {
   static async requireAuth(request: Request): Promise<WebAuthTokenPayloadDTO> {
-    const cookieHeader = request.headers.get("cookie") ?? "";
-    const token = Cookie.get(cookieHeader, "web_auth_token");
     const authService = ServerBootstrap.getApplication().services.auth;
-    const user = await authService.authenticateWebUser(token ?? "");
+    const user = await authService.authenticateWebUser(
+      getWebAuthToken(request) ?? "",
+    );
     return {
       userId: user.id,
       email: user.email ?? "",
       phoneNumber: user.phoneNumber,
+      purpose: "web-auth",
     };
   }
 }

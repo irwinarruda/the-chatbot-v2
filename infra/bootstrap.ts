@@ -21,6 +21,7 @@ import {
   AuthService,
   type IdentityChatCoordinator,
 } from "~/modules/identity/services/AuthService";
+import { GoogleCredentialEncryptionService } from "~/modules/identity/services/GoogleCredentialEncryptionService";
 import { MigrationService } from "~/modules/system/services/MigrationService";
 import { StatusService } from "~/modules/system/services/StatusService";
 import { TodoService } from "~/modules/todos/services/TodoService";
@@ -99,11 +100,15 @@ export function createApplication(
     ...defaultChatCoordinator,
     ...overrides.coordination,
   };
+  const googleCredentialEncryptionService =
+    new GoogleCredentialEncryptionService(
+      config.googleCredentialEncryption.key,
+    );
   const authService = new AuthService(
     database,
-    config.encryption,
     config.jwt,
     gateways.googleAuth,
+    googleCredentialEncryptionService,
     chatCoordinator,
   );
   const cashFlowService = new CashFlowService(

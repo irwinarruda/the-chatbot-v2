@@ -612,10 +612,13 @@ export class MessagingService {
     chat: Chat,
     receiveMessage: ReceiveMessageDTO,
   ): Promise<void> {
+    const loginUrl = await this.authService.getAppLoginUrl(
+      receiveMessage.fromAddress,
+    );
     await this.sendTextMessage(
       { channel: ChatChannel.WhatsApp, toAddress: receiveMessage.fromAddress },
       MessageLoader.getMessage(MessageTemplate.ThankYou, {
-        loginUrl: this.authService.getAppLoginUrl(receiveMessage.fromAddress),
+        loginUrl,
       }),
       chat,
     );

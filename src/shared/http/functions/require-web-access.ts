@@ -1,15 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
-import { Cookie } from "~/infra/cookie";
 import { ServerBootstrap } from "~/infra/server-bootstrap";
 import { UnauthorizedException } from "~/shared/errors/ApplicationErrors";
+import { getWebAuthToken } from "~/shared/http/utils/WebAuthCookie";
 
 export const requireWebAccess = createServerFn({ method: "GET" }).handler(
   async ({ request }: any) => {
     const authService = ServerBootstrap.getApplication().services.auth;
-    const cookieHeader = request.headers.get("cookie") ?? "";
-    const token = Cookie.get(cookieHeader, "web_auth_token") ?? "";
     try {
-      await authService.authenticateWebUser(token);
+      await authService.authenticateWebUser(getWebAuthToken(request) ?? "");
       return { ok: true as const };
     } catch (error) {
       if (error instanceof UnauthorizedException) {

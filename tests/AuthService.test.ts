@@ -1,18 +1,72 @@
 import { User } from "~/modules/identity/entities/User";
 import { GoogleAuthScopes } from "~/modules/identity/gateway/AuthGateway/GoogleAuthScopes";
-import { Encryption } from "~/modules/identity/services/Encryption";
 import { Jwt } from "~/modules/identity/services/Jwt";
 import {
-  DeveloperException,
   NotFoundException,
   UnauthorizedException,
 } from "~/shared/errors/ApplicationErrors";
+import {
+  createAppGoogleLoginChallenge,
+  createAppGoogleLoginState,
+} from "./createAppGoogleLoginState";
 import { orquestrator } from "./orquestrator";
 
 describe("AuthService", () => {
-  test("handleGoogleLogin returns Google auth redirect URL", async () => {
+  test("stores new Google credentials in one encrypted envelope", async () => {
+    await orquestrator.clearDatabase();
+    const user = new User(
+      "Encrypted User",
+      "5511984444444",
+      "encrypted@example.com",
+    );
+    user.createGoogleCredential("plain-access-token", "plain-refresh-token");
+
+    await orquestrator.authService.createUser(user);
+
+    const rows = await orquestrator.database.sql<
+      {
+        token_envelope: Record<string, unknown>;
+      }[]
+    >`
+      SELECT token_envelope
+      FROM google_credentials
+      WHERE id_user = ${user.id}
+    `;
+    expect(rows[0]?.token_envelope).toMatchObject({
+      nonce: expect.any(String),
+      ciphertext: expect.any(String),
+      authenticationTag: expect.any(String),
+    });
+    expect(JSON.stringify(rows[0])).not.toContain("plain-access-token");
+    expect(JSON.stringify(rows[0])).not.toContain("plain-refresh-token");
+
+    const restored = await orquestrator.authService.getUserById(user.id);
+    expect(restored?.googleCredential?.accessToken).toBe("plain-access-token");
+    expect(restored?.googleCredential?.refreshToken).toBe(
+      "plain-refresh-token",
+    );
+  });
+
+  test("WhatsApp challenge starts the Google auth flow without exposing the address", async () => {
+    await orquestrator.clearDatabase();
     const id = "5511984444444";
-    const result = await orquestrator.authService.handleGoogleLogin(id);
+    const loginUrl = await orquestrator.authService.getAppLoginUrl(id);
+    const challenge = new URL(loginUrl).pathname.split("/").at(-1);
+    expect(challenge).toMatch(/^[A-Za-z0-9_-]{22}$/);
+    expect(new URL(loginUrl).pathname).toBe(`/g/${challenge}`);
+    expect(loginUrl).not.toContain(id);
+
+    const stored = await orquestrator.database.sql<
+      { channel_address: string; token_hash: Buffer }[]
+    >`SELECT channel_address, token_hash FROM google_auth_challenges`;
+    expect(stored).toHaveLength(1);
+    expect(stored[0]?.channel_address).toBe(id);
+    expect(stored[0]?.token_hash).toHaveLength(32);
+    expect(stored[0]?.token_hash.toString("base64url")).not.toBe(challenge);
+
+    const result = await orquestrator.authService.handleGoogleLogin(
+      challenge ?? "",
+    );
     expect(result.type).toBe("redirect");
     if (result.type !== "redirect") {
       return;
@@ -35,10 +89,28 @@ describe("AuthService", () => {
 
     expect(params.get("client_id")).toBe(orquestrator.googleConfig.clientId);
 
-    const encryption = new Encryption(orquestrator.encryptionConfig);
     const state = params.get("state");
-    expect(state).not.toBeNull();
-    expect(encryption.decrypt(state ?? "")).toBe(id);
+    expect(state).toBe(challenge);
+  });
+
+  test("app login rejects raw addresses and expired challenges", async () => {
+    await orquestrator.clearDatabase();
+    await expect(
+      orquestrator.authService.handleGoogleLogin("5511984444444"),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+
+    const challenge = await createAppGoogleLoginChallenge(
+      orquestrator.authService,
+      "5511984444444",
+    );
+    await orquestrator.database.sql`
+      UPDATE google_auth_challenges
+      SET expires_at = ${new Date(0)}
+    `;
+
+    await expect(
+      orquestrator.authService.handleGoogleLogin(challenge),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
   test("createUser", async () => {
@@ -74,18 +146,21 @@ describe("AuthService", () => {
 
   test("handleGoogleRedirect persists Google credentials", async () => {
     await orquestrator.clearDatabase();
-    const encryption = new Encryption(orquestrator.encryptionConfig);
     const phoneNumber = "5511984444444";
+    const invalidCodeState = await createAppGoogleLoginState(
+      orquestrator.authService,
+      phoneNumber,
+    );
 
     await expect(
       orquestrator.authService.handleGoogleRedirect(
-        encryption.encrypt(phoneNumber),
+        invalidCodeState,
         "wrongCode",
       ),
     ).rejects.toThrow();
 
     await orquestrator.authService.handleGoogleRedirect(
-      encryption.encrypt(phoneNumber),
+      invalidCodeState,
       "rightCode",
     );
     const users = await orquestrator.authService.getUsers();
@@ -106,34 +181,55 @@ describe("AuthService", () => {
 
     await expect(
       orquestrator.authService.handleGoogleRedirect(
-        encryption.encrypt(phoneNumber),
+        invalidCodeState,
         "rightCode",
       ),
-    ).resolves.toEqual({ type: "success" });
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  test("concurrent callbacks consume a WhatsApp challenge exactly once", async () => {
+    await orquestrator.clearDatabase();
+    const state = await createAppGoogleLoginState(
+      orquestrator.authService,
+      "5511984444444",
+    );
+
+    const results = await Promise.allSettled([
+      orquestrator.authService.handleGoogleRedirect(state, "rightCode"),
+      orquestrator.authService.handleGoogleRedirect(state, "rightCode"),
+    ]);
+
+    expect(
+      results.filter((result) => result.status === "fulfilled"),
+    ).toHaveLength(1);
+    expect(
+      results.filter((result) => result.status === "rejected"),
+    ).toHaveLength(1);
+    expect(await orquestrator.authService.getUsers()).toHaveLength(1);
   });
 
   test("handleGoogleRedirect exchanges code with the app redirect target", async () => {
     await orquestrator.clearDatabase();
-    const encryption = new Encryption(orquestrator.encryptionConfig);
     const gateway = orquestrator.googleAuthGateway;
     const spy = vi.spyOn(gateway, "exchangeCodeForTokens");
-
-    await orquestrator.authService.handleGoogleRedirect(
-      encryption.encrypt("5511984444444"),
-      "rightCode",
+    const state = await createAppGoogleLoginState(
+      orquestrator.authService,
+      "5511984444444",
     );
+
+    await orquestrator.authService.handleGoogleRedirect(state, "rightCode");
 
     expect(spy).toHaveBeenCalledWith("rightCode", "app");
   });
 
   test("refreshGoogleCredential", async () => {
     await orquestrator.clearDatabase();
-    const encryption = new Encryption(orquestrator.encryptionConfig);
-
-    await orquestrator.authService.handleGoogleRedirect(
-      encryption.encrypt("5511984444444"),
-      "rightCode",
+    const state = await createAppGoogleLoginState(
+      orquestrator.authService,
+      "5511984444444",
     );
+
+    await orquestrator.authService.handleGoogleRedirect(state, "rightCode");
     const users = await orquestrator.authService.getUsers();
     expect(users[0]?.googleCredential?.accessToken).toBe(
       "ya29.a0ARrdaM9test_access_token_123456789",
@@ -158,42 +254,66 @@ describe("AuthService", () => {
     expect(createdAt?.getTime()).not.toBe(updatedAt?.getTime());
   });
 
-  test("handleGoogleLogin", async () => {
+  test("handleGoogleLogin redirects unlinked users and closes linked challenges", async () => {
     await orquestrator.clearDatabase();
 
     const id1 = "5511984444444";
-    let result = await orquestrator.authService.handleGoogleLogin(id1);
+    const challenge1 = await createAppGoogleLoginChallenge(
+      orquestrator.authService,
+      id1,
+    );
+    let result = await orquestrator.authService.handleGoogleLogin(challenge1);
     expect(result.type).toBe("redirect");
     if (result.type === "redirect") {
       expect(result.url).toContain("accounts.google.com");
     }
 
     const user = await orquestrator.createUser();
-    result = await orquestrator.authService.handleGoogleLogin(
+    const challenge2 = await createAppGoogleLoginChallenge(
+      orquestrator.authService,
       user.phoneNumber ?? "",
     );
+    result = await orquestrator.authService.handleGoogleLogin(challenge2);
     expect(result.type).toBe("redirect");
     if (result.type === "redirect") {
       expect(result.url).toContain("accounts.google.com");
     }
 
-    const encryption = new Encryption(orquestrator.encryptionConfig);
     const id3 = "5511999888777";
-    await orquestrator.authService.handleGoogleRedirect(
-      encryption.encrypt(id3),
-      "rightCode",
+    const state = await createAppGoogleLoginState(
+      orquestrator.authService,
+      id3,
     );
-    result = await orquestrator.authService.handleGoogleLogin(id3);
+    await orquestrator.authService.handleGoogleRedirect(state, "rightCode");
+    const challenge3 = await createAppGoogleLoginChallenge(
+      orquestrator.authService,
+      id3,
+    );
+    const refreshSpy = vi.spyOn(orquestrator.googleAuthGateway, "refreshToken");
+    const syncSpy = vi.spyOn(
+      orquestrator.identityChatCoordinator,
+      "syncUserChatAddresses",
+    );
+    result = await orquestrator.authService.handleGoogleLogin(challenge3);
     expect(result.type).toBe("alreadySignedIn");
+    expect(refreshSpy).not.toHaveBeenCalled();
+    expect(syncSpy).not.toHaveBeenCalled();
+    await expect(
+      orquestrator.authService.handleGoogleLogin(challenge3),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+    refreshSpy.mockRestore();
+    syncSpy.mockRestore();
   });
 
   test("handleGoogleRedirect", async () => {
     await orquestrator.clearDatabase();
-    const encryption = new Encryption(orquestrator.encryptionConfig);
 
     const phoneNumber1 = "5511984444444";
-    const state = encryption.encrypt(phoneNumber1);
-    let result = await orquestrator.authService.handleGoogleRedirect(
+    const state = await createAppGoogleLoginState(
+      orquestrator.authService,
+      phoneNumber1,
+    );
+    const result = await orquestrator.authService.handleGoogleRedirect(
       state,
       "rightCode",
     );
@@ -203,16 +323,17 @@ describe("AuthService", () => {
     expect(users[0]?.googleCredential).toBeDefined();
 
     const phoneNumber2 = "5511987654321";
-    const state2 = encryption.encrypt(phoneNumber2);
+    const state2 = await createAppGoogleLoginState(
+      orquestrator.authService,
+      phoneNumber2,
+    );
     await expect(
       orquestrator.authService.handleGoogleRedirect(state2, "wrongCode"),
     ).rejects.toThrow();
 
-    result = await orquestrator.authService.handleGoogleRedirect(
-      state,
-      "rightCode",
-    );
-    expect(result.type).toBe("success");
+    await expect(
+      orquestrator.authService.handleGoogleRedirect(state, "rightCode"),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
     users = await orquestrator.authService.getUsers();
     expect(users.length).toBe(1);
     expect(users[0]?.googleCredential).toBeDefined();
@@ -220,57 +341,39 @@ describe("AuthService", () => {
 
   test("handleGoogleRedirect persists email for new user", async () => {
     await orquestrator.clearDatabase();
-    const encryption = new Encryption(orquestrator.encryptionConfig);
     const phoneNumber = "5511984444444";
-
-    await orquestrator.authService.handleGoogleRedirect(
-      encryption.encrypt(phoneNumber),
-      "rightCode",
+    const state = await createAppGoogleLoginState(
+      orquestrator.authService,
+      phoneNumber,
     );
+
+    await orquestrator.authService.handleGoogleRedirect(state, "rightCode");
     const users = await orquestrator.authService.getUsers();
     expect(users.length).toBe(1);
     expect(users[0]?.email).toBe("savegooglecredentials@example.com");
   });
 
-  test("handleGoogleRedirect backfills email on existing user", async () => {
+  test("handleGoogleRedirect backfills email on an existing unlinked user", async () => {
     await orquestrator.clearDatabase();
-    const encryption = new Encryption(orquestrator.encryptionConfig);
     const id = "5511984444444";
+    await orquestrator.authService.createUser(new User("Existing User", id));
+    const state = await createAppGoogleLoginState(orquestrator.authService, id);
 
-    await orquestrator.authService.handleGoogleRedirect(
-      encryption.encrypt(id),
-      "rightCode",
-    );
-    let user = await orquestrator.authService.getUserByPhoneNumber(id);
-    expect(user?.email).toBe("savegooglecredentials@example.com");
-
-    // Simulate a legacy user that was stored without an email.
-    await orquestrator.database
-      .sql`UPDATE users SET email = NULL WHERE phone_number = ${id}`;
-    user = await orquestrator.authService.getUserByPhoneNumber(id);
-    expect(user?.email).toBeUndefined();
-
-    await orquestrator.authService.handleGoogleRedirect(
-      encryption.encrypt(id),
-      "rightCode",
-    );
-    user = await orquestrator.authService.getUserByPhoneNumber(id);
+    await orquestrator.authService.handleGoogleRedirect(state, "rightCode");
+    const user = await orquestrator.authService.getUserByPhoneNumber(id);
     expect(user?.email).toBe("savegooglecredentials@example.com");
   });
 
   test("handleGoogleRedirect rejects mismatched email for existing user", async () => {
     await orquestrator.clearDatabase();
-    const encryption = new Encryption(orquestrator.encryptionConfig);
     const id = "5511984444444";
     const user = new User("Irwin Arruda", id);
     user.email = "another@example.com";
     await orquestrator.authService.createUser(user);
+    const state = await createAppGoogleLoginState(orquestrator.authService, id);
 
     await expect(
-      orquestrator.authService.handleGoogleRedirect(
-        encryption.encrypt(id),
-        "rightCode",
-      ),
+      orquestrator.authService.handleGoogleRedirect(state, "rightCode"),
     ).rejects.toBeInstanceOf(UnauthorizedException);
 
     const unchangedUser =
@@ -321,13 +424,10 @@ describe("AuthService", () => {
 
   test("handleWebGoogleRedirect returns user and valid token for existing credentialed user", async () => {
     await orquestrator.clearDatabase();
-    const encryption = new Encryption(orquestrator.encryptionConfig);
     const id = "5511999888777";
+    const state = await createAppGoogleLoginState(orquestrator.authService, id);
 
-    await orquestrator.authService.handleGoogleRedirect(
-      encryption.encrypt(id),
-      "rightCode",
-    );
+    await orquestrator.authService.handleGoogleRedirect(state, "rightCode");
     const user = await orquestrator.authService.getUserByPhoneNumber(id);
     expect(user).toBeDefined();
 
@@ -342,11 +442,11 @@ describe("AuthService", () => {
 
   test("handleWebGoogleRedirect exchanges code with the web redirect target", async () => {
     await orquestrator.clearDatabase();
-    const encryption = new Encryption(orquestrator.encryptionConfig);
-    await orquestrator.authService.handleGoogleRedirect(
-      encryption.encrypt("5511999888777"),
-      "rightCode",
+    const state = await createAppGoogleLoginState(
+      orquestrator.authService,
+      "5511999888777",
     );
+    await orquestrator.authService.handleGoogleRedirect(state, "rightCode");
     const gateway = orquestrator.googleAuthGateway;
     const spy = vi.spyOn(gateway, "exchangeCodeForTokens");
 
@@ -382,17 +482,44 @@ describe("AuthService", () => {
     await expect(
       orquestrator.authService.authenticateWebUser(incompleteToken),
     ).rejects.toBeInstanceOf(UnauthorizedException);
+
+    const expiredJwt = new Jwt({
+      ...orquestrator.jwtConfig,
+      expiresIn: "0s",
+    });
+    const expiredToken = await expiredJwt.sign({
+      userId: "expired-user-id",
+      email: "expired@example.com",
+      purpose: "web-auth",
+    });
+    await expect(
+      orquestrator.authService.authenticateWebUser(expiredToken),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  test("authenticateWebUser rejects tokens with another purpose", async () => {
+    await orquestrator.clearDatabase();
+    const user = new User("Irwin Arruda", "5511984444444");
+    user.email = "user@example.com";
+    await orquestrator.authService.createUser(user);
+    const jwt = new Jwt(orquestrator.jwtConfig);
+    const token = await jwt.sign({
+      userId: user.id,
+      email: user.email,
+      purpose: "another-purpose",
+    });
+
+    await expect(
+      orquestrator.authService.authenticateWebUser(token),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
   test("handleWebGoogleRedirect updates credentials for an eligible user", async () => {
     await orquestrator.clearDatabase();
-    const encryption = new Encryption(orquestrator.encryptionConfig);
     const id = "5511984444444";
+    const state = await createAppGoogleLoginState(orquestrator.authService, id);
 
-    await orquestrator.authService.handleGoogleRedirect(
-      encryption.encrypt(id),
-      "rightCode",
-    );
+    await orquestrator.authService.handleGoogleRedirect(state, "rightCode");
     const token =
       await orquestrator.authService.handleWebGoogleRedirect("rightCode");
     const authenticatedUser =
@@ -407,13 +534,10 @@ describe("AuthService", () => {
 
   test("handleWebGoogleRedirect returns the matching email user", async () => {
     await orquestrator.clearDatabase();
-    const encryption = new Encryption(orquestrator.encryptionConfig);
     const id = "5511984444444";
+    const state = await createAppGoogleLoginState(orquestrator.authService, id);
 
-    await orquestrator.authService.handleGoogleRedirect(
-      encryption.encrypt(id),
-      "rightCode",
-    );
+    await orquestrator.authService.handleGoogleRedirect(state, "rightCode");
     const user = await orquestrator.authService.getUserByPhoneNumber(id);
     expect(user).toBeDefined();
 
@@ -427,13 +551,10 @@ describe("AuthService", () => {
 
   test("handleWebGoogleRedirect returns user and valid token", async () => {
     await orquestrator.clearDatabase();
-    const encryption = new Encryption(orquestrator.encryptionConfig);
     const id = "5511984444444";
+    const state = await createAppGoogleLoginState(orquestrator.authService, id);
 
-    await orquestrator.authService.handleGoogleRedirect(
-      encryption.encrypt(id),
-      "rightCode",
-    );
+    await orquestrator.authService.handleGoogleRedirect(state, "rightCode");
     const user = await orquestrator.authService.getUserByPhoneNumber(id);
     expect(user).toBeDefined();
 
@@ -448,20 +569,22 @@ describe("AuthService", () => {
     expect(authenticatedUser.phoneNumber).toBe(user?.phoneNumber);
   });
 
-  test("handleWebGoogleRedirect rejects matching email users without Google credentials", async () => {
+  test("handleWebGoogleRedirect restores credentials for a matching email user", async () => {
     await orquestrator.clearDatabase();
     const user = new User("Irwin Arruda", "5511984444444");
     user.email = "savegooglecredentials@example.com";
     await orquestrator.authService.createUser(user);
 
-    await expect(
-      orquestrator.authService.handleWebGoogleRedirect("rightCode"),
-    ).rejects.toBeInstanceOf(NotFoundException);
+    const token =
+      await orquestrator.authService.handleWebGoogleRedirect("rightCode");
+    const authenticated =
+      await orquestrator.authService.authenticateWebUser(token);
 
-    const unchangedUser =
+    const restoredUser =
       await orquestrator.authService.getUserByPhoneNumber("5511984444444");
-    expect(unchangedUser?.email).toBe("savegooglecredentials@example.com");
-    expect(unchangedUser?.googleCredential).toBeUndefined();
+    expect(authenticated.id).toBe(user.id);
+    expect(restoredUser?.email).toBe("savegooglecredentials@example.com");
+    expect(restoredUser?.googleCredential).toBeDefined();
   });
 
   test("handleWebGoogleRedirect rejects unknown emails without creating users", async () => {
@@ -506,13 +629,33 @@ describe("AuthService", () => {
     ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
+  test("authenticateWebUser rejects inactive users", async () => {
+    await orquestrator.clearDatabase();
+    const user = new User("Irwin Arruda", "5511984444444");
+    user.email = "user@example.com";
+    await orquestrator.authService.createUser(user);
+    const token = await orquestrator.authService.createWebToken(user);
+    await orquestrator.database.sql`
+      UPDATE users
+      SET is_inactive = true
+      WHERE id = ${user.id}
+    `;
+
+    await expect(
+      orquestrator.authService.authenticateWebUser(token),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
   test("auth validation paths reject empty inputs and missing credentials", async () => {
+    await expect(orquestrator.authService.getAppLoginUrl("")).rejects.toThrow(
+      "Login provider ID is required",
+    );
     await expect(
       orquestrator.authService.handleGoogleLogin(""),
-    ).rejects.toThrow("Login provider ID is required");
+    ).rejects.toBeInstanceOf(UnauthorizedException);
     await expect(
       orquestrator.authService.handleGoogleRedirect("", "rightCode"),
-    ).rejects.toThrow("Login provider ID is required");
+    ).rejects.toBeInstanceOf(UnauthorizedException);
 
     const user = new User("Irwin Arruda", "5511984444444");
     await expect(
@@ -522,9 +665,11 @@ describe("AuthService", () => {
 
   test("handleGoogleRedirect creates user with email and BSUID when phone is absent", async () => {
     await orquestrator.clearDatabase();
-    const encryption = new Encryption(orquestrator.encryptionConfig);
     const bsuid = "BR.13491208655302741918";
-    const state = encryption.encrypt(bsuid);
+    const state = await createAppGoogleLoginState(
+      orquestrator.authService,
+      bsuid,
+    );
 
     await orquestrator.authService.handleGoogleRedirect(state, "rightCode");
     const user = await orquestrator.authService.getUserByBsuid(bsuid);
@@ -535,16 +680,16 @@ describe("AuthService", () => {
 
   test("handleGoogleRedirect links an existing email user to the app BSUID", async () => {
     await orquestrator.clearDatabase();
-    const encryption = new Encryption(orquestrator.encryptionConfig);
     const bsuid = "BR.13491208655302741918";
     const email = "savegooglecredentials@example.com";
     const existingUser = new User("Existing User", undefined, email);
     await orquestrator.authService.createUser(existingUser);
-
-    await orquestrator.authService.handleGoogleRedirect(
-      encryption.encrypt(bsuid),
-      "rightCode",
+    const state = await createAppGoogleLoginState(
+      orquestrator.authService,
+      bsuid,
     );
+
+    await orquestrator.authService.handleGoogleRedirect(state, "rightCode");
 
     const users = await orquestrator.authService.getUsers();
     const userByEmail = await orquestrator.authService.getUserByEmail(email);
@@ -561,7 +706,6 @@ describe("AuthService", () => {
 
   test("handleGoogleRedirect rejects conflicting email and alias users", async () => {
     await orquestrator.clearDatabase();
-    const encryption = new Encryption(orquestrator.encryptionConfig);
     const id = "5511984444444";
     const emailUser = new User(
       "Email User",
@@ -572,12 +716,10 @@ describe("AuthService", () => {
     const aliasUser = new User("Alias User");
     aliasUser.bsuid = id;
     await orquestrator.authService.createUser(aliasUser);
+    const state = await createAppGoogleLoginState(orquestrator.authService, id);
 
     await expect(
-      orquestrator.authService.handleGoogleRedirect(
-        encryption.encrypt(id),
-        "rightCode",
-      ),
+      orquestrator.authService.handleGoogleRedirect(state, "rightCode"),
     ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
@@ -590,53 +732,6 @@ describe("AuthService", () => {
       await orquestrator.authService.authenticateWebUser(token);
     expect(authenticated.email).toBe("user@example.com");
     expect(authenticated.phoneNumber).toBeUndefined();
-  });
-
-  test("saveUserFromGoogleAuth throws if credential creation is bypassed unexpectedly", async () => {
-    await orquestrator.clearDatabase();
-    const user = new User("Irwin Arruda", "5511984444444", "user@example.com");
-    await orquestrator.authService.createUser(user);
-
-    const service = orquestrator.authService as unknown as {
-      saveUserFromGoogleAuth: (
-        providerId: string,
-        userToken: {
-          accessToken: string;
-          refreshToken: string;
-          expiresInSeconds?: number;
-        },
-        userinfo: { name: string; email: string },
-      ) => Promise<User>;
-      getUserByEmail: (email: string) => Promise<User | undefined>;
-      getUserByChatChannelAddress: (
-        providerId: string,
-      ) => Promise<User | undefined>;
-    };
-    const createGoogleCredential = user.createGoogleCredential.bind(user);
-    const getUserByEmail = service.getUserByEmail;
-    const getUserByChatChannelAddress = service.getUserByChatChannelAddress;
-    user.createGoogleCredential = () => {};
-    service.getUserByEmail = vi.fn().mockResolvedValue(undefined);
-    service.getUserByChatChannelAddress = vi.fn().mockResolvedValue(user);
-
-    await expect(
-      service.saveUserFromGoogleAuth(
-        "5511984444444",
-        {
-          accessToken: "access",
-          refreshToken: "refresh",
-          expiresInSeconds: 3600,
-        },
-        {
-          name: user.name,
-          email: user.email ?? "user@example.com",
-        },
-      ),
-    ).rejects.toBeInstanceOf(DeveloperException);
-
-    user.createGoogleCredential = createGoogleCredential;
-    service.getUserByEmail = getUserByEmail;
-    service.getUserByChatChannelAddress = getUserByChatChannelAddress;
   });
 
   test("deleteUserByChatChannelAddress deletes user by phone number", async () => {

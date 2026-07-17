@@ -81,6 +81,17 @@ export class MethodNotAllowedException extends AppError {
   }
 }
 
+export class UnsupportedMediaTypeException extends AppError {
+  constructor(message?: string, action?: string) {
+    super(
+      message ?? "The request content type is not supported.",
+      action ?? "Send the request with a supported content type.",
+      "UnsupportedMediaTypeException",
+      415,
+    );
+  }
+}
+
 export class InternalServerException extends AppError {
   constructor(cause?: Error, statusCode = 500) {
     super(

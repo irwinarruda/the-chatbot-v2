@@ -26,7 +26,7 @@ export const routes = rootRoute("shared/client/routes/__root.tsx", [
     "/api/v1/whatsapp/webhook",
     "shared/http/controllers/whatsapp-webhook.ts",
   ),
-  route("/api/v1/google/login", "shared/http/controllers/google-login.ts"),
+  route("/g/$challenge", "shared/http/controllers/google-login.ts"),
   route(
     "/api/v1/google/redirect",
     "shared/http/controllers/google-redirect.ts",

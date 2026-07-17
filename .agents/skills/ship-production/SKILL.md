@@ -5,8 +5,9 @@ description: "Publish The Chatbot changes directly to main, wait for the exact V
 
 # Ship Production
 
-Ship one verified commit through production. Keep the order strict so browser
-checks cannot accidentally exercise the previous deployment.
+Ship verified releases through production. Keep the order strict so browser checks
+cannot accidentally exercise the previous deployment, and split schema-dependent
+work into separate releases when one commit would create a compatibility gap.
 
 ## Preconditions
 
@@ -19,14 +20,38 @@ checks cannot accidentally exercise the previous deployment.
 - Require `PRODUCTION_WEB_AUTH_TOKEN` in `.env.production` before authenticated
   browser checks. Never print or echo it.
 - Prefer also keeping the production `JWT_SECRET` in `.env.production`. The
-  browser helper can then refresh an expired saved token locally. Without that
-  secret, the saved token must still be valid.
+  browser helper can then refresh an expired or legacy saved token locally into
+  the current issuer, audience, and `purpose: "web-auth"` contract. Without that
+  secret, the saved token must still be valid and already use the current contract.
 
-For the one-time user setup, log in manually, copy only the `web_auth_token`
-cookie value into `PRODUCTION_WEB_AUTH_TOKEN` in `.env.production`, and close the
-browser developer tools. The agent must not inspect browser cookies or perform
-this extraction. Keep the same `JWT_SECRET` used by production in that file so
-later agents can refresh the saved token without repeating Google login.
+For the one-time user setup, log in manually, copy only the
+`__Host-web_auth_token` cookie value into `PRODUCTION_WEB_AUTH_TOKEN` in
+`.env.production`, and close the browser developer tools.
+`PRODUCTION_WEB_AUTH_TOKEN` remains the local environment variable that stores only
+the cookie value. The agent must not inspect browser cookies or perform this
+extraction. Keep the same `JWT_SECRET` used by production in that file so later
+agents can refresh the saved token without repeating Google login.
+
+## Migration compatibility gate
+
+Decide deployment order before committing whenever the change includes migrations.
+The production migration endpoint only sees migrations bundled in the currently
+deployed commit, so a pre-deploy status check cannot apply a new local migration.
+
+- If new application code reads or writes new schema, first ship an expand release
+  containing the migration and only code that remains compatible with the old
+  schema. Wait for that release, apply and verify the migration, then ship the
+  application release that depends on it.
+- If a migration removes or changes schema used by the current application, first
+  ship application code that no longer depends on it. Apply the contracting
+  migration in a later release.
+- If new writes make the previous application unable to read persisted data, use a
+  dual-read/dual-write transition. Treat a roll-forward-only cutover as an explicit
+  risk that requires the user's authorization, a recoverable database backup, and
+  verified retention of every required encryption key.
+
+Do not accept a temporary production failure between deployment and migration as a
+normal release step.
 
 ## Delivery workflow
 
@@ -65,7 +90,9 @@ later agents can refresh the saved token without repeating Google login.
    This command verifies pending migration names exist in the checked-out commit,
    applies them through the deployed migration endpoint, and checks that none
    remain. Do not use a direct production database command for this workflow.
-9. Verify the deployed behavior with the Codex in-app browser.
+9. When this was an expand release, finish and validate the application release,
+   then repeat the commit, push, exact-deployment wait, and migration-status checks.
+10. Verify the deployed behavior with the Codex in-app browser.
 
 Stop and report the exact failure when validation, push, deployment waiting, or
 migration verification fails. Do not continue to browser verification after a

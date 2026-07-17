@@ -29,7 +29,6 @@ import type {
   AuthConfig,
   Config,
   DatabaseConfig,
-  EncryptionConfig,
   GoogleConfig,
   GoogleSheetsConfig,
   JwtConfig,
@@ -51,7 +50,6 @@ export class Orquestrator {
   database: Database;
 
   databaseConfig: DatabaseConfig;
-  encryptionConfig: EncryptionConfig;
   googleConfig: GoogleConfig;
   googleSheetsConfig: GoogleSheetsConfig;
   aiConfig: AiConfig;
@@ -80,7 +78,6 @@ export class Orquestrator {
     });
 
     this.databaseConfig = this.config.database;
-    this.encryptionConfig = this.config.encryption;
     this.googleConfig = this.config.google;
     this.googleSheetsConfig = this.config.googleSheets;
     this.aiConfig = this.config.ai;

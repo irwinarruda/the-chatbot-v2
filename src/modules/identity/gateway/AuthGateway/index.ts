@@ -9,7 +9,7 @@ export type {
 } from "~/modules/identity/entities/dtos/AuthGatewayDTO";
 
 export interface AuthGateway {
-  getAppLoginUrl(id: string): string;
+  getAppLoginUrl(challenge: string): string;
   createAuthorizationCodeUrl(
     state?: string,
     redirectTarget?: "app" | "web",

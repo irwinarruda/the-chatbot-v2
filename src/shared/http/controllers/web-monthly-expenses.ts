@@ -7,6 +7,7 @@ import {
   MonthlyExpensesResponseDTO,
 } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
 import { Http } from "~/shared/http/utils/Http";
+import { parseJsonRequest } from "~/shared/http/utils/JsonRequest";
 
 export const Route = createFileRoute("/api/v1/web/monthly-expenses")({
   server: {
@@ -32,7 +33,9 @@ export const Route = createFileRoute("/api/v1/web/monthly-expenses")({
       async POST({ request, context }) {
         const service =
           ServerBootstrap.getApplication().services.monthlyExpenses;
-        const body = CreateMonthlyExpenseRequestDTO.parse(await request.json());
+        const body = CreateMonthlyExpenseRequestDTO.parse(
+          await parseJsonRequest(request),
+        );
         const expense = await service.createMonthlyExpense({
           idUser: context.webAuth.userId,
           name: body.name,

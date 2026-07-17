@@ -21,6 +21,13 @@ Always create migration files with `bun run migrate:create -- <name>`, then
 edit the generated file. Never create a migration file manually or invent its
 timestamp/filename.
 
+## Production Constraints
+
+This project is used in production by one person. Backward compatibility is not
+required, so prefer direct migrations and refactors over compatibility layers.
+However, data loss is NEVER acceptable: preserve and migrate all existing
+production data before changing or removing storage, schemas, or contracts.
+
 ## Git
 
 All commit messages MUST follow the Conventional Commits specification. Use

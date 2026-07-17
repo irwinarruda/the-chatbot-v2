@@ -3,6 +3,7 @@ import { ServerBootstrap } from "~/infra/server-bootstrap";
 import { toMonthlyExpenseResponse } from "~/modules/cash-flow/contracts/MonthlyExpenseContractMapper";
 import { SetMonthlyExpensePaidRequestDTO } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
 import { Http } from "~/shared/http/utils/Http";
+import { parseJsonRequest } from "~/shared/http/utils/JsonRequest";
 
 export const Route = createFileRoute(
   "/api/v1/web/monthly-expenses/$expenseId/payment",
@@ -13,7 +14,7 @@ export const Route = createFileRoute(
         const service =
           ServerBootstrap.getApplication().services.monthlyExpenses;
         const body = SetMonthlyExpensePaidRequestDTO.parse(
-          await request.json(),
+          await parseJsonRequest(request),
         );
         const expense = await service.setMonthlyExpensePaid(
           context.webAuth.userId,

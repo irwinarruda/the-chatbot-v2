@@ -7,6 +7,8 @@ import { decodeJwt, jwtVerify, SignJWT } from "jose";
 const skillDirectory = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const defaultRoot = resolve(skillDirectory, "..", "..", "..");
 const defaultProductionUrl = "https://the-chatbot.irwinarruda.com";
+const webAuthTokenAudience = "the-chatbot-web";
+const webAuthTokenIssuer = "the-chatbot";
 
 function requireValue(values, key) {
   const value = values[key]?.trim();
@@ -31,6 +33,7 @@ function requireIdentity(payload) {
   const identity = {
     userId: payload.userId,
     email: payload.email,
+    purpose: "web-auth",
   };
   if (typeof payload.phoneNumber === "string" && payload.phoneNumber) {
     identity.phoneNumber = payload.phoneNumber;
@@ -53,6 +56,8 @@ async function refreshToken(savedToken, jwtSecret, expiresIn) {
   return new SignJWT(identity)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
+    .setIssuer(webAuthTokenIssuer)
+    .setAudience(webAuthTokenAudience)
     .setExpirationTime(expiresIn)
     .sign(secret);
 }
@@ -62,6 +67,15 @@ function assertTokenIsActive(token) {
   if (typeof payload.exp !== "number" || payload.exp <= Date.now() / 1_000) {
     throw new Error(
       "PRODUCTION_WEB_AUTH_TOKEN is expired and JWT_SECRET is not configured in .env.production",
+    );
+  }
+  if (
+    payload.purpose !== "web-auth" ||
+    payload.iss !== webAuthTokenIssuer ||
+    payload.aud !== webAuthTokenAudience
+  ) {
+    throw new Error(
+      "PRODUCTION_WEB_AUTH_TOKEN uses the legacy web auth contract; configure JWT_SECRET to refresh it or save a new __Host-web_auth_token value",
     );
   }
   requireIdentity(payload);
@@ -95,13 +109,13 @@ export async function createProductionWebAuthCookie(options = {}) {
   return {
     url: productionUrl.href,
     cookie: {
-      name: "web_auth_token",
+      name: "__Host-web_auth_token",
       value: token,
       url: new URL("/", productionUrl).href,
       path: "/",
       secure: true,
       httpOnly: true,
-      sameSite: "None",
+      sameSite: "Lax",
       expires: payload.exp,
     },
   };

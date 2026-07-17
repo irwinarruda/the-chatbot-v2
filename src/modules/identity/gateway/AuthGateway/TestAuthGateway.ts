@@ -14,10 +14,8 @@ export class TestAuthGateway implements AuthGateway {
     this.googleConfig = googleConfig;
   }
 
-  getAppLoginUrl(id: string): string {
-    const url = new URL(this.googleConfig.loginUri);
-    url.searchParams.set("id", id);
-    return url.toString();
+  getAppLoginUrl(challenge: string): string {
+    return new URL(`/g/${challenge}`, this.googleConfig.loginUri).toString();
   }
 
   createAuthorizationCodeUrl(

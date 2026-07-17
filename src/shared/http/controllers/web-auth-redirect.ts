@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Cookie } from "~/infra/cookie";
 import { ServerBootstrap } from "~/infra/server-bootstrap";
 import { Http } from "~/shared/http/utils/Http";
-
-const AUTH_COOKIE = "web_auth_token";
+import {
+  deleteWebAuthCookie,
+  setWebAuthCookie,
+} from "~/shared/http/utils/WebAuthCookie";
 
 export const Route = createFileRoute("/api/v1/web/auth/redirect")({
   server: {
@@ -17,19 +18,14 @@ export const Route = createFileRoute("/api/v1/web/auth/redirect")({
           token = await authService.handleWebGoogleRedirect(code);
         } catch {
           const headers = new Headers();
-          Cookie.delete(headers, AUTH_COOKIE);
+          deleteWebAuthCookie(headers, request);
           return Http.redirect(
             new URL("/chat/not-registered", request.url).href,
             { headers },
           );
         }
         const headers = new Headers();
-        const isSecure = url.protocol === "https:";
-        Cookie.set(headers, AUTH_COOKIE, token, {
-          maxAge: 7 * 24 * 60 * 60,
-          secure: isSecure,
-          sameSite: isSecure ? "None" : "Lax",
-        });
+        setWebAuthCookie(headers, request, token);
         return Http.redirect(new URL("/chat", request.url).href, { headers });
       },
     },

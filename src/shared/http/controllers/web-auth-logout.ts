@@ -1,15 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Cookie } from "~/infra/cookie";
 import { Http } from "~/shared/http/utils/Http";
-
-const AUTH_COOKIE = "web_auth_token";
+import { deleteWebAuthCookie } from "~/shared/http/utils/WebAuthCookie";
 
 export const Route = createFileRoute("/api/v1/web/auth/logout")({
   server: {
     handlers: {
-      async POST() {
+      async POST({ request }) {
         const headers = new Headers();
-        Cookie.delete(headers, AUTH_COOKIE);
+        deleteWebAuthCookie(headers, request);
         return Http.json(undefined, { status: 200, headers });
       },
     },

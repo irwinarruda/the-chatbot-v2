@@ -26,10 +26,8 @@ export class GoogleAuthGateway implements AuthGateway {
     );
   }
 
-  getAppLoginUrl(id: string): string {
-    const url = new URL(this.loginUri);
-    url.searchParams.set("id", id);
-    return url.toString();
+  getAppLoginUrl(challenge: string): string {
+    return new URL(`/g/${challenge}`, this.loginUri).toString();
   }
 
   createAuthorizationCodeUrl(

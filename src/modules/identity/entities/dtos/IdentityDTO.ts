@@ -15,6 +15,7 @@ export interface WebAuthTokenPayloadDTO {
   userId: string;
   email: string;
   phoneNumber?: string;
+  purpose: "web-auth";
 }
 
 export interface SyncUserChatAddressesDTO {

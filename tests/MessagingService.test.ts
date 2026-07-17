@@ -10,9 +10,9 @@ import { Message } from "~/modules/chat/entities/Message";
 import { TestWhatsAppMessagingGateway } from "~/modules/chat/gateway/WhatsAppMessagingGateway/TestWhatsAppMessagingGateway";
 import type { AiToolService } from "~/modules/chat/services/AiToolService";
 import { User } from "~/modules/identity/entities/User";
-import { Encryption } from "~/modules/identity/services/Encryption";
 import { UnauthorizedException } from "~/shared/errors/ApplicationErrors";
 import { ValidationException } from "~/shared/errors/DomainErrors";
+import { createAppGoogleLoginState } from "./createAppGoogleLoginState";
 import { orquestrator } from "./orquestrator";
 
 function createReceiveMessage(message: string): string {
@@ -93,7 +93,8 @@ describe("MessagingService", () => {
     let botMessage = chat?.messages[1];
     expect(botMessage).toBeDefined();
     expect(botMessage?.text).toContain("\ud83d\udc4b");
-    expect(botMessage?.text).toContain("id=5511984444444");
+    expect(botMessage?.text).toMatch(/\/g\/[A-Za-z0-9_-]{22}/);
+    expect(botMessage?.text).not.toContain(phoneNumber);
 
     const user = await orquestrator.createUser({ phoneNumber });
     await orquestrator.messagingService.receiveWhatsAppMessage(
@@ -367,7 +368,8 @@ describe("MessagingService", () => {
       createReceiveMessage("WhatsApp history"),
       "sig",
     );
-    const state = new Encryption(orquestrator.encryptionConfig).encrypt(
+    const state = await createAppGoogleLoginState(
+      orquestrator.authService,
       phoneNumber,
     );
     await orquestrator.authService.handleGoogleRedirect(state, "rightCode");

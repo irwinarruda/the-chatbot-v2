@@ -3,6 +3,7 @@ import { ServerBootstrap } from "~/infra/server-bootstrap";
 import { toTodoResponse } from "~/modules/todos/contracts/TodoContractMapper";
 import { SaveTodoRequestDTO } from "~/modules/todos/entities/dtos/TodoDTO";
 import { Http } from "~/shared/http/utils/Http";
+import { parseJsonRequest } from "~/shared/http/utils/JsonRequest";
 
 export const Route = createFileRoute("/api/v1/web/todos/$todoId")({
   server: {
@@ -17,7 +18,7 @@ export const Route = createFileRoute("/api/v1/web/todos/$todoId")({
       },
       async PATCH({ request, context, params }) {
         const todoService = ServerBootstrap.getApplication().services.todos;
-        const body = SaveTodoRequestDTO.parse(await request.json());
+        const body = SaveTodoRequestDTO.parse(await parseJsonRequest(request));
         const patch: Parameters<typeof todoService.updateTodo>[0] = {
           idUser: context.webAuth.userId,
           id: params.todoId,

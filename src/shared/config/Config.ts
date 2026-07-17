@@ -12,11 +12,19 @@ export const deploymentConfigSchema = z.object({
 });
 export type DeploymentConfig = z.infer<typeof deploymentConfigSchema>;
 
-export const encryptionConfigSchema = z.object({
-  text32Bytes: z.string().min(1),
-  text16Bytes: z.string().min(1),
+const googleCredentialEncryptionKeySchema = z
+  .base64()
+  .refine(
+    (value) => Buffer.from(value, "base64").length === 32,
+    "The Google credential encryption key must decode to exactly 32 bytes",
+  );
+
+export const googleCredentialEncryptionConfigSchema = z.object({
+  key: googleCredentialEncryptionKeySchema,
 });
-export type EncryptionConfig = z.infer<typeof encryptionConfigSchema>;
+export type GoogleCredentialEncryptionConfig = z.infer<
+  typeof googleCredentialEncryptionConfigSchema
+>;
 
 export const googleConfigSchema = z.object({
   clientId: z.string().min(1),
@@ -94,7 +102,7 @@ export type JwtConfig = z.infer<typeof jwtConfigSchema>;
 export const configSchema = z.object({
   database: databaseConfigSchema,
   deployment: deploymentConfigSchema,
-  encryption: encryptionConfigSchema,
+  googleCredentialEncryption: googleCredentialEncryptionConfigSchema,
   google: googleConfigSchema,
   whatsApp: whatsAppConfigSchema,
   r2: r2ConfigSchema,
@@ -118,9 +126,8 @@ export function loadConfig(): Config {
     deployment: {
       commitSha: process.env.VERCEL_GIT_COMMIT_SHA,
     },
-    encryption: {
-      text32Bytes: process.env.ENCRYPTION_TEXT_32_BYTES,
-      text16Bytes: process.env.ENCRYPTION_TEXT_16_BYTES,
+    googleCredentialEncryption: {
+      key: process.env.GOOGLE_CREDENTIAL_ENCRYPTION_KEY,
     },
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID,

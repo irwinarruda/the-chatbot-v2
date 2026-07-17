@@ -4,6 +4,7 @@ import { toChatMessagesResponse } from "~/modules/chat/contracts/ChatContractMap
 import { SendWebMessageRequestDTO } from "~/modules/chat/entities/dtos/ChatDTO";
 import { ChatChannel } from "~/modules/chat/entities/enums/ChatChannel";
 import { Http } from "~/shared/http/utils/Http";
+import { parseJsonRequest } from "~/shared/http/utils/JsonRequest";
 
 export const Route = createFileRoute("/api/v1/web/messages")({
   server: {
@@ -22,7 +23,7 @@ export const Route = createFileRoute("/api/v1/web/messages")({
           ServerBootstrap.getApplication().services.messaging;
         const chat = await messagingService.receiveWebMessage(
           context.webAuth.email,
-          SendWebMessageRequestDTO.parse(await request.json()),
+          SendWebMessageRequestDTO.parse(await parseJsonRequest(request)),
         );
         return Http.json(toChatMessagesResponse(chat));
       },

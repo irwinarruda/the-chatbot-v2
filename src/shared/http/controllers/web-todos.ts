@@ -7,6 +7,7 @@ import {
 } from "~/modules/todos/entities/dtos/TodoDTO";
 import { TodoStatus } from "~/modules/todos/entities/enums/TodoStatus";
 import { Http } from "~/shared/http/utils/Http";
+import { parseJsonRequest } from "~/shared/http/utils/JsonRequest";
 
 export const Route = createFileRoute("/api/v1/web/todos")({
   server: {
@@ -34,7 +35,9 @@ export const Route = createFileRoute("/api/v1/web/todos")({
       },
       async POST({ request, context }) {
         const todoService = ServerBootstrap.getApplication().services.todos;
-        const body = CreateTodoRequestDTO.parse(await request.json());
+        const body = CreateTodoRequestDTO.parse(
+          await parseJsonRequest(request),
+        );
         const todo = await todoService.createTodo({
           idUser: context.webAuth.userId,
           name: body.name,
