@@ -55,6 +55,10 @@ deployed application in the Codex in-app browser. Follow its workflow in order;
 do not inspect the web UI until `production:wait` confirms the exact pushed
 commit.
 
+Load `browser-test-local-production` instead when the user asks to deploy and
+browser-test local or uncommitted code without committing or pushing. Its default
+isolated deployment must not change the canonical production domain.
+
 ## Testing
 
 Tests run serially (`fileParallelism: false`) with a 30s timeout. Entity, Service, and DTO tests must stay deterministic and infrastructure-free. PostgreSQL integration tests own their schema reset/migration lifecycle and require a running test database.
@@ -78,6 +82,7 @@ Load the project skill that owns the decision before changing code:
 - `client-state-management` — URL/Zustand/local state, async actions, optimistic state, realtime reduction, browser lifecycles, and SSR hydration.
 - `client-jsx-styleguide` — React/TSX, terminal visual system, shared UI primitives, layout, responsive behavior, accessibility, and interaction design.
 - `app-tests` — Vitest/PostgreSQL test levels, placement, harnesses, fakes, fixtures, assertions, and integration policy.
+- `browser-test-local-production` — isolated Vercel deployment of an uncommitted working tree, `.env.production` browser authentication, and exact-URL browser verification without changing the production domain.
 - `ship-production` — direct `main` publishing, exact Vercel deployment waiting, production migrations, browser authentication, and deployed UI verification.
 
 Use multiple skills when a change crosses concerns. Local project skills take precedence over generic preferences.

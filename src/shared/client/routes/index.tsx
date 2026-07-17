@@ -20,6 +20,7 @@ export const Route = createFileRoute("/")({
 function IndexRoute() {
   const dictionary = useDictionary();
   const t = dictionary.welcomePage;
+
   return (
     <TerminalWindow
       title={t.windowTitle}

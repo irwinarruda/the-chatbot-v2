@@ -1,6 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ServerBootstrap } from "~/infra/server-bootstrap";
-import { toTodoResponse } from "~/modules/todos/contracts/TodoContractMapper";
+import {
+  toTodoDueDate,
+  toTodoResponse,
+} from "~/modules/todos/contracts/TodoContractMapper";
 import { SaveTodoRequestDTO } from "~/modules/todos/entities/dtos/TodoDTO";
 import { Http } from "~/shared/http/utils/Http";
 import { parseJsonRequest } from "~/shared/http/utils/JsonRequest";
@@ -27,7 +30,7 @@ export const Route = createFileRoute("/api/v1/web/todos/$todoId")({
           status: body.status,
         };
         if ("dueDate" in body) {
-          patch.dueDate = body.dueDate ? new Date(body.dueDate) : undefined;
+          patch.dueDate = body.dueDate ? toTodoDueDate(body.dueDate) : null;
         }
         const todo = await todoService.updateTodo(patch);
         return Http.json({ todo: toTodoResponse(todo) });

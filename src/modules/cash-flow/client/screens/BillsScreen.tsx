@@ -4,12 +4,14 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  CircleAlert,
   CircleDollarSign,
   ListChecks,
   MessageSquare,
   Plus,
   ReceiptText,
   WalletCards,
+  X,
 } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 import {
@@ -28,9 +30,37 @@ import type { MonthlyExpenseErrorCode } from "~/modules/cash-flow/client/state/m
 import type { MonthlyExpenseDTO } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
 import { TerminalPageHeader } from "~/shared/client/components/terminal/TerminalPageHeader";
 import { TerminalWindow } from "~/shared/client/components/terminal/TerminalWindow";
-import { Alert, AlertDescription } from "~/shared/client/components/ui/alert";
+import {
+  Alert,
+  AlertAction,
+  AlertDescription,
+} from "~/shared/client/components/ui/alert";
+import { Badge } from "~/shared/client/components/ui/badge";
 import { Button } from "~/shared/client/components/ui/button";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "~/shared/client/components/ui/card";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "~/shared/client/components/ui/empty";
+import { Field, FieldLabel } from "~/shared/client/components/ui/field";
 import { Input } from "~/shared/client/components/ui/input";
+import { Progress } from "~/shared/client/components/ui/progress";
+import { Skeleton } from "~/shared/client/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "~/shared/client/components/ui/tooltip";
 import { getDictionary } from "~/shared/client/i18n";
 import { usePrefs } from "~/shared/client/providers/usePrefs";
 import { useApp } from "~/shared/client/stores";
@@ -150,205 +180,280 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
       mainClassName="items-stretch sm:items-start"
       title={t.windowTitle}
       wide
-      windowClassName="relative overflow-hidden p-4 sm:p-9 md:p-10"
+      windowClassName="relative overflow-hidden"
     >
       <TerminalPageHeader
         badge={
-          <div className="mt-3 flex flex-wrap justify-center gap-2 text-2xs sm:mt-4">
-            <span className="hidden border border-term-cyan/40 px-2 py-1 text-term-cyan capitalize sm:inline-flex">
-              {monthLabel}
-            </span>
-            <span className="border border-term-amber/40 px-2 py-1 text-term-amber">
-              {unpaidCount} {t.remaining}
-            </span>
-            <Link
-              className="inline-flex items-center gap-1 border border-term-blue/40 px-2 py-1 text-term-blue hover:border-term-cyan hover:text-term-cyan"
-              to="/chat"
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            <Badge
+              className="hidden gap-1.5 border-term-cyan/40 bg-term-cyan/5 text-term-cyan capitalize sm:inline-flex"
+              variant="outline"
             >
-              <MessageSquare className="size-3.5" />
+              {monthLabel}
+            </Badge>
+            <Badge
+              className="gap-1.5 border-term-amber/40 bg-term-amber/5 text-term-amber"
+              variant="outline"
+            >
+              {unpaidCount} {t.remaining}
+            </Badge>
+            <Badge
+              className="gap-1.5 border-term-blue/40 bg-term-blue/5 text-term-blue hover:border-term-cyan hover:bg-term-cyan/10 hover:text-term-cyan"
+              render={<Link to="/chat" />}
+              variant="outline"
+            >
+              <MessageSquare />
               {t.chatAction}
-            </Link>
+            </Badge>
           </div>
         }
         heading={t.heading}
         subtitle={t.subtitle}
         withLogo={false}
       />
-      {errorMessage && (
-        <Alert className="mb-4 border-term-red/30 bg-term-red/10">
-          <AlertDescription className="flex items-center justify-between gap-3 text-term-red">
-            <span>{errorMessage}</span>
-            <Button onClick={clearError} size="icon-xs" variant="ghost">
-              x
-            </Button>
-          </AlertDescription>
+      {errorMessage ? (
+        <Alert
+          className="mb-4 border-term-red/30 bg-term-red/10"
+          variant="destructive"
+        >
+          <CircleAlert />
+          <AlertDescription>{errorMessage}</AlertDescription>
+          <AlertAction>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    aria-label={dictionary.common.dismiss}
+                    onClick={clearError}
+                    size="icon-sm"
+                    type="button"
+                    variant="ghost"
+                  />
+                }
+              >
+                <X />
+              </TooltipTrigger>
+              <TooltipContent>{dictionary.common.dismiss}</TooltipContent>
+            </Tooltip>
+          </AlertAction>
         </Alert>
-      )}
-      <section
+      ) : null}
+      <Card
         aria-label={t.monthNavigationLabel}
-        className="mb-4 border border-term-border bg-term-chrome/50 p-3"
+        className="mb-4 gap-0 border-term-border bg-term-chrome/45 py-0 shadow-none"
+        size="sm"
       >
-        <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-end gap-2 sm:grid-cols-[auto_minmax(0,12rem)_auto_auto]">
-          <Button
-            aria-label={t.previousMonth}
-            onClick={() => onMonthSelect(shiftBillsMonth(selectedMonth, -1))}
-            size="icon"
-            type="button"
-            variant="outline"
+        <CardContent className="space-y-3 p-3">
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="flex min-w-0 flex-1 flex-wrap items-end gap-2">
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      aria-label={t.previousMonth}
+                      onClick={() =>
+                        onMonthSelect(shiftBillsMonth(selectedMonth, -1))
+                      }
+                      size="icon"
+                      type="button"
+                      variant="outline"
+                    />
+                  }
+                >
+                  <ChevronLeft />
+                </TooltipTrigger>
+                <TooltipContent>{t.previousMonth}</TooltipContent>
+              </Tooltip>
+              <Field className="min-w-0 flex-1 gap-1.5 sm:max-w-[12rem]">
+                <FieldLabel
+                  className="flex items-center gap-1.5 font-mono text-2xs text-term-muted uppercase tracking-wide"
+                  htmlFor="bills-month"
+                >
+                  <CalendarRange
+                    aria-hidden="true"
+                    className="size-3.5 text-term-cyan"
+                  />
+                  {t.monthLabel}
+                </FieldLabel>
+                <Input
+                  aria-describedby="bills-month-description"
+                  id="bills-month"
+                  max={currentMonth}
+                  onChange={(event) => onMonthSelect(event.target.value)}
+                  type="month"
+                  value={selectedMonth}
+                />
+              </Field>
+              <Tooltip>
+                <TooltipTrigger
+                  disabled={selectedMonth >= currentMonth}
+                  render={
+                    <Button
+                      aria-label={t.nextMonth}
+                      disabled={selectedMonth >= currentMonth}
+                      onClick={() =>
+                        onMonthSelect(shiftBillsMonth(selectedMonth, 1))
+                      }
+                      size="icon"
+                      type="button"
+                      variant="outline"
+                    />
+                  }
+                >
+                  <ChevronRight />
+                </TooltipTrigger>
+                <TooltipContent>{t.nextMonth}</TooltipContent>
+              </Tooltip>
+              {search.month !== undefined && (
+                <Button
+                  className="hidden sm:inline-flex"
+                  onClick={() => onMonthSelect(currentMonth)}
+                  type="button"
+                  variant="outline"
+                >
+                  {t.currentMonthAction}
+                </Button>
+              )}
+            </div>
+            {!isComposerOpen && (
+              <Button
+                className="w-full sm:ml-auto sm:w-auto"
+                onClick={() => setIsComposerOpen(true)}
+                type="button"
+              >
+                <Plus />
+                {t.createPrompt}
+              </Button>
+            )}
+          </div>
+          <p
+            className="mb-0 font-mono text-2xs text-term-muted"
+            id="bills-month-description"
           >
-            <ChevronLeft />
-          </Button>
-          <label className="space-y-1.5" htmlFor="bills-month">
-            <span className="flex items-center gap-1.5 text-2xs text-term-muted uppercase tracking-wide">
-              <CalendarRange className="size-3.5 text-term-cyan" />
-              {t.monthLabel}
-            </span>
-            <Input
-              id="bills-month"
-              max={currentMonth}
-              onChange={(event) => onMonthSelect(event.target.value)}
-              type="month"
-              value={selectedMonth}
-            />
-          </label>
-          <Button
-            aria-label={t.nextMonth}
-            disabled={selectedMonth >= currentMonth}
-            onClick={() => onMonthSelect(shiftBillsMonth(selectedMonth, 1))}
-            size="icon"
-            type="button"
-            variant="outline"
-          >
-            <ChevronRight />
-          </Button>
+            {t.monthHistoryHint}
+          </p>
           {search.month !== undefined && (
             <Button
-              className="hidden sm:inline-flex"
+              className="w-full sm:hidden"
               onClick={() => onMonthSelect(currentMonth)}
+              size="sm"
               type="button"
               variant="outline"
             >
               {t.currentMonthAction}
             </Button>
           )}
-        </div>
-        <p className="mt-2 mb-0 hidden text-2xs text-term-muted sm:block">
-          {t.monthHistoryHint}
-        </p>
-        {search.month !== undefined && (
-          <Button
-            className="mt-2 w-full sm:hidden"
-            onClick={() => onMonthSelect(currentMonth)}
-            size="sm"
-            type="button"
-            variant="outline"
-          >
-            {t.currentMonthAction}
-          </Button>
-        )}
-      </section>
-      <section className="mb-4 overflow-hidden border border-term-border bg-term-bg/55">
-        <div className="flex items-center justify-between gap-3 border-term-border border-b bg-term-chrome/60 p-3">
-          <div>
-            <div className="flex items-center gap-2 text-term-green text-xs uppercase tracking-wider">
-              <ListChecks className="size-3.5" />
-              {t.progressLabel}
-            </div>
-            <p className="mt-1 mb-0 text-2xs text-term-muted">
-              {paidCount} {t.of} {monthlyExpenses.length} {t.paidThisMonth}
-            </p>
-          </div>
-          <span className="font-semibold text-2xl text-term-green tabular-nums">
-            {progress}%
-          </span>
-        </div>
-        <div className="h-1.5 bg-term-border/60">
-          <div
-            aria-label={t.progressLabel}
-            aria-valuemax={100}
-            aria-valuemin={0}
-            aria-valuenow={progress}
-            className="h-full bg-term-green transition-[width] duration-500 motion-reduce:transition-none"
-            role="progressbar"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-        <div className="grid grid-cols-2 divide-x divide-y divide-term-border sm:grid-cols-4 sm:divide-y-0">
-          <SummaryItem
+        </CardContent>
+      </Card>
+      <Card
+        className="mb-4 gap-0 border-term-border bg-term-chrome/45 py-0 shadow-none"
+        size="sm"
+      >
+        <CardHeader className="border-term-border border-b px-3 py-3">
+          <CardTitle className="flex items-center gap-2 font-mono text-term-green text-xs uppercase tracking-wider">
+            <ListChecks aria-hidden="true" className="size-3.5" />
+            {t.progressLabel}
+          </CardTitle>
+          <CardDescription className="font-mono text-2xs text-term-muted">
+            {paidCount} {t.of} {monthlyExpenses.length} {t.paidThisMonth}
+          </CardDescription>
+          <CardAction>
+            <span className="font-mono font-semibold text-2xl text-term-green tabular-nums">
+              {progress}%
+            </span>
+          </CardAction>
+        </CardHeader>
+        <Progress
+          aria-label={t.progressLabel}
+          className="gap-0 px-0 [&_[data-slot=progress-indicator]]:bg-term-green [&_[data-slot=progress-indicator]]:motion-reduce:transition-none [&_[data-slot=progress-track]]:h-1.5 [&_[data-slot=progress-track]]:rounded-none [&_[data-slot=progress-track]]:bg-term-border/60"
+          value={progress}
+        />
+        <dl className="grid grid-cols-2 sm:grid-cols-4">
+          <SummaryMetric
             icon={<CheckCircle2 className="size-3.5 text-term-green" />}
             label={t.paid}
             value={paidCount.toString()}
           />
-          <SummaryItem
+          <SummaryMetric
             icon={<ReceiptText className="size-3.5 text-term-amber" />}
             label={t.unpaid}
             value={unpaidCount.toString()}
           />
-          <SummaryItem
+          <SummaryMetric
             icon={<WalletCards className="size-3.5 text-term-cyan" />}
             label={t.expectedTotal}
             value={currency.format(expectedTotal)}
           />
-          <SummaryItem
+          <SummaryMetric
             icon={<CircleDollarSign className="size-3.5 text-term-green" />}
             label={t.paidAmount}
             value={currency.format(paidTotal)}
           />
-        </div>
-      </section>
-      <section className="mb-4">
-        {isComposerOpen ? (
-          <div className="border border-term-green/25 bg-term-green/5 p-3 sm:p-4">
-            <div className="mb-4 flex items-center gap-2 text-2xs text-term-green uppercase tracking-wider">
-              <span>&gt;</span>
-              {t.createPrompt}
-            </div>
+        </dl>
+      </Card>
+      {isComposerOpen && (
+        <Card
+          aria-label={t.createPrompt}
+          className="mb-4 gap-0 border-term-green/25 bg-term-green/5 py-0 shadow-none"
+          size="sm"
+        >
+          <CardHeader className="px-3 py-3">
+            <CardTitle className="font-mono text-2xs text-term-green uppercase tracking-wider">
+              &gt; {t.createPrompt}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-3 pb-3">
             <MonthlyExpenseForm
               isSubmitting={isSubmitting}
               onCancel={() => setIsComposerOpen(false)}
               onSubmit={onCreate}
               t={t}
             />
-          </div>
-        ) : (
-          <Button
-            className="w-full sm:w-auto"
-            onClick={() => setIsComposerOpen(true)}
-            type="button"
-          >
-            <Plus />
-            {t.createPrompt}
-          </Button>
-        )}
-      </section>
-      <section className="space-y-2">
-        <div className="flex items-center gap-2 text-2xs text-term-muted uppercase">
-          <ReceiptText className="size-3.5 text-term-green" />
+          </CardContent>
+        </Card>
+      )}
+      <section aria-labelledby="monthly-bills-list" className="space-y-2">
+        <div
+          className="flex items-center gap-2 font-mono text-2xs text-term-muted uppercase tracking-wide"
+          id="monthly-bills-list"
+        >
+          <ReceiptText
+            aria-hidden="true"
+            className="size-3.5 text-term-green"
+          />
           {t.listLabel}
         </div>
         {isBootstrapping ? (
-          <div className="border border-term-border bg-term-bg/40 p-8 text-center text-sm text-term-muted">
-            <span className="terminal-cursor" />
-            {t.loading}
-          </div>
+          <MonthlyExpenseListSkeleton label={t.loading} />
         ) : monthlyExpenses.length > 0 ? (
-          monthlyExpenses.map((expense) => (
-            <MonthlyExpenseRow
-              expense={expense}
-              isSubmitting={isSubmitting}
-              key={expense.id}
-              locale={prefs.locale}
-              onEdit={() => setEditingExpense(expense)}
-              onTogglePaid={() => setPaid(expense.id, !expense.isPaid)}
-              t={t}
-            />
-          ))
+          <ul className="m-0 list-none space-y-2 p-0">
+            {monthlyExpenses.map((expense) => (
+              <li key={expense.id}>
+                <MonthlyExpenseRow
+                  expense={expense}
+                  isSubmitting={isSubmitting}
+                  locale={prefs.locale}
+                  onEdit={() => setEditingExpense(expense)}
+                  onTogglePaid={() => setPaid(expense.id, !expense.isPaid)}
+                  t={t}
+                />
+              </li>
+            ))}
+          </ul>
         ) : (
-          <div className="border border-term-border border-dashed bg-term-bg/40 p-8 text-center">
-            <ReceiptText className="mx-auto mb-3 size-8 text-term-green/60" />
-            <p className="m-0 text-sm text-term-bright">{t.emptyState}</p>
-            <p className="mt-1 mb-0 text-term-muted text-xs">{t.emptyHint}</p>
-          </div>
+          <Empty className="rounded-lg border border-term-border bg-term-bg/40 py-10">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <ReceiptText className="text-term-green" />
+              </EmptyMedia>
+              <EmptyTitle className="text-term-muted">
+                {t.emptyState}
+              </EmptyTitle>
+              <EmptyDescription className="text-term-muted">
+                {t.emptyHint}
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
         )}
       </section>
       <MonthlyExpenseDialog
@@ -364,7 +469,7 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
   );
 }
 
-function SummaryItem({
+function SummaryMetric({
   icon,
   label,
   value,
@@ -374,14 +479,40 @@ function SummaryItem({
   value: string;
 }) {
   return (
-    <div className="min-w-0 p-2.5 sm:p-3">
-      <div className="mb-1 flex items-center gap-1.5 text-2xs text-term-muted uppercase">
-        {icon}
+    <div className="min-w-0 border-term-border/70 border-t p-3 even:border-l sm:border-l sm:first:border-l-0">
+      <dt className="mb-1 flex items-center gap-1.5 font-mono text-2xs text-term-muted">
+        <span aria-hidden="true">{icon}</span>
         <span className="truncate">{label}</span>
-      </div>
-      <div className="truncate font-medium text-sm text-term-bright tabular-nums">
+      </dt>
+      <dd className="m-0 truncate font-medium font-mono text-sm text-term-bright tabular-nums">
         {value}
-      </div>
+      </dd>
+    </div>
+  );
+}
+
+function MonthlyExpenseListSkeleton({ label }: { label: string }) {
+  return (
+    <div aria-label={label} className="space-y-2" role="status">
+      <span className="sr-only">{label}</span>
+      {[0, 1, 2].map((item) => (
+        <Card
+          aria-hidden="true"
+          className="gap-0 border-term-border border-l-2 bg-term-bg/45 py-0 shadow-none"
+          key={item}
+          size="sm"
+        >
+          <CardContent className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-2.5 px-2.5 py-2">
+            <Skeleton className="size-4 rounded-sm" />
+            <div className="space-y-1">
+              <Skeleton className="h-3.5 w-2/3" />
+              <Skeleton className="h-3 w-1/2" />
+            </div>
+            <Skeleton className="h-5 w-14" />
+            <Skeleton className="size-7" />
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }

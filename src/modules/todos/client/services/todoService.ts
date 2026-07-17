@@ -1,5 +1,6 @@
 import type { TodoFiltersDTO } from "~/modules/todos/client/entities/dtos/TodoFiltersDTO";
 import {
+  type CreateTodoRequestDTO,
   type SaveTodoRequestDTO,
   TodoItemResponseDTO,
   TodoResponseDTO,
@@ -24,6 +25,14 @@ export function parseTodo(data: unknown): TodoResponseDTO {
   return parseApiResponse(TodoResponseDTO, data);
 }
 
+export function toTodoDueDateInputValue(dueDate?: string): string {
+  return dueDate?.slice(0, 10) ?? "";
+}
+
+export function toTodoDueDateRequestValue(dueDate: string): string | null {
+  return dueDate || null;
+}
+
 export const todoService = {
   async listTodos(filters: TodoFiltersDTO = {}): Promise<TodoResponseDTO[]> {
     const params = new URLSearchParams();
@@ -45,7 +54,7 @@ export const todoService = {
     return parseApiResponse(TodoItemResponseDTO, await response.json()).todo;
   },
 
-  async createTodo(dto: SaveTodoRequestDTO): Promise<TodoResponseDTO> {
+  async createTodo(dto: CreateTodoRequestDTO): Promise<TodoResponseDTO> {
     const response = await fetch("/api/v1/web/todos", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

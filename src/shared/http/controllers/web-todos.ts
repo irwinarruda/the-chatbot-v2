@@ -1,6 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ServerBootstrap } from "~/infra/server-bootstrap";
-import { toTodoResponse } from "~/modules/todos/contracts/TodoContractMapper";
+import {
+  toTodoDueDate,
+  toTodoResponse,
+} from "~/modules/todos/contracts/TodoContractMapper";
 import {
   CreateTodoRequestDTO,
   TodosResponseDTO,
@@ -27,7 +30,7 @@ export const Route = createFileRoute("/api/v1/web/todos")({
             status === TodoStatus.Pending || status === TodoStatus.Completed
               ? status
               : undefined,
-          dueDate: dueDate ? new Date(dueDate) : undefined,
+          dueDate: dueDate ? toTodoDueDate(dueDate) : undefined,
         });
         return Http.json(
           TodosResponseDTO.parse({ todos: todos.map(toTodoResponse) }),
@@ -42,7 +45,7 @@ export const Route = createFileRoute("/api/v1/web/todos")({
           idUser: context.webAuth.userId,
           name: body.name,
           description: body.description,
-          dueDate: body.dueDate ? new Date(body.dueDate) : undefined,
+          dueDate: body.dueDate ? toTodoDueDate(body.dueDate) : undefined,
           status: body.status,
         });
         return Http.json({ todo: toTodoResponse(todo) });

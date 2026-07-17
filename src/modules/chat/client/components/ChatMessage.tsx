@@ -40,13 +40,15 @@ export const ChatMessage = memo(function ChatMessage({
 
   if (!isUser) {
     return (
-      <div className="w-full py-2">
-        <div className="mb-1.5 flex items-center gap-2 text-2xs uppercase tracking-wider">
+      <article className="w-full py-2">
+        <div className="mb-1.5 flex items-center gap-2 font-mono text-2xs uppercase tracking-wider">
           <span aria-hidden="true" className="font-bold text-term-green">
             {">"}
           </span>
           <span className="font-semibold text-term-green">{botLabel}</span>
-          <span className="text-term-muted">{timestamp}</span>
+          <time dateTime={message.createdAt} className="text-term-muted">
+            {timestamp}
+          </time>
         </div>
         <div className="pl-4">
           <MessageContent
@@ -59,19 +61,21 @@ export const ChatMessage = memo(function ChatMessage({
             onButtonReply={onButtonReply}
           />
         </div>
-      </div>
+      </article>
     );
   }
 
   return (
-    <div
+    <article
       className={`ml-auto flex w-fit flex-col ${
         isAudio ? "max-w-[88%] sm:max-w-80" : "max-w-[88%] sm:max-w-[75%]"
       }`}
     >
-      <div className="mb-1 flex items-center justify-end gap-2 px-0.5 text-2xs uppercase tracking-wider">
+      <div className="mb-1 flex items-center justify-end gap-2 px-0.5 font-mono text-2xs uppercase tracking-wider">
         <span className="font-semibold text-term-cyan">{youLabel}</span>
-        <span className="text-term-muted">{timestamp}</span>
+        <time dateTime={message.createdAt} className="text-term-muted">
+          {timestamp}
+        </time>
       </div>
       <div className="rounded-lg border border-term-green/20 bg-term-green/8 px-3.5 py-2.5">
         <MessageContent
@@ -84,7 +88,7 @@ export const ChatMessage = memo(function ChatMessage({
           onButtonReply={onButtonReply}
         />
       </div>
-    </div>
+    </article>
   );
 });
 
@@ -137,8 +141,7 @@ function MessageContent({
               }}
               disabled={isSending}
               variant="outline"
-              size="sm"
-              className="rounded-md border-term-blue/30 bg-term-blue/8 text-[0.8125rem] text-term-blue hover:border-term-cyan/40 hover:bg-term-cyan/10 hover:text-term-cyan"
+              className="rounded-lg border-term-blue/30 bg-term-blue/8 font-mono text-sm text-term-blue shadow-none hover:border-term-cyan/40 hover:bg-term-cyan/10 hover:text-term-cyan"
             >
               {option}
             </Button>
@@ -164,7 +167,7 @@ function AudioTranscript({
   const onToggleExpanded = () => setIsExpanded((current) => !current);
 
   return (
-    <div className="w-full text-[0.8125rem] text-term-muted italic leading-snug [&_*]:text-term-muted">
+    <div className="w-full text-base text-term-muted italic leading-7 [&_*]:text-term-muted">
       <div
         className={
           shouldCollapse && !isExpanded
@@ -180,7 +183,7 @@ function AudioTranscript({
           variant="ghost"
           size="sm"
           onClick={onToggleExpanded}
-          className="mt-1 h-auto rounded border-0 px-0 py-0 font-semibold text-[0.75rem] text-term-cyan hover:bg-transparent hover:text-term-green"
+          className="mt-1 h-11 pointer-fine:h-7 rounded-md border-0 px-2 font-mono text-term-cyan text-xs hover:bg-term-cyan/8 hover:text-term-green"
         >
           {isExpanded ? showLessLabel : showMoreLabel}
         </Button>
@@ -195,12 +198,12 @@ function FormattedChatText({ text }: { text: string }) {
 
   if (blocks.length === 0) {
     return (
-      <p className="wrap-break-word m-0 whitespace-pre-wrap text-sm text-term-text leading-6" />
+      <p className="wrap-break-word m-0 whitespace-pre-wrap text-base text-term-text leading-7" />
     );
   }
 
   return (
-    <div className="wrap-break-word flex flex-col gap-2 text-sm text-term-text leading-6">
+    <div className="wrap-break-word flex flex-col gap-2.5 text-base text-term-text leading-7">
       {blocks.map((block) => (
         <MessageBlock key={getBlockKey(serializeBlock(block))} block={block} />
       ))}
@@ -289,7 +292,7 @@ function InlineNodes({ nodes }: { nodes: WhatsAppInlineNode[] }) {
 function InlineNode({ node }: { node: WhatsAppInlineNode }) {
   switch (node.type) {
     case "text":
-      return <>{node.value}</>;
+      return <LinkedText value={node.value} />;
     case "bold":
       return (
         <strong className="font-semibold text-term-bright">
@@ -321,6 +324,29 @@ function InlineNode({ node }: { node: WhatsAppInlineNode }) {
         </code>
       );
   }
+}
+
+function LinkedText({ value }: { value: string }) {
+  const parts = value.split(/(https?:\/\/[^\s]+)/g);
+  const getPartKey = createSiblingKeyFactory();
+
+  return (
+    <>
+      {parts.map((part) =>
+        /^https?:\/\/[^\s]+$/.test(part) ? (
+          <a
+            key={getPartKey(part)}
+            href={part}
+            className="text-term-blue underline decoration-term-blue/40 underline-offset-2 transition-colors hover:text-term-cyan focus-visible:text-term-cyan"
+          >
+            {part}
+          </a>
+        ) : (
+          part
+        ),
+      )}
+    </>
+  );
 }
 
 function serializeBlock(block: WhatsAppBlockNode): string {

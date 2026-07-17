@@ -6,6 +6,15 @@
     "thankYouTitle": "Thank You - The Chatbot",
     "connectedTitle": "Connected - The Chatbot"
   },
+  "common": {
+    "close": "Close",
+    "dismiss": "Dismiss",
+    "pauseAudio": "Pause audio",
+    "playAudio": "Play audio",
+    "skipToContent": "Skip to content",
+    "switchToDarkTheme": "Use dark theme",
+    "switchToLightTheme": "Use light theme"
+  },
   "nav": {
     "home": "home",
     "privacy": "privacy",
@@ -89,7 +98,8 @@
     "sendRecording": "Send audio",
     "audioSent": "Audio message sent",
     "todoAction": "Open todos",
-    "billsAction": "Open monthly bills"
+    "billsAction": "Open monthly bills",
+    "scrollToLatest": "Scroll to the latest message"
   },
   "todoPage": {
     "windowTitle": "the-chatbot: ~/todo",
@@ -102,9 +112,11 @@
     "searchPlaceholder": "search tasks...",
     "clearFilters": "clear",
     "statusAll": "All status",
+    "statusLabel": "Status",
     "statusPending": "Pending",
     "statusCompleted": "Completed",
     "dueAll": "All due dates",
+    "dueDateLabel": "Due date",
     "dueWithDueDate": "With due date",
     "dueWithoutDueDate": "Without due date",
     "noDueDate": "no due date",
@@ -114,6 +126,7 @@
     "createAction": "Create",
     "saveAction": "Save",
     "deleteAction": "Delete",
+    "deleteConfirmation": "Delete this todo? This action cannot be undone.",
     "cancelAction": "Cancel",
     "emptyState": "No todos match this terminal query.",
     "audioLabel": "source audio",

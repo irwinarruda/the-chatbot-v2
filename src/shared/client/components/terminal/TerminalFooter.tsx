@@ -10,9 +10,9 @@ export function TerminalFooter({
   className?: string;
 }) {
   return (
-    <div className={cn("text-[0.8125rem] text-term-muted", className)}>
-      <Separator className="mb-5 bg-term-border" />
+    <footer className={cn("text-[0.8125rem] text-term-muted", className)}>
+      <Separator className="mb-5 bg-term-border/80" />
       {children}
-    </div>
+    </footer>
   );
 }

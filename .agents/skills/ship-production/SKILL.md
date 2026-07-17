@@ -9,6 +9,15 @@ Ship verified releases through production. Keep the order strict so browser chec
 cannot accidentally exercise the previous deployment, and split schema-dependent
 work into separate releases when one commit would create a compatibility gap.
 
+## Uncommitted browser-test exception
+
+When the user asks to browser-test local or uncommitted code on Vercel without
+committing or pushing, load `browser-test-local-production` and use its isolated
+`--prod --skip-domain` workflow. Do not use this skill's Git delivery steps or
+commit-SHA waiting for that test-only artifact. Return here when the user
+authorizes normal Git-backed production publishing; use the sibling skill's
+promotion exception when explicitly promoting an uncommitted artifact.
+
 ## Preconditions
 
 - Work from the repository root on `main` unless the user explicitly requests a

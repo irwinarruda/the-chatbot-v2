@@ -34,7 +34,9 @@ export interface TodoSlice {
   loadTodo: (id: string) => Promise<TodoDTO | undefined>;
   updateTodo: (
     id: string,
-    patch: Partial<Omit<TodoDraft, "dueDate">> & { dueDate?: string },
+    patch: Partial<Omit<TodoDraft, "dueDate">> & {
+      dueDate?: string | null;
+    },
   ) => Promise<TodoDTO | undefined>;
   deleteTodo: (id: string) => Promise<void>;
   clearTodoError: () => void;

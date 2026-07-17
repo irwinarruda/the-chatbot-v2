@@ -10,6 +10,7 @@ import { useDictionary } from "~/shared/client/providers/useDictionary";
 export function AlreadySignedInScreen() {
   const dictionary = useDictionary();
   const t = dictionary.alreadySignedInPage;
+
   return (
     <TerminalWindow title={t.windowTitle} dictionary={dictionary}>
       <TerminalPageHeader
@@ -17,13 +18,13 @@ export function AlreadySignedInScreen() {
         subtitle={t.subtitle}
         badge={<TerminalStatusBadge label={t.badge} />}
       />
-      <TerminalPanel>
+      <TerminalPanel centered>
         <TerminalPanelText>
           {t.greeting} <strong>TheChatbot</strong>!
         </TerminalPanelText>
         <TerminalPanelText>{t.body}</TerminalPanelText>
       </TerminalPanel>
-      <TerminalFooter>
+      <TerminalFooter className="mt-auto pt-6">
         <TerminalPrompt text={t.footerPrompt} />
       </TerminalFooter>
     </TerminalWindow>

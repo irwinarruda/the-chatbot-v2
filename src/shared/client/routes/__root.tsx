@@ -6,6 +6,7 @@ import { TerminalPanel } from "~/shared/client/components/terminal/TerminalPanel
 import { TerminalPanelText } from "~/shared/client/components/terminal/TerminalPanelText";
 import { TerminalPrompt } from "~/shared/client/components/terminal/TerminalPrompt";
 import { TerminalWindow } from "~/shared/client/components/terminal/TerminalWindow";
+import { TooltipProvider } from "~/shared/client/components/ui/tooltip";
 import type { Prefs } from "~/shared/client/entities/Prefs";
 import { getDictionary } from "~/shared/client/i18n";
 import {
@@ -69,7 +70,7 @@ function RootDocument({ children }: { children: ReactNode }) {
         />
       </head>
       <body suppressHydrationWarning={suppressHydrationWarning}>
-        {children}
+        <TooltipProvider delay={250}>{children}</TooltipProvider>
         <Scripts />
       </body>
     </html>
@@ -83,10 +84,10 @@ function NotFoundRoute() {
   return (
     <TerminalWindow title={t.windowTitle} dictionary={dictionary}>
       <TerminalPageHeader heading={t.heading} subtitle={t.subtitle} />
-      <TerminalPanel>
+      <TerminalPanel centered>
         <TerminalPanelText>{t.body}</TerminalPanelText>
       </TerminalPanel>
-      <TerminalFooter>
+      <TerminalFooter className="mt-auto pt-6">
         <TerminalPrompt text={t.footerPrompt} />
       </TerminalFooter>
     </TerminalWindow>

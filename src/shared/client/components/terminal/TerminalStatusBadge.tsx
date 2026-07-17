@@ -3,10 +3,13 @@ import { Badge } from "~/shared/client/components/ui/badge";
 export function TerminalStatusBadge({ label }: { label: string }) {
   return (
     <Badge
-      variant="secondary"
-      className="mt-4 h-auto gap-2 rounded-md border border-term-green/25 bg-term-green/10 px-3.5 py-1.5 font-medium text-[0.8125rem] text-term-green hover:bg-term-green/10"
+      variant="outline"
+      className="mt-4 h-auto gap-2 border-term-green/25 bg-term-green/8 px-3 py-1.5 font-medium font-mono text-[0.75rem] text-term-green"
     >
-      <span className="h-1.5 w-1.5 rounded-full bg-term-green" />
+      <span
+        aria-hidden="true"
+        className="size-1.5 rounded-full bg-term-green-dot"
+      />
       <span>{label}</span>
     </Badge>
   );

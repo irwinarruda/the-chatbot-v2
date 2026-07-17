@@ -32,7 +32,7 @@ export function TodoDetailScreen({
   async function onSaveTodo(patch: {
     name: string;
     description: string;
-    dueDate?: string;
+    dueDate: string | null;
     status: TodoStatusDTO;
   }) {
     if (!selectedTodo) return;
@@ -57,6 +57,7 @@ export function TodoDetailScreen({
       onSave={onSaveTodo}
       open={Boolean(todoId)}
       t={t}
+      theme={prefs.theme}
       todo={selectedTodo}
     />
   );

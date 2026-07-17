@@ -1,0 +1,4 @@
+interface:
+  display_name: "Browser-Test Local Production"
+  short_description: "Test uncommitted code on an isolated Vercel URL"
+  default_prompt: "Use $browser-test-local-production to deploy my current working tree to an isolated production-targeted Vercel URL and verify it in the in-app browser."

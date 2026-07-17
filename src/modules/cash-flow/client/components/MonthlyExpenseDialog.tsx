@@ -1,12 +1,24 @@
 import { AlertTriangle, Trash2 } from "lucide-react";
-import { useEffect, useId, useState } from "react";
+import { useId } from "react";
 import {
   MonthlyExpenseForm,
   type MonthlyExpenseFormValue,
 } from "~/modules/cash-flow/client/components/MonthlyExpenseForm";
 import type { MonthlyExpenseDTO } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
+import { TerminalResponsiveOverlay } from "~/shared/client/components/terminal/TerminalResponsiveOverlay";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "~/shared/client/components/ui/alert-dialog";
 import { Button } from "~/shared/client/components/ui/button";
-import { Dialog } from "~/shared/client/components/ui/dialog";
 import type { Dictionary } from "~/shared/client/i18n";
 
 export function MonthlyExpenseDialog({
@@ -26,81 +38,98 @@ export function MonthlyExpenseDialog({
   onSave: (value: MonthlyExpenseFormValue) => void;
   t: Dictionary["billsPage"];
 }) {
-  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const formId = useId();
 
-  useEffect(() => {
-    setIsConfirmingDelete(false);
-  }, [canArchive, expense?.id]);
+  function onOpenChange(open: boolean) {
+    if (!open) onClose();
+  }
 
   return (
-    <Dialog
+    <TerminalResponsiveOverlay
+      bodyClassName="pb-2"
+      closeLabel={t.cancelAction}
+      description={t.optionalHint}
       footer={
-        isConfirmingDelete ? (
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="m-0 flex items-start gap-2 text-term-red text-xs">
-              <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
-              {t.deleteConfirmation}
-            </p>
-            <div className="flex shrink-0 justify-end gap-2">
-              <Button
-                onClick={() => setIsConfirmingDelete(false)}
-                size="sm"
-                type="button"
-                variant="outline"
-              >
-                {t.cancelAction}
-              </Button>
-              <Button
-                disabled={isSubmitting}
-                onClick={onDelete}
-                size="sm"
-                type="button"
-                variant="destructive"
-              >
-                {t.confirmDelete}
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-wrap justify-end gap-2 sm:justify-between">
-            {canArchive && (
-              <Button
-                disabled={isSubmitting}
-                onClick={() => setIsConfirmingDelete(true)}
-                type="button"
-                variant="destructive"
+        <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+          {canArchive && (
+            <AlertDialog>
+              <AlertDialogTrigger
+                render={
+                  <Button
+                    className="w-full font-sans sm:w-auto"
+                    disabled={isSubmitting}
+                    type="button"
+                    variant="destructive"
+                  />
+                }
               >
                 <Trash2 />
                 {t.deleteAction}
-              </Button>
-            )}
-            <div className="flex gap-2">
-              <Button onClick={onClose} type="button" variant="outline">
-                {t.cancelAction}
-              </Button>
-              <Button disabled={isSubmitting} form={formId} type="submit">
-                {t.saveAction}
-              </Button>
-            </div>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogMedia className="bg-term-red/10 text-term-red">
+                    <AlertTriangle />
+                  </AlertDialogMedia>
+                  <AlertDialogTitle className="font-sans">
+                    {t.deleteAction}
+                  </AlertDialogTitle>
+                  <AlertDialogDescription className="font-sans">
+                    {t.deleteConfirmation}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel
+                    className="font-sans"
+                    disabled={isSubmitting}
+                  >
+                    {t.cancelAction}
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    className="font-sans"
+                    disabled={isSubmitting}
+                    onClick={onDelete}
+                    variant="destructive"
+                  >
+                    {t.confirmDelete}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+          <div className="grid w-full grid-cols-2 gap-2 sm:ml-auto sm:flex sm:w-auto">
+            <Button
+              className="font-sans"
+              onClick={onClose}
+              type="button"
+              variant="outline"
+            >
+              {t.cancelAction}
+            </Button>
+            <Button
+              className="font-sans"
+              disabled={isSubmitting}
+              form={formId}
+              type="submit"
+            >
+              {t.saveAction}
+            </Button>
           </div>
-        )
+        </div>
       }
-      onClose={onClose}
+      onOpenChange={onOpenChange}
       open={expense !== undefined}
       title={expense?.name ?? t.editTitle}
     >
-      <div className="p-4">
-        <MonthlyExpenseForm
-          expense={expense}
-          formId={formId}
-          hideActions
-          isSubmitting={isSubmitting}
-          onCancel={onClose}
-          onSubmit={onSave}
-          t={t}
-        />
-      </div>
-    </Dialog>
+      <MonthlyExpenseForm
+        expense={expense}
+        formId={formId}
+        hideActions
+        isSubmitting={isSubmitting}
+        onCancel={onClose}
+        onSubmit={onSave}
+        t={t}
+      />
+    </TerminalResponsiveOverlay>
   );
 }

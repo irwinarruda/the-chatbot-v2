@@ -6,6 +6,15 @@
     "thankYouTitle": "Obrigado - The Chatbot",
     "connectedTitle": "Conectado - The Chatbot"
   },
+  "common": {
+    "close": "Fechar",
+    "dismiss": "Dispensar",
+    "pauseAudio": "Pausar áudio",
+    "playAudio": "Reproduzir áudio",
+    "skipToContent": "Ir para o conteúdo",
+    "switchToDarkTheme": "Usar tema escuro",
+    "switchToLightTheme": "Usar tema claro"
+  },
   "nav": {
     "home": "home",
     "privacy": "privacy",
@@ -89,7 +98,8 @@
     "sendRecording": "Enviar áudio",
     "audioSent": "Mensagem de áudio enviada",
     "todoAction": "Abrir tarefas",
-    "billsAction": "Abrir contas mensais"
+    "billsAction": "Abrir contas mensais",
+    "scrollToLatest": "Ir para a mensagem mais recente"
   },
   "todoPage": {
     "windowTitle": "the-chatbot: ~/todo",
@@ -102,9 +112,11 @@
     "searchPlaceholder": "buscar tarefas...",
     "clearFilters": "limpar",
     "statusAll": "Todos os status",
+    "statusLabel": "Status",
     "statusPending": "Pendente",
     "statusCompleted": "Concluída",
     "dueAll": "Todos os prazos",
+    "dueDateLabel": "Data de vencimento",
     "dueWithDueDate": "Com prazo",
     "dueWithoutDueDate": "Sem prazo",
     "noDueDate": "sem prazo",
@@ -114,6 +126,7 @@
     "createAction": "Criar",
     "saveAction": "Salvar",
     "deleteAction": "Excluir",
+    "deleteConfirmation": "Excluir esta tarefa? Esta ação não pode ser desfeita.",
     "cancelAction": "Cancelar",
     "emptyState": "Nenhuma tarefa combina com esta consulta.",
     "audioLabel": "audio de origem",

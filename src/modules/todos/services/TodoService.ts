@@ -50,7 +50,7 @@ export class TodoService {
     if (dto.name !== undefined) todo.rename(dto.name);
     if (dto.description !== undefined) todo.updateDescription(dto.description);
     if (dto.dueDate !== undefined) {
-      todo.reschedule(dto.dueDate);
+      todo.reschedule(dto.dueDate ?? undefined);
     }
     if (dto.status !== undefined) todo.updateStatus(dto.status);
     await this.save(todo);

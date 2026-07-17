@@ -21,6 +21,6 @@ export interface UpdateTodoDTO {
   id: string;
   name?: string;
   description?: string;
-  dueDate?: Date;
+  dueDate?: Date | null;
   status?: TodoStatus;
 }

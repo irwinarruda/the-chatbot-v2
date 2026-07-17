@@ -34,7 +34,7 @@ export type TodoItemResponseDTO = z.infer<typeof TodoItemResponseDTO>;
 export const SaveTodoRequestDTO = z.object({
   name: z.string().trim().min(1).optional(),
   description: z.string().optional(),
-  dueDate: z.iso.datetime().optional(),
+  dueDate: z.iso.date().nullable().optional(),
   status: TodoStatusDTO.optional(),
 });
 
@@ -42,6 +42,7 @@ export type SaveTodoRequestDTO = z.infer<typeof SaveTodoRequestDTO>;
 
 export const CreateTodoRequestDTO = SaveTodoRequestDTO.extend({
   name: z.string().trim().min(1),
+  dueDate: z.iso.date().optional(),
 });
 
 export type CreateTodoRequestDTO = z.infer<typeof CreateTodoRequestDTO>;

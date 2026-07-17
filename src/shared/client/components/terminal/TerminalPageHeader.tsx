@@ -14,13 +14,15 @@ export function TerminalPageHeader({
 }) {
   return (
     <header className="mb-6 text-center">
-      {withLogo ? <ThemeLogo /> : null}
-      <h1 className="m-0 mb-1.5 font-bold text-2xl text-term-green tracking-tight sm:text-3xl">
+      {withLogo && <ThemeLogo />}
+      <h1 className="m-0 mb-1.5 font-bold font-mono text-2xl text-term-green tracking-tight sm:text-3xl">
         {heading}
       </h1>
-      {subtitle ? (
-        <p className="m-0 text-sm text-term-muted">{subtitle}</p>
-      ) : null}
+      {subtitle && (
+        <p className="mx-auto mt-1.5 max-w-lg text-balance text-sm text-term-muted leading-relaxed">
+          {subtitle}
+        </p>
+      )}
       {badge}
     </header>
   );

@@ -6,10 +6,9 @@ export function ThemeLogo() {
 
   return (
     <img
-      className="terminal-logo-glow mx-auto mb-4 block h-12 w-12 sm:h-16 sm:w-16"
+      className="terminal-logo-glow mx-auto mb-4 block size-12 sm:size-14"
       src={src}
       alt="The Chatbot"
-      aria-label="The Chatbot"
     />
   );
 }

@@ -1,14 +1,45 @@
 import { Calendar, CheckCircle2, Circle, Trash2, Volume2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { type SubmitEventHandler, useEffect, useState } from "react";
+import {
+  toTodoDueDateInputValue,
+  toTodoDueDateRequestValue,
+} from "~/modules/todos/client/services/todoService";
 import type { TodoDTO } from "~/modules/todos/entities/dtos/TodoDTO";
 import { AudioWaveform } from "~/shared/client/components/AudioWaveform";
+import { TerminalResponsiveOverlay } from "~/shared/client/components/terminal/TerminalResponsiveOverlay";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "~/shared/client/components/ui/alert-dialog";
 import { Button } from "~/shared/client/components/ui/button";
-import { Dialog } from "~/shared/client/components/ui/dialog";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "~/shared/client/components/ui/card";
+import {
+  Field,
+  FieldGroup,
+  FieldLabel,
+} from "~/shared/client/components/ui/field";
 import { Input } from "~/shared/client/components/ui/input";
 import {
-  NativeSelect,
-  NativeSelectOption,
-} from "~/shared/client/components/ui/native-select";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/shared/client/components/ui/select";
+import { Skeleton } from "~/shared/client/components/ui/skeleton";
 import { Textarea } from "~/shared/client/components/ui/textarea";
 import type { Dictionary } from "~/shared/client/i18n";
 
@@ -19,6 +50,7 @@ export function TodoDetailDialog({
   onSave,
   open,
   t,
+  theme,
   todo,
 }: {
   isSubmitting: boolean;
@@ -27,11 +59,12 @@ export function TodoDetailDialog({
   onSave: (patch: {
     name: string;
     description: string;
-    dueDate?: string;
+    dueDate: string | null;
     status: TodoDTO["status"];
   }) => void;
   open: boolean;
   t: Dictionary["todoPage"];
+  theme: "dark" | "light";
   todo?: TodoDTO;
 }) {
   const [name, setName] = useState("");
@@ -40,117 +73,213 @@ export function TodoDetailDialog({
   const [status, setStatus] = useState<TodoDTO["status"]>("Pending");
   const source = todo?.sourceMessage;
   const modalTitle = todo?.name ?? t.detailTitle;
+  const statusLabel =
+    status === "Completed" ? t.statusCompleted : t.statusPending;
+
+  function onOpenChange(nextOpen: boolean) {
+    if (!nextOpen) onClose();
+  }
+
+  const onFormSubmit: SubmitEventHandler<HTMLFormElement> = (event) => {
+    event.preventDefault();
+    onSave({
+      name,
+      description,
+      dueDate: toTodoDueDateRequestValue(dueDate),
+      status,
+    });
+  };
 
   useEffect(() => {
     if (!todo) return;
     setName(todo.name);
     setDescription(todo.description);
-    setDueDate(todo.dueDate ? todo.dueDate.slice(0, 10) : "");
+    setDueDate(toTodoDueDateInputValue(todo.dueDate));
     setStatus(todo.status);
   }, [todo]);
 
   return (
-    <Dialog onClose={onClose} open={open} title={modalTitle}>
-      <div className="space-y-4 p-4">
-        {!todo ? (
-          <p className="m-0 text-sm text-term-muted">{t.loading}</p>
-        ) : (
-          <>
-            <div className="grid gap-3 md:grid-cols-[1fr_auto]">
-              <Input
-                onChange={(event) => setName(event.target.value)}
-                value={name}
-              />
-              <NativeSelect
-                className="w-full md:w-40"
-                onChange={(event) =>
-                  setStatus(event.target.value as TodoDTO["status"])
+    <TerminalResponsiveOverlay
+      bodyClassName="space-y-4"
+      closeLabel={t.cancelAction}
+      description={t.subtitle}
+      footer={
+        todo ? (
+          <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <AlertDialog>
+              <AlertDialogTrigger
+                render={
+                  <Button
+                    disabled={isSubmitting}
+                    type="button"
+                    variant="destructive"
+                  />
                 }
-                value={status}
               >
-                <NativeSelectOption value="Pending">
-                  {t.statusPending}
-                </NativeSelectOption>
-                <NativeSelectOption value="Completed">
-                  {t.statusCompleted}
-                </NativeSelectOption>
-              </NativeSelect>
+                <Trash2 />
+                {t.deleteAction}
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogMedia className="bg-term-red/10 text-term-red">
+                    <Trash2 />
+                  </AlertDialogMedia>
+                  <AlertDialogTitle>
+                    {t.deleteAction}: {modalTitle}
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {t.deleteConfirmation}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>{t.cancelAction}</AlertDialogCancel>
+                  <AlertDialogAction
+                    disabled={isSubmitting}
+                    onClick={onDelete}
+                    type="button"
+                    variant="destructive"
+                  >
+                    <Trash2 />
+                    {t.deleteAction}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row">
+              <Button onClick={onClose} type="button" variant="outline">
+                {t.cancelAction}
+              </Button>
+              <Button
+                disabled={isSubmitting || !name.trim()}
+                form="todo-detail-form"
+                type="submit"
+              >
+                {t.saveAction}
+              </Button>
             </div>
-            <Textarea
-              className="min-h-28"
-              onChange={(event) => setDescription(event.target.value)}
-              placeholder={t.createDescriptionPlaceholder}
-              value={description}
-            />
-            <div className="grid gap-3 md:grid-cols-[1fr_auto]">
-              <div className="flex items-center gap-2 text-sm text-term-muted">
-                <Calendar className="size-4 text-term-amber" />
+          </div>
+        ) : undefined
+      }
+      onOpenChange={onOpenChange}
+      open={open}
+      title={modalTitle}
+    >
+      {!todo ? (
+        <div aria-live="polite" className="space-y-3" role="status">
+          <span className="sr-only">{t.loading}</span>
+          <Skeleton className="h-14 w-full rounded" />
+          <Skeleton className="h-28 w-full rounded" />
+          <Skeleton className="h-14 w-full rounded" />
+        </div>
+      ) : (
+        <form
+          id="todo-detail-form"
+          className="space-y-4"
+          onSubmit={onFormSubmit}
+        >
+          <FieldGroup className="gap-4">
+            <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_11rem]">
+              <Field>
+                <FieldLabel htmlFor="todo-detail-name">
+                  {t.createNamePlaceholder}
+                </FieldLabel>
                 <Input
-                  aria-label={t.dueAll}
-                  onChange={(event) => setDueDate(event.target.value)}
-                  type="date"
-                  value={dueDate}
+                  id="todo-detail-name"
+                  onChange={(event) => setName(event.target.value)}
+                  value={name}
                 />
-              </div>
-              <span className="inline-flex items-center gap-1 text-sm text-term-muted">
-                {status === "Completed" ? <CheckCircle2 /> : <Circle />}
-                {status === "Completed" ? t.statusCompleted : t.statusPending}
-              </span>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="todo-detail-status">
+                  {status === "Completed" ? (
+                    <CheckCircle2 className="size-3.5 text-term-green" />
+                  ) : (
+                    <Circle className="size-3.5 text-term-amber" />
+                  )}
+                  {t.statusLabel}
+                </FieldLabel>
+                <Select
+                  onValueChange={(value) => {
+                    if (!value) return;
+                    setStatus(value as TodoDTO["status"]);
+                  }}
+                  value={status}
+                >
+                  <SelectTrigger
+                    id="todo-detail-status"
+                    className="w-full rounded"
+                  >
+                    <SelectValue>{statusLabel}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent align="start">
+                    <SelectItem value="Pending">
+                      <Circle className="text-term-amber" />
+                      {t.statusPending}
+                    </SelectItem>
+                    <SelectItem value="Completed">
+                      <CheckCircle2 className="text-term-green" />
+                      {t.statusCompleted}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
             </div>
-            {source ? (
-              <section className="border border-term-border bg-term-bg/55 p-3">
-                <div className="mb-2 flex items-center gap-2 text-2xs text-term-cyan uppercase">
+            <Field>
+              <FieldLabel htmlFor="todo-detail-description">
+                {t.createDescriptionPlaceholder}
+              </FieldLabel>
+              <Textarea
+                id="todo-detail-description"
+                className="min-h-32"
+                onChange={(event) => setDescription(event.target.value)}
+                placeholder={t.createDescriptionPlaceholder}
+                value={description}
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="todo-detail-due-date">
+                <Calendar className="size-3.5 text-term-amber" />
+                {t.dueDateLabel}
+              </FieldLabel>
+              <Input
+                id="todo-detail-due-date"
+                className="md:max-w-56"
+                onChange={(event) => setDueDate(event.target.value)}
+                type="date"
+                value={dueDate}
+              />
+            </Field>
+          </FieldGroup>
+          {source && (
+            <Card
+              className="gap-3 border-term-border bg-term-bg/55 py-3 shadow-none"
+              size="sm"
+            >
+              <CardHeader className="px-3">
+                <CardTitle className="flex items-center gap-2 font-medium text-2xs text-term-cyan uppercase tracking-wide">
                   <Volume2 className="size-3.5" />
                   {t.audioLabel}
-                </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 px-3">
                 {source.mediaUrl ? (
-                  <AudioWaveform src={source.mediaUrl} />
+                  <AudioWaveform src={source.mediaUrl} theme={theme} />
                 ) : null}
                 {source.transcript ? (
-                  <div className="mt-3">
-                    <div className="mb-1 text-2xs text-term-muted uppercase">
+                  <div>
+                    <div className="mb-1 text-2xs text-term-muted uppercase tracking-wide">
                       {t.transcriptLabel}
                     </div>
-                    <p className="m-0 whitespace-pre-wrap text-sm text-term-text">
+                    <p className="m-0 whitespace-pre-wrap text-sm text-term-text leading-relaxed">
                       {source.transcript}
                     </p>
                   </div>
                 ) : null}
-              </section>
-            ) : null}
-            <div className="flex flex-wrap justify-between gap-2 border-term-border border-t pt-4">
-              <Button
-                disabled={isSubmitting}
-                onClick={onDelete}
-                type="button"
-                variant="destructive"
-              >
-                <Trash2 />
-                {t.deleteAction}
-              </Button>
-              <div className="flex gap-2">
-                <Button onClick={onClose} type="button" variant="outline">
-                  {t.cancelAction}
-                </Button>
-                <Button
-                  disabled={isSubmitting || !name.trim()}
-                  onClick={() =>
-                    onSave({
-                      name,
-                      description,
-                      dueDate: dueDate || undefined,
-                      status,
-                    })
-                  }
-                  type="button"
-                >
-                  {t.saveAction}
-                </Button>
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-    </Dialog>
+              </CardContent>
+            </Card>
+          )}
+        </form>
+      )}
+    </TerminalResponsiveOverlay>
   );
 }

@@ -1,5 +1,9 @@
+import { Pause, Play } from "lucide-react";
 import { useEffect, useState } from "react";
 import WaveSurfer from "wavesurfer.js";
+import { Button } from "~/shared/client/components/ui/button";
+import { Skeleton } from "~/shared/client/components/ui/skeleton";
+import { useDictionary } from "~/shared/client/providers/useDictionary";
 
 interface AudioWaveformProps {
   src: string;
@@ -7,6 +11,7 @@ interface AudioWaveformProps {
 }
 
 export function AudioWaveform({ src, theme = "dark" }: AudioWaveformProps) {
+  const dictionary = useDictionary();
   const [container, setContainer] = useState<HTMLDivElement | undefined>(
     undefined,
   );
@@ -84,56 +89,37 @@ export function AudioWaveform({ src, theme = "dark" }: AudioWaveformProps) {
   ]);
 
   return (
-    <div className="flex w-55 min-w-0 max-w-full items-center gap-2">
-      <button
+    <div className="flex w-55 min-w-0 max-w-full items-center gap-2.5">
+      <Button
         type="button"
         onClick={onTogglePlayPause}
         disabled={!isReady}
-        aria-label={isPlaying ? "Pause" : "Play"}
-        className="flex pointer-fine:size-7.5 size-11 shrink-0 cursor-pointer items-center justify-center rounded-md border border-term-border bg-term-bg p-0 text-term-green transition-colors duration-200 hover:border-term-green/40 hover:bg-term-green/10 disabled:cursor-not-allowed disabled:opacity-40"
+        aria-label={
+          isPlaying ? dictionary.common.pauseAudio : dictionary.common.playAudio
+        }
+        aria-pressed={isPlaying}
+        variant="outline"
+        size="icon"
+        className="pointer-fine:size-8 size-11 shrink-0 rounded-lg border-term-green/25 bg-term-bg/70 p-0 text-term-green shadow-none hover:border-term-green/45 hover:bg-term-green/10 hover:text-term-green disabled:opacity-40"
       >
-        {isPlaying ? <PauseIcon /> : <PlayIcon />}
-      </button>
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <div
-          ref={(node) => setContainer(node ?? undefined)}
-          className="w-full overflow-hidden rounded"
-        />
-        <span className="text-2xs text-term-muted tracking-wide">
+        {isPlaying ? <Pause className="size-4" /> : <Play className="size-4" />}
+      </Button>
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <div className="relative h-8 w-full overflow-hidden rounded-md">
+          <div
+            ref={(node) => setContainer(node ?? undefined)}
+            className="absolute inset-0 w-full overflow-hidden"
+          />
+          {!isReady ? (
+            <Skeleton className="absolute inset-0 rounded-md bg-term-chrome/70" />
+          ) : null}
+        </div>
+        <span className="font-mono text-2xs text-term-muted tabular-nums tracking-wide">
           {isReady
             ? `${formatTime(currentTime)} / ${formatTime(duration)}`
             : "--:--"}
         </span>
       </div>
     </div>
-  );
-}
-
-function PlayIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      aria-hidden="true"
-    >
-      <polygon points="6,3 20,12 6,21" />
-    </svg>
-  );
-}
-
-function PauseIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      aria-hidden="true"
-    >
-      <rect x="5" y="3" width="5" height="18" rx="1" />
-      <rect x="14" y="3" width="5" height="18" rx="1" />
-    </svg>
   );
 }
