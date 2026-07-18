@@ -28,6 +28,7 @@ export function MonthlyExpenseDialog({
   onClose,
   onDelete,
   onSave,
+  open,
   t,
 }: {
   canArchive: boolean;
@@ -36,22 +37,26 @@ export function MonthlyExpenseDialog({
   onClose: () => void;
   onDelete: () => void;
   onSave: (value: MonthlyExpenseFormValue) => void;
+  open: boolean;
   t: Dictionary["billsPage"];
 }) {
   const formId = useId();
+  const isCreate = expense === undefined;
+  const title = isCreate ? t.createPrompt : (expense.name ?? t.editTitle);
+  const submitLabel = isCreate ? t.createAction : t.saveAction;
 
-  function onOpenChange(open: boolean) {
-    if (!open) onClose();
+  function onOpenChange(nextOpen: boolean) {
+    if (!nextOpen) onClose();
   }
 
   return (
     <TerminalResponsiveOverlay
-      bodyClassName="pb-2"
+      bodyClassName="space-y-4"
       closeLabel={t.cancelAction}
       description={t.optionalHint}
       footer={
         <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-          {canArchive && (
+          {!isCreate && canArchive && (
             <AlertDialog>
               <AlertDialogTrigger
                 render={
@@ -112,20 +117,21 @@ export function MonthlyExpenseDialog({
               form={formId}
               type="submit"
             >
-              {t.saveAction}
+              {submitLabel}
             </Button>
           </div>
         </div>
       }
       onOpenChange={onOpenChange}
-      open={expense !== undefined}
-      title={expense?.name ?? t.editTitle}
+      open={open}
+      title={title}
     >
       <MonthlyExpenseForm
         expense={expense}
         formId={formId}
         hideActions
         isSubmitting={isSubmitting}
+        key={expense?.id ?? "create"}
         onCancel={onClose}
         onSubmit={onSave}
         t={t}

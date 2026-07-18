@@ -48,20 +48,26 @@ export function TerminalResponsiveOverlay({
   closeLabel,
   contentClassName,
   description,
+  descriptionClassName,
   footer,
+  headerClassName,
   onOpenChange,
   open,
   title,
+  titleClassName,
 }: {
   bodyClassName?: string;
   children: ReactNode;
   closeLabel: string;
   contentClassName?: string;
   description: ReactNode;
+  descriptionClassName?: string;
   footer?: ReactNode;
+  headerClassName?: string;
   onOpenChange: (open: boolean) => void;
   open: boolean;
   title: ReactNode;
+  titleClassName?: string;
 }) {
   const isDesktop = useSyncExternalStore(
     subscribeToDesktopOverlay,
@@ -80,12 +86,27 @@ export function TerminalResponsiveOverlay({
           showCloseButton={false}
         >
           <DialogHeader className="shrink-0 border-term-border border-b px-4 py-3">
-            <div className="flex items-start justify-between gap-3">
+            <div
+              className={cn(
+                "flex items-start justify-between gap-3",
+                headerClassName,
+              )}
+            >
               <div className="min-w-0 space-y-1">
-                <DialogTitle className="font-semibold text-sm text-term-bright">
+                <DialogTitle
+                  className={cn(
+                    "font-semibold text-sm text-term-bright",
+                    titleClassName,
+                  )}
+                >
                   {title}
                 </DialogTitle>
-                <DialogDescription className="text-term-muted text-xs">
+                <DialogDescription
+                  className={cn(
+                    "text-term-muted text-xs",
+                    descriptionClassName,
+                  )}
+                >
                   {description}
                 </DialogDescription>
               </div>
@@ -107,6 +128,7 @@ export function TerminalResponsiveOverlay({
           <div
             className={cn(
               "min-h-0 flex-1 overflow-y-auto overscroll-contain p-4",
+              footer && "pb-5",
               bodyClassName,
             )}
           >
@@ -136,12 +158,27 @@ export function TerminalResponsiveOverlay({
         )}
       >
         <DrawerHeader className="gap-1 border-term-border border-b pt-2 pr-[max(1rem,env(safe-area-inset-right))] pb-3 pl-[max(1rem,env(safe-area-inset-left))] text-left">
-          <div className="flex items-start justify-between gap-3">
+          <div
+            className={cn(
+              "flex items-start justify-between gap-3",
+              headerClassName,
+            )}
+          >
             <div className="min-w-0 space-y-1">
-              <DrawerTitle className="font-semibold text-sm text-term-bright">
+              <DrawerTitle
+                className={cn(
+                  "font-semibold text-sm text-term-bright",
+                  titleClassName,
+                )}
+              >
                 {title}
               </DrawerTitle>
-              <DrawerDescription className="text-left text-term-muted text-xs leading-relaxed">
+              <DrawerDescription
+                className={cn(
+                  "text-left text-term-muted text-xs leading-relaxed",
+                  descriptionClassName,
+                )}
+              >
                 {description}
               </DrawerDescription>
             </div>
@@ -163,7 +200,7 @@ export function TerminalResponsiveOverlay({
         <div
           className={cn(
             "min-h-0 flex-1 overflow-y-auto overscroll-contain pt-4 pr-[max(1rem,env(safe-area-inset-right))] pl-[max(1rem,env(safe-area-inset-left))]",
-            footer ? "pb-4" : "pb-[max(1rem,env(safe-area-inset-bottom))]",
+            footer ? "pb-5" : "pb-[max(1rem,env(safe-area-inset-bottom))]",
             bodyClassName,
           )}
         >

@@ -9,50 +9,36 @@ import type {
 
 export type TodoErrorCode = "loading" | "saving" | "deleting";
 
-export interface TodoDraft {
+export interface TodoInput {
   name: string;
   description: string;
-  dueDate: string;
+  dueDate?: string | null;
   status: TodoStatusDTO;
 }
 
 export interface TodoSlice {
   todos: TodoDTO[];
   selectedTodo?: TodoDTO;
-  todoDraft: TodoDraft;
   isTodoBootstrapping: boolean;
   isTodoSubmitting: boolean;
   todoError?: TodoErrorCode;
   hasTodos: boolean;
   pendingTodoCount: number;
   completedTodoCount: number;
-  canSaveTodoDraft: boolean;
   bootstrapTodos: (filters?: TodoFiltersDTO) => Promise<void>;
-  setTodoDraft: (patch: Partial<TodoDraft>) => void;
-  resetTodoDraft: () => void;
-  createTodoFromDraft: () => Promise<TodoDTO | undefined>;
+  createTodo: (input: TodoInput) => Promise<TodoDTO | undefined>;
   loadTodo: (id: string) => Promise<TodoDTO | undefined>;
   updateTodo: (
     id: string,
-    patch: Partial<Omit<TodoDraft, "dueDate">> & {
-      dueDate?: string | null;
-    },
+    patch: Partial<TodoInput>,
   ) => Promise<TodoDTO | undefined>;
   deleteTodo: (id: string) => Promise<void>;
   clearTodoError: () => void;
 }
 
-const emptyDraft: TodoDraft = {
-  name: "",
-  description: "",
-  dueDate: "",
-  status: "Pending",
-};
-
 export const todoSlice: StateCreator<TodoSlice> = (set, get) => ({
   todos: [],
   selectedTodo: undefined,
-  todoDraft: emptyDraft,
   isTodoBootstrapping: false,
   isTodoSubmitting: false,
   todoError: undefined,
@@ -63,8 +49,6 @@ export const todoSlice: StateCreator<TodoSlice> = (set, get) => ({
     completedTodoCount: state.todos.filter(
       (todo) => todo.status === "Completed",
     ).length,
-    canSaveTodoDraft:
-      state.todoDraft.name.trim().length > 0 && !state.isTodoSubmitting,
   })),
   async bootstrapTodos(filters) {
     set({
@@ -80,27 +64,20 @@ export const todoSlice: StateCreator<TodoSlice> = (set, get) => ({
       set({ isTodoBootstrapping: false });
     }
   },
-  setTodoDraft(patch) {
-    set((state) => ({ todoDraft: { ...state.todoDraft, ...patch } }));
-  },
-  resetTodoDraft() {
-    set({ todoDraft: emptyDraft });
-  },
-  async createTodoFromDraft() {
-    const { todoDraft, isTodoSubmitting } = get();
-    const name = todoDraft.name.trim();
+  async createTodo(input) {
+    const { isTodoSubmitting } = get();
+    const name = input.name.trim();
     if (!name || isTodoSubmitting) return undefined;
     set({ isTodoSubmitting: true, todoError: undefined });
     try {
       const todo = await todoService.createTodo({
         name,
-        description: todoDraft.description,
-        dueDate: todoDraft.dueDate || undefined,
-        status: todoDraft.status,
+        description: input.description,
+        dueDate: input.dueDate || undefined,
+        status: input.status,
       });
       set((state) => ({
         todos: [todo, ...state.todos],
-        todoDraft: emptyDraft,
       }));
       return todo;
     } catch {

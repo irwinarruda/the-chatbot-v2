@@ -2,8 +2,6 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import {
   CalendarRange,
   CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
   CircleAlert,
   CircleDollarSign,
   ListChecks,
@@ -17,14 +15,11 @@ import { type ReactNode, useEffect, useState } from "react";
 import {
   type BillsSearch,
   getCurrentBillsMonth,
-  shiftBillsMonth,
   toBillsRouteSearch,
 } from "~/modules/cash-flow/client/BillsSearch";
+import { BillsMonthSelect } from "~/modules/cash-flow/client/components/BillsMonthSelect";
 import { MonthlyExpenseDialog } from "~/modules/cash-flow/client/components/MonthlyExpenseDialog";
-import {
-  MonthlyExpenseForm,
-  type MonthlyExpenseFormValue,
-} from "~/modules/cash-flow/client/components/MonthlyExpenseForm";
+import type { MonthlyExpenseFormValue } from "~/modules/cash-flow/client/components/MonthlyExpenseForm";
 import { MonthlyExpenseRow } from "~/modules/cash-flow/client/components/MonthlyExpenseRow";
 import type { MonthlyExpenseErrorCode } from "~/modules/cash-flow/client/state/monthlyExpenseSlice";
 import type { MonthlyExpenseDTO } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
@@ -53,7 +48,6 @@ import {
   EmptyTitle,
 } from "~/shared/client/components/ui/empty";
 import { Field, FieldLabel } from "~/shared/client/components/ui/field";
-import { Input } from "~/shared/client/components/ui/input";
 import { Progress } from "~/shared/client/components/ui/progress";
 import { Skeleton } from "~/shared/client/components/ui/skeleton";
 import {
@@ -81,8 +75,9 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
   const archiveExpense = useApp((state) => state.archiveMonthlyExpense);
   const setPaid = useApp((state) => state.setMonthlyExpensePaid);
   const clearError = useApp((state) => state.clearMonthlyExpenseError);
-  const [isComposerOpen, setIsComposerOpen] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<MonthlyExpenseDTO>();
+  const isDialogOpen = isCreateOpen || editingExpense !== undefined;
   const dictionary = getDictionary(prefs.locale);
   const t = dictionary.billsPage;
   const currentMonth = getCurrentBillsMonth();
@@ -121,33 +116,46 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
   };
   const errorMessage = error ? errorMessages[error] : undefined;
 
-  async function onCreate(value: MonthlyExpenseFormValue) {
-    const expense = await createExpense(value);
-    if (!expense) return;
-    setIsComposerOpen(false);
+  function onCloseDialog() {
+    setIsCreateOpen(false);
+    setEditingExpense(undefined);
   }
 
-  async function onUpdate(value: MonthlyExpenseFormValue) {
-    if (!editingExpense) return;
-    const expense = await updateExpense(editingExpense.id, {
-      name: value.name,
-      expectedAmount: value.expectedAmount ?? null,
-      dueDay: value.dueDay ?? null,
-    });
-    if (!expense) return;
+  function onOpenCreate() {
     setEditingExpense(undefined);
+    setIsCreateOpen(true);
+  }
+
+  function onOpenEdit(expense: MonthlyExpenseDTO) {
+    setIsCreateOpen(false);
+    setEditingExpense(expense);
+  }
+
+  async function onSaveDialog(value: MonthlyExpenseFormValue) {
+    if (editingExpense) {
+      const expense = await updateExpense(editingExpense.id, {
+        name: value.name,
+        expectedAmount: value.expectedAmount ?? null,
+        dueDay: value.dueDay ?? null,
+      });
+      if (!expense) return;
+      onCloseDialog();
+      return;
+    }
+    const expense = await createExpense(value);
+    if (!expense) return;
+    onCloseDialog();
   }
 
   async function onDelete() {
     if (!editingExpense) return;
     const deleted = await archiveExpense(editingExpense.id);
-    if (deleted) setEditingExpense(undefined);
+    if (deleted) onCloseDialog();
   }
 
   function onMonthSelect(nextMonth: string) {
     if (!nextMonth) return;
-    setIsComposerOpen(false);
-    setEditingExpense(undefined);
+    onCloseDialog();
     navigate({
       to: "/bills",
       search: toBillsRouteSearch(nextMonth),
@@ -178,6 +186,7 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
       dictionary={dictionary}
       frameClassName="page-frame-min-height"
       mainClassName="items-stretch sm:items-start"
+      showLogout
       title={t.windowTitle}
       wide
       windowClassName="relative overflow-hidden"
@@ -244,66 +253,30 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
         size="sm"
       >
         <CardContent className="space-y-3 p-3">
-          <div className="flex flex-wrap items-end gap-2">
-            <div className="flex min-w-0 flex-1 flex-wrap items-end gap-2">
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <Button
-                      aria-label={t.previousMonth}
-                      onClick={() =>
-                        onMonthSelect(shiftBillsMonth(selectedMonth, -1))
-                      }
-                      size="icon"
-                      type="button"
-                      variant="outline"
-                    />
-                  }
-                >
-                  <ChevronLeft />
-                </TooltipTrigger>
-                <TooltipContent>{t.previousMonth}</TooltipContent>
-              </Tooltip>
-              <Field className="min-w-0 flex-1 gap-1.5 sm:max-w-[12rem]">
-                <FieldLabel
-                  className="flex items-center gap-1.5 font-mono text-2xs text-term-muted uppercase tracking-wide"
-                  htmlFor="bills-month"
-                >
-                  <CalendarRange
-                    aria-hidden="true"
-                    className="size-3.5 text-term-cyan"
-                  />
-                  {t.monthLabel}
-                </FieldLabel>
-                <Input
-                  aria-describedby="bills-month-description"
-                  id="bills-month"
-                  max={currentMonth}
-                  onChange={(event) => onMonthSelect(event.target.value)}
-                  type="month"
-                  value={selectedMonth}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <Field className="w-full min-w-0 flex-1 gap-1.5 sm:w-auto sm:max-w-sm">
+              <FieldLabel
+                className="flex items-center gap-1.5 font-mono text-2xs text-term-muted uppercase tracking-wide"
+                htmlFor="bills-month"
+              >
+                <CalendarRange
+                  aria-hidden="true"
+                  className="size-3.5 text-term-cyan"
                 />
-              </Field>
-              <Tooltip>
-                <TooltipTrigger
-                  disabled={selectedMonth >= currentMonth}
-                  render={
-                    <Button
-                      aria-label={t.nextMonth}
-                      disabled={selectedMonth >= currentMonth}
-                      onClick={() =>
-                        onMonthSelect(shiftBillsMonth(selectedMonth, 1))
-                      }
-                      size="icon"
-                      type="button"
-                      variant="outline"
-                    />
-                  }
-                >
-                  <ChevronRight />
-                </TooltipTrigger>
-                <TooltipContent>{t.nextMonth}</TooltipContent>
-              </Tooltip>
+                {t.monthLabel}
+              </FieldLabel>
+              <BillsMonthSelect
+                describedBy="bills-month-description"
+                id="bills-month"
+                locale={prefs.locale}
+                maxMonth={currentMonth}
+                nextMonthLabel={t.nextMonth}
+                onMonthChange={onMonthSelect}
+                previousMonthLabel={t.previousMonth}
+                value={selectedMonth}
+              />
+            </Field>
+            <div className="flex w-full flex-col gap-2 sm:ml-auto sm:w-auto sm:flex-row sm:items-center">
               {search.month !== undefined && (
                 <Button
                   className="hidden sm:inline-flex"
@@ -314,17 +287,15 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
                   {t.currentMonthAction}
                 </Button>
               )}
-            </div>
-            {!isComposerOpen && (
               <Button
-                className="w-full sm:ml-auto sm:w-auto"
-                onClick={() => setIsComposerOpen(true)}
+                className="w-full sm:w-auto"
+                onClick={onOpenCreate}
                 type="button"
               >
                 <Plus />
                 {t.createPrompt}
               </Button>
-            )}
+            </div>
           </div>
           <p
             className="mb-0 font-mono text-2xs text-term-muted"
@@ -391,27 +362,6 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
           />
         </dl>
       </Card>
-      {isComposerOpen && (
-        <Card
-          aria-label={t.createPrompt}
-          className="mb-4 gap-0 border-term-green/25 bg-term-green/5 py-0 shadow-none"
-          size="sm"
-        >
-          <CardHeader className="px-3 py-3">
-            <CardTitle className="font-mono text-2xs text-term-green uppercase tracking-wider">
-              &gt; {t.createPrompt}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-3 pb-3">
-            <MonthlyExpenseForm
-              isSubmitting={isSubmitting}
-              onCancel={() => setIsComposerOpen(false)}
-              onSubmit={onCreate}
-              t={t}
-            />
-          </CardContent>
-        </Card>
-      )}
       <section aria-labelledby="monthly-bills-list" className="space-y-2">
         <div
           className="flex items-center gap-2 font-mono text-2xs text-term-muted uppercase tracking-wide"
@@ -433,7 +383,7 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
                   expense={expense}
                   isSubmitting={isSubmitting}
                   locale={prefs.locale}
-                  onEdit={() => setEditingExpense(expense)}
+                  onEdit={() => onOpenEdit(expense)}
                   onTogglePaid={() => setPaid(expense.id, !expense.isPaid)}
                   t={t}
                 />
@@ -460,9 +410,10 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
         canArchive={selectedMonth === currentMonth}
         expense={editingExpense}
         isSubmitting={isSubmitting}
-        onClose={() => setEditingExpense(undefined)}
+        onClose={onCloseDialog}
         onDelete={onDelete}
-        onSave={onUpdate}
+        onSave={onSaveDialog}
+        open={isDialogOpen}
         t={t}
       />
     </TerminalWindow>

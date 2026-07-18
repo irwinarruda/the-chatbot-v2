@@ -52,6 +52,7 @@ export function TodoDetailScreen({
   return (
     <TodoDetailDialog
       isSubmitting={isTodoSubmitting}
+      mode="edit"
       onClose={onCloseDialog}
       onDelete={onDeleteTodo}
       onSave={onSaveTodo}

@@ -9,6 +9,8 @@
   "common": {
     "close": "Close",
     "dismiss": "Dismiss",
+    "logout": "logout",
+    "openNavigation": "Open navigation",
     "pauseAudio": "Pause audio",
     "playAudio": "Play audio",
     "skipToContent": "Skip to content",

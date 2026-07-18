@@ -1,5 +1,5 @@
 import { Link, useRouter } from "@tanstack/react-router";
-import { MenuIcon, Moon, Sun } from "lucide-react";
+import { LogOut, Moon, Sun, TextAlignJustify } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { TerminalChromeButton } from "~/shared/client/components/terminal/TerminalChromeButton";
 import { TerminalResponsiveOverlay } from "~/shared/client/components/terminal/TerminalResponsiveOverlay";
@@ -19,9 +19,9 @@ type TerminalNavLink = {
 function getNavigationLinkClassName(isActive: boolean, mobile = false) {
   if (mobile) {
     if (isActive) {
-      return "w-full justify-between border-term-green/25 bg-term-green/8 text-term-green hover:bg-term-green/12 hover:text-term-green";
+      return "w-full justify-start border-term-green/25 bg-term-green/8 text-term-green hover:bg-term-green/12 hover:text-term-green";
     }
-    return "w-full justify-between border-transparent text-term-text hover:border-term-border hover:bg-term-chrome hover:text-term-bright";
+    return "w-full justify-start border-transparent text-term-text hover:border-term-border hover:bg-term-chrome hover:text-term-bright";
   }
   if (isActive) {
     return "bg-term-green/8 font-medium text-term-green hover:bg-term-green/12 hover:text-term-green";
@@ -59,6 +59,8 @@ export function TerminalWindow({
   dictionary,
   frameClassName,
   mainClassName,
+  navigationClassName,
+  showLogout = false,
   showNavigation,
   showShadow = true,
   title,
@@ -71,6 +73,8 @@ export function TerminalWindow({
   dictionary?: Pick<Dictionary, "common" | "nav">;
   frameClassName?: string;
   mainClassName?: string;
+  navigationClassName?: string;
+  showLogout?: boolean;
   showNavigation?: boolean;
   showShadow?: boolean;
   title: string;
@@ -81,6 +85,7 @@ export function TerminalWindow({
   const prefs = usePrefs();
   const toggleTheme = useApp((state) => state.toggleTheme);
   const toggleLocale = useApp((state) => state.toggleLocale);
+  const logout = useApp((state) => state.logout);
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
   const navLinks: TerminalNavLink[] = dictionary
     ? [
@@ -97,6 +102,8 @@ export function TerminalWindow({
   const closeLabel = dictionary?.common.close ?? title;
   const homeLabel = dictionary?.nav.home ?? "/";
   const skipToContentLabel = dictionary?.common.skipToContent ?? title;
+  const logoutLabel = dictionary?.common.logout ?? "logout";
+  const openNavigationLabel = dictionary?.common.openNavigation ?? activeLabel;
   const themeLabel =
     prefs.theme === "light"
       ? (dictionary?.common.switchToDarkTheme ?? "dark")
@@ -122,6 +129,40 @@ export function TerminalWindow({
   function onNavigationSelect() {
     setIsNavigationOpen(false);
   }
+
+  async function onLogout() {
+    setIsNavigationOpen(false);
+    await logout();
+    router.navigate({ to: "/chat/login" });
+  }
+
+  const localeThemeControls = (
+    <>
+      <TerminalChromeButton onClick={onToggleLocale} title={prefs.locale}>
+        {prefs.locale === "pt-BR" ? "PT" : "EN"}
+      </TerminalChromeButton>
+      <TerminalChromeButton onClick={toggleTheme} title={themeLabel}>
+        {prefs.theme === "light" ? (
+          <Sun className="size-3" />
+        ) : (
+          <Moon className="size-3" />
+        )}
+      </TerminalChromeButton>
+    </>
+  );
+
+  const logoutControl = showLogout ? (
+    <Button
+      type="button"
+      onClick={onLogout}
+      variant="ghost"
+      size="xs"
+      className="min-h-6 rounded-md border border-transparent px-1.5 py-0.5 font-mono text-[0.6875rem] text-term-red leading-none hover:border-term-red/30 hover:bg-term-red/10 hover:text-term-red"
+    >
+      <LogOut className="size-3" />
+      {logoutLabel}
+    </Button>
+  ) : null;
 
   return (
     <>
@@ -165,30 +206,35 @@ export function TerminalWindow({
                 onClick={onGoHome}
               />
             </div>
-            <span className="mx-auto min-w-0 select-none truncate px-2 font-mono text-term-muted text-xs tracking-wide">
+            {shouldShowNavigation && dictionary ? (
+              <Button
+                type="button"
+                onClick={onNavigationOpen}
+                aria-expanded={isNavigationOpen}
+                aria-haspopup="dialog"
+                aria-label={openNavigationLabel}
+                variant="ghost"
+                size="sm"
+                className="mx-auto min-w-0 max-w-full flex-1 justify-start gap-2 border border-transparent px-2 font-mono text-term-muted text-xs tracking-wide hover:border-term-border/70 hover:bg-term-bg/50 hover:text-term-bright sm:hidden"
+              >
+                <TextAlignJustify className="size-4 shrink-0 text-term-green" />
+                <span className="min-w-0 truncate">{title}</span>
+              </Button>
+            ) : null}
+            <span
+              className={cn(
+                "min-w-0 select-none truncate px-2 font-mono text-term-muted text-xs tracking-wide",
+                shouldShowNavigation && dictionary
+                  ? "hidden sm:mx-auto sm:block"
+                  : "mx-auto",
+              )}
+            >
               {title}
             </span>
             <div className="flex shrink-0 items-center gap-1.5">
-              {chromeControls ?? (
-                <>
-                  <TerminalChromeButton
-                    onClick={onToggleLocale}
-                    title={prefs.locale}
-                  >
-                    {prefs.locale === "pt-BR" ? "PT" : "EN"}
-                  </TerminalChromeButton>
-                  <TerminalChromeButton
-                    onClick={toggleTheme}
-                    title={themeLabel}
-                  >
-                    {prefs.theme === "light" ? (
-                      <Sun className="size-3" />
-                    ) : (
-                      <Moon className="size-3" />
-                    )}
-                  </TerminalChromeButton>
-                </>
-              )}
+              {chromeControls}
+              {localeThemeControls}
+              {logoutControl}
             </div>
           </div>
 
@@ -202,27 +248,12 @@ export function TerminalWindow({
           >
             {shouldShowNavigation && dictionary && (
               <>
-                <div className="mb-6 sm:hidden">
-                  <Button
-                    type="button"
-                    onClick={onNavigationOpen}
-                    aria-expanded={isNavigationOpen}
-                    aria-haspopup="dialog"
-                    variant="outline"
-                    className="w-full justify-between border-term-border bg-term-chrome/35 font-mono text-term-text hover:bg-term-chrome hover:text-term-bright"
-                  >
-                    <span className="flex min-w-0 items-center gap-2">
-                      <MenuIcon className="size-4 text-term-green" />
-                      <span className="truncate">{activeLabel}</span>
-                    </span>
-                    <span aria-hidden="true" className="text-term-muted">
-                      /
-                    </span>
-                  </Button>
-                </div>
                 <nav
                   aria-label={title}
-                  className="mb-7 hidden items-center gap-1 sm:flex"
+                  className={cn(
+                    "mb-7 hidden items-center gap-1 sm:flex",
+                    navigationClassName,
+                  )}
                 >
                   {navLinks.map((link) => {
                     const isActive = link.href === activePath;
@@ -255,10 +286,13 @@ export function TerminalWindow({
                   open={isNavigationOpen}
                   onOpenChange={onNavigationChange}
                   closeLabel={closeLabel}
-                  title={activeLabel}
-                  description={title}
+                  title={title}
+                  description={openNavigationLabel}
                   contentClassName="border-term-border bg-term-window"
                   bodyClassName="pt-3"
+                  titleClassName="truncate font-mono text-xs font-normal text-term-muted tracking-wide"
+                  descriptionClassName="sr-only"
+                  headerClassName="items-center"
                 >
                   <nav aria-label={title} className="grid gap-1.5">
                     {navLinks.map((link) => {
@@ -280,14 +314,53 @@ export function TerminalWindow({
                             getNavigationLinkClassName(isActive, true),
                           )}
                         >
-                          <span>{link.label}</span>
-                          <span aria-hidden="true" className="text-term-muted">
-                            /
+                          <span>
+                            <span
+                              aria-hidden="true"
+                              className={
+                                isActive
+                                  ? "text-term-green/70"
+                                  : "text-term-muted"
+                              }
+                            >
+                              /
+                            </span>
+                            {link.label}
                           </span>
                         </Button>
                       );
                     })}
                   </nav>
+                  <div className="mt-4 flex flex-wrap items-center gap-2 border-term-border border-t pt-4">
+                    <TerminalChromeButton
+                      onClick={onToggleLocale}
+                      title={prefs.locale}
+                    >
+                      {prefs.locale === "pt-BR" ? "PT" : "EN"}
+                    </TerminalChromeButton>
+                    <TerminalChromeButton
+                      onClick={toggleTheme}
+                      title={themeLabel}
+                    >
+                      {prefs.theme === "light" ? (
+                        <Sun className="size-3" />
+                      ) : (
+                        <Moon className="size-3" />
+                      )}
+                    </TerminalChromeButton>
+                    {showLogout && (
+                      <Button
+                        type="button"
+                        onClick={onLogout}
+                        variant="ghost"
+                        size="xs"
+                        className="ml-auto min-h-6 rounded-md border border-transparent px-1.5 py-0.5 font-mono text-[0.6875rem] text-term-red leading-none hover:border-term-red/30 hover:bg-term-red/10 hover:text-term-red"
+                      >
+                        <LogOut className="size-3" />
+                        {logoutLabel}
+                      </Button>
+                    )}
+                  </div>
                 </TerminalResponsiveOverlay>
               </>
             )}

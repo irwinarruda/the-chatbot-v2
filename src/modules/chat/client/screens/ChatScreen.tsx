@@ -1,17 +1,12 @@
-import { useNavigate, useRouter } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   ArrowDown,
   ArrowUp,
   CircleAlert,
-  ListTodo,
-  LogOut,
   MessageSquare,
   Mic,
-  Moon,
-  ReceiptText,
   Send,
-  Sun,
   Trash2,
   X,
 } from "lucide-react";
@@ -27,10 +22,8 @@ import {
 import { ChatMessage } from "~/modules/chat/client/components/ChatMessage";
 import { audioInputService } from "~/modules/chat/client/services/audioInputService";
 import type { ChatErrorCode } from "~/modules/chat/client/state/chatSlice";
-import { TerminalChromeButton } from "~/shared/client/components/terminal/TerminalChromeButton";
 import { TerminalWindow } from "~/shared/client/components/terminal/TerminalWindow";
 import { Alert, AlertDescription } from "~/shared/client/components/ui/alert";
-import { Badge } from "~/shared/client/components/ui/badge";
 import { Button } from "~/shared/client/components/ui/button";
 import { Card, CardContent } from "~/shared/client/components/ui/card";
 import {
@@ -59,7 +52,6 @@ export function ChatScreen() {
   // TanStack Virtual reads mutable virtualizer state during render.
   "use no memo";
   const navigate = useNavigate();
-  const router = useRouter();
   const prefs = usePrefs();
   const currentUser = useApp((s) => s.currentUser);
   const chatMessages = useApp((s) => s.chatMessages);
@@ -73,8 +65,6 @@ export function ChatScreen() {
   const recordingDuration = useApp((s) => s.recordingDuration);
   const canSendChatInput = useApp((s) => s.canSendChatInput);
   const canSelectAudioInput = useApp((s) => s.canSelectAudioInput);
-  const toggleTheme = useApp((s) => s.toggleTheme);
-  const toggleLocale = useApp((s) => s.toggleLocale);
   const setChatInput = useApp((s) => s.setChatInput);
   const clearChatError = useApp((s) => s.clearChatError);
   const bootstrapChat = useApp((s) => s.bootstrapChat);
@@ -85,7 +75,6 @@ export function ChatScreen() {
   const sendButtonReply = useApp((s) => s.sendButtonReply);
   const startRecording = useApp((s) => s.startRecording);
   const stopRecording = useApp((s) => s.stopRecording);
-  const logout = useApp((s) => s.logout);
   const dictionary = getDictionary(prefs.locale);
   const t = dictionary.chatPage;
   const inputElRef = useRef<HTMLTextAreaElement | null>(null);
@@ -125,14 +114,6 @@ export function ChatScreen() {
   const windowTitle = currentUser
     ? `${t.windowTitle} - ${currentUser.name}`
     : t.windowTitle;
-  const connectionLabel = currentUser
-    ? dictionary.alreadySignedInPage.badge
-    : t.errorLoading;
-  const themeLabel =
-    prefs.theme === "light"
-      ? dictionary.common.switchToDarkTheme
-      : dictionary.common.switchToLightTheme;
-
   function onScroll() {
     const el = parentRef.current;
     if (!el) return;
@@ -177,24 +158,6 @@ export function ChatScreen() {
     }
     event.preventDefault();
     void onSend();
-  }
-
-  async function onLogout() {
-    await logout();
-    navigate({ to: "/chat/login" });
-  }
-
-  function onOpenTodos() {
-    navigate({ to: "/todo" });
-  }
-
-  function onOpenBills() {
-    navigate({ to: "/bills" });
-  }
-
-  async function onToggleLocale() {
-    await toggleLocale();
-    router.invalidate();
   }
 
   function onScrollToBottom() {
@@ -301,58 +264,12 @@ export function ChatScreen() {
     <TerminalWindow
       title={windowTitle}
       wide
+      activePath="/chat"
       dictionary={dictionary}
-      showNavigation={false}
-      chromeControls={
-        <>
-          <Badge
-            variant="outline"
-            role="status"
-            aria-label={connectionLabel}
-            className="h-6 gap-1.5 rounded-md border-term-border bg-term-bg/45 px-1.5 font-mono text-2xs text-term-muted"
-          >
-            <span
-              aria-hidden="true"
-              className={`size-1.5 rounded-full ${
-                currentUser
-                  ? "bg-term-green-dot motion-safe:animate-glow-pulse"
-                  : "bg-term-muted"
-              }`}
-            />
-            <span className="pointer-fine:inline hidden">
-              {connectionLabel}
-            </span>
-          </Badge>
-          <TerminalChromeButton onClick={onToggleLocale} title={prefs.locale}>
-            {prefs.locale === "pt-BR" ? "PT" : "EN"}
-          </TerminalChromeButton>
-          <TerminalChromeButton onClick={onOpenTodos} title={t.todoAction}>
-            <ListTodo className="size-3" />
-          </TerminalChromeButton>
-          <TerminalChromeButton onClick={onOpenBills} title={t.billsAction}>
-            <ReceiptText className="size-3" />
-          </TerminalChromeButton>
-          <TerminalChromeButton onClick={toggleTheme} title={themeLabel}>
-            {prefs.theme === "light" ? (
-              <Sun className="size-3" />
-            ) : (
-              <Moon className="size-3" />
-            )}
-          </TerminalChromeButton>
-          <Button
-            type="button"
-            onClick={onLogout}
-            variant="ghost"
-            size="xs"
-            className="min-h-6 rounded-md border border-transparent px-1.5 py-0.5 font-mono text-[0.6875rem] text-term-red leading-none hover:border-term-red/30 hover:bg-term-red/10 hover:text-term-red"
-          >
-            <LogOut className="size-3" />
-            {t.logout}
-          </Button>
-        </>
-      }
+      showLogout
       mainClassName="items-stretch sm:items-center"
       frameClassName="chat-frame-height"
+      navigationClassName="sm:mx-auto sm:mt-3 sm:w-full sm:max-w-3xl"
       windowClassName="relative flex min-h-0 flex-1 flex-col overflow-hidden p-0 sm:p-0 md:p-0"
       showShadow={false}
     >
@@ -504,7 +421,7 @@ export function ChatScreen() {
 
       {showScrollBtn && chatMessages.length > 0 && (
         <div
-          className="pointer-events-none absolute right-[max(1rem,env(safe-area-inset-right))] sm:right-6"
+          className="pointer-events-none absolute right-[max(1rem,env(safe-area-inset-right))] sm:right-auto sm:left-1/2 sm:flex sm:w-full sm:max-w-3xl sm:-translate-x-1/2 sm:justify-end"
           style={{ bottom: `${Math.max(composerHeight, 96) + 16}px` }}
         >
           <TooltipButton

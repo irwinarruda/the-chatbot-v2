@@ -9,7 +9,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { TodoComposer } from "~/modules/todos/client/components/TodoComposer";
+import { TodoDetailDialog } from "~/modules/todos/client/components/TodoDetailDialog";
 import {
   TodoFilters,
   type TodoFilterValues,
@@ -54,20 +54,16 @@ export function TodoScreen({ search }: { search: TodoSearch }) {
   const navigate = useNavigate();
   const prefs = usePrefs();
   const todos = useApp((s) => s.todos);
-  const todoDraft = useApp((s) => s.todoDraft);
   const todoError = useApp((s) => s.todoError);
   const isTodoBootstrapping = useApp((s) => s.isTodoBootstrapping);
   const isTodoSubmitting = useApp((s) => s.isTodoSubmitting);
   const pendingTodoCount = useApp((s) => s.pendingTodoCount);
   const completedTodoCount = useApp((s) => s.completedTodoCount);
-  const canSaveTodoDraft = useApp((s) => s.canSaveTodoDraft);
   const bootstrapTodos = useApp((s) => s.bootstrapTodos);
-  const setTodoDraft = useApp((s) => s.setTodoDraft);
-  const resetTodoDraft = useApp((s) => s.resetTodoDraft);
-  const createTodoFromDraft = useApp((s) => s.createTodoFromDraft);
+  const createTodo = useApp((s) => s.createTodo);
   const updateTodo = useApp((s) => s.updateTodo);
   const clearTodoError = useApp((s) => s.clearTodoError);
-  const [isTodoComposerOpen, setIsTodoComposerOpen] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const dictionary = getDictionary(prefs.locale);
   const t = dictionary.todoPage;
   const filters: TodoFilterValues = {
@@ -96,18 +92,24 @@ export function TodoScreen({ search }: { search: TodoSearch }) {
   }
 
   function onOpenTodo(id: string) {
+    setIsCreateOpen(false);
     navigate({ to: "/todo/$todoId", params: { todoId: id }, search });
   }
 
-  function onCancelTodo() {
-    resetTodoDraft();
-    setIsTodoComposerOpen(false);
+  function onOpenCreate() {
+    setIsCreateOpen(true);
+    navigate({ to: "/todo", search });
   }
 
-  async function onCreateTodo() {
-    const todo = await createTodoFromDraft();
+  async function onCreateTodo(patch: {
+    name: string;
+    description: string;
+    dueDate: string | null;
+    status: TodoStatusDTO;
+  }) {
+    const todo = await createTodo(patch);
     if (!todo) return;
-    setIsTodoComposerOpen(false);
+    setIsCreateOpen(false);
   }
 
   async function onToggleTodoStatus(id: string, status: TodoStatusDTO) {
@@ -126,6 +128,7 @@ export function TodoScreen({ search }: { search: TodoSearch }) {
       wide
       activePath="/todo"
       dictionary={dictionary}
+      showLogout
       mainClassName="items-stretch sm:items-start"
       frameClassName="page-frame-min-height"
       windowClassName="relative overflow-hidden"
@@ -195,16 +198,14 @@ export function TodoScreen({ search }: { search: TodoSearch }) {
         <CardContent className="p-3">
           <TodoFilters
             action={
-              !isTodoComposerOpen && (
-                <Button
-                  className="w-full md:w-auto"
-                  onClick={() => setIsTodoComposerOpen(true)}
-                  type="button"
-                >
-                  <Plus />
-                  {t.createPrompt}
-                </Button>
-              )
+              <Button
+                className="w-full md:w-auto"
+                onClick={onOpenCreate}
+                type="button"
+              >
+                <Plus />
+                {t.createPrompt}
+              </Button>
             }
             filters={filters}
             onChange={onChangeFilters}
@@ -213,19 +214,6 @@ export function TodoScreen({ search }: { search: TodoSearch }) {
           />
         </CardContent>
       </Card>
-      {isTodoComposerOpen && (
-        <section aria-label={t.createPrompt} className="mb-4">
-          <TodoComposer
-            canSave={canSaveTodoDraft}
-            draft={todoDraft}
-            isSubmitting={isTodoSubmitting}
-            onChange={setTodoDraft}
-            onCancel={onCancelTodo}
-            onSubmit={onCreateTodo}
-            t={t}
-          />
-        </section>
-      )}
       <section aria-labelledby="todo-list-heading" className="space-y-2">
         <div
           id="todo-list-heading"
@@ -280,6 +268,15 @@ export function TodoScreen({ search }: { search: TodoSearch }) {
           </Empty>
         )}
       </section>
+      <TodoDetailDialog
+        isSubmitting={isTodoSubmitting}
+        mode="create"
+        onClose={() => setIsCreateOpen(false)}
+        onSave={onCreateTodo}
+        open={isCreateOpen}
+        t={t}
+        theme={prefs.theme}
+      />
       <Outlet />
     </TerminalWindow>
   );

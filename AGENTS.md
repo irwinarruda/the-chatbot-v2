@@ -25,14 +25,18 @@ timestamp/filename.
 
 This project is used in production by one person. Backward compatibility is not
 required, so prefer direct migrations and refactors over compatibility layers.
-However, data loss is NEVER acceptable: preserve and migrate all existing
-production data before changing or removing storage, schemas, or contracts.
+Never lose important user-specific data. Disposable state is fine to drop —
+sessions, auth tokens/hashes, connection state, and similar. Use common sense.
 
 ## Git
 
 All commit messages MUST follow the Conventional Commits specification. Use
 `<type>(<scope>): <description>` when a scope is useful, or
 `<type>: <description>` otherwise. Never create a non-conventional commit.
+
+Never add `Co-authored-by`, `Co-Authored-By`, or any other co-author trailer to
+commits when acting as an agent. Commit messages must not attribute the agent
+as a co-author.
 
 ## Environment System
 

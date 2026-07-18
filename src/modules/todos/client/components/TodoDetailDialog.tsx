@@ -45,6 +45,7 @@ import type { Dictionary } from "~/shared/client/i18n";
 
 export function TodoDetailDialog({
   isSubmitting,
+  mode = "edit",
   onClose,
   onDelete,
   onSave,
@@ -54,8 +55,9 @@ export function TodoDetailDialog({
   todo,
 }: {
   isSubmitting: boolean;
+  mode?: "create" | "edit";
   onClose: () => void;
-  onDelete: () => void;
+  onDelete?: () => void;
   onSave: (patch: {
     name: string;
     description: string;
@@ -67,14 +69,17 @@ export function TodoDetailDialog({
   theme: "dark" | "light";
   todo?: TodoDTO;
 }) {
+  const isCreate = mode === "create";
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [status, setStatus] = useState<TodoDTO["status"]>("Pending");
   const source = todo?.sourceMessage;
-  const modalTitle = todo?.name ?? t.detailTitle;
+  const modalTitle = isCreate ? t.createPrompt : (todo?.name ?? t.detailTitle);
+  const submitLabel = isCreate ? t.createAction : t.saveAction;
   const statusLabel =
     status === "Completed" ? t.statusCompleted : t.statusPending;
+  const showForm = isCreate || Boolean(todo);
 
   function onOpenChange(nextOpen: boolean) {
     if (!nextOpen) onClose();
@@ -91,12 +96,20 @@ export function TodoDetailDialog({
   };
 
   useEffect(() => {
+    if (!open) return;
+    if (isCreate) {
+      setName("");
+      setDescription("");
+      setDueDate("");
+      setStatus("Pending");
+      return;
+    }
     if (!todo) return;
     setName(todo.name);
     setDescription(todo.description);
     setDueDate(toTodoDueDateInputValue(todo.dueDate));
     setStatus(todo.status);
-  }, [todo]);
+  }, [isCreate, open, todo]);
 
   return (
     <TerminalResponsiveOverlay
@@ -104,47 +117,51 @@ export function TodoDetailDialog({
       closeLabel={t.cancelAction}
       description={t.subtitle}
       footer={
-        todo ? (
+        showForm ? (
           <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <AlertDialog>
-              <AlertDialogTrigger
-                render={
-                  <Button
-                    disabled={isSubmitting}
-                    type="button"
-                    variant="destructive"
-                  />
-                }
-              >
-                <Trash2 />
-                {t.deleteAction}
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogMedia className="bg-term-red/10 text-term-red">
-                    <Trash2 />
-                  </AlertDialogMedia>
-                  <AlertDialogTitle>
-                    {t.deleteAction}: {modalTitle}
-                  </AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {t.deleteConfirmation}
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>{t.cancelAction}</AlertDialogCancel>
-                  <AlertDialogAction
-                    disabled={isSubmitting}
-                    onClick={onDelete}
-                    type="button"
-                    variant="destructive"
-                  >
-                    <Trash2 />
-                    {t.deleteAction}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            {!isCreate && onDelete ? (
+              <AlertDialog>
+                <AlertDialogTrigger
+                  render={
+                    <Button
+                      disabled={isSubmitting}
+                      type="button"
+                      variant="destructive"
+                    />
+                  }
+                >
+                  <Trash2 />
+                  {t.deleteAction}
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogMedia className="bg-term-red/10 text-term-red">
+                      <Trash2 />
+                    </AlertDialogMedia>
+                    <AlertDialogTitle>
+                      {t.deleteAction}: {modalTitle}
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {t.deleteConfirmation}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>{t.cancelAction}</AlertDialogCancel>
+                    <AlertDialogAction
+                      disabled={isSubmitting}
+                      onClick={onDelete}
+                      type="button"
+                      variant="destructive"
+                    >
+                      <Trash2 />
+                      {t.deleteAction}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            ) : (
+              <span className="hidden sm:block" />
+            )}
             <div className="flex flex-col-reverse gap-2 sm:flex-row">
               <Button onClick={onClose} type="button" variant="outline">
                 {t.cancelAction}
@@ -154,7 +171,7 @@ export function TodoDetailDialog({
                 form="todo-detail-form"
                 type="submit"
               >
-                {t.saveAction}
+                {submitLabel}
               </Button>
             </div>
           </div>
@@ -164,7 +181,7 @@ export function TodoDetailDialog({
       open={open}
       title={modalTitle}
     >
-      {!todo ? (
+      {!showForm ? (
         <div aria-live="polite" className="space-y-3" role="status">
           <span className="sr-only">{t.loading}</span>
           <Skeleton className="h-14 w-full rounded-lg" />
@@ -247,7 +264,7 @@ export function TodoDetailDialog({
               />
             </Field>
           </FieldGroup>
-          {source && (
+          {!isCreate && source && (
             <Card
               className="gap-3 border-term-border bg-term-bg/55 py-3 shadow-none"
               size="sm"

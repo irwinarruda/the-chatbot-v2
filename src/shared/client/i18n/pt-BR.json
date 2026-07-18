@@ -9,6 +9,8 @@
   "common": {
     "close": "Fechar",
     "dismiss": "Dispensar",
+    "logout": "sair",
+    "openNavigation": "Abrir navegação",
     "pauseAudio": "Pausar áudio",
     "playAudio": "Reproduzir áudio",
     "skipToContent": "Ir para o conteúdo",
