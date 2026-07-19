@@ -241,8 +241,8 @@ export function TerminalWindow({
           <div
             className={cn(
               "flex flex-1 flex-col bg-term-window px-[max(1.5rem,env(safe-area-inset-left))] pt-6 pr-[max(1.5rem,env(safe-area-inset-right))] pb-[max(1.5rem,env(safe-area-inset-bottom))]",
-              "sm:rounded-b-xl sm:border sm:border-term-border sm:border-t-0 sm:p-9",
-              "sm:shadow-black/15 sm:shadow-xl md:p-10",
+              "sm:rounded-b-xl sm:border sm:border-term-border sm:border-t-0 sm:px-9 sm:pt-3 sm:pb-9",
+              "sm:shadow-black/15 sm:shadow-xl md:px-10 md:pb-10",
               windowClassName,
             )}
           >

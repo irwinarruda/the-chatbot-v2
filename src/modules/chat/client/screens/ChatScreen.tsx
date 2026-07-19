@@ -37,7 +37,6 @@ import {
   NativeSelect,
   NativeSelectOption,
 } from "~/shared/client/components/ui/native-select";
-import { Skeleton } from "~/shared/client/components/ui/skeleton";
 import { Textarea } from "~/shared/client/components/ui/textarea";
 import {
   Tooltip,
@@ -82,7 +81,6 @@ export function ChatScreen() {
   const parentRef = useRef<HTMLDivElement>(null);
   const isNearBottomRef = useRef(true);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
-  const [composerHeight, setComposerHeight] = useState(0);
   const isAssistantResponding =
     isChatSubmitting && chatMessages.at(-1)?.userType === "user";
   const lastChatItemIndex = isAssistantResponding
@@ -92,7 +90,7 @@ export function ChatScreen() {
     count: chatMessages.length + (isAssistantResponding ? 1 : 0),
     getScrollElement: () => parentRef.current,
     estimateSize: (index) => {
-      if (index === chatMessages.length) return 72;
+      if (index === chatMessages.length) return 56;
       const msg = chatMessages[index];
       if (msg.type === "audio" && msg.mediaUrl) return 90;
       if (
@@ -199,8 +197,7 @@ export function ChatScreen() {
   useEffect(() => {
     const composer = composerRef.current;
     if (!composer || typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(([entry]) => {
-      setComposerHeight(entry.contentRect.height);
+    const observer = new ResizeObserver(() => {
       if (isNearBottomRef.current && chatMessages.length > 0) {
         requestAnimationFrame(() => {
           virtualizer.scrollToIndex(lastChatItemIndex, { align: "end" });
@@ -350,9 +347,9 @@ export function ChatScreen() {
                     <div
                       role="status"
                       aria-live="polite"
-                      className="mr-auto flex w-56 max-w-[88%] flex-col items-start py-1.5"
+                      className="w-full py-2"
                     >
-                      <div className="mb-1 flex items-center gap-2 px-1 font-mono text-2xs uppercase tracking-wider">
+                      <div className="mb-1.5 flex items-center gap-2 font-mono text-2xs uppercase tracking-wider">
                         <span
                           aria-hidden="true"
                           className="font-bold text-term-green"
@@ -366,21 +363,9 @@ export function ChatScreen() {
                           {t.responding}
                         </span>
                       </div>
-                      <Card
-                        size="sm"
-                        className="w-full gap-0 rounded-lg border-term-border/80 bg-term-bg/55 py-0 shadow-none"
-                      >
-                        <CardContent className="flex items-center gap-2 px-3.5 py-3">
-                          <Skeleton
-                            aria-hidden="true"
-                            className="h-2.5 flex-1 rounded-full bg-term-green/15"
-                          />
-                          <span
-                            className="terminal-cursor h-3.5 w-1.5"
-                            aria-hidden="true"
-                          />
-                        </CardContent>
-                      </Card>
+                      <div className="pl-4">
+                        <span className="terminal-cursor" aria-hidden="true" />
+                      </div>
                     </div>
                   </div>
                 );
@@ -419,28 +404,24 @@ export function ChatScreen() {
         )}
       </div>
 
-      {showScrollBtn && chatMessages.length > 0 && (
-        <div
-          className="pointer-events-none absolute right-[max(1rem,env(safe-area-inset-right))] sm:right-auto sm:left-1/2 sm:flex sm:w-full sm:max-w-3xl sm:-translate-x-1/2 sm:justify-end"
-          style={{ bottom: `${Math.max(composerHeight, 96) + 16}px` }}
-        >
-          <TooltipButton
-            type="button"
-            onClick={onScrollToBottom}
-            label={t.scrollToLatest}
-            variant="outline"
-            size="icon"
-            className="pointer-events-auto rounded-full border-term-border bg-term-chrome/95 p-0 text-term-muted shadow-black/15 shadow-lg backdrop-blur-sm hover:border-term-green/35 hover:bg-term-green/10 hover:text-term-green"
-          >
-            <ArrowDown className="size-4" />
-          </TooltipButton>
-        </div>
-      )}
-
       <div
         ref={composerRef}
-        className="shrink-0 border-term-border/50 border-t bg-linear-to-t from-term-window via-term-window to-term-window/90 px-[max(0.75rem,env(safe-area-inset-left))] pt-2.5 pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-5 sm:pt-3 sm:pb-4"
+        className="relative shrink-0 border-term-border/50 border-t bg-linear-to-t from-term-window via-term-window to-term-window/90 px-[max(0.75rem,env(safe-area-inset-left))] pt-2.5 pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-5 sm:pt-3 sm:pb-4"
       >
+        {showScrollBtn && chatMessages.length > 0 && (
+          <div className="pointer-events-none absolute right-[max(1rem,env(safe-area-inset-right))] bottom-full z-10 mb-4 sm:right-auto sm:left-1/2 sm:flex sm:w-full sm:max-w-3xl sm:-translate-x-1/2 sm:justify-end">
+            <TooltipButton
+              type="button"
+              onClick={onScrollToBottom}
+              label={t.scrollToLatest}
+              variant="outline"
+              size="icon"
+              className="pointer-events-auto rounded-full border-term-border bg-term-chrome/95 p-0 text-term-muted shadow-black/15 shadow-lg backdrop-blur-sm hover:border-term-green/35 hover:bg-term-green/10 hover:text-term-green"
+            >
+              <ArrowDown className="size-4" />
+            </TooltipButton>
+          </div>
+        )}
         {isRecording ? (
           <Card
             size="sm"
