@@ -22,6 +22,11 @@ import { PromptLoader, PromptLocale } from "~/modules/chat/utils/PromptLoader";
 import { DeleteUserByChatChannelAddressToolDTO } from "~/modules/identity/entities/dtos/DeleteUserByChatChannelAddressToolDTO";
 import type { User } from "~/modules/identity/entities/User";
 import type { AuthService } from "~/modules/identity/services/AuthService";
+import { AppendToNoteToolDTO } from "~/modules/notes/entities/dtos/AppendToNoteToolDTO";
+import { CreateNoteToolDTO } from "~/modules/notes/entities/dtos/CreateNoteToolDTO";
+import { ListNotesToolDTO } from "~/modules/notes/entities/dtos/ListNotesToolDTO";
+import { ReadNoteToolDTO } from "~/modules/notes/entities/dtos/ReadNoteToolDTO";
+import type { NoteService } from "~/modules/notes/services/NoteService";
 import { GetCurrentDateTimeToolDTO } from "~/modules/system/entities/dtos/GetCurrentDateTimeToolDTO";
 import { CreateTodosToolDTO } from "~/modules/todos/entities/dtos/CreateTodosToolDTO";
 import { ListTodosToolDTO } from "~/modules/todos/entities/dtos/ListTodosToolDTO";
@@ -46,6 +51,7 @@ export class AiToolService extends ToolExecutor {
   private cashFlowService: CashFlowService;
   private monthlyExpenseService: MonthlyExpenseService;
   private todoService: TodoService;
+  private noteService: NoteService;
   private aiChatGateway: AiChatGateway;
   private now: () => Date;
 
@@ -54,6 +60,7 @@ export class AiToolService extends ToolExecutor {
     cashFlowService: CashFlowService,
     monthlyExpenseService: MonthlyExpenseService,
     todoService: TodoService,
+    noteService: NoteService,
     aiChatGateway: AiChatGateway,
     now: () => Date = () => new Date(),
   ) {
@@ -62,6 +69,7 @@ export class AiToolService extends ToolExecutor {
     this.cashFlowService = cashFlowService;
     this.monthlyExpenseService = monthlyExpenseService;
     this.todoService = todoService;
+    this.noteService = noteService;
     this.aiChatGateway = aiChatGateway;
     this.now = now;
     this.setTools(this.buildRegistry());
@@ -293,7 +301,8 @@ export class AiToolService extends ToolExecutor {
         name: "create_todos",
         description: [
           "Create one or more todos for the authenticated user.",
-          "Use this when the user asks to remember, note, create a task, save something to do later, or when an audio transcription contains clear tasks.",
+          "Use this only for actionable tasks the user intends to complete, especially when a date or deadline is involved.",
+          "Use create_note instead for ideas, references, links, durable prose, or information saved without a concrete action.",
           "One message may contain multiple todos. Extract each actionable item.",
           "Prefer one call with multiple todo objects when there is more than one.",
           "Use a short, clear, action-oriented name.",
@@ -336,6 +345,96 @@ export class AiToolService extends ToolExecutor {
             status: input.status,
           });
           return { count: todos.length, todos: todos.map((t) => t.toJSON()) };
+        },
+      },
+      {
+        name: "create_note",
+        description: [
+          "Create one named personal note for the authenticated user.",
+          "Use this for ideas, references, links, durable prose, or anything worth saving that is not a concrete task with a completion lifecycle.",
+          "A brief or rough capture may be expanded into clear standard Markdown, but preserve the user's meaning, facts, uncertainty, links, and language. Do not invent details.",
+          "Use a concise descriptive name and structure the Markdown for future readability.",
+          "Returns { message, note }.",
+        ].join("\n"),
+        inputSchema: CreateNoteToolDTO,
+        mutating: true,
+        run: async (args, context) => {
+          const input = CreateNoteToolDTO.parse(args);
+          const user = await this.resolveUser(context);
+          const note = await this.noteService.createNote({
+            idUser: user.id,
+            idSourceMessage: context.sourceMessage.id,
+            name: input.name,
+            markdown: input.markdown,
+          });
+          return { message: "Note created", note: note.toJSON() };
+        },
+      },
+      {
+        name: "list_notes",
+        description: [
+          "List the user's notes, optionally filtered by a search term.",
+          "Use this to find the exact note ID before reading or appending to a note.",
+          "Returns metadata and short previews, not full note bodies.",
+        ].join("\n"),
+        inputSchema: ListNotesToolDTO,
+        mutating: false,
+        run: async (args, context) => {
+          const input = ListNotesToolDTO.parse(args);
+          const user = await this.resolveUser(context);
+          const notes = await this.noteService.listNotes(user.id, {
+            search: input.search,
+          });
+          return {
+            count: notes.length,
+            notes: notes.map((note) => ({
+              id: note.id,
+              name: note.name,
+              preview: note.markdown.replace(/\s+/g, " ").trim().slice(0, 180),
+              updatedAt: note.updatedAt.toISOString(),
+            })),
+          };
+        },
+      },
+      {
+        name: "read_note",
+        description: [
+          "Read one complete note using the exact ID returned by list_notes.",
+          "The stored body is standard Markdown. Present it faithfully in the formatting supported by the current chat channel without changing its meaning.",
+          "Returns { note }.",
+        ].join("\n"),
+        inputSchema: ReadNoteToolDTO,
+        mutating: false,
+        run: async (args, context) => {
+          const input = ReadNoteToolDTO.parse(args);
+          const user = await this.resolveUser(context);
+          const note = await this.noteService.getNoteById(
+            user.id,
+            input.note_id,
+          );
+          return { note: note.toJSON() };
+        },
+      },
+      {
+        name: "append_to_note",
+        description: [
+          "Append standard Markdown to the bottom of one existing note.",
+          "Use the exact ID returned by list_notes.",
+          "This operation never rewrites or reformats the existing note. Preserve the user's intent and append only the requested information.",
+          "Because it is additive and preserves existing content, execute it immediately when the user asks; do not ask for destructive-action confirmation.",
+          "Returns { message, note }.",
+        ].join("\n"),
+        inputSchema: AppendToNoteToolDTO,
+        mutating: true,
+        run: async (args, context) => {
+          const input = AppendToNoteToolDTO.parse(args);
+          const user = await this.resolveUser(context);
+          const note = await this.noteService.appendToNote(
+            user.id,
+            input.note_id,
+            input.markdown,
+          );
+          return { message: "Note updated", note: note.toJSON() };
         },
       },
       {

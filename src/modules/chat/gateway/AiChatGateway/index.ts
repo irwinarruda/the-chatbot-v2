@@ -6,6 +6,7 @@ import type {
   AiInputEstimateRequestDTO,
   AiSummaryCandidateDTO,
 } from "~/modules/chat/entities/dtos/AiChatGatewayDTO";
+import type { TextGenerationGateway } from "~/shared/gateway/TextGenerationGateway";
 
 export type {
   AiChatContextMessageDTO,
@@ -18,11 +19,10 @@ export type {
   TestAiScriptedResponseDTO,
 } from "~/modules/chat/entities/dtos/AiChatGatewayDTO";
 
-export interface AiChatGateway {
+export interface AiChatGateway extends TextGenerationGateway {
   getContextWindowTokens(): number;
   complete(request: AiCompletionRequestDTO): Promise<AiCompletionResponseDTO>;
   estimateInputTokens(request: AiInputEstimateRequestDTO): number;
-  generateText(systemPrompt: string, userText: string): Promise<string>;
   generateSummary(
     messages: AiChatContextMessageDTO[],
     existingSummary?: ConversationSummary,

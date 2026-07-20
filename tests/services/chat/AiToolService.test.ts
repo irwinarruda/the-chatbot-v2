@@ -13,6 +13,7 @@ describe("AiToolService", () => {
       orquestrator.cashFlowService,
       orquestrator.monthlyExpenseService,
       orquestrator.todoService,
+      orquestrator.noteService,
       orquestrator.aiGateway,
       () => now,
     );

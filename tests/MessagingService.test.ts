@@ -1020,6 +1020,50 @@ describe("MessagingService", () => {
     });
   });
 
+  test("create_note binds the Markdown note to the source message", async () => {
+    await orquestrator.clearDatabase();
+    const user = await orquestrator.createUser({
+      phoneNumber: "5511912345678",
+    });
+    const webAddress = user.email ?? "";
+    const aiGateway = orquestrator.aiGateway;
+    aiGateway.scriptedResponses = [
+      {
+        toolCalls: [
+          {
+            type: MessageContentType.ToolCall,
+            callId: "call-note",
+            name: "create_note",
+            arguments: {
+              name: "Editor idea",
+              markdown: "# Idea\n\nBuild a Markdown-first notes editor.",
+            },
+          },
+        ],
+        finishReason: "tool_calls",
+      },
+    ];
+
+    await orquestrator.messagingService.receiveWebMessage(webAddress, {
+      text: "Save my idea for a Markdown notes editor",
+    });
+    await new Promise((resolve) => setTimeout(resolve, delay));
+
+    const chat = await orquestrator.messagingService.getChatByChannelAddress(
+      webAddress,
+      ChatChannel.Web,
+    );
+    const notes = await orquestrator.noteService.listNotes(user.id);
+    expect(notes).toHaveLength(1);
+    expect(notes[0]?.markdown).toContain("Markdown-first");
+    expect(notes[0]?.idSourceMessage).toBe(chat?.messages[0]?.id);
+    const turnId = chat?.messages[0]?.turnId ?? "";
+    expect(chat?.getToolResult(turnId, "call-note")?.content).toMatchObject({
+      type: MessageContentType.ToolResult,
+      outcome: { status: ToolResultStatus.Succeeded },
+    });
+  });
+
   test("listenToMessage falls back to an empty text payload for unknown shapes", async () => {
     await orquestrator.clearDatabase();
     const phoneNumber = TestWhatsAppMessagingGateway.phoneNumber;

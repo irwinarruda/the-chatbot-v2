@@ -19,8 +19,11 @@ function requireValue(values, key) {
 }
 
 async function loadProductionValues(root) {
+  const baseEnvPath = resolve(root, ".env");
   const productionEnvPath = resolve(root, ".env.production");
-  return parse(await readFile(productionEnvPath));
+  const baseValues = parse(await readFile(baseEnvPath));
+  const productionValues = parse(await readFile(productionEnvPath));
+  return { ...baseValues, ...productionValues };
 }
 
 function requireIdentity(payload) {

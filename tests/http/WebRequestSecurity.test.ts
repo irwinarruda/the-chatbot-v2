@@ -20,6 +20,8 @@ describe("web request security", () => {
     expect(requiresWebAuthentication("/api/v1/web/auth/logout")).toBe(false);
     expect(requiresWebAuthentication("/api/v1/web/auth/redirect")).toBe(false);
     expect(requiresWebAuthentication("/api/v1/web/auth/me")).toBe(true);
+    expect(requiresWebAuthentication("/api/v1/web/notes")).toBe(true);
+    expect(requiresWebAuthentication("/api/v1/web/notes/refine")).toBe(true);
     expect(requiresWebAuthentication("/api/v1/web/future-route")).toBe(true);
   });
 

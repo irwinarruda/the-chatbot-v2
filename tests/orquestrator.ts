@@ -21,6 +21,7 @@ import type {
   AuthService,
   IdentityChatCoordinator,
 } from "~/modules/identity/services/AuthService";
+import type { NoteService } from "~/modules/notes/services/NoteService";
 import type { MigrationService } from "~/modules/system/services/MigrationService";
 import type { StatusService } from "~/modules/system/services/StatusService";
 import type { TodoService } from "~/modules/todos/services/TodoService";
@@ -63,6 +64,7 @@ export class Orquestrator {
   cashFlowService: CashFlowService;
   monthlyExpenseService: MonthlyExpenseService;
   todoService: TodoService;
+  noteService: NoteService;
   migrationService: MigrationService;
   aiToolService: AiToolService;
   aiGateway: TestAiChatGateway;
@@ -111,6 +113,7 @@ export class Orquestrator {
     this.cashFlowService = application.services.cashFlow;
     this.monthlyExpenseService = application.services.monthlyExpenses;
     this.todoService = application.services.todos;
+    this.noteService = application.services.notes;
     this.migrationService = application.services.migration;
     this.aiToolService = application.services.tools;
     this.identityChatCoordinator = application.coordination.identityChat;

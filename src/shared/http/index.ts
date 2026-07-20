@@ -12,6 +12,10 @@ export const routes = rootRoute("shared/client/routes/__root.tsx", [
     index("shared/client/routes/todo/index.tsx"),
     route("/$todoId", "shared/client/routes/todo/$todoId.tsx"),
   ]),
+  route("/notes", "shared/client/routes/notes.tsx", [
+    index("shared/client/routes/notes/index.tsx"),
+    route("/$noteId", "shared/client/routes/notes/$noteId.tsx"),
+  ]),
   route("/bills", "shared/client/routes/bills.tsx"),
   route("/google", [
     route(
@@ -45,6 +49,12 @@ export const routes = rootRoute("shared/client/routes/__root.tsx", [
   route("/api/v1/web/audio", "shared/http/controllers/web-audio.ts"),
   route("/api/v1/web/todos", "shared/http/controllers/web-todos.ts"),
   route("/api/v1/web/todos/$todoId", "shared/http/controllers/web-todo.ts"),
+  route("/api/v1/web/notes", "shared/http/controllers/web-notes.ts"),
+  route(
+    "/api/v1/web/notes/refine",
+    "shared/http/controllers/web-note-refinement.ts",
+  ),
+  route("/api/v1/web/notes/$noteId", "shared/http/controllers/web-note.ts"),
   route(
     "/api/v1/web/monthly-expenses",
     "shared/http/controllers/web-monthly-expenses.ts",

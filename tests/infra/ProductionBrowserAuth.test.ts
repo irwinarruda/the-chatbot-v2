@@ -100,7 +100,7 @@ describe("production browser authentication", () => {
 async function loadProductionBrowserAuthModule(): Promise<ProductionBrowserAuthModule> {
   const moduleUrl = pathToFileURL(
     resolve(
-      ".agents/skills/ship-production/scripts/create-browser-auth-cookie.mjs",
+      ".agents/skills/production-release/scripts/create-browser-auth-cookie.mjs",
     ),
   );
   return (await import(moduleUrl.href)) as ProductionBrowserAuthModule;

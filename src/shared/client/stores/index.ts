@@ -13,6 +13,10 @@ import {
   recordingSlice,
 } from "~/modules/chat/client/state/recordingSlice";
 import {
+  type NoteSlice,
+  noteSlice,
+} from "~/modules/notes/client/state/noteSlice";
+import {
   type TodoSlice,
   todoSlice,
 } from "~/modules/todos/client/state/todoSlice";
@@ -25,6 +29,7 @@ export type AppSlices = ChatSlice &
   MonthlyExpenseSlice &
   RecordingSlice &
   PrefsSlice &
+  NoteSlice &
   TodoSlice;
 
 export const useApp = create<AppSlices>()(
@@ -33,6 +38,7 @@ export const useApp = create<AppSlices>()(
     ...monthlyExpenseSlice(...args),
     ...chatSlice(...args),
     ...recordingSlice(...args),
+    ...noteSlice(...args),
     ...todoSlice(...args),
   })),
 );
@@ -40,6 +46,7 @@ export const useApp = create<AppSlices>()(
 export type {
   ChatSlice,
   MonthlyExpenseSlice,
+  NoteSlice,
   PrefsSlice,
   RecordingSlice,
   TodoSlice,

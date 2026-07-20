@@ -560,3 +560,169 @@
   background: var(--color-term-border);
   margin: 2em 0;
 }
+
+.terminal-prose pre {
+  max-width: 100%;
+  margin: 1rem 0;
+  overflow-x: auto;
+  border: 1px solid var(--color-term-border);
+  border-radius: 0.5rem;
+  background: var(--color-term-bg);
+  padding: 1rem;
+}
+
+.terminal-prose pre code {
+  background: transparent;
+  padding: 0;
+  color: var(--color-term-text);
+}
+
+.terminal-prose table {
+  width: 100%;
+  min-width: 32rem;
+  margin: 1rem 0;
+  border-collapse: collapse;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+}
+
+.terminal-prose th,
+.terminal-prose td {
+  border: 1px solid var(--color-term-border);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+
+.terminal-prose th {
+  background: var(--color-term-chrome);
+  color: var(--color-term-bright);
+  font-family: var(--font-mono);
+}
+
+.terminal-prose del {
+  color: var(--color-term-muted);
+  text-decoration-color: var(--color-term-red);
+}
+
+.terminal-prose li:has(> input[type="checkbox"]) {
+  padding-left: 1.75rem;
+}
+
+.terminal-prose li:has(> input[type="checkbox"])::before {
+  content: none;
+}
+
+.terminal-prose input[type="checkbox"] {
+  position: absolute;
+  top: 0.45rem;
+  left: 0;
+  accent-color: var(--color-term-green);
+}
+
+/* --- Markdown note editor --- */
+
+.notes-editor-shell {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-term-border);
+  border-radius: 0.5rem;
+  background: var(--color-term-bg);
+  padding: 0;
+}
+
+.notes-editor.mdxeditor {
+  --accentBase: color-mix(in srgb, var(--color-term-green) 5%, transparent);
+  --accentBgSubtle: color-mix(in srgb, var(--color-term-green) 8%, transparent);
+  --accentBg: color-mix(in srgb, var(--color-term-green) 12%, transparent);
+  --accentBgHover: color-mix(in srgb, var(--color-term-green) 18%, transparent);
+  --accentBgActive: color-mix(
+    in srgb,
+    var(--color-term-green) 24%,
+    transparent
+  );
+  --accentLine: color-mix(in srgb, var(--color-term-green) 30%, transparent);
+  --accentBorder: color-mix(in srgb, var(--color-term-green) 40%, transparent);
+  --accentBorderHover: var(--color-term-green);
+  --accentSolid: var(--color-term-green-dim);
+  --accentSolidHover: var(--color-term-green);
+  --accentText: var(--color-term-green);
+  --accentTextContrast: var(--color-term-bright);
+  --basePageBg: var(--color-term-bg);
+  --baseBase: var(--color-term-bg);
+  --baseBgSubtle: color-mix(in srgb, var(--color-term-chrome) 65%, transparent);
+  --baseBg: var(--color-term-chrome);
+  --baseBgHover: color-mix(
+    in srgb,
+    var(--color-term-green) 10%,
+    var(--color-term-chrome)
+  );
+  --baseBgActive: color-mix(
+    in srgb,
+    var(--color-term-green) 16%,
+    var(--color-term-chrome)
+  );
+  --baseLine: var(--color-term-border);
+  --baseBorder: var(--color-term-border);
+  --baseBorderHover: var(--color-term-muted);
+  --baseSolid: var(--color-term-muted);
+  --baseSolidHover: var(--color-term-text);
+  --baseText: var(--color-term-text);
+  --baseTextContrast: var(--color-term-bright);
+  --font-body: var(--font-sans);
+  color: var(--color-term-text);
+  font-family: var(--font-sans);
+}
+
+.notes-editor-toolbar {
+  min-height: 2.75rem;
+  max-width: 100%;
+  border-bottom: 1px solid var(--color-term-border);
+  border-radius: 0;
+  background: var(--color-term-chrome);
+  scrollbar-width: thin;
+}
+
+.notes-editor-content {
+  min-height: 24rem;
+  padding: 1.25rem;
+  caret-color: var(--color-term-green);
+  color: var(--color-term-text);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.notes-editor-content h1,
+.notes-editor-content h2,
+.notes-editor-content h3,
+.notes-editor-content h4,
+.notes-editor-content h5,
+.notes-editor-content h6 {
+  color: var(--color-term-green);
+  font-family: var(--font-mono);
+}
+
+.notes-editor-content a {
+  color: var(--color-term-blue);
+}
+
+.notes-editor-content blockquote {
+  border-left-color: var(--color-term-cyan);
+  background: var(--color-term-chrome);
+  color: var(--color-term-text);
+}
+
+.notes-editor-content pre,
+.notes-editor-content code {
+  font-family: var(--font-mono);
+}
+
+@media (pointer: coarse) {
+  .notes-editor-toolbar button,
+  .notes-editor-toolbar [role="button"],
+  .notes-editor-toolbar [role="combobox"] {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+}

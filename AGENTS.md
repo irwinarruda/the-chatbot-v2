@@ -11,6 +11,8 @@
 - `bun run lint:fix` — auto-fix lint issues with biome
 - `bun run migrate:create` — create a new migration (`bun run migrate:create -- <name>`)
 - `bun run migrate:up` / `bun run migrate:down` — run migrations
+- `bun run production:release <command>` — inspect, deploy, migrate, promote, or
+  roll back the exact current working-tree artifact
 - `bun run production:wait [commit]` — wait for that exact commit on Vercel
 - `bun run migrate:production:status` — list pending production migrations
 - `bun run migrate:production:up` — apply and verify production migrations
@@ -53,15 +55,13 @@ Keep `PRODUCTION_WEB_AUTH_TOKEN` and every other credential only in the ignored
 
 ## Production Delivery
 
-Load `ship-production` whenever a task includes pushing to `main`, waiting for a
-Vercel production deployment, running production migrations, or verifying the
-deployed application in the Codex in-app browser. Follow its workflow in order;
-do not inspect the web UI until `production:wait` confirms the exact pushed
-commit.
-
-Load `browser-test-local-production` instead when the user asks to deploy and
-browser-test local or uncommitted code without committing or pushing. Its default
-isolated deployment must not change the canonical production domain.
+Load `production-release` whenever a task includes testing local or branch code
+with production configuration, deploying or promoting a Vercel production
+artifact, running production migrations, rolling production back, or verifying
+the deployed application in the Codex in-app browser. It deploys the exact current
+working tree as an isolated candidate before promotion and does not require a
+commit or push. Follow its database safety classification and exact-artifact
+workflow in order.
 
 ## Testing
 
@@ -86,8 +86,9 @@ Load the project skill that owns the decision before changing code:
 - `client-state-management` — URL/Zustand/local state, async actions, optimistic state, realtime reduction, browser lifecycles, and SSR hydration.
 - `client-jsx-styleguide` — React/TSX, terminal visual system, shared UI primitives, layout, responsive behavior, accessibility, and interaction design.
 - `app-tests` — Vitest/PostgreSQL test levels, placement, harnesses, fakes, fixtures, assertions, and integration policy.
-- `browser-test-local-production` — isolated Vercel deployment of an uncommitted working tree, `.env.production` browser authentication, and exact-URL browser verification without changing the production domain.
-- `ship-production` — direct `main` publishing, exact Vercel deployment waiting, production migrations, browser authentication, and deployed UI verification.
+- `production-release` — exact-working-tree Vercel candidate deployment,
+  production browser verification, migration safety gates, promotion, and
+  rollback without requiring a commit or push.
 
 Use multiple skills when a change crosses concerns. Local project skills take precedence over generic preferences.
 

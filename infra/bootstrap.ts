@@ -22,6 +22,7 @@ import {
   type IdentityChatCoordinator,
 } from "~/modules/identity/services/AuthService";
 import { GoogleCredentialEncryptionService } from "~/modules/identity/services/GoogleCredentialEncryptionService";
+import { NoteService } from "~/modules/notes/services/NoteService";
 import { MigrationService } from "~/modules/system/services/MigrationService";
 import { StatusService } from "~/modules/system/services/StatusService";
 import { TodoService } from "~/modules/todos/services/TodoService";
@@ -50,6 +51,7 @@ export interface Application {
     monthlyExpenses: MonthlyExpenseService;
     messaging: MessagingService;
     migration: MigrationService;
+    notes: NoteService;
     status: StatusService;
     todos: TodoService;
     tools: AiToolService;
@@ -118,11 +120,13 @@ export function createApplication(
   );
   const monthlyExpenseService = new MonthlyExpenseService(database);
   const todoService = new TodoService(database);
+  const noteService = new NoteService(database, gateways.aiChat);
   const aiToolService = new AiToolService(
     authService,
     cashFlowService,
     monthlyExpenseService,
     todoService,
+    noteService,
     gateways.aiChat,
   );
   messagingService = new MessagingService(
@@ -147,6 +151,7 @@ export function createApplication(
       monthlyExpenses: monthlyExpenseService,
       messaging: messagingService,
       migration: new MigrationService(database, config.database, config.auth),
+      notes: noteService,
       status: new StatusService(
         database,
         config.database,

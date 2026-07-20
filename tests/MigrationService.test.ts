@@ -9,7 +9,7 @@ const noopLogger = { debug: noop, info: noop, warn: noop, error: noop };
 describe("MigrationService", () => {
   test("testMigration", async () => {
     await orquestrator.wipeDatabase();
-    const migrationCount = 22;
+    const migrationCount = 23;
     let migrations =
       await orquestrator.migrationService.listPendingMigrations();
     expect(migrations.length).toBeGreaterThan(0);
@@ -63,7 +63,7 @@ describe("MigrationService", () => {
       dir: Paths.migrationsDir(),
       direction: "down",
       migrationsTable: "pgmigrations",
-      count: 3,
+      count: 4,
       noLock: true,
       logger: noopLogger,
     });

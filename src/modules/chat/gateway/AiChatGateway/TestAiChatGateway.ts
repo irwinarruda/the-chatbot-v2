@@ -17,6 +17,7 @@ export class TestAiChatGateway implements AiChatGateway {
   requests: AiCompletionRequestDTO[] = [];
   scriptedResponses: TestAiScriptedResponseDTO[] = [];
   scriptedTexts: string[] = [];
+  generatedTextRequests: Array<{ systemPrompt: string; userText: string }> = [];
   summaryError?: Error;
   summaryCalls = 0;
   contextWindowTokens = 1_000_000;
@@ -56,10 +57,8 @@ export class TestAiChatGateway implements AiChatGateway {
     return Math.ceil(JSON.stringify(request).length / 3);
   }
 
-  async generateText(
-    _systemPrompt: string,
-    _userText: string,
-  ): Promise<string> {
+  async generateText(systemPrompt: string, userText: string): Promise<string> {
+    this.generatedTextRequests.push({ systemPrompt, userText });
     return this.scriptedTexts.shift() ?? "";
   }
 

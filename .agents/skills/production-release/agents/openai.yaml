@@ -1,0 +1,4 @@
+interface:
+  display_name: "Production Release"
+  short_description: "Test and promote the exact local production artifact"
+  default_prompt: "Use $production-release to validate my exact current working tree, deploy it as a production-configured candidate, browser-test it, and safely promote that same artifact if the database gate passes."
