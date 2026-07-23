@@ -99,102 +99,113 @@ export function NoteDetailScreen({
   }
 
   return (
-    <div className="flex min-h-0 flex-col">
-      <div className="sticky top-0 z-20 flex flex-wrap items-center gap-2 border-term-border border-b bg-term-chrome/95 p-3 backdrop-blur-sm">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="sticky top-0 z-20 flex items-center gap-1.5 border-term-border border-b bg-term-chrome/95 px-3 py-2 backdrop-blur-sm sm:gap-2 sm:px-5">
         <Button
-          className="min-h-11 md:hidden"
+          aria-label={t.backAction}
+          className="w-11 px-0 sm:w-auto pointer-fine:sm:px-2.5 sm:px-3"
+          nativeButton={false}
           render={<Link search={search} to="/notes" />}
           size="sm"
+          title={t.backAction}
           variant="ghost"
         >
           <ArrowLeft />
-          {t.backAction}
+          <span className="hidden sm:inline">{t.backAction}</span>
         </Button>
-        <div className="flex flex-1 items-center justify-end gap-2">
-          <span
-            className={
-              isDirty
-                ? "mr-auto text-2xs text-term-amber uppercase"
-                : "mr-auto text-2xs text-term-green uppercase"
-            }
-          >
-            {isDirty ? t.unsavedStatus : t.savedStatus}
-          </span>
+        <span
+          aria-live="polite"
+          className={
+            isDirty
+              ? "min-w-0 flex-1 truncate text-2xs text-term-amber uppercase"
+              : "min-w-0 flex-1 truncate text-2xs text-term-green uppercase"
+          }
+        >
+          {isDirty ? t.unsavedStatus : t.savedStatus}
+        </span>
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           <Button
+            aria-label={t.editAction}
             aria-pressed={!isPreviewing}
-            className="min-h-11 md:min-h-8"
+            className="w-11 px-0 sm:w-auto pointer-fine:sm:px-2.5 sm:px-3"
             onClick={() => setIsPreviewing(false)}
             size="sm"
+            title={t.editAction}
             type="button"
             variant={isPreviewing ? "ghost" : "outline"}
           >
             <Pencil />
-            {t.editAction}
+            <span className="hidden sm:inline">{t.editAction}</span>
           </Button>
           <Button
+            aria-label={t.previewAction}
             aria-pressed={isPreviewing}
-            className="min-h-11 md:min-h-8"
+            className="w-11 px-0 sm:w-auto pointer-fine:sm:px-2.5 sm:px-3"
             onClick={() => setIsPreviewing(true)}
             size="sm"
+            title={t.previewAction}
             type="button"
             variant={isPreviewing ? "outline" : "ghost"}
           >
             <Eye />
-            {t.previewAction}
+            <span className="hidden sm:inline">{t.previewAction}</span>
           </Button>
           <Button
-            className="min-h-11 md:min-h-8"
+            aria-label={t.saveAction}
+            className="w-11 px-0 sm:w-auto pointer-fine:sm:px-2.5 sm:px-3"
             disabled={!isDirty || isNoteSubmitting || !name.trim()}
             onClick={onSaveNote}
             size="sm"
+            title={t.saveAction}
             type="button"
           >
             <Save />
-            {t.saveAction}
+            <span className="hidden sm:inline">{t.saveAction}</span>
           </Button>
         </div>
       </div>
-      <div className="space-y-4 p-3 sm:p-4">
-        <div>
-          <label
-            className="mb-1.5 block font-mono text-2xs text-term-muted uppercase tracking-wide"
-            htmlFor="note-name"
-          >
+      <div className="mx-auto w-full max-w-4xl space-y-5 p-4 sm:px-0 sm:py-6 md:py-8">
+        <div className="border-term-border border-b pb-2">
+          <label className="sr-only" htmlFor="note-name">
             {t.nameLabel}
           </label>
           <Input
             id="note-name"
-            className="h-11 font-semibold text-base text-term-bright md:h-8 md:text-sm"
+            className="h-auto rounded-none border-0 bg-transparent px-0 py-2 font-mono font-semibold text-2xl text-term-bright shadow-none focus-visible:border-transparent focus-visible:ring-0 sm:text-3xl"
             maxLength={160}
             onChange={(event) => setName(event.target.value)}
             value={name}
           />
+          <p className="m-0 font-mono text-2xs text-term-muted">
+            {t.markdownHint}
+          </p>
         </div>
-        {isPreviewing ? (
-          <div className="min-h-96 rounded border border-term-border bg-term-bg/45 p-4 sm:p-6">
-            <MarkdownNoteViewer emptyLabel={t.emptyNote} markdown={markdown} />
-          </div>
-        ) : (
+        <div hidden={isPreviewing}>
           <ClientOnly
             fallback={
-              <Skeleton className="h-96 w-full rounded border border-term-border" />
+              <Skeleton className="h-[32rem] w-full rounded-lg border border-term-border" />
             }
           >
             <Suspense
               fallback={
-                <Skeleton className="h-96 w-full rounded border border-term-border" />
+                <Skeleton className="h-[32rem] w-full rounded-lg border border-term-border" />
               }
             >
               <MarkdownNoteEditor
                 ref={editorRef}
-                initialMarkdown={note.markdown}
+                initialMarkdown={markdown}
                 label={t.editorLabel}
                 onChange={setMarkdown}
                 placeholder={t.editorPlaceholder}
               />
             </Suspense>
           </ClientOnly>
-        )}
+        </div>
+        <div hidden={!isPreviewing}>
+          <div className="min-h-[32rem] rounded-lg border border-term-border bg-term-bg/45 p-5 sm:p-8">
+            <MarkdownNoteViewer emptyLabel={t.emptyNote} markdown={markdown} />
+          </div>
+        </div>
         <NoteAiComposer
           disabled={!name.trim()}
           isRefining={isNoteRefining}

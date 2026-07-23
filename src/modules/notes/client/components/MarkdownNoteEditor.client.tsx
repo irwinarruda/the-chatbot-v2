@@ -5,12 +5,7 @@ import {
   CreateLink,
   codeBlockPlugin,
   codeMirrorPlugin,
-  DiffSourceToggleWrapper,
-  diffSourcePlugin,
   headingsPlugin,
-  InsertCodeBlock,
-  InsertTable,
-  InsertThematicBreak,
   ListsToggle,
   linkDialogPlugin,
   linkPlugin,
@@ -60,12 +55,11 @@ const editorPlugins = [
       typescript: "TypeScript",
     },
   }),
-  diffSourcePlugin({ viewMode: "rich-text" }),
   markdownShortcutPlugin(),
   toolbarPlugin({
     toolbarClassName: "notes-editor-toolbar",
     toolbarContents: () => (
-      <DiffSourceToggleWrapper options={["rich-text", "source"]}>
+      <>
         <UndoRedo />
         <BlockTypeSelect />
         <BoldItalicUnderlineToggles options={["Bold", "Italic"]} />
@@ -73,10 +67,7 @@ const editorPlugins = [
         <CodeToggle />
         <ListsToggle />
         <CreateLink />
-        <InsertTable />
-        <InsertThematicBreak />
-        <InsertCodeBlock />
-      </DiffSourceToggleWrapper>
+      </>
     ),
   }),
 ];

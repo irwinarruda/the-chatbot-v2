@@ -626,7 +626,7 @@
   margin: 0;
   overflow: hidden;
   border: 1px solid var(--color-term-border);
-  border-radius: 0.5rem;
+  border-radius: var(--radius-lg);
   background: var(--color-term-bg);
   padding: 0;
 }
@@ -675,22 +675,25 @@
 }
 
 .notes-editor-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   min-height: 2.75rem;
   max-width: 100%;
   border-bottom: 1px solid var(--color-term-border);
   border-radius: 0;
-  background: var(--color-term-chrome);
+  background: color-mix(in srgb, var(--color-term-chrome) 94%, transparent);
   scrollbar-width: thin;
 }
 
 .notes-editor-content {
-  min-height: 24rem;
-  padding: 1.25rem;
+  min-height: 32rem;
+  padding: 1.5rem;
   caret-color: var(--color-term-green);
   color: var(--color-term-text);
   font-family: var(--font-sans);
   font-size: 1rem;
-  line-height: 1.7;
+  line-height: 1.75;
 }
 
 .notes-editor-content h1,
@@ -699,6 +702,44 @@
 .notes-editor-content h4,
 .notes-editor-content h5,
 .notes-editor-content h6 {
+  margin-top: 1.5em;
+  margin-bottom: 0.6em;
+  color: var(--color-term-green);
+  font-family: var(--font-mono);
+}
+
+.notes-editor-content p {
+  margin-bottom: 0.9em;
+}
+
+.notes-editor-content ul,
+.notes-editor-content ol {
+  margin: 0.75em 0 1em;
+  padding-left: 1.75rem;
+}
+
+.notes-editor-content ul {
+  list-style: disc;
+}
+
+.notes-editor-content ol {
+  list-style: decimal;
+}
+
+.notes-editor-content ul ul {
+  list-style: circle;
+}
+
+.notes-editor-content ul ul ul {
+  list-style: square;
+}
+
+.notes-editor-content li {
+  margin-bottom: 0.35em;
+  padding-left: 0.25rem;
+}
+
+.notes-editor-content li::marker {
   color: var(--color-term-green);
   font-family: var(--font-mono);
 }
@@ -716,6 +757,12 @@
 .notes-editor-content pre,
 .notes-editor-content code {
   font-family: var(--font-mono);
+}
+
+@media (min-width: 40rem) {
+  .notes-editor-content {
+    padding: 2rem;
+  }
 }
 
 @media (pointer: coarse) {
