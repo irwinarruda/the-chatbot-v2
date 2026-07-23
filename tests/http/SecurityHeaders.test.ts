@@ -67,20 +67,20 @@ describe("security headers", () => {
     expect(directives["script-src"]).not.toContain("https:");
   });
 
-  test.each([
-    PRODUCTION_R2_PUBLIC_URL,
-    PREVIEW_R2_PUBLIC_URL,
-  ])("allows only the configured R2 origin for %s", (r2PublicUrl) => {
-    const directives = parseCsp(createContentSecurityPolicy(r2PublicUrl));
-    const r2PublicOrigin = new URL(r2PublicUrl).origin;
+  test.each([PRODUCTION_R2_PUBLIC_URL, PREVIEW_R2_PUBLIC_URL])(
+    "allows only the configured R2 origin for %s",
+    (r2PublicUrl) => {
+      const directives = parseCsp(createContentSecurityPolicy(r2PublicUrl));
+      const r2PublicOrigin = new URL(r2PublicUrl).origin;
 
-    expect(directives["media-src"]).toEqual([
-      "'self'",
-      "blob:",
-      r2PublicOrigin,
-    ]);
-    expect(directives["connect-src"]).toEqual(["'self'", r2PublicOrigin]);
-  });
+      expect(directives["media-src"]).toEqual([
+        "'self'",
+        "blob:",
+        r2PublicOrigin,
+      ]);
+      expect(directives["connect-src"]).toEqual(["'self'", r2PublicOrigin]);
+    },
+  );
 
   test("keeps static security headers at the Vercel edge", () => {
     const config = loadVercelConfig();
@@ -97,16 +97,14 @@ describe("security headers", () => {
     ).toBe(false);
   });
 
-  test.each([
-    "/",
-    "/chat",
-    "/api/v1/status",
-    "/missing",
-  ])("covers %s at the deployment edge", (pathname) => {
-    const config = loadVercelConfig();
-    const source = config.headers[0]?.source;
+  test.each(["/", "/chat", "/api/v1/status", "/missing"])(
+    "covers %s at the deployment edge",
+    (pathname) => {
+      const config = loadVercelConfig();
+      const source = config.headers[0]?.source;
 
-    expect(source).toBeDefined();
-    expect(pathname).toMatch(new RegExp(`^${source}$`));
-  });
+      expect(source).toBeDefined();
+      expect(pathname).toMatch(new RegExp(`^${source}$`));
+    },
+  );
 });
