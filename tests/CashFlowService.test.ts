@@ -59,16 +59,15 @@ describe("CashFlowService", () => {
     let transactionCount = (
       await orquestrator.cashFlowService.getAllTransactions(phoneNumber)
     ).length;
-    let attempt = 0;
     while (transactionCount > 0) {
-      if (attempt > 100) {
-        throw new Error("Could not clear spreadsheet transactions");
-      }
       await orquestrator.cashFlowService.deleteLastTransaction(phoneNumber);
-      transactionCount = (
+      const nextTransactionCount = (
         await orquestrator.cashFlowService.getAllTransactions(phoneNumber)
       ).length;
-      attempt++;
+      if (nextTransactionCount >= transactionCount) {
+        throw new Error("Could not clear spreadsheet transactions");
+      }
+      transactionCount = nextTransactionCount;
     }
   }
 
@@ -278,7 +277,10 @@ describe("CashFlowService", () => {
     await setupUserWithSpreadsheet(phoneNumber);
 
     await withEmptySpreadsheet(phoneNumber, async () => {
-      const descriptions = ["First", "Second", "Third", "Fourth", "Fifth"];
+      const descriptions = Array.from(
+        { length: 125 },
+        (_, index) => `Transaction ${index + 1}`,
+      );
       for (const [index, description] of descriptions.entries()) {
         await orquestrator.cashFlowService.addExpense({
           phoneNumber,
@@ -297,28 +299,30 @@ describe("CashFlowService", () => {
         );
       expect(latestThree).toHaveLength(3);
       expect(latestThree.map((tx) => tx.description)).toEqual([
-        "Third",
-        "Fourth",
-        "Fifth",
+        "Transaction 123",
+        "Transaction 124",
+        "Transaction 125",
       ]);
 
-      const latestOversize =
+      const latestHundred =
         await orquestrator.cashFlowService.getLatestTransactions(
           phoneNumber,
           100,
         );
-      expect(latestOversize).toHaveLength(5);
+      expect(latestHundred).toHaveLength(100);
+      expect(latestHundred[0]?.description).toBe("Transaction 26");
 
-      const latestDefault =
+      const fullHistory =
         await orquestrator.cashFlowService.getLatestTransactions(phoneNumber);
-      expect(latestDefault).toHaveLength(5);
+      expect(fullHistory).toHaveLength(125);
+      expect(fullHistory[0]?.description).toBe("Transaction 1");
 
-      const latestCapped =
+      const latestBeyondPreviousLimit =
         await orquestrator.cashFlowService.getLatestTransactions(
           phoneNumber,
-          9999,
+          125,
         );
-      expect(latestCapped).toHaveLength(5);
+      expect(latestBeyondPreviousLimit).toHaveLength(125);
     });
   });
 

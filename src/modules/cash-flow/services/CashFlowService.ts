@@ -19,9 +19,6 @@ import { NotFoundException } from "~/shared/errors/ApplicationErrors";
 import { ValidationException } from "~/shared/errors/DomainErrors";
 import type { DatabaseGateway } from "~/shared/gateway/DatabaseGateway";
 
-export const DEFAULT_LATEST_TRANSACTIONS_LIMIT = 10;
-export const MAX_LATEST_TRANSACTIONS_LIMIT = 50;
-
 export class CashFlowService {
   private database: DatabaseGateway;
   private authService: AuthService;
@@ -67,13 +64,16 @@ export class CashFlowService {
     limit?: number,
   ): Promise<TransactionDTO[]> {
     const { sheet, credential } = await this.getUserAndSheet(phoneNumber);
-    const normalizedLimit =
-      typeof limit !== "number" || !Number.isFinite(limit) || limit <= 0
-        ? DEFAULT_LATEST_TRANSACTIONS_LIMIT
-        : Math.min(Math.floor(limit), MAX_LATEST_TRANSACTIONS_LIMIT);
+    const sheetConfig = {
+      sheetId: sheet.idSheet,
+      sheetAccessToken: credential.accessToken,
+    };
+    if (limit === undefined) {
+      return await this.spreadsheetResource.getAllTransactions(sheetConfig);
+    }
     return await this.spreadsheetResource.getLatestTransactions(
-      { sheetId: sheet.idSheet, sheetAccessToken: credential.accessToken },
-      normalizedLimit,
+      sheetConfig,
+      Math.floor(limit),
     );
   }
 

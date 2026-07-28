@@ -456,9 +456,9 @@ export class AiToolService extends ToolExecutor {
       {
         name: "get_latest_transactions",
         description: [
-          "Get the most recent N transactions for the user.",
-          "Use this for any recent-activity question; the bounded result keeps the response small.",
-          "limit defaults to 10 and is capped at 50.",
+          "Get transactions for the user.",
+          "Omit limit to return the full spreadsheet history.",
+          "Provide limit to return the most recent N transactions; there is no maximum.",
           "Items are returned oldest-first within the result; the last item is the newest.",
           "Returns { count, transactions: [ { sheet_id, date, value, category, description, bank_account } ] }.",
         ].join("\n"),
