@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { ServerBootstrap } from "~/infra/server-bootstrap";
-import { toChatMessagesResponse } from "~/modules/chat/contracts/ChatContractMapper";
+import { toMessageLocale } from "~/modules/chat/utils/MessageLoader";
 import { ValidationException } from "~/shared/errors/DomainErrors";
-import { Http } from "~/shared/http/utils/Http";
+import { streamWebChatResponse } from "~/shared/http/controllers/stream-web-chat-response";
 
 export const Route = createFileRoute("/api/v1/web/audio")({
   server: {
@@ -23,15 +23,16 @@ export const Route = createFileRoute("/api/v1/web/audio")({
           .parse(request.headers.get("x-client-message-id"));
         const messagingService =
           ServerBootstrap.getApplication().services.messaging;
-        const chat = await messagingService.receiveWebMessage(
+        return streamWebChatResponse(
+          messagingService,
           context.webAuth.email,
           {
             audioBuffer: buffer,
             mimeType: contentType,
             clientMessageId,
           },
+          toMessageLocale(context.prefs.locale),
         );
-        return Http.json(toChatMessagesResponse(chat));
       },
     },
   },

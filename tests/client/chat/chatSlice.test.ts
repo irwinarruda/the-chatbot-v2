@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { create } from "zustand";
 import { computed } from "zustand-computed-state";
 import type { SendWebMessageDTO } from "~/modules/chat/client/entities/dtos/SendWebMessageDTO";
@@ -7,7 +7,11 @@ import {
   type ChatSlice,
   createChatSlice,
 } from "~/modules/chat/client/state/chatSlice";
-import type { ChatMessageDTO } from "~/modules/chat/entities/dtos/ChatDTO";
+import type {
+  ChatMessageDTO,
+  WebChatDTO,
+} from "~/modules/chat/entities/dtos/ChatDTO";
+import { ReasoningEffort } from "~/modules/chat/entities/enums/ReasoningEffort";
 
 type TestChatState = ChatSlice & {
   stopRecording: (shouldSend: boolean) => void;
@@ -24,6 +28,21 @@ function createMessage(patch: Partial<ChatMessageDTO> = {}): ChatMessageDTO {
   };
 }
 
+function createChat(
+  messages: ChatMessageDTO[],
+  reasoningEffort: ReasoningEffort = ReasoningEffort.Off,
+): WebChatDTO {
+  return {
+    messages,
+    reasoningEffort,
+    supportedReasoningEfforts: [
+      ReasoningEffort.Off,
+      ReasoningEffort.Low,
+      ReasoningEffort.High,
+    ],
+  };
+}
+
 function createStore(service: WebChatClientService) {
   return create<TestChatState>()(
     computed((...args) => ({
@@ -34,9 +53,11 @@ function createStore(service: WebChatClientService) {
 }
 
 describe("chatSlice", () => {
+  afterEach(() => vi.useRealTimers());
+
   test("replaces the optimistic message with the authoritative send result", async () => {
-    let resolveSend: (messages: ChatMessageDTO[]) => void = () => {};
-    const sendResult = new Promise<ChatMessageDTO[]>((resolve) => {
+    let resolveSend: (chat: WebChatDTO) => void = () => {};
+    const sendResult = new Promise<WebChatDTO>((resolve) => {
       resolveSend = resolve;
     });
     let sentMessage: SendWebMessageDTO | undefined;
@@ -48,15 +69,15 @@ describe("chatSlice", () => {
           phoneNumber: "5511999999999",
         };
       },
-      async getMessages() {
-        return [];
+      async getChat() {
+        return createChat([]);
       },
       async sendMessage(dto) {
         sentMessage = dto;
         return sendResult;
       },
       async sendAudio() {
-        return [];
+        return createChat([]);
       },
       async logout() {},
     };
@@ -82,7 +103,7 @@ describe("chatSlice", () => {
       }),
       createMessage({ text: "Hello back" }),
     ];
-    resolveSend(messages);
+    resolveSend(createChat(messages));
     await sending;
 
     expect(store.getState().chatMessages).toEqual(messages);
@@ -99,14 +120,14 @@ describe("chatSlice", () => {
           phoneNumber: "5511999999999",
         };
       },
-      async getMessages() {
-        return messages;
+      async getChat() {
+        return createChat(messages);
       },
       async sendMessage() {
-        return messages;
+        return createChat(messages);
       },
       async sendAudio() {
-        return messages;
+        return createChat(messages);
       },
       async logout() {},
     };
@@ -120,8 +141,8 @@ describe("chatSlice", () => {
   });
 
   test("keeps the next draft editable while the assistant is responding", async () => {
-    let resolveSend: (messages: ChatMessageDTO[]) => void = () => {};
-    const sendResult = new Promise<ChatMessageDTO[]>((resolve) => {
+    let resolveSend: (chat: WebChatDTO) => void = () => {};
+    const sendResult = new Promise<WebChatDTO>((resolve) => {
       resolveSend = resolve;
     });
     const service: WebChatClientService = {
@@ -132,14 +153,14 @@ describe("chatSlice", () => {
           phoneNumber: "5511999999999",
         };
       },
-      async getMessages() {
-        return [];
+      async getChat() {
+        return createChat([]);
       },
       async sendMessage() {
         return sendResult;
       },
       async sendAudio() {
-        return [];
+        return createChat([]);
       },
       async logout() {},
     };
@@ -153,10 +174,147 @@ describe("chatSlice", () => {
     expect(store.getState().chatInput).toBe("My next thought");
     expect(store.getState().canSendChatInput).toBe(false);
 
-    resolveSend([createMessage({ text: "Answer" })]);
+    resolveSend(createChat([createMessage({ text: "Answer" })]));
     await sending;
 
     expect(store.getState().chatInput).toBe("My next thought");
     expect(store.getState().canSendChatInput).toBe(true);
+  });
+
+  test("reduces live reasoning and tool events until the snapshot replaces them", async () => {
+    vi.useFakeTimers();
+    let onProgress:
+      | Parameters<WebChatClientService["sendMessage"]>[1]
+      | undefined;
+    let resolveSend: (chat: WebChatDTO) => void = () => {};
+    const sendResult = new Promise<WebChatDTO>((resolve) => {
+      resolveSend = resolve;
+    });
+    const service: WebChatClientService = {
+      async getCurrentUser() {
+        return {
+          id: crypto.randomUUID(),
+          name: "Irwin",
+          phoneNumber: "5511999999999",
+        };
+      },
+      async getChat() {
+        return createChat([]);
+      },
+      async sendMessage(_dto, listener) {
+        onProgress = listener;
+        return sendResult;
+      },
+      async sendAudio() {
+        return createChat([]);
+      },
+      async logout() {},
+    };
+    const store = createStore(service);
+    await store.getState().bootstrapChat();
+    store.getState().setChatInput("Check my todos");
+
+    const sending = store.getState().sendChatInput();
+    onProgress?.({
+      type: "reasoningDelta",
+      round: 1,
+      contentIndex: 0,
+      delta: "Inspecting ",
+    });
+    onProgress?.({
+      type: "reasoningDelta",
+      round: 1,
+      contentIndex: 0,
+      delta: "todos",
+    });
+    onProgress?.({
+      type: "toolCall",
+      round: 1,
+      contentIndex: 1,
+      callId: "call-1",
+      name: "list_todos",
+      arguments: { status: "Pending" },
+    });
+    await vi.advanceTimersByTimeAsync(16);
+
+    expect(store.getState().chatResponseProgress).toEqual({
+      rounds: [
+        {
+          round: 1,
+          reasoning: [{ contentIndex: 0, text: "Inspecting todos" }],
+          tools: [
+            {
+              contentIndex: 1,
+              callId: "call-1",
+              name: "list_todos",
+              arguments: { status: "Pending" },
+            },
+          ],
+        },
+      ],
+    });
+
+    onProgress?.({
+      type: "toolResult",
+      round: 1,
+      callId: "call-1",
+      name: "list_todos",
+      outcome: {
+        status: "succeeded",
+        data: { count: 2 },
+      },
+    });
+    await vi.advanceTimersByTimeAsync(16);
+    expect(
+      store.getState().chatResponseProgress?.rounds[0]?.tools[0]?.outcome,
+    ).toEqual({ status: "succeeded", data: { count: 2 } });
+
+    const messages = [createMessage({ text: "You have two pending todos." })];
+    resolveSend(createChat(messages));
+    await sending;
+
+    expect(store.getState().chatMessages).toEqual(messages);
+    expect(store.getState().chatResponseProgress).toBeUndefined();
+    expect(store.getState().isChatSubmitting).toBe(false);
+  });
+
+  test("effort selector sends the same durable slash command", async () => {
+    let sentMessage: SendWebMessageDTO | undefined;
+    const commandHistory = [
+      createMessage({
+        type: "command",
+        userType: "user",
+        text: "/effort high",
+      }),
+      createMessage({ text: "Esforço de raciocínio definido como high." }),
+    ];
+    const service: WebChatClientService = {
+      async getCurrentUser() {
+        return {
+          id: crypto.randomUUID(),
+          name: "Irwin",
+          phoneNumber: "5511999999999",
+        };
+      },
+      async getChat() {
+        return createChat([]);
+      },
+      async sendMessage(dto) {
+        sentMessage = dto;
+        return createChat(commandHistory, ReasoningEffort.High);
+      },
+      async sendAudio() {
+        return createChat([]);
+      },
+      async logout() {},
+    };
+    const store = createStore(service);
+    await store.getState().bootstrapChat();
+
+    await store.getState().setReasoningEffort(ReasoningEffort.High);
+
+    expect(sentMessage).toMatchObject({ text: "/effort high" });
+    expect(store.getState().reasoningEffort).toBe(ReasoningEffort.High);
+    expect(store.getState().chatMessages).toEqual(commandHistory);
   });
 });

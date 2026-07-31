@@ -1,11 +1,20 @@
 import type { StateCreator } from "zustand";
 import { compute } from "zustand-computed-state";
+import type { ChatResponseProgressDTO } from "~/modules/chat/client/entities/dtos/ChatResponseProgressDTO";
 import {
   WebChatAuthError,
   type WebChatClientService,
   webChatService,
 } from "~/modules/chat/client/services/webChatService";
-import type { ChatMessageDTO } from "~/modules/chat/entities/dtos/ChatDTO";
+import { createChatProgressBatcher } from "~/modules/chat/client/state/createChatProgressBatcher";
+import type {
+  ChatMessageDTO,
+  WebChatDTO,
+} from "~/modules/chat/entities/dtos/ChatDTO";
+import {
+  ReasoningEffort,
+  type ReasoningEffort as ReasoningEffortType,
+} from "~/modules/chat/entities/enums/ReasoningEffort";
 import type { CurrentUserDTO } from "~/modules/identity/entities/dtos/IdentityDTO";
 
 export type ChatErrorCode = "loading" | "sending" | "microphone";
@@ -14,6 +23,9 @@ export type ChatSlice = {
   currentUser?: CurrentUserDTO;
   chatMessages: ChatMessageDTO[];
   chatInput: string;
+  chatResponseProgress?: ChatResponseProgressDTO;
+  reasoningEffort: ReasoningEffortType;
+  supportedReasoningEfforts: ReasoningEffortType[];
   chatError?: ChatErrorCode;
 
   isChatBootstrapping: boolean;
@@ -28,6 +40,7 @@ export type ChatSlice = {
   >;
   refreshChat: () => Promise<void>;
   sendChatInput: () => Promise<void>;
+  setReasoningEffort: (effort: ReasoningEffortType) => Promise<void>;
   sendButtonReply: (buttonReply: string) => Promise<void>;
   logout: () => Promise<void>;
 };
@@ -41,10 +54,62 @@ export function createChatSlice(
 ): StateCreator<ChatState, [], [], ChatSlice> {
   return (set, get) => {
     let isRefreshing = false;
+    function applyChatSnapshot(chat: WebChatDTO) {
+      set({
+        chatMessages: chat.messages,
+        chatResponseProgress: undefined,
+        reasoningEffort: chat.reasoningEffort,
+        supportedReasoningEfforts: chat.supportedReasoningEfforts,
+      });
+    }
+    async function sendTextMessage(
+      text: string,
+      type: "text" | "command",
+      clearInput: boolean,
+    ) {
+      const { isChatSubmitting } = get();
+      if (!text || isChatSubmitting) return;
+      const submittingState: Partial<ChatSlice> = {
+        chatResponseProgress: undefined,
+        isChatSubmitting: true,
+      };
+      if (clearInput) submittingState.chatInput = "";
+      set(submittingState);
+      const optimistic: ChatMessageDTO = {
+        id: crypto.randomUUID(),
+        type,
+        userType: "user",
+        text,
+        createdAt: new Date().toISOString(),
+      };
+      set((state) => ({ chatMessages: [...state.chatMessages, optimistic] }));
+      const progressBatcher = createChatProgressBatcher(
+        (chatResponseProgress) => set({ chatResponseProgress }),
+      );
+      try {
+        const chat = await service.sendMessage(
+          {
+            text,
+            clientMessageId: optimistic.id,
+          },
+          progressBatcher.push,
+        );
+        progressBatcher.cancel();
+        applyChatSnapshot(chat);
+      } catch {
+        set({ chatError: "sending", chatResponseProgress: undefined });
+      } finally {
+        progressBatcher.cancel();
+        set({ isChatSubmitting: false });
+      }
+    }
     return {
       currentUser: undefined,
       chatMessages: [],
       chatInput: "",
+      chatResponseProgress: undefined,
+      reasoningEffort: ReasoningEffort.Off,
+      supportedReasoningEfforts: [ReasoningEffort.Off],
       chatError: undefined,
       isChatBootstrapping: true,
       isChatSubmitting: false,
@@ -67,8 +132,8 @@ export function createChatSlice(
             return "error";
           }
           set({ currentUser: user });
-          const messages = await service.getMessages();
-          set({ chatMessages: messages });
+          const chat = await service.getChat();
+          applyChatSnapshot(chat);
           return "ok";
         } catch (e) {
           if (e instanceof WebChatAuthError) return e.reason;
@@ -79,12 +144,12 @@ export function createChatSlice(
         }
       },
       async refreshChat() {
-        const { currentUser } = get();
-        if (!currentUser || isRefreshing) return;
+        const { currentUser, isChatSubmitting } = get();
+        if (!currentUser || isChatSubmitting || isRefreshing) return;
         isRefreshing = true;
         try {
-          const messages = await service.getMessages();
-          set({ chatMessages: messages });
+          const chat = await service.getChat();
+          applyChatSnapshot(chat);
         } catch {
           set({ chatError: "loading" });
         } finally {
@@ -95,31 +160,17 @@ export function createChatSlice(
         const { chatInput, isChatSubmitting } = get();
         const text = chatInput.trim();
         if (!text || isChatSubmitting) return;
-        set({ isChatSubmitting: true, chatInput: "" });
-        const optimistic: ChatMessageDTO = {
-          id: crypto.randomUUID(),
-          type: "text",
-          userType: "user",
-          text,
-          createdAt: new Date().toISOString(),
-        };
-        set((state) => ({ chatMessages: [...state.chatMessages, optimistic] }));
-        try {
-          const messages = await service.sendMessage({
-            text,
-            clientMessageId: optimistic.id,
-          });
-          set({ chatMessages: messages });
-        } catch {
-          set({ chatError: "sending" });
-        } finally {
-          set({ isChatSubmitting: false });
-        }
+        await sendTextMessage(text, "text", true);
+      },
+      async setReasoningEffort(effort) {
+        const { reasoningEffort, isChatSubmitting } = get();
+        if (effort === reasoningEffort || isChatSubmitting) return;
+        await sendTextMessage(`/effort ${effort}`, "command", false);
       },
       async sendButtonReply(buttonReply) {
         const { isChatSubmitting } = get();
         if (isChatSubmitting) return;
-        set({ isChatSubmitting: true });
+        set({ chatResponseProgress: undefined, isChatSubmitting: true });
         const optimistic: ChatMessageDTO = {
           id: crypto.randomUUID(),
           type: "interactive",
@@ -128,15 +179,23 @@ export function createChatSlice(
           createdAt: new Date().toISOString(),
         };
         set((state) => ({ chatMessages: [...state.chatMessages, optimistic] }));
+        const progressBatcher = createChatProgressBatcher(
+          (chatResponseProgress) => set({ chatResponseProgress }),
+        );
         try {
-          const messages = await service.sendMessage({
-            buttonReply,
-            clientMessageId: optimistic.id,
-          });
-          set({ chatMessages: messages });
+          const chat = await service.sendMessage(
+            {
+              buttonReply,
+              clientMessageId: optimistic.id,
+            },
+            progressBatcher.push,
+          );
+          progressBatcher.cancel();
+          applyChatSnapshot(chat);
         } catch {
-          set({ chatError: "sending" });
+          set({ chatError: "sending", chatResponseProgress: undefined });
         } finally {
+          progressBatcher.cancel();
           set({ isChatSubmitting: false });
         }
       },
@@ -148,6 +207,9 @@ export function createChatSlice(
           currentUser: undefined,
           chatMessages: [],
           chatInput: "",
+          chatResponseProgress: undefined,
+          reasoningEffort: ReasoningEffort.Off,
+          supportedReasoningEfforts: [ReasoningEffort.Off],
           chatError: undefined,
           isChatBootstrapping: true,
           isChatSubmitting: false,

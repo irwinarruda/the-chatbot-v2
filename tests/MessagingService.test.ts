@@ -5,10 +5,13 @@ import { ChatChannel } from "~/modules/chat/entities/enums/ChatChannel";
 import { MessageAudience } from "~/modules/chat/entities/enums/MessageAudience";
 import { MessageContentType } from "~/modules/chat/entities/enums/MessageContentType";
 import { MessageRole } from "~/modules/chat/entities/enums/MessageRole";
+import { ReasoningEffort } from "~/modules/chat/entities/enums/ReasoningEffort";
 import { ToolResultStatus } from "~/modules/chat/entities/enums/ToolResultStatus";
 import { Message } from "~/modules/chat/entities/Message";
+import type { AiChatContextMessageDTO } from "~/modules/chat/gateway/AiChatGateway";
 import { TestWhatsAppMessagingGateway } from "~/modules/chat/gateway/WhatsAppMessagingGateway/TestWhatsAppMessagingGateway";
 import type { AiToolService } from "~/modules/chat/services/AiToolService";
+import { MessageLocale } from "~/modules/chat/utils/MessageLoader";
 import { User } from "~/modules/identity/entities/User";
 import { UnauthorizedException } from "~/shared/errors/ApplicationErrors";
 import { ValidationException } from "~/shared/errors/DomainErrors";
@@ -24,10 +27,29 @@ function estimateCurrentRequest(chat: Chat, channelAddress: string): number {
   const gateway = orquestrator.aiGateway;
   return gateway.estimateInputTokens({
     channelAddress,
-    messages: chat.getModelMessages().map((message) => ({
-      role: message.role,
-      content: message.content,
-    })),
+    messages: chat.getModelMessages().map((message) => {
+      const contextMessage: AiChatContextMessageDTO = {
+        role: message.role,
+        content: message.content,
+        timestamp: message.createdAt.getTime(),
+      };
+      if (!message.generationId) return contextMessage;
+      const generation = chat.getGeneration(message.generationId);
+      if (!generation) return contextMessage;
+      contextMessage.generation = {
+        id: generation.id,
+        provider: generation.provider,
+        model: generation.model,
+        api: generation.api,
+        responseModel: generation.responseModel,
+        responseId: generation.responseId,
+        finishReason: generation.finishReason,
+        usage: generation.usage,
+        diagnostics: generation.diagnostics,
+        timestamp: generation.createdAt.getTime(),
+      };
+      return contextMessage;
+    }),
     tools,
     memory: chat.summary,
   });
@@ -308,6 +330,154 @@ describe("MessagingService", () => {
     expect(chat?.messages[0]?.role).toBe(MessageRole.User);
     expect(chat?.messages[1]?.role).toBe(MessageRole.Assistant);
     expect(chat?.messages[1]?.text).toBe("Response to: Hello from web");
+  });
+
+  test("effort commands persist outside model context and configure later generations", async () => {
+    await orquestrator.clearDatabase();
+    const user = await orquestrator.createUser({
+      phoneNumber: "5511912345678",
+    });
+    const webAddress = user.email ?? "";
+    const aiGateway = orquestrator.aiGateway;
+    const initialRequestCount = aiGateway.requests.length;
+
+    await orquestrator.messagingService.receiveWebMessage(webAddress, {
+      text: "/effort high",
+    });
+
+    let chat = await orquestrator.messagingService.getChatByChannelAddress(
+      webAddress,
+      ChatChannel.Web,
+    );
+    expect(aiGateway.requests).toHaveLength(initialRequestCount);
+    expect(chat?.reasoningEffort).toBe(ReasoningEffort.High);
+    expect(chat?.messages).toHaveLength(2);
+    expect(chat?.messages[0]).toMatchObject({
+      role: MessageRole.User,
+      audience: MessageAudience.Channel,
+      content: {
+        type: MessageContentType.Command,
+        raw: "/effort high",
+        name: "effort",
+        arguments: { level: "high" },
+      },
+    });
+    expect(chat?.messages[1]).toMatchObject({
+      role: MessageRole.Assistant,
+      audience: MessageAudience.Channel,
+    });
+    expect(chat?.getModelMessages()).toHaveLength(0);
+
+    aiGateway.scriptedResponses = [
+      {
+        items: [
+          {
+            type: MessageContentType.Reasoning,
+            text: "durable trace",
+            thinkingSignature: "thinking-signature",
+          },
+          {
+            type: MessageContentType.Text,
+            text: "careful answer",
+            textSignature: "text-signature",
+          },
+        ],
+        toolCalls: [],
+        finishReason: "stop",
+      },
+    ];
+    await orquestrator.messagingService.receiveWebMessage(webAddress, {
+      text: "Think carefully",
+    });
+
+    chat = await orquestrator.messagingService.getChatByChannelAddress(
+      webAddress,
+      ChatChannel.Web,
+    );
+    const request = aiGateway.requests.at(-1);
+    expect(request?.reasoningEffort).toBe(ReasoningEffort.High);
+    expect(chat?.generations).toHaveLength(1);
+    expect(chat?.generations[0]).toMatchObject({
+      provider: "test",
+      model: "test-model",
+      reasoningEffort: ReasoningEffort.High,
+      finishReason: "stop",
+    });
+    const reasoning = chat?.messages.find(
+      (message) => message.content.type === MessageContentType.Reasoning,
+    );
+    const answer = chat?.messages.at(-1);
+    expect(reasoning).toMatchObject({
+      audience: MessageAudience.Model,
+      generationId: chat?.generations[0]?.id,
+      content: {
+        text: "durable trace",
+        thinkingSignature: "thinking-signature",
+      },
+    });
+    expect(answer).toMatchObject({
+      audience: MessageAudience.Both,
+      generationId: chat?.generations[0]?.id,
+      content: {
+        text: "careful answer",
+        textSignature: "text-signature",
+      },
+    });
+
+    await orquestrator.messagingService.receiveWebMessage(webAddress, {
+      text: "Use the answer without replaying its hidden trace",
+    });
+
+    const nextRequest = aiGateway.requests.at(-1);
+    expect(
+      nextRequest?.messages.some(
+        (message) =>
+          message.content.type === MessageContentType.Reasoning &&
+          message.content.text === "durable trace",
+      ),
+    ).toBe(false);
+  });
+
+  test("WhatsApp effort commands use the shared command path", async () => {
+    await orquestrator.clearDatabase();
+    const phoneNumber = TestWhatsAppMessagingGateway.phoneNumber;
+    await orquestrator.addAllowedNumber(phoneNumber);
+    await orquestrator.createUser({ phoneNumber });
+    const initialRequestCount = orquestrator.aiGateway.requests.length;
+
+    await orquestrator.messagingService.receiveWhatsAppMessage(
+      createReceiveMessage("/effort low"),
+      "sig",
+    );
+
+    const chat =
+      await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber);
+    expect(orquestrator.aiGateway.requests).toHaveLength(initialRequestCount);
+    expect(chat?.reasoningEffort).toBe(ReasoningEffort.Low);
+    expect(chat?.messages[0]?.content.type).toBe(MessageContentType.Command);
+    expect(chat?.messages[1]?.text).toContain("low");
+  });
+
+  test("web effort commands use the requested locale", async () => {
+    await orquestrator.clearDatabase();
+    const user = await orquestrator.createUser({
+      phoneNumber: "5511912345678",
+    });
+    const webAddress = user.email ?? "";
+
+    await orquestrator.messagingService.receiveWebMessage(
+      webAddress,
+      { text: "/effort" },
+      undefined,
+      MessageLocale.En,
+    );
+
+    const chat = await orquestrator.messagingService.getChatByChannelAddress(
+      webAddress,
+      ChatChannel.Web,
+    );
+    expect(chat?.messages[1]?.text).toContain("Current reasoning effort");
+    expect(chat?.messages[1]?.text).toContain("Available");
   });
 
   test("receiveWebMessage with buttonReply routes through web gateway", async () => {
@@ -695,7 +865,11 @@ describe("MessagingService", () => {
     aiGateway.requests = [];
     aiGateway.scriptedResponses = [
       {
-        toolCalls: [
+        items: [
+          {
+            type: MessageContentType.Reasoning,
+            text: "Find the pending todos",
+          },
           {
             type: MessageContentType.ToolCall,
             callId: "call-1",
@@ -703,6 +877,7 @@ describe("MessagingService", () => {
             arguments: { status: "Pending" },
           },
         ],
+        toolCalls: [],
         finishReason: "tool_calls",
       },
     ];
@@ -716,9 +891,11 @@ describe("MessagingService", () => {
       webAddress,
       ChatChannel.Web,
     );
-    expect(chat?.messages).toHaveLength(4);
+    expect(chat?.messages).toHaveLength(5);
     const userMessage = chat?.messages[0];
-    const toolCallMessage = chat?.messages[1];
+    const toolCallMessage = chat?.messages.find(
+      (message) => message.content.type === MessageContentType.ToolCall,
+    );
     expect(toolCallMessage?.role).toBe(MessageRole.Assistant);
     expect(toolCallMessage?.audience).toBe(MessageAudience.Model);
     expect(toolCallMessage?.turnId).toBe(userMessage?.id);
@@ -727,7 +904,9 @@ describe("MessagingService", () => {
       callId: "call-1",
       name: "list_todos",
     });
-    const toolResultMessage = chat?.messages[2];
+    const toolResultMessage = chat?.messages.find(
+      (message) => message.content.type === MessageContentType.ToolResult,
+    );
     expect(toolResultMessage?.role).toBe(MessageRole.Tool);
     expect(toolResultMessage?.turnId).toBe(userMessage?.id);
     expect(toolResultMessage?.content).toMatchObject({
@@ -735,8 +914,8 @@ describe("MessagingService", () => {
       callId: "call-1",
       outcome: { status: ToolResultStatus.Succeeded, data: { count: 0 } },
     });
-    expect(chat?.messages[3]?.role).toBe(MessageRole.Assistant);
-    expect(chat?.messages[3]?.text).toBeDefined();
+    expect(chat?.messages.at(-1)?.role).toBe(MessageRole.Assistant);
+    expect(chat?.messages.at(-1)?.text).toBeDefined();
 
     const followUp = aiGateway.requests[aiGateway.requests.length - 1];
     expect(
@@ -749,9 +928,80 @@ describe("MessagingService", () => {
         (m) => m.content.type === MessageContentType.ToolResult,
       ),
     ).toBe(true);
+    expect(
+      followUp?.messages.some(
+        (m) =>
+          m.content.type === MessageContentType.Reasoning &&
+          m.content.text === "Find the pending todos",
+      ),
+    ).toBe(true);
 
     expect(chat?.getChannelMessages()).toHaveLength(2);
     expect(chat?.toJSON().messages).toHaveLength(2);
+  });
+
+  test("web responses publish reasoning and persisted tool lifecycle progress", async () => {
+    await orquestrator.clearDatabase();
+    const user = await orquestrator.createUser({
+      phoneNumber: "5511912345678",
+    });
+    const webAddress = user.email ?? "";
+    const aiGateway = orquestrator.aiGateway;
+    aiGateway.scriptedResponses = [
+      {
+        items: [
+          {
+            type: MessageContentType.Reasoning,
+            text: "Inspect the pending todos",
+          },
+          {
+            type: MessageContentType.ToolCall,
+            callId: "call-progress",
+            name: "list_todos",
+            arguments: { status: "Pending" },
+          },
+        ],
+        toolCalls: [],
+        finishReason: "tool_calls",
+      },
+    ];
+    const progress: Array<{ type: string; [key: string]: unknown }> = [];
+
+    await orquestrator.messagingService.receiveWebMessage(
+      webAddress,
+      {
+        text: "show my pending todos",
+        clientMessageId: crypto.randomUUID(),
+      },
+      (event) => progress.push(event),
+    );
+
+    expect(progress).toEqual([
+      {
+        type: "reasoningDelta",
+        round: 1,
+        contentIndex: 0,
+        delta: "Inspect the pending todos",
+      },
+      {
+        type: "toolCall",
+        round: 1,
+        contentIndex: 1,
+        callId: "call-progress",
+        name: "list_todos",
+        arguments: { status: "Pending" },
+      },
+      {
+        type: "toolResult",
+        round: 1,
+        callId: "call-progress",
+        name: "list_todos",
+        outcome: {
+          status: ToolResultStatus.Succeeded,
+          data: { count: 0, todos: [] },
+        },
+      },
+    ]);
   });
 
   test("unknown tools and malformed arguments become persisted failed results", async () => {

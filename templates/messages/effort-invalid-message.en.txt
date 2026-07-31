@@ -1,0 +1,1 @@
+Invalid reasoning effort: {{RequestedReasoningEffort}}. Available: {{SupportedReasoningEfforts}}.

@@ -1,9 +1,18 @@
 import { v4 as uuidv4 } from "uuid";
+import {
+  AiGeneration,
+  type AiGenerationConfig,
+} from "~/modules/chat/entities/AiGeneration";
 import type { ConversationSummary } from "~/modules/chat/entities/ConversationSummary";
 import { ChatChannel } from "~/modules/chat/entities/enums/ChatChannel";
 import { MessageAudience } from "~/modules/chat/entities/enums/MessageAudience";
 import { MessageContentType } from "~/modules/chat/entities/enums/MessageContentType";
 import { MessageRole } from "~/modules/chat/entities/enums/MessageRole";
+import {
+  isReasoningEffort,
+  ReasoningEffort,
+  type ReasoningEffort as ReasoningEffortType,
+} from "~/modules/chat/entities/enums/ReasoningEffort";
 import {
   Message,
   type MessageConfig,
@@ -15,7 +24,9 @@ import { ValidationException } from "~/shared/errors/DomainErrors";
 export interface AssistantMessageOptions {
   turnId?: string;
   audience?: MessageAudience;
+  generationId?: string;
   channelMessageId?: string;
+  textSignature?: string;
 }
 
 export class Chat {
@@ -25,6 +36,8 @@ export class Chat {
   webAddress?: string;
   channel: ChatChannel;
   messages: Message[];
+  generations: AiGeneration[];
+  reasoningEffort: ReasoningEffortType;
   summary?: ConversationSummary;
   createdAt: Date;
   updatedAt: Date;
@@ -37,6 +50,8 @@ export class Chat {
     this.webAddress = undefined;
     this.channel = ChatChannel.WhatsApp;
     this.messages = [];
+    this.generations = [];
+    this.reasoningEffort = ReasoningEffort.Off;
     this.summary = undefined;
     this.createdAt = new Date();
     this.updatedAt = new Date();
@@ -50,6 +65,8 @@ export class Chat {
     webAddress?: string;
     channel: ChatChannel;
     messages: Message[];
+    generations: AiGeneration[];
+    reasoningEffort: ReasoningEffortType;
     summary?: ConversationSummary;
     createdAt: Date;
     updatedAt: Date;
@@ -62,6 +79,8 @@ export class Chat {
     chat.webAddress = config.webAddress;
     chat.channel = config.channel;
     chat.messages = config.messages;
+    chat.generations = config.generations;
+    chat.reasoningEffort = config.reasoningEffort;
     chat.summary = config.summary;
     chat.createdAt = config.createdAt;
     chat.updatedAt = config.updatedAt;
@@ -73,10 +92,16 @@ export class Chat {
     return this.messages.filter((m) => m.isChannelVisible);
   }
 
-  getModelMessages(): Message[] {
+  getModelMessages(reasoningTurnId?: string): Message[] {
     const cursor = this.summary?.compactedThroughSequence;
     return this.messages.filter((m) => {
       if (!m.isModelVisible) return false;
+      if (
+        m.content.type === MessageContentType.Reasoning &&
+        m.turnId !== reasoningTurnId
+      ) {
+        return false;
+      }
       if (cursor === undefined) return true;
       return m.sequence === undefined || m.sequence > cursor;
     });
@@ -136,6 +161,23 @@ export class Chat {
     );
   }
 
+  getGeneration(generationId: string): AiGeneration | undefined {
+    return this.generations.find(
+      (generation) => generation.id === generationId,
+    );
+  }
+
+  addGeneration(config: Omit<AiGenerationConfig, "idChat">): AiGeneration {
+    if (!this.messages.some((message) => message.turnId === config.turnId)) {
+      throw new ValidationException(
+        "AI generations must belong to an existing conversation turn",
+      );
+    }
+    const generation = new AiGeneration({ ...config, idChat: this.id });
+    this.generations.push(generation);
+    return generation;
+  }
+
   setSummary(summary: ConversationSummary): void {
     const cursor = summary.compactedThroughSequence;
     if (this.summary && cursor <= this.summary.compactedThroughSequence) {
@@ -175,6 +217,14 @@ export class Chat {
     this.updatedAt = new Date();
   }
 
+  setReasoningEffort(reasoningEffort: ReasoningEffortType): void {
+    if (!isReasoningEffort(reasoningEffort)) {
+      throw new ValidationException("Reasoning effort is invalid");
+    }
+    this.reasoningEffort = reasoningEffort;
+    this.updatedAt = new Date();
+  }
+
   getChannelAddress(): string {
     if (this.channel === ChatChannel.WhatsApp && this.whatsAppAddress) {
       return this.whatsAppAddress;
@@ -210,6 +260,25 @@ export class Chat {
     });
   }
 
+  addUserCommandMessage(
+    raw: string,
+    name: string,
+    commandArguments: Record<string, string>,
+    channelMessageId?: string,
+  ): Message {
+    return this.appendMessage({
+      channelMessageId,
+      role: MessageRole.User,
+      audience: MessageAudience.Channel,
+      content: {
+        type: MessageContentType.Command,
+        raw,
+        name,
+        arguments: commandArguments,
+      },
+    });
+  }
+
   addUserButtonMessage(reply: string, channelMessageId?: string): Message {
     return this.appendMessage({
       channelMessageId,
@@ -241,7 +310,12 @@ export class Chat {
       channelMessageId: options?.channelMessageId,
       role: MessageRole.Assistant,
       audience: options?.audience ?? MessageAudience.Both,
-      content: { type: MessageContentType.Text, text },
+      generationId: options?.generationId,
+      content: {
+        type: MessageContentType.Text,
+        text,
+        textSignature: options?.textSignature,
+      },
     });
   }
 
@@ -255,11 +329,39 @@ export class Chat {
       channelMessageId: options?.channelMessageId,
       role: MessageRole.Assistant,
       audience: options?.audience ?? MessageAudience.Both,
+      generationId: options?.generationId,
       content: { type: MessageContentType.Button, text, options: buttons },
     });
   }
 
-  addAssistantToolCall(turnId: string, call: ToolCallContent): Message {
+  addAssistantReasoningMessage(
+    turnId: string,
+    generationId: string,
+    text: string,
+    options?: {
+      thinkingSignature?: string;
+      redacted?: boolean;
+    },
+  ): Message {
+    return this.appendMessage({
+      turnId,
+      generationId,
+      role: MessageRole.Assistant,
+      audience: MessageAudience.Model,
+      content: {
+        type: MessageContentType.Reasoning,
+        text,
+        thinkingSignature: options?.thinkingSignature,
+        redacted: options?.redacted,
+      },
+    });
+  }
+
+  addAssistantToolCall(
+    turnId: string,
+    generationId: string,
+    call: ToolCallContent,
+  ): Message {
     if (!this.messages.some((m) => m.turnId === turnId)) {
       throw new ValidationException(
         "Tool calls must belong to an existing conversation turn",
@@ -267,6 +369,7 @@ export class Chat {
     }
     return this.appendMessage({
       turnId,
+      generationId,
       role: MessageRole.Assistant,
       audience: MessageAudience.Model,
       content: call,
@@ -274,15 +377,15 @@ export class Chat {
   }
 
   addToolResult(turnId: string, result: ToolResultContent): Message {
-    const hasMatchingCall = this.messages.some(
+    const matchingCall = this.messages.find(
       (m) =>
         m.turnId === turnId &&
         m.content.type === MessageContentType.ToolCall &&
         m.content.callId === result.callId,
     );
-    if (!hasMatchingCall) {
+    if (!matchingCall?.generationId) {
       throw new ValidationException(
-        "Tool results must reference an earlier tool call in the same turn",
+        "Tool results must reference a generated tool call in the same turn",
       );
     }
     if (this.getToolResult(turnId, result.callId)) {
@@ -292,6 +395,7 @@ export class Chat {
     }
     return this.appendMessage({
       turnId,
+      generationId: matchingCall.generationId,
       role: MessageRole.Tool,
       audience: MessageAudience.Model,
       content: result,
@@ -310,6 +414,7 @@ export class Chat {
       whatsAppAddress: this.whatsAppAddress,
       webAddress: this.webAddress,
       channel: this.channel.toLowerCase(),
+      reasoningEffort: this.reasoningEffort,
       messages: this.getChannelMessages().map((m) => m.toJSON()),
       createdAt: this.createdAt.toISOString(),
       updatedAt: this.updatedAt.toISOString(),

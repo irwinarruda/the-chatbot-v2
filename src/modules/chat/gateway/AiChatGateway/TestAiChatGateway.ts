@@ -1,13 +1,19 @@
 import type { ConversationSummary } from "~/modules/chat/entities/ConversationSummary";
 import { MessageContentType } from "~/modules/chat/entities/enums/MessageContentType";
 import { MessageRole } from "~/modules/chat/entities/enums/MessageRole";
+import {
+  type ReasoningEffort,
+  reasoningEfforts,
+} from "~/modules/chat/entities/enums/ReasoningEffort";
 import type {
   AiChatContextMessageDTO,
   AiChatGateway,
+  AiCompletionProgressDTO,
   AiCompletionRequestDTO,
   AiCompletionResponseDTO,
   AiInputEstimateRequestDTO,
   AiSummaryCandidateDTO,
+  AssistantGenerationContentDTO,
   TestAiScriptedResponseDTO,
 } from "~/modules/chat/gateway/AiChatGateway";
 
@@ -21,35 +27,67 @@ export class TestAiChatGateway implements AiChatGateway {
   summaryError?: Error;
   summaryCalls = 0;
   contextWindowTokens = 1_000_000;
+  supportedReasoningEfforts = [...reasoningEfforts];
 
   getContextWindowTokens(): number {
     return this.contextWindowTokens;
   }
 
+  getSupportedReasoningEfforts(): ReasoningEffort[] {
+    return this.supportedReasoningEfforts;
+  }
+
   async complete(
     request: AiCompletionRequestDTO,
+    onProgress?: (progress: AiCompletionProgressDTO) => void,
   ): Promise<AiCompletionResponseDTO> {
     this.lastChannelAddress = request.channelAddress;
     this.lastRequest = request;
     this.requests.push(request);
     const scripted = this.scriptedResponses.shift();
     if (scripted) {
+      let items: AssistantGenerationContentDTO[];
+      if (scripted.items) {
+        items = scripted.items;
+      } else {
+        items = [...scripted.toolCalls];
+        if (scripted.content) items.unshift(scripted.content);
+      }
+      for (const [contentIndex, item] of items.entries()) {
+        if (item.type === MessageContentType.Reasoning) {
+          onProgress?.({
+            type: "reasoningDelta",
+            contentIndex,
+            delta: item.text,
+          });
+        } else if (item.type === MessageContentType.ToolCall) {
+          onProgress?.({ type: "toolCall", contentIndex, call: item });
+        }
+      }
       return {
-        content: scripted.content,
-        toolCalls: scripted.toolCalls,
+        provider: "test",
+        model: "test-model",
+        api: "test-api",
+        items,
         finishReason: scripted.finishReason,
+        usage: this.emptyUsage(),
       };
     }
     const lastUserMessage = [...request.messages]
       .reverse()
       .find((message) => message.role === MessageRole.User);
     return {
-      content: {
-        type: MessageContentType.Text,
-        text: `Response to: ${this.messageText(lastUserMessage).trim()}`,
-      },
-      toolCalls: [],
+      provider: "test",
+      model: "test-model",
+      api: "test-api",
+      items: [
+        {
+          type: MessageContentType.Text,
+          text: `Response to: ${this.messageText(lastUserMessage).trim()}`,
+        },
+      ],
       finishReason: "stop",
+      usage: this.emptyUsage(),
     };
   }
 
@@ -90,5 +128,22 @@ export class TestAiChatGateway implements AiChatGateway {
       return content.text;
     }
     return "";
+  }
+
+  private emptyUsage() {
+    return {
+      input: 0,
+      output: 0,
+      cacheRead: 0,
+      cacheWrite: 0,
+      totalTokens: 0,
+      cost: {
+        input: 0,
+        output: 0,
+        cacheRead: 0,
+        cacheWrite: 0,
+        total: 0,
+      },
+    };
   }
 }

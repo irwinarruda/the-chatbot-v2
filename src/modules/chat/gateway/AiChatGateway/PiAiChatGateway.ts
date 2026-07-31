@@ -1,7 +1,9 @@
 import {
   createModels,
+  getSupportedThinkingLevels,
   type Model,
   type MutableModels,
+  type SimpleStreamOptions,
   Type,
 } from "@earendil-works/pi-ai";
 import { anthropicProvider } from "@earendil-works/pi-ai/providers/anthropic";
@@ -13,15 +15,21 @@ import {
   ReplyWithOptionsToolDTO,
   replyWithOptionsToolName,
 } from "~/modules/chat/entities/dtos/ReplyWithOptionsToolDTO";
+import {
+  ReasoningEffort,
+  type ReasoningEffort as ReasoningEffortType,
+} from "~/modules/chat/entities/enums/ReasoningEffort";
 import type {
   AiChatContextMessageDTO,
   AiChatGateway,
+  AiCompletionProgressDTO,
   AiCompletionRequestDTO,
   AiCompletionResponseDTO,
   AiInputEstimateRequestDTO,
   AiSummaryCandidateDTO,
   AiToolDefinitionDTO,
 } from "~/modules/chat/gateway/AiChatGateway";
+import { mapPiAssistantProgress } from "~/modules/chat/gateway/AiChatGateway/mapPiAssistantProgress";
 import { mapPiAssistantResponse } from "~/modules/chat/gateway/AiChatGateway/mapPiAssistantResponse";
 import { PiMessageMapper } from "~/modules/chat/gateway/AiChatGateway/PiMessageMapper";
 import { PromptLoader, PromptLocale } from "~/modules/chat/utils/PromptLoader";
@@ -70,14 +78,40 @@ export class PiAiChatGateway implements AiChatGateway {
     return this.model.contextWindow;
   }
 
+  getSupportedReasoningEfforts(): ReasoningEffortType[] {
+    const levels = getSupportedThinkingLevels(
+      this.model,
+    ) as ReasoningEffortType[];
+    const preferredLevels = new Map<string, ReasoningEffortType>();
+    for (const level of levels) {
+      const providerLevel = this.getProviderReasoningLevel(level);
+      const preferred = preferredLevels.get(providerLevel);
+      if (!preferred || providerLevel === level) {
+        preferredLevels.set(providerLevel, level);
+      }
+    }
+    return levels.filter(
+      (level) =>
+        preferredLevels.get(this.getProviderReasoningLevel(level)) === level,
+    );
+  }
+
   async complete(
     request: AiCompletionRequestDTO,
+    onProgress?: (progress: AiCompletionProgressDTO) => void,
   ): Promise<AiCompletionResponseDTO> {
     const systemPrompt = this.buildSystemPrompt(
       request.channelAddress,
       request.memory,
     );
-    const response = await this.models.completeSimple(
+    const options: SimpleStreamOptions = {
+      apiKey: this.config.apiKey,
+      maxTokens: this.config.maxOutputTokens,
+    };
+    if (request.reasoningEffort !== ReasoningEffort.Off) {
+      options.reasoning = request.reasoningEffort;
+    }
+    const stream = this.models.streamSimple(
       this.model,
       {
         systemPrompt,
@@ -88,19 +122,27 @@ export class PiAiChatGateway implements AiChatGateway {
           parameters: Type.Unsafe(this.toJsonSchema(tool)),
         })),
       },
-      { apiKey: this.config.apiKey, maxTokens: this.config.maxOutputTokens },
+      options,
     );
+    for await (const event of stream) {
+      const progress = mapPiAssistantProgress(event);
+      if (progress) onProgress?.(progress);
+    }
+    const response = await stream.result();
     if (response.stopReason === "error" || response.stopReason === "aborted") {
       throw new Error(response.errorMessage ?? "The AI returned no response");
     }
     const mapped = mapPiAssistantResponse(response);
     return {
       ...mapped,
+      provider: response.provider,
+      model: response.model,
+      api: response.api,
+      responseModel: response.responseModel,
+      responseId: response.responseId,
       finishReason: response.stopReason,
-      usage: {
-        inputTokens: response.usage.input,
-        outputTokens: response.usage.output,
-      },
+      usage: response.usage,
+      diagnostics: response.diagnostics,
     };
   }
 
@@ -114,9 +156,14 @@ export class PiAiChatGateway implements AiChatGateway {
       description: tool.description,
       inputSchema: this.toJsonSchema(tool),
     }));
+    const messages = PiMessageMapper.map(request.messages, this.model).map(
+      (message) => ({
+        role: message.role,
+        content: message.content,
+      }),
+    );
     return Math.ceil(
-      JSON.stringify({ systemPrompt, messages: request.messages, tools })
-        .length / 3,
+      JSON.stringify({ systemPrompt, messages, tools }).length / 3,
     );
   }
 
@@ -188,6 +235,19 @@ export class PiAiChatGateway implements AiChatGateway {
       );
     }
     return [...tools, replyWithOptionsTool];
+  }
+
+  private getProviderReasoningLevel(level: ReasoningEffortType): string {
+    if (
+      this.model.api === "openai-completions" &&
+      this.model.compat &&
+      "supportsReasoningEffort" in this.model.compat &&
+      this.model.compat.supportsReasoningEffort === false
+    ) {
+      if (level === ReasoningEffort.Off) return ReasoningEffort.Off;
+      return "enabled";
+    }
+    return this.model.thinkingLevelMap?.[level] ?? level;
   }
 
   private buildSystemPrompt(

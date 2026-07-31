@@ -11,7 +11,11 @@ export type ToolResultOutcome =
   | { status: typeof ToolResultStatus.Unknown; code: string; message: string };
 
 export type MessageContent =
-  | { type: typeof MessageContentType.Text; text: string }
+  | {
+      type: typeof MessageContentType.Text;
+      text: string;
+      textSignature?: string;
+    }
   | {
       type: typeof MessageContentType.Button;
       text: string;
@@ -25,10 +29,23 @@ export type MessageContent =
       transcript?: string;
     }
   | {
+      type: typeof MessageContentType.Command;
+      raw: string;
+      name: string;
+      arguments: Record<string, string>;
+    }
+  | {
+      type: typeof MessageContentType.Reasoning;
+      text: string;
+      thinkingSignature?: string;
+      redacted?: boolean;
+    }
+  | {
       type: typeof MessageContentType.ToolCall;
       callId: string;
       name: string;
       arguments: unknown;
+      thoughtSignature?: string;
     }
   | {
       type: typeof MessageContentType.ToolResult;
@@ -51,6 +68,7 @@ export interface MessageConfig {
   audience: MessageAudience;
   content: MessageContent;
   turnId?: string;
+  generationId?: string;
   channelMessageId?: string;
 }
 
@@ -62,6 +80,7 @@ export interface RestoredMessageConfig {
   role: unknown;
   audience: unknown;
   content: unknown;
+  generationId?: string;
   channelMessageId?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -75,6 +94,7 @@ export class Message {
   role: MessageRole;
   audience: MessageAudience;
   content: MessageContent;
+  generationId?: string;
   channelMessageId?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -87,6 +107,7 @@ export class Message {
     this.role = config.role;
     this.audience = config.audience;
     this.content = config.content;
+    this.generationId = config.generationId;
     this.channelMessageId = config.channelMessageId;
     this.createdAt = new Date();
     this.updatedAt = new Date();
@@ -100,6 +121,7 @@ export class Message {
       role: config.role as MessageRole,
       audience: config.audience as MessageAudience,
       content: config.content as MessageContent,
+      generationId: config.generationId,
       channelMessageId: config.channelMessageId,
     });
     message.id = config.id;
@@ -141,6 +163,10 @@ export class Message {
     if (!Object.values(MessageContentType).includes(content.type)) {
       throw new ValidationException("Message content type is invalid");
     }
+    const isGenerationMessage =
+      content.type === MessageContentType.Reasoning ||
+      content.type === MessageContentType.ToolCall ||
+      content.type === MessageContentType.ToolResult;
     if (
       content.type === MessageContentType.ToolCall &&
       role !== MessageRole.Assistant
@@ -161,13 +187,28 @@ export class Message {
         "The Tool role only carries tool result content",
       );
     }
+    if (isGenerationMessage && audience !== MessageAudience.Model) {
+      throw new ValidationException(
+        "Reasoning and tool messages must be model-only messages",
+      );
+    }
+    if (isGenerationMessage && !this.generationId) {
+      throw new ValidationException(
+        "Reasoning and tool messages require an AI generation",
+      );
+    }
     if (
-      (content.type === MessageContentType.ToolCall ||
-        content.type === MessageContentType.ToolResult) &&
-      audience !== MessageAudience.Model
+      content.type === MessageContentType.Reasoning &&
+      role !== MessageRole.Assistant
+    ) {
+      throw new ValidationException("Reasoning must use the Assistant role");
+    }
+    if (
+      content.type === MessageContentType.Command &&
+      (role !== MessageRole.User || audience !== MessageAudience.Channel)
     ) {
       throw new ValidationException(
-        "Tool calls and results must be model-only messages",
+        "Commands must be channel-only user messages",
       );
     }
     if (
@@ -220,6 +261,23 @@ export class Message {
       throw new ValidationException("Text messages require text content");
     }
     if (
+      content.type === MessageContentType.Reasoning &&
+      typeof content.text !== "string"
+    ) {
+      throw new ValidationException("Reasoning messages require text content");
+    }
+    if (
+      content.type === MessageContentType.Command &&
+      (!content.raw ||
+        !content.name ||
+        !content.arguments ||
+        typeof content.arguments !== "object")
+    ) {
+      throw new ValidationException(
+        "Command messages require raw text, a name, and arguments",
+      );
+    }
+    if (
       content.type === MessageContentType.Button &&
       typeof content.text !== "string"
     ) {
@@ -246,6 +304,9 @@ export class Message {
   get text(): string | undefined {
     if (this.content.type === MessageContentType.Text) {
       return this.content.text;
+    }
+    if (this.content.type === MessageContentType.Command) {
+      return this.content.raw;
     }
     if (
       this.content.type === MessageContentType.Button &&
@@ -308,19 +369,23 @@ export class Message {
 
   toJSON() {
     if (
+      this.content.type === MessageContentType.Reasoning ||
       this.content.type === MessageContentType.ToolCall ||
       this.content.type === MessageContentType.ToolResult
     ) {
       throw new ValidationException(
-        "Tool messages cannot be serialized to channel clients",
+        "Model-only messages cannot be serialized to channel clients",
       );
+    }
+    let type: Exclude<MessageContentType, "button"> | "interactive";
+    if (this.content.type === MessageContentType.Button) {
+      type = "interactive";
+    } else {
+      type = this.content.type;
     }
     return {
       id: this.id,
-      type:
-        this.content.type === MessageContentType.Button
-          ? "interactive"
-          : this.content.type,
+      type,
       userType: this.role === MessageRole.Assistant ? "bot" : "user",
       text: this.text,
       buttonReply: this.buttonReply,

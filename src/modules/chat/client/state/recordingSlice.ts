@@ -1,10 +1,13 @@
 import type { StateCreator } from "zustand";
 import { compute } from "zustand-computed-state";
 import type { AudioInputOption } from "~/modules/chat/client/entities/AudioInputOption";
+import type { ChatResponseProgressDTO } from "~/modules/chat/client/entities/dtos/ChatResponseProgressDTO";
 import { audioInputService } from "~/modules/chat/client/services/audioInputService";
 import { audioRecordingService } from "~/modules/chat/client/services/audioRecordingService";
 import { webChatService } from "~/modules/chat/client/services/webChatService";
+import { createChatProgressBatcher } from "~/modules/chat/client/state/createChatProgressBatcher";
 import type { ChatMessageDTO } from "~/modules/chat/entities/dtos/ChatDTO";
+import type { ReasoningEffort } from "~/modules/chat/entities/enums/ReasoningEffort";
 
 export interface RecordingSlice {
   audioInputOptions: AudioInputOption[];
@@ -21,6 +24,9 @@ export interface RecordingSlice {
 type RecordingState = RecordingSlice & {
   chatError?: "loading" | "sending" | "microphone";
   chatMessages: ChatMessageDTO[];
+  chatResponseProgress?: ChatResponseProgressDTO;
+  reasoningEffort: ReasoningEffort;
+  supportedReasoningEfforts: ReasoningEffort[];
   isChatSubmitting: boolean;
 };
 
@@ -59,7 +65,7 @@ export const recordingSlice: StateCreator<
         audioInputDeviceId: selectedAudioInputId || undefined,
         onTick: (duration) => set({ recordingDuration: duration }),
         onRecorded: async ({ blob, url }) => {
-          set({ isChatSubmitting: true });
+          set({ chatResponseProgress: undefined, isChatSubmitting: true });
           const optimistic: ChatMessageDTO = {
             id: crypto.randomUUID(),
             type: "audio",
@@ -71,16 +77,29 @@ export const recordingSlice: StateCreator<
           set((state) => ({
             chatMessages: [...state.chatMessages, optimistic],
           }));
+          const progressBatcher = createChatProgressBatcher(
+            (chatResponseProgress) => set({ chatResponseProgress }),
+          );
           try {
-            const messages = await webChatService.sendAudio({
-              blob,
-              mimeType: blob.type,
-              clientMessageId: optimistic.id,
+            const chat = await webChatService.sendAudio(
+              {
+                blob,
+                mimeType: blob.type,
+                clientMessageId: optimistic.id,
+              },
+              progressBatcher.push,
+            );
+            progressBatcher.cancel();
+            set({
+              chatMessages: chat.messages,
+              chatResponseProgress: undefined,
+              reasoningEffort: chat.reasoningEffort,
+              supportedReasoningEfforts: chat.supportedReasoningEfforts,
             });
-            set({ chatMessages: messages });
           } catch {
-            set({ chatError: "sending" });
+            set({ chatError: "sending", chatResponseProgress: undefined });
           } finally {
+            progressBatcher.cancel();
             set({ isChatSubmitting: false });
           }
         },

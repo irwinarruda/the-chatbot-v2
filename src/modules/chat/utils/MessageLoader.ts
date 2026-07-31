@@ -9,6 +9,9 @@ export const MessageTemplate = {
   ProcessingAudio: "ProcessingAudio",
   ToolRoundsExceeded: "ToolRoundsExceeded",
   UnexpectedError: "UnexpectedError",
+  EffortStatus: "EffortStatus",
+  EffortInvalid: "EffortInvalid",
+  EffortUpdated: "EffortUpdated",
 } as const;
 export type MessageTemplate = ValueOf<typeof MessageTemplate>;
 
@@ -18,8 +21,16 @@ export const MessageLocale = {
 } as const;
 export type MessageLocale = ValueOf<typeof MessageLocale>;
 
+export function toMessageLocale(locale: string): MessageLocale {
+  if (locale === "en") return MessageLocale.En;
+  return MessageLocale.PtBr;
+}
+
 export interface MessageParams {
   loginUrl?: string;
+  reasoningEffort?: string;
+  requestedReasoningEffort?: string;
+  supportedReasoningEfforts?: string;
 }
 
 export class MessageLoader {
@@ -61,6 +72,12 @@ export class MessageLoader {
         return "tool-rounds-exceeded-message";
       case MessageTemplate.UnexpectedError:
         return "unexpected-error-message";
+      case MessageTemplate.EffortStatus:
+        return "effort-status-message";
+      case MessageTemplate.EffortInvalid:
+        return "effort-invalid-message";
+      case MessageTemplate.EffortUpdated:
+        return "effort-updated-message";
       default:
         throw new Error(`Unknown message template: ${template}`);
     }
@@ -95,6 +112,15 @@ export class MessageLoader {
     if (!data) return text;
     const dict: Record<string, string> = {};
     if (data.loginUrl !== undefined) dict.LoginUrl = data.loginUrl;
+    if (data.reasoningEffort !== undefined) {
+      dict.ReasoningEffort = data.reasoningEffort;
+    }
+    if (data.requestedReasoningEffort !== undefined) {
+      dict.RequestedReasoningEffort = data.requestedReasoningEffort;
+    }
+    if (data.supportedReasoningEfforts !== undefined) {
+      dict.SupportedReasoningEfforts = data.supportedReasoningEfforts;
+    }
     return MessageLoader.applyTemplate(text, dict);
   }
 }

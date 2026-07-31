@@ -9,7 +9,7 @@ const noopLogger = { debug: noop, info: noop, warn: noop, error: noop };
 describe("MigrationService", () => {
   test("testMigration", async () => {
     await orquestrator.wipeDatabase();
-    const migrationCount = 23;
+    const migrationCount = 24;
     let migrations =
       await orquestrator.migrationService.listPendingMigrations();
     expect(migrations.length).toBeGreaterThan(0);
@@ -63,7 +63,7 @@ describe("MigrationService", () => {
       dir: Paths.migrationsDir(),
       direction: "down",
       migrationsTable: "pgmigrations",
-      count: 4,
+      count: 5,
       noLock: true,
       logger: noopLogger,
     });
@@ -110,5 +110,221 @@ describe("MigrationService", () => {
     expect(users).toHaveLength(1);
     expect(credentials).toHaveLength(0);
     expect(tokenColumns).toEqual([{ column_name: "token_envelope" }]);
+  });
+
+  test("AI generation migration preserves legacy chat and message information", async () => {
+    await orquestrator.clearDatabase();
+    await runner({
+      databaseUrl: orquestrator.databaseConfig.connectionString,
+      dir: Paths.migrationsDir(),
+      direction: "down",
+      migrationsTable: "pgmigrations",
+      count: 1,
+      noLock: true,
+      logger: noopLogger,
+    });
+    const chatId = crypto.randomUUID();
+    const turnId = crypto.randomUUID();
+    const toolCallId = crypto.randomUUID();
+    const toolResultId = crypto.randomUUID();
+    const answerId = crypto.randomUUID();
+    const createdAt = new Date("2026-07-30T12:00:00.000Z");
+    await orquestrator.database.sql`
+      INSERT INTO chats (
+        id,
+        channel,
+        web_address,
+        created_at,
+        updated_at,
+        is_deleted
+      )
+      VALUES (
+        ${chatId},
+        ${"Web"},
+        ${"legacy@example.com"},
+        ${createdAt},
+        ${createdAt},
+        ${false}
+      )
+    `;
+    await orquestrator.database.sql`
+      INSERT INTO messages (
+        id,
+        id_chat,
+        turn_id,
+        role,
+        audience,
+        content,
+        channel_message_id,
+        created_at,
+        updated_at
+      )
+      VALUES
+        (
+          ${turnId},
+          ${chatId},
+          ${turnId},
+          ${"User"},
+          ${"Both"},
+          ${orquestrator.database.json({ type: "text", text: "List todos" })},
+          ${"legacy-user-message"},
+          ${createdAt},
+          ${createdAt}
+        ),
+        (
+          ${toolCallId},
+          ${chatId},
+          ${turnId},
+          ${"Assistant"},
+          ${"Model"},
+          ${orquestrator.database.json({
+            type: "toolCall",
+            callId: "call-1",
+            name: "list_todos",
+            arguments: { status: "Pending" },
+          })},
+          ${null},
+          ${createdAt},
+          ${createdAt}
+        ),
+        (
+          ${toolResultId},
+          ${chatId},
+          ${turnId},
+          ${"Tool"},
+          ${"Model"},
+          ${orquestrator.database.json({
+            type: "toolResult",
+            callId: "call-1",
+            outcome: { status: "succeeded", data: { count: 2 } },
+          })},
+          ${null},
+          ${createdAt},
+          ${createdAt}
+        ),
+        (
+          ${answerId},
+          ${chatId},
+          ${turnId},
+          ${"Assistant"},
+          ${"Both"},
+          ${orquestrator.database.json({
+            type: "text",
+            text: "You have two pending todos.",
+          })},
+          ${null},
+          ${createdAt},
+          ${createdAt}
+        )
+    `;
+    const legacyChat = await orquestrator.database.sql`
+      SELECT
+        id,
+        id_user,
+        channel,
+        whatsapp_address,
+        web_address,
+        conversation_summary,
+        created_at,
+        updated_at,
+        is_deleted
+      FROM chats
+      WHERE id = ${chatId}
+    `;
+    const legacyMessages = await orquestrator.database.sql`
+      SELECT
+        id,
+        id_chat,
+        turn_id,
+        sequence,
+        role,
+        audience,
+        content,
+        channel_message_id,
+        created_at,
+        updated_at
+      FROM messages
+      WHERE id_chat = ${chatId}
+      ORDER BY sequence
+    `;
+
+    await orquestrator.migrationService.runPendingMigrations(
+      orquestrator.authConfig.hashPassword,
+    );
+
+    const migratedChat = await orquestrator.database.sql`
+      SELECT
+        id,
+        id_user,
+        channel,
+        whatsapp_address,
+        web_address,
+        conversation_summary,
+        created_at,
+        updated_at,
+        is_deleted
+      FROM chats
+      WHERE id = ${chatId}
+    `;
+    const migratedMessages = await orquestrator.database.sql`
+      SELECT
+        id,
+        id_chat,
+        turn_id,
+        sequence,
+        role,
+        audience,
+        content,
+        channel_message_id,
+        created_at,
+        updated_at
+      FROM messages
+      WHERE id_chat = ${chatId}
+      ORDER BY sequence
+    `;
+    const generationLinks = await orquestrator.database.sql<
+      { id: string; generation_id: string | null }[]
+    >`
+      SELECT id, generation_id
+      FROM messages
+      WHERE id_chat = ${chatId}
+      ORDER BY sequence
+    `;
+    const generations = await orquestrator.database.sql<
+      {
+        provider: string | null;
+        model: string | null;
+        finish_reason: string;
+      }[]
+    >`
+      SELECT provider, model, finish_reason
+      FROM ai_generations
+      WHERE id_chat = ${chatId}
+      ORDER BY sequence
+    `;
+    const reasoningEffort = await orquestrator.database.sql<
+      { reasoning_effort: string }[]
+    >`
+      SELECT reasoning_effort
+      FROM chats
+      WHERE id = ${chatId}
+    `;
+
+    expect(migratedChat).toEqual(legacyChat);
+    expect(migratedMessages).toEqual(legacyMessages);
+    expect(generations).toEqual([
+      { provider: null, model: null, finish_reason: "toolUse" },
+      { provider: null, model: null, finish_reason: "stop" },
+    ]);
+    expect(generationLinks[0]?.generation_id).toBeNull();
+    expect(generationLinks[1]?.generation_id).toBeDefined();
+    expect(generationLinks[2]?.generation_id).toBe(
+      generationLinks[1]?.generation_id,
+    );
+    expect(generationLinks[3]?.generation_id).toBeDefined();
+    expect(generationLinks[3]?.generation_id).not.toBe(
+      generationLinks[1]?.generation_id,
+    );
+    expect(reasoningEffort).toEqual([{ reasoning_effort: "off" }]);
   });
 });

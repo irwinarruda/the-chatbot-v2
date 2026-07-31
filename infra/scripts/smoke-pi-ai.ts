@@ -1,6 +1,7 @@
 import { resolve } from "path";
 import { MessageContentType } from "~/modules/chat/entities/enums/MessageContentType";
 import { MessageRole } from "~/modules/chat/entities/enums/MessageRole";
+import { ReasoningEffort } from "~/modules/chat/entities/enums/ReasoningEffort";
 import { PiAiChatGateway } from "~/modules/chat/gateway/AiChatGateway/PiAiChatGateway";
 import { loadConfig } from "~/shared/config/Config";
 import { loadModeEnv, resolveMode } from "../../plugins/env";
@@ -21,9 +22,11 @@ const response = await gateway.complete({
         type: MessageContentType.Text,
         text: "Reply with exactly: pi smoke ok",
       },
+      timestamp: Date.now(),
     },
   ],
   tools: [],
+  reasoningEffort: ReasoningEffort.Off,
 });
 
 console.log(
@@ -32,7 +35,7 @@ console.log(
       provider: config.ai.provider,
       model: config.ai.model,
       finishReason: response.finishReason,
-      content: response.content,
+      items: response.items,
       usage: response.usage,
     },
     undefined,

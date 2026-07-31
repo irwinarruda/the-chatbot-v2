@@ -3,6 +3,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   ArrowDown,
   ArrowUp,
+  BrainCircuit,
   CircleAlert,
   MessageSquare,
   Mic,
@@ -15,13 +16,16 @@ import {
   type ComponentProps,
   type KeyboardEvent,
   type SubmitEvent,
+  useCallback,
   useEffect,
   useRef,
   useState,
 } from "react";
 import { ChatMessage } from "~/modules/chat/client/components/ChatMessage";
+import { ChatResponseProgress } from "~/modules/chat/client/components/ChatResponseProgress";
 import { audioInputService } from "~/modules/chat/client/services/audioInputService";
 import type { ChatErrorCode } from "~/modules/chat/client/state/chatSlice";
+import { isReasoningEffort } from "~/modules/chat/entities/enums/ReasoningEffort";
 import { TerminalWindow } from "~/shared/client/components/terminal/TerminalWindow";
 import { Alert, AlertDescription } from "~/shared/client/components/ui/alert";
 import { Button } from "~/shared/client/components/ui/button";
@@ -55,6 +59,9 @@ export function ChatScreen() {
   const currentUser = useApp((s) => s.currentUser);
   const chatMessages = useApp((s) => s.chatMessages);
   const chatInput = useApp((s) => s.chatInput);
+  const chatResponseProgress = useApp((s) => s.chatResponseProgress);
+  const reasoningEffort = useApp((s) => s.reasoningEffort);
+  const supportedReasoningEfforts = useApp((s) => s.supportedReasoningEfforts);
   const chatError = useApp((s) => s.chatError);
   const isChatBootstrapping = useApp((s) => s.isChatBootstrapping);
   const isChatSubmitting = useApp((s) => s.isChatSubmitting);
@@ -71,12 +78,14 @@ export function ChatScreen() {
   const syncAudioInputs = useApp((s) => s.syncAudioInputs);
   const selectAudioInput = useApp((s) => s.selectAudioInput);
   const sendChatInput = useApp((s) => s.sendChatInput);
+  const setReasoningEffort = useApp((s) => s.setReasoningEffort);
   const sendButtonReply = useApp((s) => s.sendButtonReply);
   const startRecording = useApp((s) => s.startRecording);
   const stopRecording = useApp((s) => s.stopRecording);
   const dictionary = getDictionary(prefs.locale);
   const t = dictionary.chatPage;
   const inputElRef = useRef<HTMLTextAreaElement | null>(null);
+  const assistantProgressRef = useRef<HTMLDivElement | null>(null);
   const composerRef = useRef<HTMLDivElement>(null);
   const parentRef = useRef<HTMLDivElement>(null);
   const isNearBottomRef = useRef(true);
@@ -86,11 +95,16 @@ export function ChatScreen() {
   const lastChatItemIndex = isAssistantResponding
     ? chatMessages.length
     : chatMessages.length - 1;
+  const getChatItemKey = useCallback(
+    (index: number) => chatMessages[index]?.id ?? "assistant-progress",
+    [chatMessages],
+  );
   const virtualizer = useVirtualizer({
     count: chatMessages.length + (isAssistantResponding ? 1 : 0),
     getScrollElement: () => parentRef.current,
+    getItemKey: getChatItemKey,
     estimateSize: (index) => {
-      if (index === chatMessages.length) return 56;
+      if (index === chatMessages.length) return 180;
       const msg = chatMessages[index];
       if (msg.type === "audio" && msg.mediaUrl) return 90;
       if (
@@ -103,6 +117,13 @@ export function ChatScreen() {
     },
     overscan: 5,
   });
+  const measureAssistantProgress = useCallback(
+    (element: HTMLDivElement | null) => {
+      assistantProgressRef.current = element;
+      virtualizer.measureElement(element);
+    },
+    [virtualizer],
+  );
   const chatErrorMessages: Record<ChatErrorCode, string> = {
     microphone: t.errorMicrophone,
     sending: t.errorSending,
@@ -139,6 +160,11 @@ export function ChatScreen() {
 
   function onAudioInputChange(event: ChangeEvent<HTMLSelectElement>) {
     void selectAudioInput(event.target.value);
+  }
+
+  function onReasoningEffortChange(event: ChangeEvent<HTMLSelectElement>) {
+    if (!isReasoningEffort(event.target.value)) return;
+    void setReasoningEffort(event.target.value);
   }
 
   function onSubmit(event: SubmitEvent<HTMLFormElement>) {
@@ -187,6 +213,22 @@ export function ChatScreen() {
       virtualizer.scrollToIndex(lastChatItemIndex, { align: "end" });
     }
   }, [chatMessages.length, lastChatItemIndex, virtualizer]);
+
+  useEffect(() => {
+    if (!isNearBottomRef.current || !isAssistantResponding) return;
+    const animationFrame = requestAnimationFrame(() => {
+      if (assistantProgressRef.current) {
+        virtualizer.measureElement(assistantProgressRef.current);
+      }
+      virtualizer.scrollToIndex(lastChatItemIndex, { align: "end" });
+    });
+    return () => cancelAnimationFrame(animationFrame);
+  }, [
+    chatResponseProgress,
+    isAssistantResponding,
+    lastChatItemIndex,
+    virtualizer,
+  ]);
 
   useEffect(() => {
     const inputEl = inputElRef.current;
@@ -334,7 +376,7 @@ export function ChatScreen() {
                 return (
                   <div
                     key="assistant-progress"
-                    ref={virtualizer.measureElement}
+                    ref={measureAssistantProgress}
                     data-index={virtualItem.index}
                     style={{
                       position: "absolute",
@@ -344,29 +386,12 @@ export function ChatScreen() {
                       transform: `translateY(${virtualItem.start}px)`,
                     }}
                   >
-                    <div
-                      role="status"
-                      aria-live="polite"
-                      className="w-full py-2"
-                    >
-                      <div className="mb-1.5 flex items-center gap-2 font-mono text-2xs uppercase tracking-wider">
-                        <span
-                          aria-hidden="true"
-                          className="font-bold text-term-green"
-                        >
-                          {">"}
-                        </span>
-                        <span className="font-semibold text-term-green">
-                          {t.bot}
-                        </span>
-                        <span className="text-term-muted normal-case tracking-normal">
-                          {t.responding}
-                        </span>
-                      </div>
-                      <div className="pl-4">
-                        <span className="terminal-cursor" aria-hidden="true" />
-                      </div>
-                    </div>
+                    <ChatResponseProgress
+                      progress={chatResponseProgress}
+                      respondingLabel={t.responding}
+                      respondingElapsedLabel={t.respondingElapsed}
+                      labels={t}
+                    />
                   </div>
                 );
               }
@@ -394,6 +419,7 @@ export function ChatScreen() {
                       botLabel={t.bot}
                       showMoreLabel={t.showMoreTranscript}
                       showLessLabel={t.showLessTranscript}
+                      activityLabels={t}
                       onButtonReply={sendButtonReply}
                     />
                   </div>
@@ -489,45 +515,72 @@ export function ChatScreen() {
             </div>
 
             <div className="mt-1 flex min-h-8 items-center justify-between gap-3 border-term-border/60 border-t pt-2">
-              <div
-                data-disabled={!canSelectAudioInput}
-                className="relative w-full max-w-55 data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50"
-              >
-                <Label htmlFor="chat-audio-input" className="sr-only">
-                  {t.audioInputLabel}
-                </Label>
-                <span
-                  className="pointer-events-none absolute top-1/2 left-2.5 z-10 inline-flex size-3 -translate-y-1/2 items-center justify-center text-term-muted"
+              <div className="flex shrink-0 items-center gap-1">
+                <BrainCircuit
                   aria-hidden="true"
+                  className="size-3 text-term-magenta"
+                />
+                <Label
+                  htmlFor="chat-reasoning-effort"
+                  className="hidden font-mono text-term-muted text-xs sm:inline"
                 >
-                  <Mic className="size-3" />
-                </span>
+                  {t.reasoningEffortShort}
+                </Label>
                 <NativeSelect
-                  id="chat-audio-input"
+                  id="chat-reasoning-effort"
                   size="sm"
-                  className="w-full **:data-[slot=native-select-icon]:right-2 **:data-[slot=native-select-icon]:size-3 **:data-[slot=native-select-icon]:text-term-muted [&_[data-slot=native-select]]:h-11 pointer-fine:[&_[data-slot=native-select]]:h-7 [&_[data-slot=native-select]]:rounded-md [&_[data-slot=native-select]]:border-transparent [&_[data-slot=native-select]]:bg-transparent [&_[data-slot=native-select]]:py-0.5 [&_[data-slot=native-select]]:pr-7 [&_[data-slot=native-select]]:pl-7 [&_[data-slot=native-select]]:font-mono [&_[data-slot=native-select]]:text-sm [&_[data-slot=native-select]]:text-term-muted pointer-fine:[&_[data-slot=native-select]]:text-xs [&_[data-slot=native-select]]:transition-colors [&_[data-slot=native-select]]:hover:border-term-amber/25 [&_[data-slot=native-select]]:hover:bg-term-amber/8 [&_[data-slot=native-select]]:hover:text-term-amber [&_[data-slot=native-select]]:focus-visible:border-term-amber/40 [&_[data-slot=native-select]]:focus-visible:ring-0"
-                  value={selectedAudioInputId}
-                  onChange={onAudioInputChange}
-                  disabled={!canSelectAudioInput}
-                  aria-label={t.audioInputLabel}
+                  className="w-20 **:data-[slot=native-select-icon]:right-1.5 **:data-[slot=native-select-icon]:size-3 **:data-[slot=native-select-icon]:text-term-magenta [&_[data-slot=native-select]]:h-11 pointer-fine:[&_[data-slot=native-select]]:h-7 [&_[data-slot=native-select]]:rounded-md [&_[data-slot=native-select]]:border-transparent [&_[data-slot=native-select]]:bg-term-magenta/8 [&_[data-slot=native-select]]:py-0.5 [&_[data-slot=native-select]]:pr-6 [&_[data-slot=native-select]]:pl-2 [&_[data-slot=native-select]]:font-mono [&_[data-slot=native-select]]:text-sm [&_[data-slot=native-select]]:text-term-magenta pointer-fine:[&_[data-slot=native-select]]:text-xs [&_[data-slot=native-select]]:transition-colors [&_[data-slot=native-select]]:hover:border-term-magenta/30 [&_[data-slot=native-select]]:hover:bg-term-magenta/12 [&_[data-slot=native-select]]:focus-visible:border-term-magenta/40 [&_[data-slot=native-select]]:focus-visible:ring-0"
+                  value={reasoningEffort}
+                  onChange={onReasoningEffortChange}
+                  disabled={isChatSubmitting}
+                  aria-label={t.reasoningEffortLabel}
                 >
-                  {audioInputOptions.length === 0 ? (
-                    <NativeSelectOption value="">
-                      {t.audioInputUnavailable}
+                  {supportedReasoningEfforts.map((effort) => (
+                    <NativeSelectOption key={effort} value={effort}>
+                      {effort}
                     </NativeSelectOption>
-                  ) : (
-                    audioInputOptions.map((option) => (
-                      <NativeSelectOption
-                        key={option.deviceId}
-                        value={option.deviceId}
-                      >
-                        {option.label}
-                      </NativeSelectOption>
-                    ))
-                  )}
+                  ))}
                 </NativeSelect>
               </div>
-              <div className="inline-flex shrink-0 items-center gap-1.5">
+              <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5">
+                <div
+                  data-disabled={!canSelectAudioInput}
+                  className="relative w-24 min-w-0 data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 sm:w-44"
+                >
+                  <Label htmlFor="chat-audio-input" className="sr-only">
+                    {t.audioInputLabel}
+                  </Label>
+                  <span
+                    className="pointer-events-none absolute top-1/2 left-2.5 z-10 inline-flex size-3 -translate-y-1/2 items-center justify-center text-term-muted"
+                    aria-hidden="true"
+                  >
+                    <Mic className="size-3" />
+                  </span>
+                  <NativeSelect
+                    id="chat-audio-input"
+                    size="sm"
+                    className="w-full **:data-[slot=native-select-icon]:right-2 **:data-[slot=native-select-icon]:size-3 **:data-[slot=native-select-icon]:text-term-muted [&_[data-slot=native-select]]:h-11 pointer-fine:[&_[data-slot=native-select]]:h-7 [&_[data-slot=native-select]]:rounded-md [&_[data-slot=native-select]]:border-transparent [&_[data-slot=native-select]]:bg-transparent [&_[data-slot=native-select]]:py-0.5 [&_[data-slot=native-select]]:pr-7 [&_[data-slot=native-select]]:pl-7 [&_[data-slot=native-select]]:font-mono [&_[data-slot=native-select]]:text-sm [&_[data-slot=native-select]]:text-term-muted pointer-fine:[&_[data-slot=native-select]]:text-xs [&_[data-slot=native-select]]:transition-colors [&_[data-slot=native-select]]:hover:border-term-amber/25 [&_[data-slot=native-select]]:hover:bg-term-amber/8 [&_[data-slot=native-select]]:hover:text-term-amber [&_[data-slot=native-select]]:focus-visible:border-term-amber/40 [&_[data-slot=native-select]]:focus-visible:ring-0"
+                    value={selectedAudioInputId}
+                    onChange={onAudioInputChange}
+                    disabled={!canSelectAudioInput}
+                    aria-label={t.audioInputLabel}
+                  >
+                    {audioInputOptions.length === 0 ? (
+                      <NativeSelectOption value="">
+                        {t.audioInputUnavailable}
+                      </NativeSelectOption>
+                    ) : (
+                      audioInputOptions.map((option) => (
+                        <NativeSelectOption
+                          key={option.deviceId}
+                          value={option.deviceId}
+                        >
+                          {option.label}
+                        </NativeSelectOption>
+                      ))
+                    )}
+                  </NativeSelect>
+                </div>
                 <TooltipButton
                   type="button"
                   onClick={onStartRecording}
@@ -535,7 +588,7 @@ export function ChatScreen() {
                   label={t.startRecording}
                   variant="ghost"
                   size="icon"
-                  className="rounded-lg border border-transparent bg-transparent p-0 text-term-muted hover:border-term-amber/20 hover:bg-term-amber/10 hover:text-term-amber dark:hover:bg-term-amber/10"
+                  className="pointer-fine:size-8 size-11 rounded-lg border border-transparent bg-transparent p-0 text-term-muted hover:border-term-amber/20 hover:bg-term-amber/10 hover:text-term-amber dark:hover:bg-term-amber/10"
                 >
                   <Mic className="size-4" />
                 </TooltipButton>
@@ -544,7 +597,7 @@ export function ChatScreen() {
                   disabled={!canSendChatInput}
                   label={t.send}
                   size="icon"
-                  className="rounded-lg border border-term-green/25 bg-term-green p-0 text-term-bg shadow-sm shadow-term-green/10 hover:bg-term-green-dim hover:text-term-bg disabled:border-term-border disabled:bg-term-chrome disabled:text-term-muted disabled:shadow-none"
+                  className="pointer-fine:size-8 size-11 rounded-lg border border-term-green/25 bg-term-green p-0 text-term-bg shadow-sm shadow-term-green/10 hover:bg-term-green-dim hover:text-term-bg disabled:border-term-border disabled:bg-term-chrome disabled:text-term-muted disabled:shadow-none"
                 >
                   <ArrowUp className="size-4" />
                 </TooltipButton>

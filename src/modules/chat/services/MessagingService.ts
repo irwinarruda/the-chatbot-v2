@@ -1,11 +1,17 @@
 import { v4 as uuidv4 } from "uuid";
+import { AiGeneration } from "~/modules/chat/entities/AiGeneration";
 import type { AssistantMessageOptions } from "~/modules/chat/entities/Chat";
 import { Chat } from "~/modules/chat/entities/Chat";
 import { ConversationSummary } from "~/modules/chat/entities/ConversationSummary";
+import type { ChatResponseProgressEventDTO } from "~/modules/chat/entities/dtos/ChatDTO";
 import { ChatChannel } from "~/modules/chat/entities/enums/ChatChannel";
 import { MessageAudience } from "~/modules/chat/entities/enums/MessageAudience";
 import { MessageContentType } from "~/modules/chat/entities/enums/MessageContentType";
 import type { MessageRole } from "~/modules/chat/entities/enums/MessageRole";
+import {
+  isReasoningEffort,
+  type ReasoningEffort,
+} from "~/modules/chat/entities/enums/ReasoningEffort";
 import { ToolResultStatus } from "~/modules/chat/entities/enums/ToolResultStatus";
 import { Message } from "~/modules/chat/entities/Message";
 import type {
@@ -26,8 +32,10 @@ import type { StorageGateway } from "~/modules/chat/gateway/StorageGateway";
 import type { WebMessagingGateway } from "~/modules/chat/gateway/WebMessagingGateway";
 import type { WhatsAppMessagingGateway } from "~/modules/chat/gateway/WhatsAppMessagingGateway";
 import type { ToolExecutor } from "~/modules/chat/services/ToolExecutor";
+import { parseChatCommand } from "~/modules/chat/utils/ChatCommandParser";
 import {
   MessageLoader,
+  MessageLocale,
   MessageTemplate,
 } from "~/modules/chat/utils/MessageLoader";
 import { BsuidUtils } from "~/modules/identity/entities/BsuidUtils";
@@ -41,6 +49,10 @@ import {
 } from "~/shared/errors/ApplicationErrors";
 import { ValidationException } from "~/shared/errors/DomainErrors";
 import type { DatabaseGateway } from "~/shared/gateway/DatabaseGateway";
+
+type ChatResponseProgressListener = (
+  event: ChatResponseProgressEventDTO,
+) => void;
 
 export class MessagingService {
   private database: DatabaseGateway;
@@ -98,6 +110,8 @@ export class MessagingService {
   async receiveWebMessage(
     webAddress: string,
     body: unknown,
+    onProgress?: ChatResponseProgressListener,
+    locale: MessageLocale = MessageLocale.PtBr,
   ): Promise<Chat | undefined> {
     const receiveMessage = await this.webMessagingGateway.receiveWebMessage(
       webAddress,
@@ -109,14 +123,22 @@ export class MessagingService {
         ChatChannel.Web,
       );
     }
-    await this.listenToMessage(receiveMessage);
+    await this.listenToMessage(receiveMessage, onProgress, locale);
     return this.getChatByChannelAddress(
       receiveMessage.fromAddress,
       ChatChannel.Web,
     );
   }
 
-  async listenToMessage(receiveMessage: ReceiveMessageDTO): Promise<void> {
+  getSupportedReasoningEfforts(): ReasoningEffort[] {
+    return this.aiChatGateway.getSupportedReasoningEfforts();
+  }
+
+  async listenToMessage(
+    receiveMessage: ReceiveMessageDTO,
+    onProgress?: ChatResponseProgressListener,
+    locale: MessageLocale = MessageLocale.PtBr,
+  ): Promise<void> {
     if (await this.isMessageDuplicate(receiveMessage.channelMessageId)) return;
     if (!(await this.isAllowedChannelAddress(receiveMessage))) return;
     let chat = await this.getChatByChannelAddress(
@@ -136,15 +158,25 @@ export class MessagingService {
         receiveMessage.channel,
         receiveMessage.fromAddress,
       );
-      await this.saveChat(chat);
+      await this.saveChatChannelAddress(chat);
     }
     let message: Message;
     if ("text" in receiveMessage) {
       const textMsg = receiveMessage as ReceiveTextMessageDTO;
-      message = chat.addUserTextMessage(
-        textMsg.text,
-        receiveMessage.channelMessageId,
-      );
+      const command = parseChatCommand(textMsg.text);
+      if (command) {
+        message = chat.addUserCommandMessage(
+          command.raw,
+          command.name,
+          command.arguments,
+          receiveMessage.channelMessageId,
+        );
+      } else {
+        message = chat.addUserTextMessage(
+          textMsg.text,
+          receiveMessage.channelMessageId,
+        );
+      }
     } else if ("buttonReply" in receiveMessage) {
       const buttonMsg = receiveMessage as ReceiveInteractiveButtonMessageDTO;
       message = chat.addUserButtonMessage(
@@ -183,25 +215,41 @@ export class MessagingService {
       chat.addUser(user.id);
       await this.saveChat(chat);
     }
-    await this.respondToMessage(chat, message, receiveMessage.channel);
+    await this.respondToMessage(
+      chat,
+      message,
+      receiveMessage.channel,
+      onProgress,
+      locale,
+    );
   }
 
   async respondToMessage(
     chat: Chat,
     message: Message,
     channel: ChatChannel,
+    onProgress?: ChatResponseProgressListener,
+    locale: MessageLocale = MessageLocale.PtBr,
   ): Promise<void> {
     const recipient: SendMessageRecipientDTO = {
       channel,
       toAddress: chat.getChannelAddress(),
     };
     try {
+      if (message.content.type === MessageContentType.Command) {
+        await this.runCommand(chat, message, recipient, locale);
+        return;
+      }
       if (message.content.type === MessageContentType.Audio) {
         const { mediaId, mimeType } = message.content;
         if (!mediaId || !mimeType) return;
         await this.sendTextMessage(
           recipient,
-          MessageLoader.getMessage(MessageTemplate.ProcessingAudio),
+          MessageLoader.getMessage(
+            MessageTemplate.ProcessingAudio,
+            undefined,
+            locale,
+          ),
           chat,
           { turnId: message.turnId, audience: MessageAudience.Channel },
         );
@@ -221,12 +269,16 @@ export class MessagingService {
         message.addAudioTranscriptAndUrl(transcript, permanentUrl);
         await this.saveMessage(message);
       }
-      await this.runAiAgent(chat, message, recipient);
+      await this.runAiAgent(chat, message, recipient, onProgress);
     } catch (ex) {
       let text =
         ex instanceof AppError
           ? `⚠️ ${ex.message}\n${ex.action}`
-          : MessageLoader.getMessage(MessageTemplate.UnexpectedError);
+          : MessageLoader.getMessage(
+              MessageTemplate.UnexpectedError,
+              undefined,
+              locale,
+            );
       if (import.meta.env.DEV) {
         const detail =
           ex instanceof Error
@@ -366,10 +418,84 @@ export class MessagingService {
     `;
   }
 
+  private async runCommand(
+    chat: Chat,
+    sourceMessage: Message,
+    recipient: SendMessageRecipientDTO,
+    locale: MessageLocale,
+  ): Promise<void> {
+    if (
+      sourceMessage.content.type !== MessageContentType.Command ||
+      sourceMessage.content.name !== "effort"
+    ) {
+      throw new ValidationException("Unsupported chat command");
+    }
+    const supported = this.aiChatGateway.getSupportedReasoningEfforts();
+    const requested = sourceMessage.content.arguments.level;
+    let responseText: string;
+    let reasoningEffortChanged = false;
+    const previousReasoningEffort = chat.reasoningEffort;
+    const supportedReasoningEfforts = supported.join(", ");
+    if (requested === undefined) {
+      responseText = MessageLoader.getMessage(
+        MessageTemplate.EffortStatus,
+        {
+          reasoningEffort: chat.reasoningEffort,
+          supportedReasoningEfforts,
+        },
+        locale,
+      );
+    } else if (
+      !isReasoningEffort(requested) ||
+      !supported.includes(requested)
+    ) {
+      responseText = MessageLoader.getMessage(
+        MessageTemplate.EffortInvalid,
+        {
+          requestedReasoningEffort: requested,
+          supportedReasoningEfforts,
+        },
+        locale,
+      );
+    } else {
+      chat.setReasoningEffort(requested);
+      reasoningEffortChanged = true;
+      responseText = MessageLoader.getMessage(
+        MessageTemplate.EffortUpdated,
+        {
+          reasoningEffort: requested,
+        },
+        locale,
+      );
+    }
+    const responseMessage = chat.addAssistantTextMessage(responseText, {
+      turnId: sourceMessage.turnId,
+      audience: MessageAudience.Channel,
+    });
+    try {
+      await this.database.transaction(async (sql) => {
+        if (reasoningEffortChanged) await this.saveChat(chat, sql);
+        await this.createMessage(responseMessage, sql);
+      });
+    } catch (error) {
+      chat.messages.pop();
+      if (reasoningEffortChanged) {
+        chat.setReasoningEffort(previousReasoningEffort);
+      }
+      throw error;
+    }
+    const gateway = this.getMessagingGatewayByChannel(recipient.channel);
+    await gateway.sendTextMessage({
+      toAddress: recipient.toAddress,
+      text: responseText,
+    });
+  }
+
   private async runAiAgent(
     chat: Chat,
     sourceMessage: Message,
     recipient: SendMessageRecipientDTO,
+    onProgress?: ChatResponseProgressListener,
   ): Promise<void> {
     for (const message of chat.messages) {
       if (
@@ -396,61 +522,134 @@ export class MessagingService {
         chat,
         recipient.toAddress,
         tools,
+        sourceMessage.turnId,
       );
-      const response = await this.aiChatGateway.complete({
-        channelAddress: recipient.toAddress,
-        messages: contextMessages,
-        tools,
-        memory: chat.summary,
-      });
-      if (response.toolCalls.length === 0) {
-        await this.sendAssistantContent(
-          chat,
-          sourceMessage,
-          recipient,
-          response.content,
-        );
-        return;
-      }
-      if (response.content) {
-        const contentMessage =
-          response.content.type === MessageContentType.Button
-            ? chat.addAssistantButtonMessage(
-                response.content.text,
-                response.content.options ?? [],
-                {
-                  turnId: sourceMessage.turnId,
-                  audience: MessageAudience.Model,
-                },
-              )
-            : chat.addAssistantTextMessage(response.content.text, {
-                turnId: sourceMessage.turnId,
-                audience: MessageAudience.Model,
-              });
-        await this.createMessage(contentMessage);
-      }
-      for (const call of response.toolCalls) {
+      const response = await this.aiChatGateway.complete(
+        {
+          channelAddress: recipient.toAddress,
+          messages: contextMessages,
+          tools,
+          reasoningEffort: chat.reasoningEffort,
+          memory: chat.summary,
+        },
+        (progress) => {
+          if (progress.type === "reasoningDelta") {
+            onProgress?.({
+              ...progress,
+              round: round + 1,
+            });
+            return;
+          }
+          onProgress?.({
+            type: "toolCall",
+            round: round + 1,
+            contentIndex: progress.contentIndex,
+            callId: progress.call.callId,
+            name: progress.call.name,
+            arguments: progress.call.arguments,
+          });
+        },
+      );
+      const toolCalls = response.items.filter(
+        (item) => item.type === MessageContentType.ToolCall,
+      );
+      for (const call of toolCalls) {
         const existing = chat.getToolCall(sourceMessage.turnId, call.callId);
         if (existing) {
           if (
             existing.content.type !== MessageContentType.ToolCall ||
             existing.content.name !== call.name ||
             JSON.stringify(existing.content.arguments) !==
-              JSON.stringify(call.arguments)
+              JSON.stringify(call.arguments) ||
+            existing.content.thoughtSignature !== call.thoughtSignature
           ) {
             throw new ValidationException(
               "A tool call ID was reused with different arguments",
             );
           }
-        } else {
-          const callMessage = chat.addAssistantToolCall(
-            sourceMessage.turnId,
-            call,
-          );
-          await this.createMessage(callMessage);
         }
       }
-      for (const call of response.toolCalls) {
+      const generation = chat.addGeneration({
+        turnId: sourceMessage.turnId,
+        provider: response.provider,
+        model: response.model,
+        api: response.api,
+        responseModel: response.responseModel,
+        responseId: response.responseId,
+        reasoningEffort: chat.reasoningEffort,
+        finishReason: response.finishReason,
+        usage: response.usage,
+        diagnostics: response.diagnostics,
+      });
+      const previousMessageCount = chat.messages.length;
+      const generationMessages: Message[] = [];
+      let audience: MessageAudience = MessageAudience.Both;
+      if (toolCalls.length > 0) audience = MessageAudience.Model;
+      for (const item of response.items) {
+        let generatedMessage: Message | undefined;
+        if (item.type === MessageContentType.Reasoning) {
+          generatedMessage = chat.addAssistantReasoningMessage(
+            sourceMessage.turnId,
+            generation.id,
+            item.text,
+            {
+              thinkingSignature: item.thinkingSignature,
+              redacted: item.redacted,
+            },
+          );
+        } else if (item.type === MessageContentType.ToolCall) {
+          if (!chat.getToolCall(sourceMessage.turnId, item.callId)) {
+            generatedMessage = chat.addAssistantToolCall(
+              sourceMessage.turnId,
+              generation.id,
+              item,
+            );
+          }
+        } else if (item.type === MessageContentType.Button) {
+          generatedMessage = chat.addAssistantButtonMessage(
+            item.text,
+            item.options ?? [],
+            {
+              turnId: sourceMessage.turnId,
+              audience,
+              generationId: generation.id,
+            },
+          );
+        } else {
+          generatedMessage = chat.addAssistantTextMessage(item.text, {
+            turnId: sourceMessage.turnId,
+            audience,
+            generationId: generation.id,
+            textSignature: item.textSignature,
+          });
+        }
+        if (generatedMessage) generationMessages.push(generatedMessage);
+      }
+      try {
+        await this.database.transaction(async (sql) => {
+          await this.createAiGeneration(generation, sql);
+          for (const message of generationMessages) {
+            await this.createMessage(message, sql);
+          }
+        });
+      } catch (error) {
+        chat.generations.pop();
+        chat.messages.splice(previousMessageCount);
+        throw error;
+      }
+      if (toolCalls.length === 0) {
+        const channelMessages = generationMessages.filter(
+          (message) => message.isChannelVisible,
+        );
+        if (channelMessages.length === 0) {
+          throw new ValidationException(
+            "The AI returned no channel-visible response",
+          );
+        }
+        await this.deliverGeneratedMessages(recipient, channelMessages);
+        return;
+      }
+      for (const call of toolCalls) {
         const existingResult = chat.getToolResult(
           sourceMessage.turnId,
           call.callId,
@@ -464,6 +663,13 @@ export class MessagingService {
         });
         const resultMessage = chat.addToolResult(sourceMessage.turnId, result);
         await this.createMessage(resultMessage);
+        onProgress?.({
+          type: "toolResult",
+          round: round + 1,
+          callId: call.callId,
+          name: call.name,
+          outcome: result.outcome,
+        });
       }
     }
     await this.sendTextMessage(
@@ -474,41 +680,42 @@ export class MessagingService {
     );
   }
 
-  private async sendAssistantContent(
-    chat: Chat,
-    sourceMessage: Message,
+  private async deliverGeneratedMessages(
     recipient: SendMessageRecipientDTO,
-    content?: import("~/modules/chat/gateway/AiChatGateway").AssistantChannelContentDTO,
+    messages: Message[],
   ): Promise<void> {
-    if (content?.type === MessageContentType.Button) {
-      await this.sendButtonReplyMessage(
-        recipient,
-        content.text,
-        [...(content.options ?? [])],
-        chat,
-        { turnId: sourceMessage.turnId },
-      );
-      return;
+    const gateway = this.getMessagingGatewayByChannel(recipient.channel);
+    for (const message of messages) {
+      if (message.content.type === MessageContentType.Button) {
+        await gateway.sendInteractiveReplyButtonMessage({
+          toAddress: recipient.toAddress,
+          text: message.content.text,
+          buttons: [...(message.content.options ?? [])],
+        });
+      } else if (message.content.type === MessageContentType.Text) {
+        await gateway.sendTextMessage({
+          toAddress: recipient.toAddress,
+          text: message.content.text,
+        });
+      }
     }
-    await this.sendTextMessage(recipient, content?.text ?? "", chat, {
-      turnId: sourceMessage.turnId,
-    });
   }
 
   private async buildModelContext(
     chat: Chat,
     channelAddress: string,
     tools: AiToolDefinitionDTO[],
+    reasoningTurnId: string,
   ): Promise<AiChatContextMessageDTO[]> {
     const inputBudget =
       this.aiChatGateway.getContextWindowTokens() -
       this.aiConfig.maxOutputTokens -
       this.aiConfig.safetyMarginTokens;
     for (let attempt = 0; attempt <= chat.messages.length + 1; attempt++) {
-      const messages = chat.getModelMessages().map((message) => ({
-        role: message.role,
-        content: message.content,
-      }));
+      const messages = this.toAiContextMessages(
+        chat,
+        chat.getModelMessages(reasoningTurnId),
+      );
       const requestTokens = this.aiChatGateway.estimateInputTokens({
         channelAddress,
         messages,
@@ -548,10 +755,7 @@ export class MessagingService {
     const previousSummary = chat.summary;
     const previousUpdatedAt = chat.updatedAt;
     const candidate = await this.aiChatGateway.generateSummary(
-      messages.map((message) => ({
-        role: message.role,
-        content: message.content,
-      })),
+      this.toAiContextMessages(chat, messages),
       previousSummary,
     );
     chat.setSummary(
@@ -568,6 +772,42 @@ export class MessagingService {
       chat.updatedAt = previousUpdatedAt;
       throw ex;
     }
+  }
+
+  private toAiContextMessages(
+    chat: Chat,
+    messages: Message[],
+  ): AiChatContextMessageDTO[] {
+    const generationsById = new Map(
+      chat.generations.map((generation) => [generation.id, generation]),
+    );
+    return messages.map((message) => {
+      const contextMessage: AiChatContextMessageDTO = {
+        role: message.role,
+        content: message.content,
+        timestamp: message.createdAt.getTime(),
+      };
+      if (!message.generationId) return contextMessage;
+      const generation = generationsById.get(message.generationId);
+      if (!generation) {
+        throw new ValidationException(
+          "A message references an AI generation that does not exist",
+        );
+      }
+      contextMessage.generation = {
+        id: generation.id,
+        provider: generation.provider,
+        model: generation.model,
+        api: generation.api,
+        responseModel: generation.responseModel,
+        responseId: generation.responseId,
+        finishReason: generation.finishReason,
+        usage: generation.usage,
+        diagnostics: generation.diagnostics,
+        timestamp: generation.createdAt.getTime(),
+      };
+      return contextMessage;
+    });
   }
 
   private getMessagingGatewayByChannel(channel: ChatChannel): MessagingGateway {
@@ -691,11 +931,43 @@ export class MessagingService {
         role: dbMessage.role,
         audience: dbMessage.audience,
         content: this.parseJsonColumn(dbMessage.content),
+        generationId: dbMessage.generation_id ?? undefined,
         channelMessageId: dbMessage.channel_message_id ?? undefined,
         createdAt: dbMessage.created_at,
         updatedAt: dbMessage.updated_at,
       }),
     );
+    const dbGenerations = await this.database.sql<DbAiGeneration[]>`
+      SELECT * FROM ai_generations
+      WHERE id_chat = ${dbChat.id}
+      ORDER BY sequence ASC
+    `;
+    const generations = dbGenerations.map((dbGeneration) => {
+      let usage: AiGeneration["usage"];
+      if (dbGeneration.usage) {
+        usage = this.parseJsonColumn(dbGeneration.usage);
+      }
+      let diagnostics: AiGeneration["diagnostics"];
+      if (dbGeneration.diagnostics) {
+        diagnostics = this.parseJsonColumn(dbGeneration.diagnostics);
+      }
+      return AiGeneration.restore({
+        id: dbGeneration.id,
+        idChat: dbGeneration.id_chat,
+        turnId: dbGeneration.turn_id,
+        sequence: Number(dbGeneration.sequence),
+        provider: dbGeneration.provider ?? undefined,
+        model: dbGeneration.model ?? undefined,
+        api: dbGeneration.api ?? undefined,
+        responseModel: dbGeneration.response_model ?? undefined,
+        responseId: dbGeneration.response_id ?? undefined,
+        reasoningEffort: dbGeneration.reasoning_effort,
+        finishReason: dbGeneration.finish_reason,
+        usage,
+        diagnostics,
+        createdAt: dbGeneration.created_at,
+      });
+    });
     let summary: ConversationSummary | undefined;
     const conversationSummary = dbChat.conversation_summary
       ? this.parseJsonColumn<ConversationSummary>(dbChat.conversation_summary)
@@ -714,6 +986,8 @@ export class MessagingService {
       whatsAppAddress: dbChat.whatsapp_address ?? undefined,
       webAddress: dbChat.web_address ?? undefined,
       messages,
+      generations,
+      reasoningEffort: dbChat.reasoning_effort,
       summary,
       createdAt: dbChat.created_at,
       updatedAt: dbChat.updated_at,
@@ -740,6 +1014,7 @@ export class MessagingService {
         channel,
         whatsapp_address,
         web_address,
+        reasoning_effort,
         created_at,
         updated_at,
         is_deleted
@@ -750,6 +1025,7 @@ export class MessagingService {
         ${chat.channel},
         ${whatsAppAddress},
         ${webAddress},
+        ${chat.reasoningEffort},
         ${chat.createdAt},
         ${chat.updatedAt},
         ${chat.isDeleted}
@@ -769,6 +1045,7 @@ export class MessagingService {
         role,
         audience,
         content,
+        generation_id,
         channel_message_id,
         created_at,
         updated_at
@@ -780,6 +1057,7 @@ export class MessagingService {
         ${message.role},
         ${message.audience},
         ${this.database.json(message.content)},
+        ${message.generationId ?? null},
         ${message.channelMessageId ?? null},
         ${message.createdAt},
         ${message.updatedAt}
@@ -793,6 +1071,56 @@ export class MessagingService {
     return true;
   }
 
+  private async createAiGeneration(
+    generation: AiGeneration,
+    sql: DatabaseGateway["sql"] = this.database.sql,
+  ): Promise<void> {
+    let usage: ReturnType<DatabaseGateway["json"]> | null = null;
+    if (generation.usage) usage = this.database.json(generation.usage);
+    let diagnostics: ReturnType<DatabaseGateway["json"]> | null = null;
+    if (generation.diagnostics) {
+      diagnostics = this.database.json(generation.diagnostics);
+    }
+    const result = await sql<{ sequence: string }[]>`
+      INSERT INTO ai_generations (
+        id,
+        id_chat,
+        turn_id,
+        provider,
+        model,
+        api,
+        response_model,
+        response_id,
+        reasoning_effort,
+        finish_reason,
+        usage,
+        diagnostics,
+        created_at
+      )
+      VALUES (
+        ${generation.id},
+        ${generation.idChat},
+        ${generation.turnId},
+        ${generation.provider ?? null},
+        ${generation.model ?? null},
+        ${generation.api ?? null},
+        ${generation.responseModel ?? null},
+        ${generation.responseId ?? null},
+        ${generation.reasoningEffort},
+        ${generation.finishReason},
+        ${usage},
+        ${diagnostics},
+        ${generation.createdAt}
+      )
+      RETURNING sequence
+    `;
+    const inserted = result[0];
+    if (!inserted) {
+      throw new ValidationException("AI generation could not be persisted");
+    }
+    generation.sequence = Number(inserted.sequence);
+  }
+
   private async saveMessage(message: Message): Promise<void> {
     await this.database.sql`
       UPDATE messages SET
@@ -802,13 +1130,37 @@ export class MessagingService {
     `;
   }
 
-  private async saveChat(chat: Chat): Promise<void> {
+  private async saveChatChannelAddress(chat: Chat): Promise<void> {
+    if (chat.channel === ChatChannel.WhatsApp) {
+      await this.database.sql`
+        UPDATE chats SET
+          channel = ${chat.channel},
+          whatsapp_address = ${chat.whatsAppAddress ?? null},
+          updated_at = ${chat.updatedAt}
+        WHERE id = ${chat.id}
+      `;
+      return;
+    }
     await this.database.sql`
+      UPDATE chats SET
+        channel = ${chat.channel},
+        web_address = ${chat.webAddress ?? null},
+        updated_at = ${chat.updatedAt}
+      WHERE id = ${chat.id}
+    `;
+  }
+
+  private async saveChat(
+    chat: Chat,
+    sql: DatabaseGateway["sql"] = this.database.sql,
+  ): Promise<void> {
+    await sql`
       UPDATE chats SET
         id_user = ${chat.idUser ?? null},
         channel = ${chat.channel},
         whatsapp_address = ${chat.whatsAppAddress ?? null},
         web_address = ${chat.webAddress ?? null},
+        reasoning_effort = ${chat.reasoningEffort},
         updated_at = ${chat.updatedAt},
         is_deleted = ${chat.isDeleted}
       WHERE id = ${chat.id}
@@ -883,6 +1235,7 @@ interface DbChat {
   whatsapp_address: string | null;
   web_address: string | null;
   channel: string;
+  reasoning_effort: ReasoningEffort;
   conversation_summary: unknown;
   is_deleted: boolean;
   created_at: Date;
@@ -897,7 +1250,25 @@ interface DbMessage {
   role: MessageRole;
   audience: MessageAudience;
   content: unknown;
+  generation_id: string | null;
   channel_message_id: string | null;
   created_at: Date;
   updated_at: Date;
+}
+
+interface DbAiGeneration {
+  id: string;
+  id_chat: string;
+  turn_id: string;
+  sequence: string;
+  provider: string | null;
+  model: string | null;
+  api: string | null;
+  response_model: string | null;
+  response_id: string | null;
+  reasoning_effort: ReasoningEffort;
+  finish_reason: string;
+  usage: unknown;
+  diagnostics: unknown;
+  created_at: Date;
 }

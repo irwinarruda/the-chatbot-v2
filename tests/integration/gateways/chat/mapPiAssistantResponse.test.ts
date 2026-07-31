@@ -46,12 +46,49 @@ describe("mapPiAssistantResponse", () => {
     ]);
 
     expect(mapPiAssistantResponse(response)).toEqual({
-      content: {
-        type: MessageContentType.Button,
-        text: "Which account did you use?",
-        options: ["Nubank", "Itau", "Cash"],
+      items: [
+        {
+          type: MessageContentType.Button,
+          text: "Which account did you use?",
+          options: ["Nubank", "Itau", "Cash"],
+        },
+      ],
+    });
+  });
+
+  test("preserves reasoning before a terminal options reply", () => {
+    const response = createAssistantMessage([
+      {
+        type: "thinking",
+        thinking: "The user needs to select one account",
+        thinkingSignature: "thinking-signature",
+        redacted: false,
       },
-      toolCalls: [],
+      {
+        type: "toolCall",
+        id: "reply-1",
+        name: "reply_with_options",
+        arguments: {
+          message: "Which account did you use?",
+          options: ["Nubank", "Itau", "Cash"],
+        },
+      },
+    ]);
+
+    expect(mapPiAssistantResponse(response)).toEqual({
+      items: [
+        {
+          type: MessageContentType.Reasoning,
+          text: "The user needs to select one account",
+          thinkingSignature: "thinking-signature",
+          redacted: false,
+        },
+        {
+          type: MessageContentType.Button,
+          text: "Which account did you use?",
+          options: ["Nubank", "Itau", "Cash"],
+        },
+      ],
     });
   });
 
@@ -61,11 +98,13 @@ describe("mapPiAssistantResponse", () => {
     ]);
 
     expect(mapPiAssistantResponse(response)).toEqual({
-      content: {
-        type: MessageContentType.Text,
-        text: "[Button][A;B]Choose one",
-      },
-      toolCalls: [],
+      items: [
+        {
+          type: MessageContentType.Text,
+          text: "[Button][A;B]Choose one",
+          textSignature: undefined,
+        },
+      ],
     });
   });
 
@@ -80,13 +119,59 @@ describe("mapPiAssistantResponse", () => {
     ]);
 
     expect(mapPiAssistantResponse(response)).toEqual({
-      content: undefined,
-      toolCalls: [
+      items: [
         {
           type: MessageContentType.ToolCall,
           callId: "call-1",
           name: "list_todos",
           arguments: { status: "Pending" },
+          thoughtSignature: undefined,
+        },
+      ],
+    });
+  });
+
+  test("preserves ordered reasoning, text, and provider signatures", () => {
+    const response = createAssistantMessage([
+      {
+        type: "thinking",
+        thinking: "Inspect the durable state",
+        thinkingSignature: "thinking-signature",
+        redacted: false,
+      },
+      {
+        type: "text",
+        text: "Done",
+        textSignature: "text-signature",
+      },
+      {
+        type: "toolCall",
+        id: "call-1",
+        name: "list_todos",
+        arguments: {},
+        thoughtSignature: "thought-signature",
+      },
+    ]);
+
+    expect(mapPiAssistantResponse(response)).toEqual({
+      items: [
+        {
+          type: MessageContentType.Reasoning,
+          text: "Inspect the durable state",
+          thinkingSignature: "thinking-signature",
+          redacted: false,
+        },
+        {
+          type: MessageContentType.Text,
+          text: "Done",
+          textSignature: "text-signature",
+        },
+        {
+          type: MessageContentType.ToolCall,
+          callId: "call-1",
+          name: "list_todos",
+          arguments: {},
+          thoughtSignature: "thought-signature",
         },
       ],
     });

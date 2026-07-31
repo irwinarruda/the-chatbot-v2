@@ -1,8 +1,17 @@
-import type { Model, Message as PiMessage, Usage } from "@earendil-works/pi-ai";
+import type {
+  AssistantMessage,
+  Model,
+  Message as PiMessage,
+  StopReason,
+  Usage,
+} from "@earendil-works/pi-ai";
+import type {
+  AiChatContextMessageDTO,
+  AiGenerationContextDTO,
+} from "~/modules/chat/entities/dtos/AiChatGatewayDTO";
 import { MessageContentType } from "~/modules/chat/entities/enums/MessageContentType";
 import { MessageRole } from "~/modules/chat/entities/enums/MessageRole";
 import { ToolResultStatus } from "~/modules/chat/entities/enums/ToolResultStatus";
-import type { AiChatContextMessageDTO } from "~/modules/chat/gateway/AiChatGateway";
 import { ValidationException } from "~/shared/errors/DomainErrors";
 
 export class PiMessageMapper {
@@ -27,41 +36,9 @@ export class PiMessageMapper {
   ): PiMessage[] {
     const mapped: PiMessage[] = [];
     const toolNames = new Map<string, string>();
+    let currentGenerationId: string | undefined;
     for (const message of messages) {
       const content = message.content;
-      if (content.type === MessageContentType.ToolCall) {
-        if (message.role !== MessageRole.Assistant) {
-          throw new ValidationException(
-            "Tool calls must come from the assistant role",
-          );
-        }
-        toolNames.set(content.callId, content.name);
-        const last = mapped[mapped.length - 1];
-        const toolCall = {
-          type: "toolCall" as const,
-          id: content.callId,
-          name: content.name,
-          arguments:
-            content.arguments && typeof content.arguments === "object"
-              ? (content.arguments as Record<string, unknown>)
-              : { raw: String(content.arguments ?? "") },
-        };
-        if (last?.role === "assistant") {
-          last.content.push(toolCall);
-        } else {
-          mapped.push({
-            role: "assistant",
-            content: [toolCall],
-            api: model.api,
-            provider: model.provider,
-            model: model.id,
-            usage: structuredClone(PiMessageMapper.emptyUsage),
-            stopReason: "toolUse",
-            timestamp: Date.now(),
-          });
-        }
-        continue;
-      }
       if (content.type === MessageContentType.ToolResult) {
         const toolName = toolNames.get(content.callId);
         if (!toolName) {
@@ -76,54 +53,134 @@ export class PiMessageMapper {
           content: [{ type: "text", text: JSON.stringify(content.outcome) }],
           details: content.outcome,
           isError: content.outcome.status !== ToolResultStatus.Succeeded,
-          timestamp: Date.now(),
+          timestamp: message.timestamp,
         });
+        currentGenerationId = undefined;
         continue;
       }
       if (message.role === MessageRole.Assistant) {
-        if (content.type === MessageContentType.Audio) {
+        if (
+          content.type === MessageContentType.Audio ||
+          content.type === MessageContentType.Command
+        ) {
           throw new ValidationException(
-            "Assistant messages cannot carry audio content",
+            "Assistant model messages cannot carry audio or command content",
           );
         }
-        const text =
-          content.type === MessageContentType.Button
-            ? `${content.text}\n\nSelectable options: ${(content.options ?? []).join("; ")}`.trim()
-            : content.text;
-        const last = mapped[mapped.length - 1];
-        if (last?.role === "assistant") {
-          last.content.push({ type: "text", text });
-        } else {
-          mapped.push({
-            role: "assistant",
-            content: [{ type: "text", text }],
-            api: model.api,
-            provider: model.provider,
-            model: model.id,
-            usage: structuredClone(PiMessageMapper.emptyUsage),
-            stopReason: "stop",
-            timestamp: Date.now(),
-          });
+        const generationId = message.generation?.id;
+        let assistant = mapped[mapped.length - 1];
+        if (
+          assistant?.role !== "assistant" ||
+          currentGenerationId !== generationId
+        ) {
+          assistant = PiMessageMapper.createAssistantMessage(
+            message.generation,
+            model,
+            message.timestamp,
+            content.type === MessageContentType.ToolCall,
+          );
+          mapped.push(assistant);
         }
+        currentGenerationId = generationId;
+        if (content.type === MessageContentType.Reasoning) {
+          assistant.content.push({
+            type: "thinking",
+            thinking: content.text,
+            thinkingSignature: content.thinkingSignature,
+            redacted: content.redacted,
+          });
+          continue;
+        }
+        if (content.type === MessageContentType.ToolCall) {
+          toolNames.set(content.callId, content.name);
+          let toolArguments: Record<string, unknown>;
+          if (content.arguments && typeof content.arguments === "object") {
+            toolArguments = content.arguments as Record<string, unknown>;
+          } else {
+            toolArguments = { raw: String(content.arguments ?? "") };
+          }
+          assistant.content.push({
+            type: "toolCall",
+            id: content.callId,
+            name: content.name,
+            arguments: toolArguments,
+            thoughtSignature: content.thoughtSignature,
+          });
+          continue;
+        }
+        let text = content.text;
+        if (content.type === MessageContentType.Button) {
+          text =
+            `${content.text}\n\nSelectable options: ${(content.options ?? []).join("; ")}`.trim();
+        }
+        const textContent: Extract<
+          AssistantMessage["content"][number],
+          { type: "text" }
+        > = {
+          type: "text",
+          text,
+        };
+        if (content.type === MessageContentType.Text) {
+          textContent.textSignature = content.textSignature;
+        }
+        assistant.content.push(textContent);
         continue;
       }
+      currentGenerationId = undefined;
       if (message.role !== MessageRole.User) {
         throw new ValidationException("Unsupported message role in AI context");
       }
-      const text =
-        content.type === MessageContentType.Audio
-          ? content.transcript
-          : content.type === MessageContentType.Text ||
-              content.type === MessageContentType.Button
-            ? content.text
-            : undefined;
+      let text: string | undefined;
+      if (content.type === MessageContentType.Audio) {
+        text = content.transcript;
+      } else if (
+        content.type === MessageContentType.Text ||
+        content.type === MessageContentType.Button
+      ) {
+        text = content.text;
+      }
       if (text === undefined) {
         throw new ValidationException(
-          "User messages cannot carry tool content to the provider",
+          "User messages cannot carry model-only content to the provider",
         );
       }
-      mapped.push({ role: "user", content: text, timestamp: Date.now() });
+      mapped.push({
+        role: "user",
+        content: text,
+        timestamp: message.timestamp,
+      });
     }
     return mapped;
+  }
+
+  private static createAssistantMessage(
+    generation: AiGenerationContextDTO | undefined,
+    model: Model<any>,
+    timestamp: number,
+    hasToolCall: boolean,
+  ): AssistantMessage {
+    let stopReason: StopReason = "stop";
+    if (hasToolCall) stopReason = "toolUse";
+    if (generation && PiMessageMapper.isStopReason(generation.finishReason)) {
+      stopReason = generation.finishReason;
+    }
+    return {
+      role: "assistant",
+      content: [],
+      api: (generation?.api ?? model.api) as AssistantMessage["api"],
+      provider: (generation?.provider ??
+        model.provider) as AssistantMessage["provider"],
+      model: generation?.model ?? model.id,
+      responseModel: generation?.responseModel,
+      responseId: generation?.responseId,
+      diagnostics: generation?.diagnostics as AssistantMessage["diagnostics"],
+      usage: generation?.usage ?? structuredClone(PiMessageMapper.emptyUsage),
+      stopReason,
+      timestamp: generation?.timestamp ?? timestamp,
+    };
+  }
+
+  private static isStopReason(value: string): value is StopReason {
+    return ["stop", "length", "toolUse", "error", "aborted"].includes(value);
   }
 }

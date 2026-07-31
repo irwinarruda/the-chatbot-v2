@@ -8,6 +8,7 @@ import { ChatChannel } from "~/modules/chat/entities/enums/ChatChannel";
 import { MessageAudience } from "~/modules/chat/entities/enums/MessageAudience";
 import { MessageContentType } from "~/modules/chat/entities/enums/MessageContentType";
 import { MessageRole } from "~/modules/chat/entities/enums/MessageRole";
+import { ReasoningEffort } from "~/modules/chat/entities/enums/ReasoningEffort";
 import { ToolResultStatus } from "~/modules/chat/entities/enums/ToolResultStatus";
 import { Message } from "~/modules/chat/entities/Message";
 import { BsuidUtils } from "~/modules/identity/entities/BsuidUtils";
@@ -53,15 +54,27 @@ describe("shared entities", () => {
       audience: MessageAudience.Channel,
     });
 
-    const toolCall = chat.addAssistantToolCall(audioMessage.turnId, {
-      type: MessageContentType.ToolCall,
-      callId: "call-1",
-      name: "list_todos",
-      arguments: { status: "Pending" },
+    const generation = chat.addGeneration({
+      turnId: audioMessage.turnId,
+      provider: "test",
+      model: "test-model",
+      api: "test-api",
+      reasoningEffort: ReasoningEffort.High,
+      finishReason: "toolUse",
     });
+    const toolCall = chat.addAssistantToolCall(
+      audioMessage.turnId,
+      generation.id,
+      {
+        type: MessageContentType.ToolCall,
+        callId: "call-1",
+        name: "list_todos",
+        arguments: { status: "Pending" },
+      },
+    );
     expect(toolCall.audience).toBe(MessageAudience.Model);
     expect(() =>
-      chat.addAssistantToolCall("unknown-turn", {
+      chat.addAssistantToolCall("unknown-turn", generation.id, {
         type: MessageContentType.ToolCall,
         callId: "call-x",
         name: "list_todos",
@@ -153,6 +166,44 @@ describe("shared entities", () => {
     expect(() => chat.setSummary(summary(2))).toThrow(ValidationException);
     chat.setSummary(summary(4));
     expect(chat.getModelMessages().map((m) => m.id)).toEqual([thirdUser.id]);
+  });
+
+  test("Chat keeps reasoning available only to its active model turn", () => {
+    const chat = new Chat();
+    const command = chat.addUserCommandMessage(
+      "/effort high",
+      "effort",
+      { level: "high" },
+      "command-1",
+    );
+    chat.setReasoningEffort(ReasoningEffort.High);
+    const userMessage = chat.addUserTextMessage("Think carefully");
+    const generation = chat.addGeneration({
+      turnId: userMessage.turnId,
+      provider: "zai",
+      model: "glm-5.2",
+      api: "openai-completions",
+      reasoningEffort: ReasoningEffort.High,
+      finishReason: "stop",
+    });
+    const reasoning = chat.addAssistantReasoningMessage(
+      userMessage.turnId,
+      generation.id,
+      "private provider artifact",
+      { thinkingSignature: "signature" },
+    );
+
+    expect(chat.reasoningEffort).toBe(ReasoningEffort.High);
+    expect(command.toJSON()).toMatchObject({
+      type: "command",
+      text: "/effort high",
+    });
+    expect(chat.getChannelMessages()).toContain(command);
+    expect(chat.getChannelMessages()).not.toContain(reasoning);
+    expect(chat.getModelMessages()).not.toContain(command);
+    expect(chat.getModelMessages()).not.toContain(reasoning);
+    expect(chat.getModelMessages(userMessage.turnId)).toContain(reasoning);
+    expect(() => reasoning.toJSON()).toThrow(ValidationException);
   });
 
   test("User validates inputs, manages google credentials, and serializes", () => {
@@ -334,6 +385,7 @@ describe("shared entities", () => {
 
     const toolMessage = new Message({
       idChat: "chat-1",
+      generationId: "generation-1",
       role: MessageRole.Tool,
       audience: MessageAudience.Model,
       content: {

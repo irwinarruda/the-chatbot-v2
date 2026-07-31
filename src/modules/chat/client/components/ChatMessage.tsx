@@ -1,5 +1,9 @@
 import { memo, useState } from "react";
 import {
+  type ChatActivityLabels,
+  GenerationTrace,
+} from "~/modules/chat/client/components/ChatActivity";
+import {
   type WhatsAppBlockNode,
   type WhatsAppInlineNode,
   WhatsAppMessageParser,
@@ -17,6 +21,7 @@ interface ChatMessageProps {
   botLabel: string;
   showMoreLabel: string;
   showLessLabel: string;
+  activityLabels: ChatActivityLabels;
   onButtonReply: (text: string) => void;
 }
 
@@ -29,6 +34,7 @@ export const ChatMessage = memo(function ChatMessage({
   botLabel,
   showMoreLabel,
   showLessLabel,
+  activityLabels,
   onButtonReply,
 }: ChatMessageProps) {
   const isUser = message.userType === "user";
@@ -51,6 +57,9 @@ export const ChatMessage = memo(function ChatMessage({
           </time>
         </div>
         <div className="pl-4">
+          {message.trace && (
+            <GenerationTrace trace={message.trace} labels={activityLabels} />
+          )}
           <MessageContent
             message={message}
             theme={theme}
@@ -148,6 +157,16 @@ function MessageContent({
           ))}
         </div>
       </div>
+    );
+  }
+  if (message.type === "command") {
+    return (
+      <p className="m-0 font-mono text-base text-term-cyan leading-7">
+        <span aria-hidden="true" className="mr-2 text-term-green">
+          $
+        </span>
+        {message.text}
+      </p>
     );
   }
   return <FormattedChatText text={message.buttonReply ?? message.text ?? ""} />;
