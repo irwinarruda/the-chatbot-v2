@@ -63,7 +63,10 @@ export function ChatResponseProgress({
           {elapsedSeconds > 0 ? elapsedLabel : respondingLabel}
         </span>
       </div>
-      <div className="mt-1.5 flex flex-col gap-0.5" aria-live="off">
+      <div
+        className="mt-1.5 flex flex-col gap-1.5 [&>[data-slot=chat-tool-activity]+[data-slot=chat-tool-activity]]:-mt-1.5"
+        aria-live="off"
+      >
         {activities.map((activity) => {
           const key = `${activity.round}:${activity.contentIndex}:${activity.type}`;
           if (activity.type === "reasoning") {

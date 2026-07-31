@@ -160,7 +160,7 @@ function GenerationActivity({
   );
 
   return (
-    <section className="flex flex-col gap-0.5 border-term-border border-l pl-3">
+    <section className="flex flex-col gap-1.5 border-term-border border-l pl-3 [&>[data-slot=chat-tool-activity]+[data-slot=chat-tool-activity]]:-mt-1.5">
       {generation.items.map((item, index) => {
         const itemKey = `${generation.id}:${item.type}:${index}`;
         if (item.type === "reasoning") {
@@ -215,7 +215,7 @@ function GenerationActivity({
           />
         );
       })}
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-2xs text-term-muted">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pl-5 font-mono text-2xs text-term-muted">
         <span className="text-term-green">
           {generation.model ?? generation.provider ?? "unknown"}
         </span>
@@ -253,7 +253,7 @@ export function ToolActivity({
   const preview = getToolPreview(outcome ?? argumentsValue);
 
   return (
-    <div>
+    <div data-slot="chat-tool-activity">
       <Button
         type="button"
         variant="ghost"
@@ -262,7 +262,7 @@ export function ToolActivity({
         onClick={() => {
           if (hasDetails) setIsExpanded((current) => !current);
         }}
-        className="h-auto min-h-11 pointer-fine:min-h-6 w-full justify-start gap-1.5 rounded px-1.5 py-0.5 text-left font-mono text-term-muted text-xs hover:bg-term-chrome/55 hover:text-term-bright"
+        className="h-auto pointer-fine:h-auto min-h-11 pointer-fine:min-h-6 w-full justify-start gap-1.5 rounded px-1.5 py-0 text-left font-mono text-term-muted text-xs hover:bg-term-chrome/55 hover:text-term-bright"
       >
         <Wrench
           aria-hidden="true"
@@ -326,7 +326,7 @@ function CompactReasoningMarkdown({
   isLive?: boolean;
 }) {
   return (
-    <div className="wrap-break-word min-w-0 text-[0.8125rem] text-term-text leading-[1.4] [&_a]:text-term-blue [&_a]:underline [&_a]:underline-offset-2 [&_blockquote]:my-1 [&_blockquote]:border-term-cyan/45 [&_blockquote]:border-l-2 [&_blockquote]:pl-2.5 [&_code]:rounded [&_code]:bg-term-chrome [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[0.8em] [&_code]:text-term-amber [&_em]:italic [&_h1]:my-1 [&_h1]:font-semibold [&_h1]:text-sm [&_h1]:text-term-bright [&_h2]:my-1 [&_h2]:font-semibold [&_h2]:text-[0.8125rem] [&_h2]:text-term-bright [&_h3]:my-1 [&_h3]:font-medium [&_h3]:text-[0.8125rem] [&_h3]:text-term-cyan [&_hr]:my-1.5 [&_hr]:border-term-border [&_li]:my-0 [&_ol]:my-1 [&_ol]:pl-5 [&_p+p]:mt-1 [&_p]:my-0 [&_pre]:my-1 [&_pre]:max-h-72 [&_pre]:overflow-auto [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_pre]:border [&_pre]:border-term-border [&_pre]:bg-term-bg [&_pre]:p-2 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_strong]:font-semibold [&_strong]:text-term-bright [&_table]:my-1 [&_table]:w-full [&_table]:text-left [&_td]:border [&_td]:border-term-border [&_td]:px-1.5 [&_td]:py-1 [&_th]:border [&_th]:border-term-border [&_th]:px-1.5 [&_th]:py-1 [&_th]:text-term-bright [&_ul]:my-1 [&_ul]:list-['>__'] [&_ul]:pl-5 [&_ul]:marker:text-term-green">
+    <div className="wrap-break-word min-w-0 text-[0.8125rem] text-term-text leading-[1.5] [&_a]:text-term-blue [&_a]:underline [&_a]:underline-offset-2 [&_blockquote]:my-1.5 [&_blockquote]:border-term-cyan/45 [&_blockquote]:border-l-2 [&_blockquote]:pl-2.5 [&_code]:rounded [&_code]:bg-term-chrome [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[0.8em] [&_code]:text-term-amber [&_em]:italic [&_h1]:my-1.5 [&_h1]:font-semibold [&_h1]:text-sm [&_h1]:text-term-bright [&_h2]:my-1.5 [&_h2]:font-semibold [&_h2]:text-[0.8125rem] [&_h2]:text-term-bright [&_h3]:my-1.5 [&_h3]:font-medium [&_h3]:text-[0.8125rem] [&_h3]:text-term-cyan [&_hr]:my-1.5 [&_hr]:border-term-border [&_li+li]:mt-1 [&_li]:my-0 [&_ol]:my-1.5 [&_ol]:pl-5 [&_p+p]:mt-1.5 [&_p]:my-0 [&_pre]:my-1.5 [&_pre]:max-h-72 [&_pre]:overflow-auto [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_pre]:border [&_pre]:border-term-border [&_pre]:bg-term-bg [&_pre]:p-2 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_strong]:font-semibold [&_strong]:text-term-bright [&_table]:my-1.5 [&_table]:w-full [&_table]:text-left [&_td]:border [&_td]:border-term-border [&_td]:px-1.5 [&_td]:py-1 [&_th]:border [&_th]:border-term-border [&_th]:px-1.5 [&_th]:py-1 [&_th]:text-term-bright [&_ul]:my-1.5 [&_ul]:list-['>__'] [&_ul]:pl-5 [&_ul]:marker:text-term-green">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         skipHtml
