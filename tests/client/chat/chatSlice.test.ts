@@ -34,6 +34,14 @@ function createChat(
 ): WebChatDTO {
   return {
     messages,
+    currentModel: {
+      provider: "openai-codex",
+      model: "gpt-5.6-sol",
+    },
+    availableModels: [
+      { provider: "openai-codex", model: "gpt-5.6-sol" },
+      { provider: "zai-coding-cn", model: "glm-5.2" },
+    ],
     reasoningEffort,
     supportedReasoningEfforts: [
       ReasoningEffort.Off,
@@ -316,5 +324,45 @@ describe("chatSlice", () => {
     expect(sentMessage).toMatchObject({ text: "/effort high" });
     expect(store.getState().reasoningEffort).toBe(ReasoningEffort.High);
     expect(store.getState().chatMessages).toEqual(commandHistory);
+  });
+
+  test("model selector sends the same durable slash command", async () => {
+    let sentMessage: SendWebMessageDTO | undefined;
+    const selectedModel = {
+      provider: "zai-coding-cn",
+      model: "glm-5.2",
+    };
+    const service: WebChatClientService = {
+      async getCurrentUser() {
+        return {
+          id: crypto.randomUUID(),
+          name: "Irwin",
+          phoneNumber: "5511999999999",
+        };
+      },
+      async getChat() {
+        return createChat([]);
+      },
+      async sendMessage(dto) {
+        sentMessage = dto;
+        return {
+          ...createChat([]),
+          currentModel: selectedModel,
+        };
+      },
+      async sendAudio() {
+        return createChat([]);
+      },
+      async logout() {},
+    };
+    const store = createStore(service);
+    await store.getState().bootstrapChat();
+
+    await store.getState().setModel(selectedModel);
+
+    expect(sentMessage).toMatchObject({
+      text: "/model zai-coding-cn/glm-5.2",
+    });
+    expect(store.getState().currentModel).toEqual(selectedModel);
   });
 });

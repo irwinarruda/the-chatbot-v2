@@ -12,7 +12,10 @@ import { SyncBankAccountBalanceToolDTO } from "~/modules/cash-flow/entities/dtos
 import { TransferBetweenBankAccountsToolDTO } from "~/modules/cash-flow/entities/dtos/TransferBetweenBankAccountsToolDTO";
 import type { CashFlowService } from "~/modules/cash-flow/services/CashFlowService";
 import type { MonthlyExpenseService } from "~/modules/cash-flow/services/MonthlyExpenseService";
-import type { AiChatGateway } from "~/modules/chat/gateway/AiChatGateway";
+import type {
+  AiChatGateway,
+  AiModelSelectionDTO,
+} from "~/modules/chat/gateway/AiChatGateway";
 import {
   type AiToolContext,
   type RegisteredTool,
@@ -102,6 +105,8 @@ export class AiToolService extends ToolExecutor {
     value: number,
     categories: string[],
     bankAccounts: string[],
+    idUser: string,
+    model: AiModelSelectionDTO,
   ) {
     const schema = z
       .object({
@@ -125,6 +130,8 @@ export class AiToolService extends ToolExecutor {
       }),
       schema,
       "Could not determine classification or bank account.",
+      idUser,
+      model,
     );
   }
 
@@ -132,6 +139,8 @@ export class AiToolService extends ToolExecutor {
     userMessage: string,
     value: number,
     bankAccounts: string[],
+    idUser: string,
+    model: AiModelSelectionDTO,
   ) {
     const schema = z
       .object({
@@ -153,6 +162,8 @@ export class AiToolService extends ToolExecutor {
       }),
       schema,
       "Could not determine transfer classification.",
+      idUser,
+      model,
     );
   }
 
@@ -161,10 +172,17 @@ export class AiToolService extends ToolExecutor {
     payload: string,
     schema: z.ZodType<T>,
     failureMessage: string,
+    idUser: string,
+    model: AiModelSelectionDTO,
   ): Promise<T> {
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        const response = await this.aiChatGateway.generateText(prompt, payload);
+        const response = await this.aiChatGateway.generateText(
+          idUser,
+          model,
+          prompt,
+          payload,
+        );
         const json = response
           .replace(/^\s*```(?:json)?\s*/i, "")
           .replace(/\s*```\s*$/, "");
@@ -533,6 +551,8 @@ export class AiToolService extends ToolExecutor {
             input.value,
             categories,
             bankAccounts,
+            user.id,
+            context.model ?? this.aiChatGateway.getDefaultModel(),
           );
           const transaction = {
             phoneNumber,
@@ -586,6 +606,8 @@ export class AiToolService extends ToolExecutor {
             input.user_message,
             input.value,
             bankAccounts,
+            user.id,
+            context.model ?? this.aiChatGateway.getDefaultModel(),
           );
           const category =
             await this.cashFlowService.transferBetweenBankAccounts({
@@ -687,6 +709,8 @@ export class AiToolService extends ToolExecutor {
             input.current_balance,
             categories,
             bankAccounts,
+            user.id,
+            context.model ?? this.aiChatGateway.getDefaultModel(),
           );
           await this.cashFlowService.syncBankAccountBalance({
             phoneNumber,

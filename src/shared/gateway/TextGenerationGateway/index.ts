@@ -1,3 +1,7 @@
 export interface TextGenerationGateway {
-  generateText(systemPrompt: string, userText: string): Promise<string>;
+  generateText(
+    idUser: string,
+    systemPrompt: string,
+    userText: string,
+  ): Promise<string>;
 }

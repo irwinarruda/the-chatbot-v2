@@ -25,6 +25,8 @@
     "migrate:production:status": "bun infra/scripts/production-migrations.ts status",
     "migrate:production:up": "bun infra/scripts/production-migrations.ts up",
     "migrate:dump": "bun infra/scripts/sync-production-database.ts",
+    "credentials:import-ai": "bun infra/scripts/import-local-ai-credentials.ts",
+    "credentials:login-codex": "bun infra/scripts/login-openai-codex.ts",
     "production:wait": "bun infra/scripts/wait-for-production.ts",
     "production:release": "bun .agents/skills/production-release/scripts/release.mjs",
     "lint": "biome lint",

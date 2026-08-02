@@ -69,11 +69,13 @@ describe("NoteService", () => {
   });
 
   test("refines a draft without persisting it automatically", async () => {
+    const user = await orquestrator.createUser();
     orquestrator.aiGateway.scriptedTexts.push(
       "```markdown\n# Organized\n\n- First point\n```",
     );
 
     const revised = await orquestrator.noteService.refineMarkdown(
+      user.id,
       "rough idea",
       "Organize this",
     );

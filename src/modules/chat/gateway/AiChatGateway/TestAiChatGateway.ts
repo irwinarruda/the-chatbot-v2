@@ -12,6 +12,7 @@ import type {
   AiCompletionRequestDTO,
   AiCompletionResponseDTO,
   AiInputEstimateRequestDTO,
+  AiModelSelectionDTO,
   AiSummaryCandidateDTO,
   AssistantGenerationContentDTO,
   TestAiScriptedResponseDTO,
@@ -24,17 +25,37 @@ export class TestAiChatGateway implements AiChatGateway {
   scriptedResponses: TestAiScriptedResponseDTO[] = [];
   scriptedTexts: string[] = [];
   generatedTextRequests: Array<{ systemPrompt: string; userText: string }> = [];
+  summaryRequests: AiChatContextMessageDTO[][] = [];
   summaryError?: Error;
   summaryCalls = 0;
   contextWindowTokens = 1_000_000;
+  maxOutputTokens = 131_072;
   supportedReasoningEfforts = [...reasoningEfforts];
+  availableModels: AiModelSelectionDTO[] = [this.getDefaultModel()];
+  supportedReasoningEffortsByModel = new Map<string, ReasoningEffort[]>();
 
-  getContextWindowTokens(): number {
+  getDefaultModel(): AiModelSelectionDTO {
+    return { provider: "test", model: "test-model" };
+  }
+
+  async getAvailableModels(_idUser: string): Promise<AiModelSelectionDTO[]> {
+    return this.availableModels;
+  }
+
+  getContextWindowTokens(_model: AiModelSelectionDTO): number {
     return this.contextWindowTokens;
   }
 
-  getSupportedReasoningEfforts(): ReasoningEffort[] {
-    return this.supportedReasoningEfforts;
+  getMaxOutputTokens(_model: AiModelSelectionDTO): number {
+    return this.maxOutputTokens;
+  }
+
+  getSupportedReasoningEfforts(model: AiModelSelectionDTO): ReasoningEffort[] {
+    return (
+      this.supportedReasoningEffortsByModel.get(
+        `${model.provider}/${model.model}`,
+      ) ?? this.supportedReasoningEfforts
+    );
   }
 
   async complete(
@@ -65,8 +86,8 @@ export class TestAiChatGateway implements AiChatGateway {
         }
       }
       return {
-        provider: "test",
-        model: "test-model",
+        provider: request.model.provider,
+        model: request.model.model,
         api: "test-api",
         items,
         finishReason: scripted.finishReason,
@@ -77,8 +98,8 @@ export class TestAiChatGateway implements AiChatGateway {
       .reverse()
       .find((message) => message.role === MessageRole.User);
     return {
-      provider: "test",
-      model: "test-model",
+      provider: request.model.provider,
+      model: request.model.model,
       api: "test-api",
       items: [
         {
@@ -95,16 +116,24 @@ export class TestAiChatGateway implements AiChatGateway {
     return Math.ceil(JSON.stringify(request).length / 3);
   }
 
-  async generateText(systemPrompt: string, userText: string): Promise<string> {
+  async generateText(
+    _idUser: string,
+    _model: AiModelSelectionDTO,
+    systemPrompt: string,
+    userText: string,
+  ): Promise<string> {
     this.generatedTextRequests.push({ systemPrompt, userText });
     return this.scriptedTexts.shift() ?? "";
   }
 
   async generateSummary(
+    _idUser: string,
+    _model: AiModelSelectionDTO,
     messages: AiChatContextMessageDTO[],
     existingSummary?: ConversationSummary,
   ): Promise<AiSummaryCandidateDTO> {
     this.summaryCalls += 1;
+    this.summaryRequests.push(messages);
     if (this.summaryError) throw this.summaryError;
     return {
       userProfile: [

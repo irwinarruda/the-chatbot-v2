@@ -6,7 +6,10 @@ import { audioInputService } from "~/modules/chat/client/services/audioInputServ
 import { audioRecordingService } from "~/modules/chat/client/services/audioRecordingService";
 import { webChatService } from "~/modules/chat/client/services/webChatService";
 import { createChatProgressBatcher } from "~/modules/chat/client/state/createChatProgressBatcher";
-import type { ChatMessageDTO } from "~/modules/chat/entities/dtos/ChatDTO";
+import type {
+  AiModelSelectionResponseDTO,
+  ChatMessageDTO,
+} from "~/modules/chat/entities/dtos/ChatDTO";
 import type { ReasoningEffort } from "~/modules/chat/entities/enums/ReasoningEffort";
 
 export interface RecordingSlice {
@@ -25,6 +28,8 @@ type RecordingState = RecordingSlice & {
   chatError?: "loading" | "sending" | "microphone";
   chatMessages: ChatMessageDTO[];
   chatResponseProgress?: ChatResponseProgressDTO;
+  currentModel?: AiModelSelectionResponseDTO;
+  availableModels: AiModelSelectionResponseDTO[];
   reasoningEffort: ReasoningEffort;
   supportedReasoningEfforts: ReasoningEffort[];
   isChatSubmitting: boolean;
@@ -93,6 +98,8 @@ export const recordingSlice: StateCreator<
             set({
               chatMessages: chat.messages,
               chatResponseProgress: undefined,
+              currentModel: chat.currentModel,
+              availableModels: chat.availableModels,
               reasoningEffort: chat.reasoningEffort,
               supportedReasoningEfforts: chat.supportedReasoningEfforts,
             });

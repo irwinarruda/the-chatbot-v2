@@ -1,3 +1,4 @@
+import { registerBunOAuthFlows } from "@earendil-works/pi-ai/bun-oauth";
 import { Database } from "~/infra/database";
 import type { CashFlowSpreadsheetGateway } from "~/modules/cash-flow/gateway/CashFlowSpreadsheetGateway";
 import { GoogleCashFlowSpreadsheetGateway } from "~/modules/cash-flow/gateway/CashFlowSpreadsheetGateway/GoogleCashFlowSpreadsheetGateway";
@@ -5,6 +6,8 @@ import { CashFlowService } from "~/modules/cash-flow/services/CashFlowService";
 import { MonthlyExpenseService } from "~/modules/cash-flow/services/MonthlyExpenseService";
 import type { AiChatGateway } from "~/modules/chat/gateway/AiChatGateway";
 import { PiAiChatGateway } from "~/modules/chat/gateway/AiChatGateway/PiAiChatGateway";
+import { AiCredentialEncryption } from "~/modules/chat/gateway/AiCredentialStore/AiCredentialEncryption";
+import { PostgresAiCredentialStore } from "~/modules/chat/gateway/AiCredentialStore/PostgresAiCredentialStore";
 import type { SpeechToTextGateway } from "~/modules/chat/gateway/SpeechToTextGateway";
 import { OpenAiSpeechToTextGateway } from "~/modules/chat/gateway/SpeechToTextGateway/OpenAiSpeechToTextGateway";
 import type { StorageGateway } from "~/modules/chat/gateway/StorageGateway";
@@ -13,6 +16,8 @@ import type { WebMessagingGateway } from "~/modules/chat/gateway/WebMessagingGat
 import { LocalWebMessagingGateway } from "~/modules/chat/gateway/WebMessagingGateway/LocalWebMessagingGateway";
 import type { WhatsAppMessagingGateway } from "~/modules/chat/gateway/WhatsAppMessagingGateway";
 import { MetaWhatsAppMessagingGateway } from "~/modules/chat/gateway/WhatsAppMessagingGateway/MetaWhatsAppMessagingGateway";
+import { AiModelPreferenceService } from "~/modules/chat/services/AiModelPreferenceService";
+import { AiModelService } from "~/modules/chat/services/AiModelService";
 import { AiToolService } from "~/modules/chat/services/AiToolService";
 import { MessagingService } from "~/modules/chat/services/MessagingService";
 import type { AuthGateway } from "~/modules/identity/gateway/AuthGateway";
@@ -27,6 +32,8 @@ import { MigrationService } from "~/modules/system/services/MigrationService";
 import { StatusService } from "~/modules/system/services/StatusService";
 import { TodoService } from "~/modules/todos/services/TodoService";
 import type { Config } from "~/shared/config/Config";
+
+registerBunOAuthFlows();
 
 export interface ApplicationGateways {
   aiChat: AiChatGateway;
@@ -47,6 +54,7 @@ export interface Application {
   };
   services: {
     auth: AuthService;
+    aiModels: AiModelService;
     cashFlow: CashFlowService;
     monthlyExpenses: MonthlyExpenseService;
     messaging: MessagingService;
@@ -70,8 +78,20 @@ export function createApplication(
 ): Application {
   const database =
     overrides.database ?? new Database(config.database.connectionString);
+  const aiCredentialEncryption = new AiCredentialEncryption(
+    config.credentialEncryption.key,
+  );
   const gateways: ApplicationGateways = {
-    aiChat: overrides.gateways?.aiChat ?? new PiAiChatGateway(config.ai),
+    aiChat:
+      overrides.gateways?.aiChat ??
+      new PiAiChatGateway(config.ai, {
+        create: (idUser) =>
+          new PostgresAiCredentialStore(
+            database,
+            aiCredentialEncryption,
+            idUser,
+          ),
+      }),
     cashFlowSpreadsheet:
       overrides.gateways?.cashFlowSpreadsheet ??
       new GoogleCashFlowSpreadsheetGateway(config.google, config.googleSheets),
@@ -103,9 +123,7 @@ export function createApplication(
     ...overrides.coordination,
   };
   const googleCredentialEncryptionService =
-    new GoogleCredentialEncryptionService(
-      config.googleCredentialEncryption.key,
-    );
+    new GoogleCredentialEncryptionService(config.credentialEncryption.key);
   const authService = new AuthService(
     database,
     config.jwt,
@@ -120,7 +138,12 @@ export function createApplication(
   );
   const monthlyExpenseService = new MonthlyExpenseService(database);
   const todoService = new TodoService(database);
-  const noteService = new NoteService(database, gateways.aiChat);
+  const aiModelPreferenceService = new AiModelPreferenceService(database);
+  const aiModelService = new AiModelService(
+    aiModelPreferenceService,
+    gateways.aiChat,
+  );
+  const noteService = new NoteService(database, aiModelService);
   const aiToolService = new AiToolService(
     authService,
     cashFlowService,
@@ -138,7 +161,7 @@ export function createApplication(
     aiToolService,
     gateways.storage,
     gateways.speechToText,
-    config.ai,
+    aiModelService,
   );
   return {
     config,
@@ -147,6 +170,7 @@ export function createApplication(
     coordination: { identityChat: chatCoordinator },
     services: {
       auth: authService,
+      aiModels: aiModelService,
       cashFlow: cashFlowService,
       monthlyExpenses: monthlyExpenseService,
       messaging: messagingService,

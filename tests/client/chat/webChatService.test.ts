@@ -31,6 +31,14 @@ describe("webChatService", () => {
         type: "snapshot",
         chat: {
           messages: [],
+          currentModel: {
+            provider: "openai-codex",
+            model: "gpt-5.6-sol",
+          },
+          availableModels: [
+            { provider: "openai-codex", model: "gpt-5.6-sol" },
+            { provider: "zai-coding-cn", model: "glm-5.2" },
+          ],
           reasoningEffort: "high",
           supportedReasoningEfforts: ["off", "high"],
         },

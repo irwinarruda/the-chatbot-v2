@@ -94,6 +94,8 @@
     "placeholder": "Digite uma mensagem...",
     "audioInputLabel": "Microfone",
     "audioInputUnavailable": "Microfone padrão",
+    "modelLabel": "Modelo de IA",
+    "modelShort": "modelo",
     "reasoningEffortLabel": "Esforço de raciocínio",
     "reasoningEffortShort": "esforço",
     "traceShow": "Trabalhou",

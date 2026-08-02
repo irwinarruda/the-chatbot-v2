@@ -57,8 +57,19 @@ export type ChannelMessageResponseDTO = z.infer<
 >;
 export type ChatMessageDTO = ChannelMessageResponseDTO;
 
+export const AiModelSelectionResponseDTO = z.object({
+  provider: z.string().min(1),
+  model: z.string().min(1),
+});
+
+export type AiModelSelectionResponseDTO = z.infer<
+  typeof AiModelSelectionResponseDTO
+>;
+
 export const ChatMessagesResponseDTO = z.object({
   messages: z.array(ChannelMessageResponseDTO),
+  currentModel: AiModelSelectionResponseDTO,
+  availableModels: z.array(AiModelSelectionResponseDTO),
   reasoningEffort: z.enum(ReasoningEffort),
   supportedReasoningEfforts: z.array(z.enum(ReasoningEffort)).min(1),
 });

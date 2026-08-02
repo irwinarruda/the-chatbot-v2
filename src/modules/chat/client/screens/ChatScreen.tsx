@@ -5,6 +5,7 @@ import {
   ArrowUp,
   BrainCircuit,
   CircleAlert,
+  Cpu,
   MessageSquare,
   Mic,
   Send,
@@ -26,6 +27,7 @@ import { ChatResponseProgress } from "~/modules/chat/client/components/ChatRespo
 import { audioInputService } from "~/modules/chat/client/services/audioInputService";
 import type { ChatErrorCode } from "~/modules/chat/client/state/chatSlice";
 import { isReasoningEffort } from "~/modules/chat/entities/enums/ReasoningEffort";
+import { toAiModelLocator } from "~/modules/chat/utils/AiModelLocator";
 import { TerminalWindow } from "~/shared/client/components/terminal/TerminalWindow";
 import { Alert, AlertDescription } from "~/shared/client/components/ui/alert";
 import { Button } from "~/shared/client/components/ui/button";
@@ -60,6 +62,8 @@ export function ChatScreen() {
   const chatMessages = useApp((s) => s.chatMessages);
   const chatInput = useApp((s) => s.chatInput);
   const chatResponseProgress = useApp((s) => s.chatResponseProgress);
+  const currentModel = useApp((s) => s.currentModel);
+  const availableModels = useApp((s) => s.availableModels);
   const reasoningEffort = useApp((s) => s.reasoningEffort);
   const supportedReasoningEfforts = useApp((s) => s.supportedReasoningEfforts);
   const chatError = useApp((s) => s.chatError);
@@ -78,6 +82,7 @@ export function ChatScreen() {
   const syncAudioInputs = useApp((s) => s.syncAudioInputs);
   const selectAudioInput = useApp((s) => s.selectAudioInput);
   const sendChatInput = useApp((s) => s.sendChatInput);
+  const setModel = useApp((s) => s.setModel);
   const setReasoningEffort = useApp((s) => s.setReasoningEffort);
   const sendButtonReply = useApp((s) => s.sendButtonReply);
   const startRecording = useApp((s) => s.startRecording);
@@ -92,15 +97,20 @@ export function ChatScreen() {
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const isAssistantResponding =
     isChatSubmitting && chatMessages.at(-1)?.userType === "user";
-  const lastChatItemIndex = isAssistantResponding
-    ? chatMessages.length
-    : chatMessages.length - 1;
+  let currentModelLocator = "";
+  if (currentModel) currentModelLocator = toAiModelLocator(currentModel);
+  let lastChatItemIndex = chatMessages.length - 1;
+  let chatItemCount = chatMessages.length;
+  if (isAssistantResponding) {
+    lastChatItemIndex = chatMessages.length;
+    chatItemCount += 1;
+  }
   const getChatItemKey = useCallback(
     (index: number) => chatMessages[index]?.id ?? "assistant-progress",
     [chatMessages],
   );
   const virtualizer = useVirtualizer({
-    count: chatMessages.length + (isAssistantResponding ? 1 : 0),
+    count: chatItemCount,
     getScrollElement: () => parentRef.current,
     getItemKey: getChatItemKey,
     estimateSize: (index) => {
@@ -129,10 +139,10 @@ export function ChatScreen() {
     sending: t.errorSending,
     loading: t.errorLoading,
   };
-  const chatErrorMessage = chatError ? chatErrorMessages[chatError] : undefined;
-  const windowTitle = currentUser
-    ? `${t.windowTitle} - ${currentUser.name}`
-    : t.windowTitle;
+  let chatErrorMessage: string | undefined;
+  if (chatError) chatErrorMessage = chatErrorMessages[chatError];
+  let windowTitle = t.windowTitle;
+  if (currentUser) windowTitle = `${t.windowTitle} - ${currentUser.name}`;
   function onScroll() {
     const el = parentRef.current;
     if (!el) return;
@@ -160,6 +170,14 @@ export function ChatScreen() {
 
   function onAudioInputChange(event: ChangeEvent<HTMLSelectElement>) {
     void selectAudioInput(event.target.value);
+  }
+
+  function onModelChange(event: ChangeEvent<HTMLSelectElement>) {
+    const selected = availableModels.find(
+      (model) => toAiModelLocator(model) === event.target.value,
+    );
+    if (!selected) return;
+    void setModel(selected);
   }
 
   function onReasoningEffortChange(event: ChangeEvent<HTMLSelectElement>) {
@@ -514,7 +532,34 @@ export function ChatScreen() {
               />
             </div>
 
-            <div className="mt-1 flex min-h-8 items-center justify-between gap-3 border-term-border/60 border-t pt-2">
+            <div className="mt-1 grid min-h-8 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 border-term-border/60 border-t pt-2 sm:flex sm:justify-between">
+              <div className="col-span-2 flex min-w-0 items-center gap-1 sm:col-span-1 sm:flex-1">
+                <Cpu aria-hidden="true" className="size-3 text-term-cyan" />
+                <Label
+                  htmlFor="chat-model"
+                  className="hidden font-mono text-term-muted text-xs md:inline"
+                >
+                  {t.modelShort}
+                </Label>
+                <NativeSelect
+                  id="chat-model"
+                  size="sm"
+                  className="min-w-0 flex-1 **:data-[slot=native-select-icon]:right-1.5 **:data-[slot=native-select-icon]:size-3 **:data-[slot=native-select-icon]:text-term-cyan sm:max-w-64 [&_[data-slot=native-select]]:h-11 pointer-fine:[&_[data-slot=native-select]]:h-7 [&_[data-slot=native-select]]:truncate [&_[data-slot=native-select]]:rounded-md [&_[data-slot=native-select]]:border-transparent [&_[data-slot=native-select]]:bg-term-cyan/8 [&_[data-slot=native-select]]:py-0.5 [&_[data-slot=native-select]]:pr-6 [&_[data-slot=native-select]]:pl-2 [&_[data-slot=native-select]]:font-mono [&_[data-slot=native-select]]:text-sm [&_[data-slot=native-select]]:text-term-cyan pointer-fine:[&_[data-slot=native-select]]:text-xs [&_[data-slot=native-select]]:transition-colors [&_[data-slot=native-select]]:hover:border-term-cyan/30 [&_[data-slot=native-select]]:hover:bg-term-cyan/12 [&_[data-slot=native-select]]:focus-visible:border-term-cyan/40 [&_[data-slot=native-select]]:focus-visible:ring-0"
+                  value={currentModelLocator}
+                  onChange={onModelChange}
+                  disabled={isChatSubmitting || availableModels.length === 0}
+                  aria-label={t.modelLabel}
+                >
+                  {availableModels.map((model) => {
+                    const locator = toAiModelLocator(model);
+                    return (
+                      <NativeSelectOption key={locator} value={locator}>
+                        {locator}
+                      </NativeSelectOption>
+                    );
+                  })}
+                </NativeSelect>
+              </div>
               <div className="flex shrink-0 items-center gap-1">
                 <BrainCircuit
                   aria-hidden="true"
@@ -542,7 +587,7 @@ export function ChatScreen() {
                   ))}
                 </NativeSelect>
               </div>
-              <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5">
+              <div className="flex min-w-0 items-center justify-end gap-1.5 sm:ml-auto">
                 <div
                   data-disabled={!canSelectAudioInput}
                   className="relative w-24 min-w-0 data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 sm:w-44"

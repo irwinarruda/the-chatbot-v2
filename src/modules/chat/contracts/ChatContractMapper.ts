@@ -1,5 +1,6 @@
 import type { AiGeneration } from "~/modules/chat/entities/AiGeneration";
 import type { Chat } from "~/modules/chat/entities/Chat";
+import type { AiModelConfigurationDTO } from "~/modules/chat/entities/dtos/AiChatGatewayDTO";
 import {
   type AiGenerationTraceDTO,
   ChannelMessageResponseDTO,
@@ -8,10 +9,7 @@ import {
 import { MessageAudience } from "~/modules/chat/entities/enums/MessageAudience";
 import { MessageContentType } from "~/modules/chat/entities/enums/MessageContentType";
 import { MessageRole } from "~/modules/chat/entities/enums/MessageRole";
-import {
-  ReasoningEffort,
-  type ReasoningEffort as ReasoningEffortType,
-} from "~/modules/chat/entities/enums/ReasoningEffort";
+import { ReasoningEffort } from "~/modules/chat/entities/enums/ReasoningEffort";
 import type { Message } from "~/modules/chat/entities/Message";
 
 export function toChannelMessageResponse(
@@ -27,13 +25,15 @@ export function toChannelMessageResponse(
 
 export function toChatMessagesResponse(
   chat: Chat | undefined,
-  supportedReasoningEfforts: ReasoningEffortType[],
+  modelConfiguration: AiModelConfigurationDTO,
 ): ChatMessagesResponseDTO {
   if (!chat) {
     return ChatMessagesResponseDTO.parse({
       messages: [],
+      currentModel: modelConfiguration.currentModel,
+      availableModels: modelConfiguration.availableModels,
       reasoningEffort: ReasoningEffort.Off,
-      supportedReasoningEfforts,
+      supportedReasoningEfforts: modelConfiguration.supportedReasoningEfforts,
     });
   }
   const channelMessages = chat.getChannelMessages();
@@ -71,8 +71,10 @@ export function toChatMessagesResponse(
       }
       return toChannelMessageResponse(message, trace);
     }),
+    currentModel: modelConfiguration.currentModel,
+    availableModels: modelConfiguration.availableModels,
     reasoningEffort: chat.reasoningEffort,
-    supportedReasoningEfforts,
+    supportedReasoningEfforts: modelConfiguration.supportedReasoningEfforts,
   });
 }
 

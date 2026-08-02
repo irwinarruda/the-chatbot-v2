@@ -12,6 +12,9 @@ export const MessageTemplate = {
   EffortStatus: "EffortStatus",
   EffortInvalid: "EffortInvalid",
   EffortUpdated: "EffortUpdated",
+  ModelStatus: "ModelStatus",
+  ModelInvalid: "ModelInvalid",
+  ModelUpdated: "ModelUpdated",
 } as const;
 export type MessageTemplate = ValueOf<typeof MessageTemplate>;
 
@@ -31,6 +34,10 @@ export interface MessageParams {
   reasoningEffort?: string;
   requestedReasoningEffort?: string;
   supportedReasoningEfforts?: string;
+  activeModelLocator?: string;
+  availableModelLocators?: string;
+  requestedModelLocator?: string;
+  effortResetNote?: string;
 }
 
 export class MessageLoader {
@@ -78,6 +85,12 @@ export class MessageLoader {
         return "effort-invalid-message";
       case MessageTemplate.EffortUpdated:
         return "effort-updated-message";
+      case MessageTemplate.ModelStatus:
+        return "model-status-message";
+      case MessageTemplate.ModelInvalid:
+        return "model-invalid-message";
+      case MessageTemplate.ModelUpdated:
+        return "model-updated-message";
       default:
         throw new Error(`Unknown message template: ${template}`);
     }
@@ -120,6 +133,18 @@ export class MessageLoader {
     }
     if (data.supportedReasoningEfforts !== undefined) {
       dict.SupportedReasoningEfforts = data.supportedReasoningEfforts;
+    }
+    if (data.activeModelLocator !== undefined) {
+      dict.ActiveModelLocator = data.activeModelLocator;
+    }
+    if (data.availableModelLocators !== undefined) {
+      dict.AvailableModelLocators = data.availableModelLocators;
+    }
+    if (data.requestedModelLocator !== undefined) {
+      dict.RequestedModelLocator = data.requestedModelLocator;
+    }
+    if (data.effortResetNote !== undefined) {
+      dict.EffortResetNote = data.effortResetNote;
     }
     return MessageLoader.applyTemplate(text, dict);
   }

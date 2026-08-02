@@ -105,12 +105,17 @@ export class NoteService {
     if (result.count === 0) throw new NotFoundException("Note not found");
   }
 
-  async refineMarkdown(markdown: string, instruction: string): Promise<string> {
+  async refineMarkdown(
+    idUser: string,
+    markdown: string,
+    instruction: string,
+  ): Promise<string> {
     const normalizedInstruction = instruction.trim();
     if (!normalizedInstruction) {
       throw new ValidationException("Note refinement instruction is required");
     }
     const result = await this.textGeneration.generateText(
+      idUser,
       noteRefinementPrompt,
       JSON.stringify({ instruction: normalizedInstruction, markdown }),
     );

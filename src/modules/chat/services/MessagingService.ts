@@ -17,6 +17,8 @@ import { Message } from "~/modules/chat/entities/Message";
 import type {
   AiChatContextMessageDTO,
   AiChatGateway,
+  AiModelConfigurationDTO,
+  AiModelSelectionDTO,
   AiToolDefinitionDTO,
 } from "~/modules/chat/gateway/AiChatGateway";
 import type {
@@ -31,7 +33,13 @@ import type { SpeechToTextGateway } from "~/modules/chat/gateway/SpeechToTextGat
 import type { StorageGateway } from "~/modules/chat/gateway/StorageGateway";
 import type { WebMessagingGateway } from "~/modules/chat/gateway/WebMessagingGateway";
 import type { WhatsAppMessagingGateway } from "~/modules/chat/gateway/WhatsAppMessagingGateway";
+import type { AiModelService } from "~/modules/chat/services/AiModelService";
 import type { ToolExecutor } from "~/modules/chat/services/ToolExecutor";
+import {
+  createAiContextCompactionPolicy,
+  selectCompactableTurns,
+} from "~/modules/chat/utils/AiContextCompactionPolicy";
+import { toAiModelLocator } from "~/modules/chat/utils/AiModelLocator";
 import { parseChatCommand } from "~/modules/chat/utils/ChatCommandParser";
 import {
   MessageLoader,
@@ -42,7 +50,6 @@ import { BsuidUtils } from "~/modules/identity/entities/BsuidUtils";
 import type { SyncUserChatAddressesDTO } from "~/modules/identity/entities/dtos/IdentityDTO";
 import { PhoneNumberUtils } from "~/modules/identity/entities/PhoneNumberUtils";
 import type { AuthService } from "~/modules/identity/services/AuthService";
-import type { AiConfig } from "~/shared/config/Config";
 import {
   AppError,
   UnauthorizedException,
@@ -54,6 +61,9 @@ type ChatResponseProgressListener = (
   event: ChatResponseProgressEventDTO,
 ) => void;
 
+const maximumToolRounds = 8;
+const summaryInputRatio = 0.75;
+
 export class MessagingService {
   private database: DatabaseGateway;
   private authService: AuthService;
@@ -63,7 +73,7 @@ export class MessagingService {
   private aiToolService: ToolExecutor;
   private storageGateway: StorageGateway;
   private speechToTextGateway: SpeechToTextGateway;
-  private aiConfig: AiConfig;
+  private aiModelService: AiModelService;
 
   constructor(
     database: DatabaseGateway,
@@ -74,7 +84,7 @@ export class MessagingService {
     aiToolService: ToolExecutor,
     storageGateway: StorageGateway,
     speechToTextGateway: SpeechToTextGateway,
-    aiConfig: AiConfig,
+    aiModelService: AiModelService,
   ) {
     this.database = database;
     this.authService = authService;
@@ -84,7 +94,7 @@ export class MessagingService {
     this.aiToolService = aiToolService;
     this.storageGateway = storageGateway;
     this.speechToTextGateway = speechToTextGateway;
-    this.aiConfig = aiConfig;
+    this.aiModelService = aiModelService;
   }
 
   async receiveWhatsAppMessage(
@@ -130,8 +140,30 @@ export class MessagingService {
     );
   }
 
-  getSupportedReasoningEfforts(): ReasoningEffort[] {
-    return this.aiChatGateway.getSupportedReasoningEfforts();
+  async getSupportedReasoningEfforts(
+    idUser?: string,
+  ): Promise<ReasoningEffort[]> {
+    return (await this.getModelConfiguration(idUser)).supportedReasoningEfforts;
+  }
+
+  async getModelConfiguration(
+    idUser?: string,
+  ): Promise<AiModelConfigurationDTO> {
+    let currentModel: AiModelSelectionDTO;
+    let availableModels: AiModelSelectionDTO[];
+    if (idUser) {
+      currentModel = await this.aiModelService.getForUser(idUser);
+      availableModels = await this.aiModelService.getAvailableForUser(idUser);
+    } else {
+      currentModel = this.aiChatGateway.getDefaultModel();
+      availableModels = [currentModel];
+    }
+    return {
+      currentModel,
+      availableModels,
+      supportedReasoningEfforts:
+        this.aiChatGateway.getSupportedReasoningEfforts(currentModel),
+    };
   }
 
   async listenToMessage(
@@ -424,13 +456,18 @@ export class MessagingService {
     recipient: SendMessageRecipientDTO,
     locale: MessageLocale,
   ): Promise<void> {
-    if (
-      sourceMessage.content.type !== MessageContentType.Command ||
-      sourceMessage.content.name !== "effort"
-    ) {
+    if (sourceMessage.content.type !== MessageContentType.Command) {
       throw new ValidationException("Unsupported chat command");
     }
-    const supported = this.aiChatGateway.getSupportedReasoningEfforts();
+    if (sourceMessage.content.name === "model") {
+      await this.runModelCommand(chat, sourceMessage, recipient, locale);
+      return;
+    }
+    if (sourceMessage.content.name !== "effort" || !chat.idUser) {
+      throw new ValidationException("Unsupported chat command");
+    }
+    const model = await this.aiModelService.getForUser(chat.idUser);
+    const supported = this.aiChatGateway.getSupportedReasoningEfforts(model);
     const requested = sourceMessage.content.arguments.level;
     let responseText: string;
     let reasoningEffortChanged = false;
@@ -491,12 +528,133 @@ export class MessagingService {
     });
   }
 
+  private async runModelCommand(
+    chat: Chat,
+    sourceMessage: Message,
+    recipient: SendMessageRecipientDTO,
+    locale: MessageLocale,
+  ): Promise<void> {
+    if (
+      sourceMessage.content.type !== MessageContentType.Command ||
+      sourceMessage.content.name !== "model" ||
+      !chat.idUser
+    ) {
+      throw new ValidationException("Unsupported chat command");
+    }
+    const idUser = chat.idUser;
+    const activeModel = await this.aiModelService.getForUser(idUser);
+    const availableModels =
+      await this.aiModelService.getAvailableForUser(idUser);
+    const availableLocators = availableModels.map(toAiModelLocator).join(", ");
+    let availableModelLocators = availableLocators;
+    if (!availableModelLocators) {
+      availableModelLocators = "nenhum";
+      if (locale === MessageLocale.En) availableModelLocators = "none";
+    }
+    const requestedProvider = sourceMessage.content.arguments.provider;
+    const requestedModel = sourceMessage.content.arguments.model;
+    const requestedLocator =
+      sourceMessage.content.arguments.locator ?? sourceMessage.content.raw;
+    let selectedModel = activeModel;
+    let responseText: string;
+    let shouldSave = false;
+    let effortReset = false;
+    const previousReasoningEffort = chat.reasoningEffort;
+    if (requestedProvider === undefined && requestedModel === undefined) {
+      const hasMalformedLocator =
+        sourceMessage.content.arguments.locator !== undefined;
+      let template: MessageTemplate = MessageTemplate.ModelStatus;
+      if (hasMalformedLocator) template = MessageTemplate.ModelInvalid;
+      responseText = MessageLoader.getMessage(
+        template,
+        {
+          activeModelLocator: toAiModelLocator(activeModel),
+          availableModelLocators,
+          requestedModelLocator: requestedLocator,
+        },
+        locale,
+      );
+    } else {
+      const candidate = {
+        provider: requestedProvider ?? "",
+        model: requestedModel ?? "",
+      };
+      const isAvailable = availableModels.some(
+        (model) =>
+          model.provider === candidate.provider &&
+          model.model === candidate.model,
+      );
+      if (!isAvailable) {
+        responseText = MessageLoader.getMessage(
+          MessageTemplate.ModelInvalid,
+          {
+            activeModelLocator: toAiModelLocator(activeModel),
+            availableModelLocators,
+            requestedModelLocator: requestedLocator,
+          },
+          locale,
+        );
+      } else {
+        selectedModel = candidate;
+        shouldSave = true;
+        const supported =
+          this.aiChatGateway.getSupportedReasoningEfforts(selectedModel);
+        if (!supported.includes(chat.reasoningEffort)) {
+          chat.setReasoningEffort("off");
+          effortReset = true;
+        }
+        let effortResetNote = "";
+        if (effortReset) {
+          effortResetNote =
+            "O nível de raciocínio foi redefinido para off para este modelo.";
+          if (locale === MessageLocale.En) {
+            effortResetNote =
+              "Reasoning effort was reset to off for this model.";
+          }
+        }
+        responseText = MessageLoader.getMessage(
+          MessageTemplate.ModelUpdated,
+          {
+            activeModelLocator: toAiModelLocator(selectedModel),
+            effortResetNote,
+          },
+          locale,
+        );
+      }
+    }
+    const responseMessage = chat.addAssistantTextMessage(responseText, {
+      turnId: sourceMessage.turnId,
+      audience: MessageAudience.Channel,
+    });
+    try {
+      await this.database.transaction(async (sql) => {
+        if (shouldSave) {
+          await this.aiModelService.saveForUser(idUser, selectedModel, sql);
+        }
+        if (effortReset) await this.saveChat(chat, sql);
+        await this.createMessage(responseMessage, sql);
+      });
+    } catch (error) {
+      chat.messages.pop();
+      if (effortReset) chat.setReasoningEffort(previousReasoningEffort);
+      throw error;
+    }
+    await this.getMessagingGatewayByChannel(recipient.channel).sendTextMessage({
+      toAddress: recipient.toAddress,
+      text: responseText,
+    });
+  }
+
   private async runAiAgent(
     chat: Chat,
     sourceMessage: Message,
     recipient: SendMessageRecipientDTO,
     onProgress?: ChatResponseProgressListener,
   ): Promise<void> {
+    if (!chat.idUser) {
+      throw new UnauthorizedException("Authenticated user is required");
+    }
+    const runtimeModel = await this.aiModelService.getForUser(chat.idUser);
     for (const message of chat.messages) {
       if (
         message.content.type !== MessageContentType.ToolCall ||
@@ -517,15 +675,18 @@ export class MessagingService {
       await this.createMessage(result);
     }
     const tools = this.aiToolService.getDefinitions();
-    for (let round = 0; round < this.aiConfig.maxToolRounds; round++) {
+    for (let round = 0; round < maximumToolRounds; round++) {
       const contextMessages = await this.buildModelContext(
         chat,
         recipient.toAddress,
         tools,
         sourceMessage.turnId,
+        runtimeModel,
       );
       const response = await this.aiChatGateway.complete(
         {
+          idUser: chat.idUser,
+          model: runtimeModel,
           channelAddress: recipient.toAddress,
           messages: contextMessages,
           tools,
@@ -660,6 +821,7 @@ export class MessagingService {
         const result = await this.aiToolService.execute(call, {
           chat,
           sourceMessage,
+          model: runtimeModel,
         });
         const resultMessage = chat.addToolResult(sourceMessage.turnId, result);
         await this.createMessage(resultMessage);
@@ -706,45 +868,194 @@ export class MessagingService {
     channelAddress: string,
     tools: AiToolDefinitionDTO[],
     reasoningTurnId: string,
+    model: AiModelSelectionDTO,
   ): Promise<AiChatContextMessageDTO[]> {
-    const inputBudget =
-      this.aiChatGateway.getContextWindowTokens() -
-      this.aiConfig.maxOutputTokens -
-      this.aiConfig.safetyMarginTokens;
-    for (let attempt = 0; attempt <= chat.messages.length + 1; attempt++) {
-      const messages = this.toAiContextMessages(
+    if (!chat.idUser) {
+      throw new UnauthorizedException("Authenticated user is required");
+    }
+    const idUser = chat.idUser;
+    const policy = createAiContextCompactionPolicy(
+      this.aiChatGateway.getContextWindowTokens(model),
+      this.aiChatGateway.getMaxOutputTokens(model),
+    );
+    let messages = this.toAiContextMessages(
+      chat,
+      chat.getModelMessages(reasoningTurnId),
+    );
+    let requestTokens = this.estimateModelContext(
+      idUser,
+      model,
+      channelAddress,
+      messages,
+      tools,
+      chat.summary,
+    );
+    while (requestTokens > policy.triggerTokens) {
+      const compactableTurns = selectCompactableTurns(
+        chat.getUncompactedTurns(),
+        policy.protectedRecentTurns,
+      );
+      if (compactableTurns.length === 0) break;
+      try {
+        const requiredTurns = this.selectTurnsForCompaction(
+          chat,
+          compactableTurns,
+          reasoningTurnId,
+          idUser,
+          model,
+          channelAddress,
+          tools,
+          policy.targetTokens,
+        );
+        const turns = this.limitSummaryBatch(
+          chat,
+          requiredTurns,
+          idUser,
+          model,
+          channelAddress,
+          Math.floor(policy.hardInputTokens * summaryInputRatio),
+        );
+        await this.compactChat(chat, turns, model);
+      } catch (error) {
+        if (requestTokens <= policy.hardInputTokens) return messages;
+        throw error;
+      }
+      messages = this.toAiContextMessages(
         chat,
         chat.getModelMessages(reasoningTurnId),
       );
-      const requestTokens = this.aiChatGateway.estimateInputTokens({
+      requestTokens = this.estimateModelContext(
+        idUser,
+        model,
         channelAddress,
         messages,
         tools,
-        memory: chat.summary,
-      });
-      if (requestTokens <= inputBudget) return messages;
-      const turns = chat.getUncompactedTurns();
-      const protectedCount = Math.min(
-        this.aiConfig.minRecentTurns,
-        turns.length,
+        chat.summary,
       );
-      const oldestTurn = turns[0];
-      if (
-        !oldestTurn ||
-        turns.length <= protectedCount ||
-        !Chat.isTurnComplete(oldestTurn)
-      ) {
-        break;
-      }
-      await this.compactChat(chat, [oldestTurn]);
     }
+    if (requestTokens <= policy.hardInputTokens) return messages;
     throw new ValidationException(
-      "The protected recent turns exceed the configured AI context budget",
-      "Use a model with a larger context window or reduce AI_MIN_RECENT_TURNS.",
+      "The protected recent turns exceed the model context budget",
+      "Choose a model with a larger context window.",
     );
   }
 
-  private async compactChat(chat: Chat, turns: Message[][]): Promise<void> {
+  private selectTurnsForCompaction(
+    chat: Chat,
+    compactableTurns: Message[][],
+    reasoningTurnId: string,
+    idUser: string,
+    model: AiModelSelectionDTO,
+    channelAddress: string,
+    tools: AiToolDefinitionDTO[],
+    targetTokens: number,
+  ): Message[][] {
+    const modelMessages = chat.getModelMessages(reasoningTurnId);
+    let first = 0;
+    let last = compactableTurns.length - 1;
+    let selectedCount = compactableTurns.length;
+    while (first <= last) {
+      const middle = Math.floor((first + last) / 2);
+      const turn = compactableTurns[middle];
+      const cursor = turn?.[turn.length - 1]?.sequence;
+      if (cursor === undefined) {
+        throw new ValidationException(
+          "Cannot compact messages without a persisted sequence",
+        );
+      }
+      const remaining = this.toAiContextMessages(
+        chat,
+        modelMessages.filter(
+          (message) =>
+            message.sequence === undefined || message.sequence > cursor,
+        ),
+      );
+      const estimate = this.estimateModelContext(
+        idUser,
+        model,
+        channelAddress,
+        remaining,
+        tools,
+        chat.summary,
+      );
+      if (estimate <= targetTokens) {
+        selectedCount = middle + 1;
+        last = middle - 1;
+      } else {
+        first = middle + 1;
+      }
+    }
+    return compactableTurns.slice(0, selectedCount);
+  }
+
+  private limitSummaryBatch(
+    chat: Chat,
+    turns: Message[][],
+    idUser: string,
+    model: AiModelSelectionDTO,
+    channelAddress: string,
+    summaryInputTokens: number,
+  ): Message[][] {
+    let first = 0;
+    let last = turns.length - 1;
+    let selectedCount = 0;
+    while (first <= last) {
+      const middle = Math.floor((first + last) / 2);
+      const messages = this.toAiContextMessages(
+        chat,
+        turns.slice(0, middle + 1).flat(),
+      );
+      const estimate = this.estimateModelContext(
+        idUser,
+        model,
+        channelAddress,
+        messages,
+        [],
+        chat.summary,
+      );
+      if (estimate <= summaryInputTokens) {
+        selectedCount = middle + 1;
+        first = middle + 1;
+      } else {
+        last = middle - 1;
+      }
+    }
+    if (selectedCount === 0) {
+      throw new ValidationException(
+        "A completed turn is too large to compact safely",
+        "Choose a model with a larger context window.",
+      );
+    }
+    return turns.slice(0, selectedCount);
+  }
+
+  private estimateModelContext(
+    idUser: string,
+    model: AiModelSelectionDTO,
+    channelAddress: string,
+    messages: AiChatContextMessageDTO[],
+    tools: AiToolDefinitionDTO[],
+    memory?: ConversationSummary,
+  ): number {
+    return this.aiChatGateway.estimateInputTokens({
+      idUser,
+      model,
+      channelAddress,
+      messages,
+      tools,
+      memory,
+    });
+  }
+
+  private async compactChat(
+    chat: Chat,
+    turns: Message[][],
+    model: AiModelSelectionDTO,
+  ): Promise<void> {
+    if (!chat.idUser) {
+      throw new UnauthorizedException("Authenticated user is required");
+    }
+    const idUser = chat.idUser;
     const messages = turns.flat();
     const lastMessage = messages[messages.length - 1];
     if (lastMessage?.sequence === undefined) {
@@ -755,6 +1066,8 @@ export class MessagingService {
     const previousSummary = chat.summary;
     const previousUpdatedAt = chat.updatedAt;
     const candidate = await this.aiChatGateway.generateSummary(
+      idUser,
+      model,
       this.toAiContextMessages(chat, messages),
       previousSummary,
     );

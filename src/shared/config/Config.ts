@@ -12,18 +12,18 @@ export const deploymentConfigSchema = z.object({
 });
 export type DeploymentConfig = z.infer<typeof deploymentConfigSchema>;
 
-const googleCredentialEncryptionKeySchema = z
+const credentialEncryptionKeySchema = z
   .base64()
   .refine(
     (value) => Buffer.from(value, "base64").length === 32,
-    "The Google credential encryption key must decode to exactly 32 bytes",
+    "The credential encryption key must decode to exactly 32 bytes",
   );
 
-export const googleCredentialEncryptionConfigSchema = z.object({
-  key: googleCredentialEncryptionKeySchema,
+export const credentialEncryptionConfigSchema = z.object({
+  key: credentialEncryptionKeySchema,
 });
-export type GoogleCredentialEncryptionConfig = z.infer<
-  typeof googleCredentialEncryptionConfigSchema
+export type CredentialEncryptionConfig = z.infer<
+  typeof credentialEncryptionConfigSchema
 >;
 
 export const googleConfigSchema = z.object({
@@ -67,13 +67,9 @@ export const r2ConfigSchema = z.object({
 export type R2Config = z.infer<typeof r2ConfigSchema>;
 
 export const aiConfigSchema = z.object({
-  provider: z.enum(["openai", "anthropic", "zai"]),
-  apiKey: z.string().min(1),
+  provider: z.string().min(1),
+  apiKey: z.string().min(1).optional(),
   model: z.string().min(1),
-  maxOutputTokens: z.coerce.number().int().positive(),
-  safetyMarginTokens: z.coerce.number().int().nonnegative(),
-  minRecentTurns: z.coerce.number().int().positive(),
-  maxToolRounds: z.coerce.number().int().positive(),
 });
 export type AiConfig = z.infer<typeof aiConfigSchema>;
 
@@ -102,7 +98,7 @@ export type JwtConfig = z.infer<typeof jwtConfigSchema>;
 export const configSchema = z.object({
   database: databaseConfigSchema,
   deployment: deploymentConfigSchema,
-  googleCredentialEncryption: googleCredentialEncryptionConfigSchema,
+  credentialEncryption: credentialEncryptionConfigSchema,
   google: googleConfigSchema,
   whatsApp: whatsAppConfigSchema,
   r2: r2ConfigSchema,
@@ -126,8 +122,8 @@ export function loadConfig(): Config {
     deployment: {
       commitSha: process.env.VERCEL_GIT_COMMIT_SHA,
     },
-    googleCredentialEncryption: {
-      key: process.env.GOOGLE_CREDENTIAL_ENCRYPTION_KEY,
+    credentialEncryption: {
+      key: process.env.CREDENTIAL_ENCRYPTION_KEY,
     },
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID,
@@ -167,10 +163,6 @@ export function loadConfig(): Config {
       provider: process.env.AI_PROVIDER,
       apiKey: process.env.AI_API_KEY,
       model: process.env.AI_MODEL,
-      maxOutputTokens: process.env.AI_MAX_OUTPUT_TOKENS,
-      safetyMarginTokens: process.env.AI_CONTEXT_SAFETY_MARGIN_TOKENS,
-      minRecentTurns: process.env.AI_MIN_RECENT_TURNS,
-      maxToolRounds: process.env.AI_MAX_TOOL_ROUNDS,
     },
     openAi: {
       apiKey: process.env.OPENAI_API_KEY,

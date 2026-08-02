@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { ChatScreen } from "~/modules/chat/client/screens/ChatScreen";
@@ -35,6 +35,14 @@ const chatState = vi.hoisted(() => ({
         }>;
       }
     | undefined,
+  currentModel: {
+    provider: "openai-codex",
+    model: "gpt-5.6-sol",
+  },
+  availableModels: [
+    { provider: "openai-codex", model: "gpt-5.6-sol" },
+    { provider: "zai-coding-cn", model: "glm-5.2" },
+  ],
   reasoningEffort: "high",
   supportedReasoningEfforts: ["off", "low", "medium", "high", "max"],
   chatError: undefined,
@@ -53,6 +61,7 @@ const chatState = vi.hoisted(() => ({
   syncAudioInputs: vi.fn(),
   selectAudioInput: vi.fn(),
   sendChatInput: vi.fn(),
+  setModel: vi.fn(),
   setReasoningEffort: vi.fn(),
   sendButtonReply: vi.fn(),
   startRecording: vi.fn(),
@@ -118,6 +127,8 @@ describe("ChatScreen", () => {
   beforeEach(() => {
     chatState.chatInput = "";
     chatState.chatResponseProgress = undefined;
+    chatState.isChatSubmitting = true;
+    chatState.setModel.mockClear();
     virtualizerHarness.options = undefined;
     virtualizerHarness.measure.mockClear();
     virtualizerHarness.measureElement.mockClear();
@@ -152,5 +163,19 @@ describe("ChatScreen", () => {
     expect(virtualizerHarness.options?.getItemKey(1)).toBe(
       "assistant-progress",
     );
+  });
+
+  test("changes models from the accessible composer picker", () => {
+    chatState.isChatSubmitting = false;
+    render(<ChatScreen />);
+
+    fireEvent.change(screen.getByLabelText("AI model"), {
+      target: { value: "zai-coding-cn/glm-5.2" },
+    });
+
+    expect(chatState.setModel).toHaveBeenCalledWith({
+      provider: "zai-coding-cn",
+      model: "glm-5.2",
+    });
   });
 });

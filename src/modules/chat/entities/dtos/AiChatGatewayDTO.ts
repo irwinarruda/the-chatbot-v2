@@ -15,6 +15,17 @@ export interface AiToolDefinitionDTO {
   inputSchema: z.ZodType;
 }
 
+export interface AiModelSelectionDTO {
+  provider: string;
+  model: string;
+}
+
+export interface AiModelConfigurationDTO {
+  currentModel: AiModelSelectionDTO;
+  availableModels: AiModelSelectionDTO[];
+  supportedReasoningEfforts: ReasoningEffort[];
+}
+
 export interface AiChatContextMessageDTO {
   role: MessageRole;
   content: MessageContent;
@@ -36,6 +47,8 @@ export interface AiGenerationContextDTO {
 }
 
 export interface AiCompletionRequestDTO {
+  idUser: string;
+  model: AiModelSelectionDTO;
   channelAddress: string;
   messages: AiChatContextMessageDTO[];
   tools: AiToolDefinitionDTO[];
@@ -82,6 +95,8 @@ export type AiCompletionProgressDTO =
     };
 
 export interface AiInputEstimateRequestDTO {
+  idUser: string;
+  model: AiModelSelectionDTO;
   channelAddress: string;
   messages: AiChatContextMessageDTO[];
   tools: AiToolDefinitionDTO[];

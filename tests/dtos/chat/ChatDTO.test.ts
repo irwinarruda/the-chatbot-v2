@@ -8,6 +8,7 @@ import {
   toChatMessagesResponse,
 } from "~/modules/chat/contracts/ChatContractMapper";
 import { Chat } from "~/modules/chat/entities/Chat";
+import type { AiModelConfigurationDTO } from "~/modules/chat/entities/dtos/AiChatGatewayDTO";
 import {
   SendWebMessageRequestDTO,
   WebChatResponseEventDTO,
@@ -18,6 +19,23 @@ import { MessageContentType } from "~/modules/chat/entities/enums/MessageContent
 import { ReasoningEffort } from "~/modules/chat/entities/enums/ReasoningEffort";
 import { ToolResultStatus } from "~/modules/chat/entities/enums/ToolResultStatus";
 import { Printable } from "~/shared/http/utils/Printable";
+
+function createModelConfiguration(
+  supportedReasoningEfforts: ReasoningEffort[],
+): AiModelConfigurationDTO {
+  const currentModel = {
+    provider: "openai-codex",
+    model: "gpt-5.6-sol",
+  };
+  return {
+    currentModel,
+    availableModels: [
+      currentModel,
+      { provider: "zai-coding-cn", model: "glm-5.2" },
+    ],
+    supportedReasoningEfforts,
+  };
+}
 
 describe("Chat contracts", () => {
   test("serialized API messages are mapped to the client contract", () => {
@@ -79,15 +97,23 @@ describe("Chat contracts", () => {
     const chat = new Chat();
     const message = chat.addAssistantTextMessage("done");
     message.sequence = 7;
-    const response = toChatMessagesResponse(chat, [
-      ReasoningEffort.Off,
-      ReasoningEffort.High,
-    ]);
+    const response = toChatMessagesResponse(
+      chat,
+      createModelConfiguration([ReasoningEffort.Off, ReasoningEffort.High]),
+    );
     const wireResponse = JSON.parse(Printable.make(response));
 
     const messages = parseChatMessages(wireResponse);
 
     expect(wireResponse).toMatchObject({
+      current_model: {
+        provider: "openai-codex",
+        model: "gpt-5.6-sol",
+      },
+      available_models: [
+        { provider: "openai-codex", model: "gpt-5.6-sol" },
+        { provider: "zai-coding-cn", model: "glm-5.2" },
+      ],
       messages: [{ id: message.id, user_type: "bot" }],
     });
     expect(messages).toEqual([
@@ -142,10 +168,10 @@ describe("Chat contracts", () => {
     answer.sequence = 4;
     generation.sequence = 1;
 
-    const response = toChatMessagesResponse(chat, [
-      ReasoningEffort.Off,
-      ReasoningEffort.High,
-    ]);
+    const response = toChatMessagesResponse(
+      chat,
+      createModelConfiguration([ReasoningEffort.Off, ReasoningEffort.High]),
+    );
     const parsed = parseChatMessages(JSON.parse(Printable.make(response)));
 
     expect(parsed.at(-1)?.trace).toEqual([
@@ -208,7 +234,10 @@ describe("Chat contracts", () => {
     fallback.sequence = 5;
     generation.sequence = 1;
 
-    const response = toChatMessagesResponse(chat, [ReasoningEffort.High]);
+    const response = toChatMessagesResponse(
+      chat,
+      createModelConfiguration([ReasoningEffort.High]),
+    );
     const parsed = parseChatMessages(JSON.parse(Printable.make(response)));
 
     expect(parsed.at(-1)).toMatchObject({

@@ -8,6 +8,7 @@ import {
 } from "~/modules/chat/client/services/webChatService";
 import { createChatProgressBatcher } from "~/modules/chat/client/state/createChatProgressBatcher";
 import type {
+  AiModelSelectionResponseDTO,
   ChatMessageDTO,
   WebChatDTO,
 } from "~/modules/chat/entities/dtos/ChatDTO";
@@ -15,6 +16,7 @@ import {
   ReasoningEffort,
   type ReasoningEffort as ReasoningEffortType,
 } from "~/modules/chat/entities/enums/ReasoningEffort";
+import { toAiModelLocator } from "~/modules/chat/utils/AiModelLocator";
 import type { CurrentUserDTO } from "~/modules/identity/entities/dtos/IdentityDTO";
 
 export type ChatErrorCode = "loading" | "sending" | "microphone";
@@ -24,6 +26,8 @@ export type ChatSlice = {
   chatMessages: ChatMessageDTO[];
   chatInput: string;
   chatResponseProgress?: ChatResponseProgressDTO;
+  currentModel?: AiModelSelectionResponseDTO;
+  availableModels: AiModelSelectionResponseDTO[];
   reasoningEffort: ReasoningEffortType;
   supportedReasoningEfforts: ReasoningEffortType[];
   chatError?: ChatErrorCode;
@@ -40,6 +44,7 @@ export type ChatSlice = {
   >;
   refreshChat: () => Promise<void>;
   sendChatInput: () => Promise<void>;
+  setModel: (model: AiModelSelectionResponseDTO) => Promise<void>;
   setReasoningEffort: (effort: ReasoningEffortType) => Promise<void>;
   sendButtonReply: (buttonReply: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -58,6 +63,8 @@ export function createChatSlice(
       set({
         chatMessages: chat.messages,
         chatResponseProgress: undefined,
+        currentModel: chat.currentModel,
+        availableModels: chat.availableModels,
         reasoningEffort: chat.reasoningEffort,
         supportedReasoningEfforts: chat.supportedReasoningEfforts,
       });
@@ -108,6 +115,8 @@ export function createChatSlice(
       chatMessages: [],
       chatInput: "",
       chatResponseProgress: undefined,
+      currentModel: undefined,
+      availableModels: [],
       reasoningEffort: ReasoningEffort.Off,
       supportedReasoningEfforts: [ReasoningEffort.Off],
       chatError: undefined,
@@ -162,6 +171,21 @@ export function createChatSlice(
         if (!text || isChatSubmitting) return;
         await sendTextMessage(text, "text", true);
       },
+      async setModel(model) {
+        const { currentModel, isChatSubmitting } = get();
+        if (
+          (currentModel?.provider === model.provider &&
+            currentModel.model === model.model) ||
+          isChatSubmitting
+        ) {
+          return;
+        }
+        await sendTextMessage(
+          `/model ${toAiModelLocator(model)}`,
+          "command",
+          false,
+        );
+      },
       async setReasoningEffort(effort) {
         const { reasoningEffort, isChatSubmitting } = get();
         if (effort === reasoningEffort || isChatSubmitting) return;
@@ -208,6 +232,8 @@ export function createChatSlice(
           chatMessages: [],
           chatInput: "",
           chatResponseProgress: undefined,
+          currentModel: undefined,
+          availableModels: [],
           reasoningEffort: ReasoningEffort.Off,
           supportedReasoningEfforts: [ReasoningEffort.Off],
           chatError: undefined,

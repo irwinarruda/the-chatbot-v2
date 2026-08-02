@@ -21,7 +21,9 @@ export const Route = createFileRoute("/api/v1/web/messages")({
         return Http.json(
           toChatMessagesResponse(
             chat,
-            messagingService.getSupportedReasoningEfforts(),
+            await messagingService.getModelConfiguration(
+              context.webAuth.userId,
+            ),
           ),
         );
       },

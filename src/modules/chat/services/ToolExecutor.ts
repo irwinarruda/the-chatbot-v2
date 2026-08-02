@@ -7,12 +7,16 @@ import type {
   ToolCallContent,
   ToolResultContent,
 } from "~/modules/chat/entities/Message";
-import type { AiToolDefinitionDTO } from "~/modules/chat/gateway/AiChatGateway";
+import type {
+  AiModelSelectionDTO,
+  AiToolDefinitionDTO,
+} from "~/modules/chat/gateway/AiChatGateway";
 import { AppError } from "~/shared/errors/ApplicationErrors";
 
 export interface AiToolContext {
   chat: Chat;
   sourceMessage: Message;
+  model?: AiModelSelectionDTO;
 }
 
 export interface RegisteredTool extends AiToolDefinitionDTO {

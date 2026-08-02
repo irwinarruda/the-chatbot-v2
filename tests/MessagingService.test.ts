@@ -11,6 +11,7 @@ import { Message } from "~/modules/chat/entities/Message";
 import type { AiChatContextMessageDTO } from "~/modules/chat/gateway/AiChatGateway";
 import { TestWhatsAppMessagingGateway } from "~/modules/chat/gateway/WhatsAppMessagingGateway/TestWhatsAppMessagingGateway";
 import type { AiToolService } from "~/modules/chat/services/AiToolService";
+import { createAiContextCompactionPolicy } from "~/modules/chat/utils/AiContextCompactionPolicy";
 import { MessageLocale } from "~/modules/chat/utils/MessageLoader";
 import { User } from "~/modules/identity/entities/User";
 import { UnauthorizedException } from "~/shared/errors/ApplicationErrors";
@@ -26,6 +27,8 @@ function estimateCurrentRequest(chat: Chat, channelAddress: string): number {
   const tools = orquestrator.aiToolService.getDefinitions();
   const gateway = orquestrator.aiGateway;
   return gateway.estimateInputTokens({
+    idUser: chat.idUser ?? chat.id,
+    model: gateway.getDefaultModel(),
     channelAddress,
     messages: chat.getModelMessages().map((message) => {
       const contextMessage: AiChatContextMessageDTO = {
@@ -53,6 +56,46 @@ function estimateCurrentRequest(chat: Chat, channelAddress: string): number {
     tools,
     memory: chat.summary,
   });
+}
+
+function contextWindowForCompaction(
+  requestTokens: number,
+  maxOutputTokens: number,
+): number {
+  const contextWindowTokens = Math.ceil(
+    (requestTokens * 1.5 + maxOutputTokens) / 0.9,
+  );
+  const policy = createAiContextCompactionPolicy(
+    contextWindowTokens,
+    maxOutputTokens,
+  );
+  if (
+    requestTokens > policy.hardInputTokens ||
+    requestTokens <= policy.triggerTokens
+  ) {
+    throw new Error("Could not create a proactive compaction test budget");
+  }
+  return contextWindowTokens;
+}
+
+function contextWindowForMandatoryCompaction(
+  requestTokens: number,
+  maxOutputTokens: number,
+): number {
+  const contextWindowTokens = Math.ceil(
+    (requestTokens * 0.9 + maxOutputTokens) / 0.9,
+  );
+  const policy = createAiContextCompactionPolicy(
+    contextWindowTokens,
+    maxOutputTokens,
+  );
+  if (
+    requestTokens <= policy.hardInputTokens ||
+    requestTokens <= policy.triggerTokens
+  ) {
+    throw new Error("Could not create a mandatory compaction test budget");
+  }
+  return contextWindowTokens;
 }
 
 const delay = 10;
@@ -216,7 +259,7 @@ describe("MessagingService", () => {
     expect(chat?.getModelMessages().length).toBe(20);
   });
 
-  test("compaction triggers before the request when the budget is exceeded", async () => {
+  test("compaction batches old turns before the hard budget is reached", async () => {
     await orquestrator.clearDatabase();
     const phoneNumber = TestWhatsAppMessagingGateway.phoneNumber;
     await orquestrator.addAllowedNumber(phoneNumber);
@@ -231,14 +274,13 @@ describe("MessagingService", () => {
     let chat =
       await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber);
     expect(chat).toBeDefined();
-    const config = orquestrator.aiConfig;
     const aiGateway = orquestrator.aiGateway;
     const originalContextWindowTokens = aiGateway.contextWindowTokens;
-    aiGateway.contextWindowTokens =
-      config.maxOutputTokens +
-      config.safetyMarginTokens +
-      estimateCurrentRequest(chat as Chat, phoneNumber) -
-      50;
+    const initialSummaryCalls = aiGateway.summaryCalls;
+    aiGateway.contextWindowTokens = contextWindowForCompaction(
+      estimateCurrentRequest(chat as Chat, phoneNumber),
+      aiGateway.maxOutputTokens,
+    );
     try {
       await orquestrator.messagingService.receiveWhatsAppMessage(
         createReceiveMessage("Message over budget"),
@@ -252,8 +294,16 @@ describe("MessagingService", () => {
       expect(chat?.summary?.durableFacts).toEqual([]);
       expect(chat?.summary).toBeInstanceOf(ConversationSummary);
       expect(chat?.summary?.compactedThroughSequence).toBeGreaterThan(0);
+      expect(aiGateway.summaryCalls - initialSummaryCalls).toBe(1);
+      expect(aiGateway.summaryRequests.at(-1)).toHaveLength(8);
       expect(chat?.messages.length).toBe(22);
-      expect(chat?.getModelMessages().length).toBeLessThan(22);
+      const modelMessageTexts = chat
+        ?.getModelMessages()
+        .map((item) => item.text);
+      expect(modelMessageTexts).not.toContain("Message 0");
+      expect(modelMessageTexts).not.toContain("Message 3");
+      expect(modelMessageTexts).toContain("Message 4");
+      expect(modelMessageTexts).toContain("Message 9");
       const lastMessage = chat?.messages[chat.messages.length - 1];
       expect(lastMessage?.text).toBe("Response to: Message over budget");
     } finally {
@@ -261,7 +311,7 @@ describe("MessagingService", () => {
     }
   });
 
-  test("a malformed summary stops the request without truncating history", async () => {
+  test("proactive compaction failure falls back without truncating history", async () => {
     await orquestrator.clearDatabase();
     const phoneNumber = TestWhatsAppMessagingGateway.phoneNumber;
     await orquestrator.addAllowedNumber(phoneNumber);
@@ -276,13 +326,11 @@ describe("MessagingService", () => {
     let chat =
       await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber);
     const aiGateway = orquestrator.aiGateway;
-    const config = orquestrator.aiConfig;
     const originalContextWindowTokens = aiGateway.contextWindowTokens;
-    aiGateway.contextWindowTokens =
-      config.maxOutputTokens +
-      config.safetyMarginTokens +
-      estimateCurrentRequest(chat as Chat, phoneNumber) -
-      50;
+    aiGateway.contextWindowTokens = contextWindowForCompaction(
+      estimateCurrentRequest(chat as Chat, phoneNumber),
+      aiGateway.maxOutputTokens,
+    );
     aiGateway.summaryError = new ValidationException("malformed summary");
     const requestCount = aiGateway.requests.length;
     try {
@@ -295,6 +343,47 @@ describe("MessagingService", () => {
         await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber);
       expect(aiGateway.summaryCalls).toBeGreaterThan(0);
       expect(chat?.summary).toBeUndefined();
+      expect(aiGateway.requests).toHaveLength(requestCount + 1);
+      const lastMessage = chat?.messages[chat.messages.length - 1];
+      expect(lastMessage?.text).toBe("Response to: Message over budget");
+    } finally {
+      aiGateway.summaryError = undefined;
+      aiGateway.contextWindowTokens = originalContextWindowTokens;
+    }
+  });
+
+  test("mandatory compaction failure stops without truncating history", async () => {
+    await orquestrator.clearDatabase();
+    const phoneNumber = TestWhatsAppMessagingGateway.phoneNumber;
+    await orquestrator.addAllowedNumber(phoneNumber);
+    await orquestrator.createUser({ phoneNumber });
+    for (let i = 0; i < 10; i++) {
+      await orquestrator.messagingService.receiveWhatsAppMessage(
+        createReceiveMessage(`Message ${i}`),
+        "sig",
+      );
+      await new Promise((r) => setTimeout(r, delay));
+    }
+    let chat =
+      await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber);
+    const aiGateway = orquestrator.aiGateway;
+    const originalContextWindowTokens = aiGateway.contextWindowTokens;
+    aiGateway.contextWindowTokens = contextWindowForMandatoryCompaction(
+      estimateCurrentRequest(chat as Chat, phoneNumber),
+      aiGateway.maxOutputTokens,
+    );
+    aiGateway.summaryError = new ValidationException("malformed summary");
+    const requestCount = aiGateway.requests.length;
+    try {
+      await orquestrator.messagingService.receiveWhatsAppMessage(
+        createReceiveMessage("Message over hard budget"),
+        "sig",
+      );
+      await new Promise((r) => setTimeout(r, delay * 5));
+      chat =
+        await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber);
+      expect(chat?.summary).toBeUndefined();
+      expect(chat?.messages).toHaveLength(22);
       expect(aiGateway.requests).toHaveLength(requestCount);
       const lastMessage = chat?.messages[chat.messages.length - 1];
       expect(lastMessage?.text).toContain("malformed summary");
@@ -478,6 +567,83 @@ describe("MessagingService", () => {
     );
     expect(chat?.messages[1]?.text).toContain("Current reasoning effort");
     expect(chat?.messages[1]?.text).toContain("Available");
+  });
+
+  test("model commands persist a user selection without invoking AI", async () => {
+    await orquestrator.clearDatabase();
+    const aiGateway = orquestrator.aiGateway;
+    const defaultModels = aiGateway.availableModels;
+    const defaultEfforts = aiGateway.supportedReasoningEffortsByModel;
+    const codexModel = { provider: "openai-codex", model: "codex-test" };
+    aiGateway.availableModels = [aiGateway.getDefaultModel(), codexModel];
+    aiGateway.supportedReasoningEffortsByModel = new Map([
+      ["openai-codex/codex-test", [ReasoningEffort.Off]],
+    ]);
+    try {
+      const user = await orquestrator.createUser({
+        phoneNumber: "5511912345678",
+      });
+      const webAddress = user.email ?? "";
+      const initialRequestCount = aiGateway.requests.length;
+
+      await orquestrator.messagingService.receiveWebMessage(webAddress, {
+        text: "/effort high",
+      });
+      await orquestrator.messagingService.receiveWebMessage(
+        webAddress,
+        { text: "/model" },
+        undefined,
+        MessageLocale.En,
+      );
+      await orquestrator.messagingService.receiveWebMessage(
+        webAddress,
+        { text: "/model missing/nope" },
+        undefined,
+        MessageLocale.En,
+      );
+      await orquestrator.messagingService.receiveWebMessage(
+        webAddress,
+        { text: "/model openai-codex/codex-test" },
+        undefined,
+        MessageLocale.En,
+      );
+
+      let chat = await orquestrator.messagingService.getChatByChannelAddress(
+        webAddress,
+        ChatChannel.Web,
+      );
+      expect(aiGateway.requests).toHaveLength(initialRequestCount);
+      expect(chat?.reasoningEffort).toBe(ReasoningEffort.Off);
+      expect(chat?.getModelMessages()).toHaveLength(0);
+      expect(chat?.messages.at(-1)?.text).toContain(
+        "Model set to openai-codex/codex-test",
+      );
+      expect(chat?.messages.at(-1)?.text).toContain("reset to off");
+      const [preference] = await orquestrator.database.sql<
+        Array<{ provider_id: string; model_id: string }>
+      >`
+        SELECT provider_id, model_id
+        FROM ai_model_preferences
+        WHERE id_user = ${user.id}
+      `;
+      expect(preference).toEqual({
+        provider_id: "openai-codex",
+        model_id: "codex-test",
+      });
+
+      await orquestrator.messagingService.receiveWebMessage(webAddress, {
+        text: "Use the selected model",
+      });
+      expect(aiGateway.requests.at(-1)?.model).toEqual(codexModel);
+      chat = await orquestrator.messagingService.getChatByChannelAddress(
+        webAddress,
+        ChatChannel.Web,
+      );
+      expect(chat?.generations.at(-1)).toMatchObject(codexModel);
+    } finally {
+      aiGateway.availableModels = defaultModels;
+      aiGateway.supportedReasoningEffortsByModel = defaultEfforts;
+    }
   });
 
   test("receiveWebMessage with buttonReply routes through web gateway", async () => {
@@ -1192,9 +1358,9 @@ describe("MessagingService", () => {
     });
     const webAddress = user.email ?? "";
     const aiGateway = orquestrator.aiGateway;
-    const maxToolRounds = orquestrator.aiConfig.maxToolRounds;
+    const expectedMaximumToolRounds = 8;
     aiGateway.scriptedResponses = Array.from(
-      { length: maxToolRounds + 2 },
+      { length: expectedMaximumToolRounds + 2 },
       (_, i) => ({
         toolCalls: [
           {
@@ -1220,7 +1386,7 @@ describe("MessagingService", () => {
     const toolCallCount = chat?.messages.filter(
       (m) => m.content.type === MessageContentType.ToolCall,
     ).length;
-    expect(toolCallCount).toBe(maxToolRounds);
+    expect(toolCallCount).toBe(expectedMaximumToolRounds);
     const lastMessage = chat?.messages[chat.messages.length - 1];
     expect(lastMessage?.role).toBe(MessageRole.Assistant);
     expect(lastMessage?.text).toContain("limite de operações");

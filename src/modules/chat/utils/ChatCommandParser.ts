@@ -1,18 +1,45 @@
-export interface ParsedChatCommand {
+interface ParsedEffortChatCommand {
   raw: string;
-  name: string;
+  name: "effort";
   arguments: Record<string, string>;
 }
 
+interface ParsedModelChatCommand {
+  raw: string;
+  name: "model";
+  arguments: Record<string, string>;
+}
+
+export type ParsedChatCommand =
+  | ParsedEffortChatCommand
+  | ParsedModelChatCommand;
+
 export function parseChatCommand(text: string): ParsedChatCommand | undefined {
-  const match = /^\/effort(?:\s+(\S+))?\s*$/i.exec(text.trim());
-  if (!match) return undefined;
-  const level = match[1]?.toLowerCase();
+  const raw = text.trim();
+  const effortMatch = /^\/effort(?:\s+(\S+))?\s*$/i.exec(raw);
+  if (effortMatch) {
+    const level = effortMatch[1]?.toLowerCase();
+    const commandArguments: Record<string, string> = {};
+    if (level) commandArguments.level = level;
+    return { raw, name: "effort", arguments: commandArguments };
+  }
+  const modelMatch = /^\/model(?:\s+([\s\S]*))?$/i.exec(raw);
+  if (!modelMatch) return undefined;
+  const locator = modelMatch[1]?.trim();
   const commandArguments: Record<string, string> = {};
-  if (level) commandArguments.level = level;
-  return {
-    raw: text.trim(),
-    name: "effort",
-    arguments: commandArguments,
-  };
+  if (!locator) {
+    return { raw, name: "model", arguments: commandArguments };
+  }
+  commandArguments.locator = locator;
+  const locatorMatch = /^([^/\s]+)\/(\S+)$/.exec(locator);
+  if (locatorMatch) {
+    const provider = locatorMatch[1]?.toLowerCase();
+    const model = locatorMatch[2];
+    if (provider && model) {
+      commandArguments.provider = provider;
+      commandArguments.model = model;
+      commandArguments.locator = `${provider}/${model}`;
+    }
+  }
+  return { raw, name: "model", arguments: commandArguments };
 }

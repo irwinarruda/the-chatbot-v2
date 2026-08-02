@@ -14,6 +14,8 @@ loadModeEnv(mode, root);
 const config = loadConfig();
 const gateway = new PiAiChatGateway(config.ai);
 const response = await gateway.complete({
+  idUser: "pi-smoke-test",
+  model: gateway.getDefaultModel(),
   channelAddress: "pi-smoke-test",
   messages: [
     {

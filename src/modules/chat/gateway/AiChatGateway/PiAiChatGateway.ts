@@ -1,14 +1,11 @@
 import {
-  createModels,
   getSupportedThinkingLevels,
   type Model,
   type MutableModels,
   type SimpleStreamOptions,
   Type,
 } from "@earendil-works/pi-ai";
-import { anthropicProvider } from "@earendil-works/pi-ai/providers/anthropic";
-import { openaiProvider } from "@earendil-works/pi-ai/providers/openai";
-import { zaiProvider } from "@earendil-works/pi-ai/providers/zai";
+import { builtinModels } from "@earendil-works/pi-ai/providers/all";
 import { z } from "zod";
 import type { ConversationSummary } from "~/modules/chat/entities/ConversationSummary";
 import {
@@ -26,12 +23,14 @@ import type {
   AiCompletionRequestDTO,
   AiCompletionResponseDTO,
   AiInputEstimateRequestDTO,
+  AiModelSelectionDTO,
   AiSummaryCandidateDTO,
   AiToolDefinitionDTO,
 } from "~/modules/chat/gateway/AiChatGateway";
 import { mapPiAssistantProgress } from "~/modules/chat/gateway/AiChatGateway/mapPiAssistantProgress";
 import { mapPiAssistantResponse } from "~/modules/chat/gateway/AiChatGateway/mapPiAssistantResponse";
 import { PiMessageMapper } from "~/modules/chat/gateway/AiChatGateway/PiMessageMapper";
+import type { AiCredentialStore } from "~/modules/chat/gateway/AiCredentialStore";
 import { PromptLoader, PromptLocale } from "~/modules/chat/utils/PromptLoader";
 import type { AiConfig } from "~/shared/config/Config";
 import { ValidationException } from "~/shared/errors/DomainErrors";
@@ -51,40 +50,58 @@ const replyWithOptionsTool: AiToolDefinitionDTO = {
   inputSchema: ReplyWithOptionsToolDTO,
 };
 
+export interface AiCredentialStoreFactory {
+  create(idUser: string): AiCredentialStore;
+}
+
 export class PiAiChatGateway implements AiChatGateway {
-  private models: MutableModels;
-  private model: Model<any>;
+  constructor(
+    private config: AiConfig,
+    private credentialStores?: AiCredentialStoreFactory,
+  ) {
+    this.getModel(this.getDefaultModel());
+  }
 
-  constructor(private config: AiConfig) {
-    this.models = createModels();
-    const provider = this.createProvider();
-    this.models.setProvider(provider);
-    const model = this.models.getModel(provider.id, config.model);
-    if (!model) {
-      throw new ValidationException(
-        `Model ${config.model} is not available for provider ${provider.id}`,
-      );
+  getDefaultModel(): AiModelSelectionDTO {
+    return { provider: this.config.provider, model: this.config.model };
+  }
+
+  async getAvailableModels(idUser: string): Promise<AiModelSelectionDTO[]> {
+    const credentials = this.credentialStores?.create(idUser);
+    const models = this.createModels(credentials);
+    const providerIds = new Set<string>([this.config.provider]);
+    for (const credential of (await credentials?.list()) ?? []) {
+      providerIds.add(credential.providerId);
     }
-    this.model = { ...model, maxTokens: config.maxOutputTokens };
+    const available: AiModelSelectionDTO[] = [];
+    for (const providerId of providerIds) {
+      for (const model of await models.getAvailable(providerId)) {
+        available.push({ provider: model.provider, model: model.id });
+      }
+    }
+    return available.sort((left, right) =>
+      `${left.provider}/${left.model}`.localeCompare(
+        `${right.provider}/${right.model}`,
+      ),
+    );
   }
 
-  private createProvider() {
-    if (this.config.provider === "openai") return openaiProvider();
-    if (this.config.provider === "anthropic") return anthropicProvider();
-    return zaiProvider();
+  getContextWindowTokens(selection: AiModelSelectionDTO): number {
+    return this.getModel(selection).contextWindow;
   }
 
-  getContextWindowTokens(): number {
-    return this.model.contextWindow;
+  getMaxOutputTokens(selection: AiModelSelectionDTO): number {
+    return this.getModel(selection).maxTokens;
   }
 
-  getSupportedReasoningEfforts(): ReasoningEffortType[] {
-    const levels = getSupportedThinkingLevels(
-      this.model,
-    ) as ReasoningEffortType[];
+  getSupportedReasoningEfforts(
+    selection: AiModelSelectionDTO,
+  ): ReasoningEffortType[] {
+    const model = this.getModel(selection);
+    const levels = getSupportedThinkingLevels(model) as ReasoningEffortType[];
     const preferredLevels = new Map<string, ReasoningEffortType>();
     for (const level of levels) {
-      const providerLevel = this.getProviderReasoningLevel(level);
+      const providerLevel = this.getProviderReasoningLevel(model, level);
       const preferred = preferredLevels.get(providerLevel);
       if (!preferred || providerLevel === level) {
         preferredLevels.set(providerLevel, level);
@@ -92,7 +109,8 @@ export class PiAiChatGateway implements AiChatGateway {
     }
     return levels.filter(
       (level) =>
-        preferredLevels.get(this.getProviderReasoningLevel(level)) === level,
+        preferredLevels.get(this.getProviderReasoningLevel(model, level)) ===
+        level,
     );
   }
 
@@ -100,53 +118,63 @@ export class PiAiChatGateway implements AiChatGateway {
     request: AiCompletionRequestDTO,
     onProgress?: (progress: AiCompletionProgressDTO) => void,
   ): Promise<AiCompletionResponseDTO> {
+    const models = this.createModels(
+      this.credentialStores?.create(request.idUser),
+    );
+    const model = this.getModel(request.model, models);
     const systemPrompt = this.buildSystemPrompt(
       request.channelAddress,
       request.memory,
     );
-    const options: SimpleStreamOptions = {
-      apiKey: this.config.apiKey,
-      maxTokens: this.config.maxOutputTokens,
-    };
+    const options: SimpleStreamOptions = {};
+    if (request.model.provider === "openai-codex") {
+      options.transport = "sse";
+    }
     if (request.reasoningEffort !== ReasoningEffort.Off) {
       options.reasoning = request.reasoningEffort;
     }
-    const stream = this.models.streamSimple(
-      this.model,
-      {
-        systemPrompt,
-        messages: PiMessageMapper.map(request.messages, this.model),
-        tools: this.getToolDefinitions(request.tools).map((tool) => ({
-          name: tool.name,
-          description: tool.description,
-          parameters: Type.Unsafe(this.toJsonSchema(tool)),
-        })),
-      },
-      options,
-    );
-    for await (const event of stream) {
-      const progress = mapPiAssistantProgress(event);
-      if (progress) onProgress?.(progress);
-    }
-    const response = await stream.result();
-    if (response.stopReason === "error" || response.stopReason === "aborted") {
-      throw new Error(response.errorMessage ?? "The AI returned no response");
-    }
-    const mapped = mapPiAssistantResponse(response);
-    return {
-      ...mapped,
-      provider: response.provider,
-      model: response.model,
-      api: response.api,
-      responseModel: response.responseModel,
-      responseId: response.responseId,
-      finishReason: response.stopReason,
-      usage: response.usage,
-      diagnostics: response.diagnostics,
+    const context = {
+      systemPrompt,
+      messages: PiMessageMapper.map(request.messages, model),
+      tools: this.getToolDefinitions(request.tools).map((tool) => ({
+        name: tool.name,
+        description: tool.description,
+        parameters: Type.Unsafe(this.toJsonSchema(tool)),
+      })),
     };
+    try {
+      const stream = models.streamSimple(model, context, options);
+      for await (const event of stream) {
+        const progress = mapPiAssistantProgress(event);
+        if (progress) onProgress?.(progress);
+      }
+      const response = await stream.result();
+      if (
+        response.stopReason === "error" ||
+        response.stopReason === "aborted"
+      ) {
+        throw new Error(response.errorMessage ?? "Provider request failed");
+      }
+      const mapped = mapPiAssistantResponse(response);
+      return {
+        ...mapped,
+        provider: response.provider,
+        model: response.model,
+        api: response.api,
+        responseModel: response.responseModel,
+        responseId: response.responseId,
+        finishReason: response.stopReason,
+        usage: response.usage,
+        diagnostics: response.diagnostics,
+      };
+    } catch {
+      this.reportProviderFailure(request.model);
+      throw this.providerFailure(request.model.provider);
+    }
   }
 
   estimateInputTokens(request: AiInputEstimateRequestDTO): number {
+    const model = this.getModel(request.model);
     const systemPrompt = this.buildSystemPrompt(
       request.channelAddress,
       request.memory,
@@ -156,7 +184,7 @@ export class PiAiChatGateway implements AiChatGateway {
       description: tool.description,
       inputSchema: this.toJsonSchema(tool),
     }));
-    const messages = PiMessageMapper.map(request.messages, this.model).map(
+    const messages = PiMessageMapper.map(request.messages, model).map(
       (message) => ({
         role: message.role,
         content: message.content,
@@ -167,26 +195,49 @@ export class PiAiChatGateway implements AiChatGateway {
     );
   }
 
-  async generateText(systemPrompt: string, userText: string): Promise<string> {
-    const response = await this.models.completeSimple(
-      this.model,
-      {
-        systemPrompt,
-        messages: [{ role: "user", content: userText, timestamp: Date.now() }],
-      },
-      { apiKey: this.config.apiKey, maxTokens: this.config.maxOutputTokens },
-    );
-    if (response.stopReason === "error" || response.stopReason === "aborted") {
-      throw new Error(response.errorMessage ?? "Text generation failed");
+  async generateText(
+    idUser: string,
+    selection: AiModelSelectionDTO,
+    systemPrompt: string,
+    userText: string,
+  ): Promise<string> {
+    const models = this.createModels(this.credentialStores?.create(idUser));
+    const model = this.getModel(selection, models);
+    try {
+      const options: SimpleStreamOptions = {};
+      if (selection.provider === "openai-codex") {
+        options.transport = "sse";
+      }
+      const response = await models.completeSimple(
+        model,
+        {
+          systemPrompt,
+          messages: [
+            { role: "user", content: userText, timestamp: Date.now() },
+          ],
+        },
+        options,
+      );
+      if (
+        response.stopReason === "error" ||
+        response.stopReason === "aborted"
+      ) {
+        throw new Error(response.errorMessage ?? "Provider request failed");
+      }
+      return response.content
+        .filter((content) => content.type === "text")
+        .map((content) => content.text)
+        .join("\n\n")
+        .trim();
+    } catch {
+      this.reportProviderFailure(selection);
+      throw this.providerFailure(selection.provider);
     }
-    return response.content
-      .filter((content) => content.type === "text")
-      .map((content) => content.text)
-      .join("\n\n")
-      .trim();
   }
 
   async generateSummary(
+    idUser: string,
+    model: AiModelSelectionDTO,
     messages: AiChatContextMessageDTO[],
     existingSummary?: ConversationSummary,
   ): Promise<AiSummaryCandidateDTO> {
@@ -200,7 +251,12 @@ export class PiAiChatGateway implements AiChatGateway {
       PromptLocale.PtBr,
       existingSummaryText,
     );
-    const raw = await this.generateText(systemPrompt, JSON.stringify(messages));
+    const raw = await this.generateText(
+      idUser,
+      model,
+      systemPrompt,
+      JSON.stringify(messages),
+    );
     const jsonText = raw
       .replace(/^\s*```(?:json)?\s*/i, "")
       .replace(/\s*```\s*$/, "");
@@ -237,17 +293,69 @@ export class PiAiChatGateway implements AiChatGateway {
     return [...tools, replyWithOptionsTool];
   }
 
-  private getProviderReasoningLevel(level: ReasoningEffortType): string {
+  private getProviderReasoningLevel(
+    model: Model<any>,
+    level: ReasoningEffortType,
+  ): string {
     if (
-      this.model.api === "openai-completions" &&
-      this.model.compat &&
-      "supportsReasoningEffort" in this.model.compat &&
-      this.model.compat.supportsReasoningEffort === false
+      model.api === "openai-completions" &&
+      model.compat &&
+      "supportsReasoningEffort" in model.compat &&
+      model.compat.supportsReasoningEffort === false
     ) {
       if (level === ReasoningEffort.Off) return ReasoningEffort.Off;
       return "enabled";
     }
-    return this.model.thinkingLevelMap?.[level] ?? level;
+    return model.thinkingLevelMap?.[level] ?? level;
+  }
+
+  private createModels(credentials?: AiCredentialStore): MutableModels {
+    return builtinModels({
+      credentials,
+      authContext: {
+        env: async (name) => {
+          if (name !== this.defaultProviderEnvironmentName()) return undefined;
+          return this.config.apiKey;
+        },
+        fileExists: async () => false,
+      },
+    });
+  }
+
+  private getModel(
+    selection: AiModelSelectionDTO,
+    models: MutableModels = this.createModels(),
+  ): Model<any> {
+    const model = models.getModel(selection.provider, selection.model);
+    if (!model) {
+      throw new ValidationException(
+        `Model ${selection.model} is not available for provider ${selection.provider}`,
+      );
+    }
+    return model;
+  }
+
+  private defaultProviderEnvironmentName(): string | undefined {
+    const names: Record<string, string> = {
+      anthropic: "ANTHROPIC_API_KEY",
+      openai: "OPENAI_API_KEY",
+      zai: "ZAI_API_KEY",
+      "zai-coding-cn": "ZAI_CODING_CN_API_KEY",
+    };
+    return names[this.config.provider];
+  }
+
+  private providerFailure(provider: string): ValidationException {
+    return new ValidationException(
+      `The ${provider} provider could not complete the request`,
+      "Check or reconnect this provider credential, then try again.",
+    );
+  }
+
+  private reportProviderFailure(selection: AiModelSelectionDTO): void {
+    console.error(
+      `[AI provider failure] ${selection.provider}/${selection.model}: request_failed`,
+    );
   }
 
   private buildSystemPrompt(

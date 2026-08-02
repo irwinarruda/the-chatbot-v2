@@ -94,6 +94,8 @@
     "placeholder": "Type a message...",
     "audioInputLabel": "Microphone",
     "audioInputUnavailable": "Default microphone",
+    "modelLabel": "AI model",
+    "modelShort": "model",
     "reasoningEffortLabel": "Reasoning effort",
     "reasoningEffortShort": "effort",
     "traceShow": "Worked",

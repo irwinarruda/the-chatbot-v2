@@ -37,7 +37,7 @@ export function streamWebChatResponse(
             type: "snapshot",
             chat: toChatMessagesResponse(
               chat,
-              messagingService.getSupportedReasoningEfforts(),
+              await messagingService.getModelConfiguration(chat?.idUser),
             ),
           });
         } catch {

@@ -1,8 +1,8 @@
-import { googleCredentialEncryptionConfigSchema } from "~/shared/config/Config";
+import { credentialEncryptionConfigSchema } from "~/shared/config/Config";
 
 describe("GoogleCredentialEncryptionConfig", () => {
   test("accepts one base64-encoded 32-byte key", () => {
-    const result = googleCredentialEncryptionConfigSchema.safeParse({
+    const result = credentialEncryptionConfigSchema.safeParse({
       key: Buffer.alloc(32, 1).toString("base64"),
     });
 
@@ -10,10 +10,10 @@ describe("GoogleCredentialEncryptionConfig", () => {
   });
 
   test("rejects missing keys and invalid key lengths", () => {
-    const invalidLength = googleCredentialEncryptionConfigSchema.safeParse({
+    const invalidLength = credentialEncryptionConfigSchema.safeParse({
       key: Buffer.alloc(16).toString("base64"),
     });
-    const missingKey = googleCredentialEncryptionConfigSchema.safeParse({});
+    const missingKey = credentialEncryptionConfigSchema.safeParse({});
 
     expect(invalidLength.success).toBe(false);
     expect(missingKey.success).toBe(false);
