@@ -532,9 +532,12 @@ export function ChatScreen() {
               />
             </div>
 
-            <div className="mt-1 grid min-h-8 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 border-term-border/60 border-t pt-2 sm:flex sm:justify-between">
-              <div className="col-span-2 flex min-w-0 items-center gap-1 sm:col-span-1 sm:flex-1">
-                <Cpu aria-hidden="true" className="size-3 text-term-cyan" />
+            <div className="mt-1 flex min-h-8 min-w-0 items-center gap-1.5 border-term-border/60 border-t pt-2">
+              <div className="flex min-w-0 max-w-44 flex-1 items-center gap-1 md:max-w-56">
+                <Cpu
+                  aria-hidden="true"
+                  className="hidden size-3 text-term-cyan sm:block"
+                />
                 <Label
                   htmlFor="chat-model"
                   className="hidden font-mono text-term-muted text-xs md:inline"
@@ -544,7 +547,7 @@ export function ChatScreen() {
                 <NativeSelect
                   id="chat-model"
                   size="sm"
-                  className="min-w-0 flex-1 **:data-[slot=native-select-icon]:right-1.5 **:data-[slot=native-select-icon]:size-3 **:data-[slot=native-select-icon]:text-term-cyan sm:max-w-64 [&_[data-slot=native-select]]:h-11 pointer-fine:[&_[data-slot=native-select]]:h-7 [&_[data-slot=native-select]]:truncate [&_[data-slot=native-select]]:rounded-md [&_[data-slot=native-select]]:border-transparent [&_[data-slot=native-select]]:bg-term-cyan/8 [&_[data-slot=native-select]]:py-0.5 [&_[data-slot=native-select]]:pr-6 [&_[data-slot=native-select]]:pl-2 [&_[data-slot=native-select]]:font-mono [&_[data-slot=native-select]]:text-sm [&_[data-slot=native-select]]:text-term-cyan pointer-fine:[&_[data-slot=native-select]]:text-xs [&_[data-slot=native-select]]:transition-colors [&_[data-slot=native-select]]:hover:border-term-cyan/30 [&_[data-slot=native-select]]:hover:bg-term-cyan/12 [&_[data-slot=native-select]]:focus-visible:border-term-cyan/40 [&_[data-slot=native-select]]:focus-visible:ring-0"
+                  className="min-w-0 flex-1 **:data-[slot=native-select-icon]:right-1.5 **:data-[slot=native-select-icon]:size-3 **:data-[slot=native-select-icon]:text-term-cyan [&_[data-slot=native-select]]:h-11 pointer-fine:[&_[data-slot=native-select]]:h-7 [&_[data-slot=native-select]]:truncate [&_[data-slot=native-select]]:rounded-md [&_[data-slot=native-select]]:border-transparent [&_[data-slot=native-select]]:bg-term-cyan/8 [&_[data-slot=native-select]]:py-0.5 [&_[data-slot=native-select]]:pr-6 [&_[data-slot=native-select]]:pl-2 [&_[data-slot=native-select]]:font-mono [&_[data-slot=native-select]]:text-sm [&_[data-slot=native-select]]:text-term-cyan pointer-fine:[&_[data-slot=native-select]]:text-xs [&_[data-slot=native-select]]:transition-colors [&_[data-slot=native-select]]:hover:border-term-cyan/30 [&_[data-slot=native-select]]:hover:bg-term-cyan/12 [&_[data-slot=native-select]]:focus-visible:border-term-cyan/40 [&_[data-slot=native-select]]:focus-visible:ring-0"
                   value={currentModelLocator}
                   onChange={onModelChange}
                   disabled={isChatSubmitting || availableModels.length === 0}
@@ -554,7 +557,7 @@ export function ChatScreen() {
                     const locator = toAiModelLocator(model);
                     return (
                       <NativeSelectOption key={locator} value={locator}>
-                        {locator}
+                        {model.model}
                       </NativeSelectOption>
                     );
                   })}
@@ -563,7 +566,7 @@ export function ChatScreen() {
               <div className="flex shrink-0 items-center gap-1">
                 <BrainCircuit
                   aria-hidden="true"
-                  className="size-3 text-term-magenta"
+                  className="hidden size-3 text-term-magenta sm:block"
                 />
                 <Label
                   htmlFor="chat-reasoning-effort"
@@ -587,10 +590,10 @@ export function ChatScreen() {
                   ))}
                 </NativeSelect>
               </div>
-              <div className="flex min-w-0 items-center justify-end gap-1.5 sm:ml-auto">
+              <div className="ml-auto flex shrink-0 items-center justify-end gap-1.5">
                 <div
                   data-disabled={!canSelectAudioInput}
-                  className="relative w-24 min-w-0 data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 sm:w-44"
+                  className="relative hidden w-44 min-w-0 data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 sm:block"
                 >
                   <Label htmlFor="chat-audio-input" className="sr-only">
                     {t.audioInputLabel}

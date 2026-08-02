@@ -169,6 +169,13 @@ describe("ChatScreen", () => {
     chatState.isChatSubmitting = false;
     render(<ChatScreen />);
 
+    expect(
+      screen.getByRole("option", { name: "gpt-5.6-sol" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("option", { name: "openai-codex/gpt-5.6-sol" }),
+    ).not.toBeInTheDocument();
+
     fireEvent.change(screen.getByLabelText("AI model"), {
       target: { value: "zai-coding-cn/glm-5.2" },
     });
