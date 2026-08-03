@@ -1,0 +1,1 @@
+Nothing to compact yet. The latest six completed turns are always preserved.

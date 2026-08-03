@@ -463,6 +463,10 @@ export class MessagingService {
       await this.runModelCommand(chat, sourceMessage, recipient, locale);
       return;
     }
+    if (sourceMessage.content.name === "compact") {
+      await this.runCompactCommand(chat, sourceMessage, recipient, locale);
+      return;
+    }
     if (sourceMessage.content.name !== "effort" || !chat.idUser) {
       throw new ValidationException("Unsupported chat command");
     }
@@ -525,6 +529,51 @@ export class MessagingService {
     await gateway.sendTextMessage({
       toAddress: recipient.toAddress,
       text: responseText,
+    });
+  }
+
+  private async runCompactCommand(
+    chat: Chat,
+    sourceMessage: Message,
+    recipient: SendMessageRecipientDTO,
+    locale: MessageLocale,
+  ): Promise<void> {
+    if (
+      sourceMessage.content.type !== MessageContentType.Command ||
+      sourceMessage.content.name !== "compact" ||
+      !chat.idUser
+    ) {
+      throw new ValidationException("Unsupported chat command");
+    }
+    const model = await this.aiModelService.getForUser(chat.idUser);
+    const policy = createAiContextCompactionPolicy(
+      this.aiChatGateway.getContextWindowTokens(model),
+      this.aiChatGateway.getMaxOutputTokens(model),
+    );
+    let compacted = false;
+    while (true) {
+      const compactableTurns = selectCompactableTurns(
+        chat.getUncompactedTurns(),
+        policy.protectedRecentTurns,
+      );
+      if (compactableTurns.length === 0) break;
+      const turns = this.limitSummaryBatch(
+        chat,
+        compactableTurns,
+        chat.idUser,
+        model,
+        recipient.toAddress,
+        Math.floor(policy.hardInputTokens * summaryInputRatio),
+      );
+      await this.compactChat(chat, turns, model);
+      compacted = true;
+    }
+    let template: MessageTemplate = MessageTemplate.CompactUnavailable;
+    if (compacted) template = MessageTemplate.CompactCompleted;
+    const responseText = MessageLoader.getMessage(template, undefined, locale);
+    await this.sendTextMessage(recipient, responseText, chat, {
+      turnId: sourceMessage.turnId,
+      audience: MessageAudience.Channel,
     });
   }
 

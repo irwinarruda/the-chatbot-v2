@@ -10,9 +10,16 @@ interface ParsedModelChatCommand {
   arguments: Record<string, string>;
 }
 
+interface ParsedCompactChatCommand {
+  raw: string;
+  name: "compact";
+  arguments: Record<string, string>;
+}
+
 export type ParsedChatCommand =
   | ParsedEffortChatCommand
-  | ParsedModelChatCommand;
+  | ParsedModelChatCommand
+  | ParsedCompactChatCommand;
 
 export function parseChatCommand(text: string): ParsedChatCommand | undefined {
   const raw = text.trim();
@@ -22,6 +29,9 @@ export function parseChatCommand(text: string): ParsedChatCommand | undefined {
     const commandArguments: Record<string, string> = {};
     if (level) commandArguments.level = level;
     return { raw, name: "effort", arguments: commandArguments };
+  }
+  if (/^\/compact\s*$/i.test(raw)) {
+    return { raw, name: "compact", arguments: {} };
   }
   const modelMatch = /^\/model(?:\s+([\s\S]*))?$/i.exec(raw);
   if (!modelMatch) return undefined;

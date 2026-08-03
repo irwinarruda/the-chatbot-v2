@@ -311,6 +311,88 @@ describe("MessagingService", () => {
     }
   });
 
+  test("compact commands summarize eligible turns without deleting messages", async () => {
+    await orquestrator.clearDatabase();
+    const user = await orquestrator.createUser({
+      phoneNumber: "5511912345678",
+    });
+    const webAddress = user.email ?? "";
+    const aiGateway = orquestrator.aiGateway;
+    for (let i = 0; i < 10; i++) {
+      await orquestrator.messagingService.receiveWebMessage(webAddress, {
+        text: `Message ${i}`,
+      });
+    }
+    const initialRequestCount = aiGateway.requests.length;
+    const initialSummaryCalls = aiGateway.summaryCalls;
+
+    await orquestrator.messagingService.receiveWebMessage(
+      webAddress,
+      { text: "/compact" },
+      undefined,
+      MessageLocale.En,
+    );
+
+    const chat = await orquestrator.messagingService.getChatByChannelAddress(
+      webAddress,
+      ChatChannel.Web,
+    );
+    expect(aiGateway.requests).toHaveLength(initialRequestCount);
+    expect(aiGateway.summaryCalls - initialSummaryCalls).toBe(1);
+    expect(aiGateway.summaryRequests.at(-1)).toHaveLength(8);
+    expect(chat?.summary).toBeInstanceOf(ConversationSummary);
+    expect(chat?.messages).toHaveLength(22);
+    expect(chat?.messages.some((message) => message.text === "Message 0")).toBe(
+      true,
+    );
+    expect(chat?.getModelMessages()).toHaveLength(12);
+    expect(
+      chat?.getModelMessages().map((message) => message.text),
+    ).not.toContain("Message 0");
+    expect(chat?.getModelMessages().map((message) => message.text)).toContain(
+      "Message 4",
+    );
+    expect(chat?.messages.at(-2)).toMatchObject({
+      role: MessageRole.User,
+      audience: MessageAudience.Channel,
+      content: {
+        type: MessageContentType.Command,
+        name: "compact",
+      },
+    });
+    expect(chat?.messages.at(-1)).toMatchObject({
+      role: MessageRole.Assistant,
+      audience: MessageAudience.Channel,
+    });
+    expect(chat?.messages.at(-1)?.text).toContain("Conversation compacted");
+  });
+
+  test("compact commands report when no turns are eligible", async () => {
+    await orquestrator.clearDatabase();
+    const user = await orquestrator.createUser({
+      phoneNumber: "5511912345678",
+    });
+    const webAddress = user.email ?? "";
+    const initialSummaryCalls = orquestrator.aiGateway.summaryCalls;
+
+    await orquestrator.messagingService.receiveWebMessage(
+      webAddress,
+      { text: "/compact" },
+      undefined,
+      MessageLocale.En,
+    );
+
+    const chat = await orquestrator.messagingService.getChatByChannelAddress(
+      webAddress,
+      ChatChannel.Web,
+    );
+    expect(orquestrator.aiGateway.summaryCalls).toBe(initialSummaryCalls);
+    expect(chat?.summary).toBeUndefined();
+    expect(chat?.messages).toHaveLength(2);
+    expect(chat?.messages.at(-1)?.text).toContain("Nothing to compact yet");
+    expect(chat?.getModelMessages()).toHaveLength(0);
+  });
+
   test("proactive compaction failure falls back without truncating history", async () => {
     await orquestrator.clearDatabase();
     const phoneNumber = TestWhatsAppMessagingGateway.phoneNumber;

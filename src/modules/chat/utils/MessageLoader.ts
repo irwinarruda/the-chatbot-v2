@@ -15,6 +15,8 @@ export const MessageTemplate = {
   ModelStatus: "ModelStatus",
   ModelInvalid: "ModelInvalid",
   ModelUpdated: "ModelUpdated",
+  CompactCompleted: "CompactCompleted",
+  CompactUnavailable: "CompactUnavailable",
 } as const;
 export type MessageTemplate = ValueOf<typeof MessageTemplate>;
 
@@ -91,6 +93,10 @@ export class MessageLoader {
         return "model-invalid-message";
       case MessageTemplate.ModelUpdated:
         return "model-updated-message";
+      case MessageTemplate.CompactCompleted:
+        return "compact-completed-message";
+      case MessageTemplate.CompactUnavailable:
+        return "compact-unavailable-message";
       default:
         throw new Error(`Unknown message template: ${template}`);
     }

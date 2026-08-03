@@ -1,0 +1,1 @@
+Conversation compacted. Older completed turns were summarized; the latest six were preserved.

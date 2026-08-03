@@ -15,6 +15,14 @@ describe("ChatCommandParser", () => {
     });
   });
 
+  test("parses compact commands without arguments", () => {
+    expect(parseChatCommand(" /CoMpAcT ")).toEqual({
+      raw: "/CoMpAcT",
+      name: "compact",
+      arguments: {},
+    });
+  });
+
   test("parses model status commands without a selection", () => {
     expect(parseChatCommand(" /MoDeL ")).toEqual({
       raw: "/MoDeL",
@@ -54,6 +62,7 @@ describe("ChatCommandParser", () => {
 
   test("does not parse unrelated slash-prefixed text", () => {
     expect(parseChatCommand("/models zai/glm-5.2")).toBeUndefined();
+    expect(parseChatCommand("/compact now")).toBeUndefined();
     expect(parseChatCommand("/help")).toBeUndefined();
   });
 });
