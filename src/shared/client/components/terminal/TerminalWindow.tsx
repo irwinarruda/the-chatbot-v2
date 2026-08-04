@@ -9,7 +9,14 @@ import type { Dictionary } from "~/shared/client/i18n";
 import { usePrefs } from "~/shared/client/providers/usePrefs";
 import { useApp } from "~/shared/client/stores";
 
-type TerminalPath = "/" | "/privacy" | "/chat" | "/todo" | "/notes" | "/bills";
+type TerminalPath =
+  | "/"
+  | "/privacy"
+  | "/chat"
+  | "/todo"
+  | "/notes"
+  | "/cash-flow"
+  | "/bills";
 
 type TerminalNavLink = {
   href: TerminalPath;
@@ -94,6 +101,7 @@ export function TerminalWindow({
         { label: dictionary.nav.chat, href: "/chat" },
         { label: dictionary.nav.todo, href: "/todo" },
         { label: dictionary.nav.notes, href: "/notes" },
+        { label: dictionary.nav.cashFlow, href: "/cash-flow" },
         { label: dictionary.nav.bills, href: "/bills" },
       ]
     : [];

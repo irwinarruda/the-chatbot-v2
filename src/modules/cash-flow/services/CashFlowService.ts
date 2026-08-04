@@ -2,6 +2,8 @@ import { CashFlowSpreadsheet } from "~/modules/cash-flow/entities/CashFlowSpread
 import type {
   CashFlowAddEarningDTO,
   CashFlowAddExpenseDTO,
+  CashFlowAddTransactionDTO,
+  CashFlowDashboardDTO,
   CashFlowSyncBankAccountBalanceDTO,
   CashFlowTransferDTO,
 } from "~/modules/cash-flow/entities/dtos/CashFlowServiceDTO";
@@ -11,6 +13,7 @@ import type {
   TransactionDTO,
 } from "~/modules/cash-flow/entities/dtos/CashFlowSpreadsheetGatewayDTO";
 import { CashFlowSpreadsheetType } from "~/modules/cash-flow/entities/enums/CashFlowSpreadsheetType";
+import { CashFlowTransactionType } from "~/modules/cash-flow/entities/enums/CashFlowTransactionType";
 import type { CashFlowSpreadsheetGateway } from "~/modules/cash-flow/gateway/CashFlowSpreadsheetGateway";
 import type { Credential } from "~/modules/identity/entities/Credentials";
 import type { User } from "~/modules/identity/entities/User";
@@ -59,6 +62,37 @@ export class CashFlowService {
     });
   }
 
+  async getDashboard(
+    phoneNumber: string,
+    date = new Date(),
+  ): Promise<CashFlowDashboardDTO> {
+    const { sheet, credential } = await this.getUserAndSheet(phoneNumber);
+    const sheetConfig = {
+      sheetId: sheet.idSheet,
+      sheetAccessToken: credential.accessToken,
+    };
+    const [
+      transactions,
+      bankAccounts,
+      expenseCategories,
+      earningCategories,
+      bankAccountStatuses,
+    ] = await Promise.all([
+      this.spreadsheetResource.getAllTransactions(sheetConfig),
+      this.spreadsheetResource.getBankAccount(sheetConfig),
+      this.spreadsheetResource.getExpenseCategories(sheetConfig),
+      this.spreadsheetResource.getEarningCategories(sheetConfig),
+      this.spreadsheetResource.getBankAccountsStatus(sheetConfig, date),
+    ]);
+    return {
+      transactions,
+      bankAccounts,
+      expenseCategories,
+      earningCategories,
+      bankAccountStatuses,
+    };
+  }
+
   async getLatestTransactions(
     phoneNumber: string,
     limit?: number,
@@ -93,6 +127,14 @@ export class CashFlowService {
       sheetId: sheet.idSheet,
       sheetAccessToken: credential.accessToken,
     });
+  }
+
+  async addTransaction(transaction: CashFlowAddTransactionDTO): Promise<void> {
+    if (transaction.type === CashFlowTransactionType.Expense) {
+      await this.addExpense(transaction);
+      return;
+    }
+    await this.addEarning(transaction);
   }
 
   async addExpense(expense: CashFlowAddExpenseDTO): Promise<void> {

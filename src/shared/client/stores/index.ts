@@ -1,6 +1,10 @@
 import { create } from "zustand";
 import { computed } from "zustand-computed-state";
 import {
+  type CashFlowSlice,
+  cashFlowSlice,
+} from "~/modules/cash-flow/client/state/cashFlowSlice";
+import {
   type MonthlyExpenseSlice,
   monthlyExpenseSlice,
 } from "~/modules/cash-flow/client/state/monthlyExpenseSlice";
@@ -25,7 +29,8 @@ import {
   prefsSlice,
 } from "~/shared/client/stores/slices/prefsSlice";
 
-export type AppSlices = ChatSlice &
+export type AppSlices = CashFlowSlice &
+  ChatSlice &
   MonthlyExpenseSlice &
   RecordingSlice &
   PrefsSlice &
@@ -35,6 +40,7 @@ export type AppSlices = ChatSlice &
 export const useApp = create<AppSlices>()(
   computed((...args) => ({
     ...prefsSlice(...args),
+    ...cashFlowSlice(...args),
     ...monthlyExpenseSlice(...args),
     ...chatSlice(...args),
     ...recordingSlice(...args),
@@ -44,6 +50,7 @@ export const useApp = create<AppSlices>()(
 );
 
 export type {
+  CashFlowSlice,
   ChatSlice,
   MonthlyExpenseSlice,
   NoteSlice,

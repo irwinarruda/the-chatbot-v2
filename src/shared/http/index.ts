@@ -16,6 +16,7 @@ export const routes = rootRoute("shared/client/routes/__root.tsx", [
     index("shared/client/routes/notes/index.tsx"),
     route("/$noteId", "shared/client/routes/notes/$noteId.tsx"),
   ]),
+  route("/cash-flow", "shared/client/routes/cash-flow.tsx"),
   route("/bills", "shared/client/routes/bills.tsx"),
   route("/google", [
     route(
@@ -47,6 +48,19 @@ export const routes = rootRoute("shared/client/routes/__root.tsx", [
   ),
   route("/api/v1/web/messages", "shared/http/controllers/web-messages.ts"),
   route("/api/v1/web/audio", "shared/http/controllers/web-audio.ts"),
+  route("/api/v1/web/cash-flow", "shared/http/controllers/web-cash-flow.ts"),
+  route(
+    "/api/v1/web/cash-flow/transactions",
+    "shared/http/controllers/web-cash-flow-transactions.ts",
+  ),
+  route(
+    "/api/v1/web/cash-flow/transactions/last",
+    "shared/http/controllers/web-cash-flow-last-transaction.ts",
+  ),
+  route(
+    "/api/v1/web/cash-flow/sync",
+    "shared/http/controllers/web-cash-flow-sync.ts",
+  ),
   route("/api/v1/web/todos", "shared/http/controllers/web-todos.ts"),
   route("/api/v1/web/todos/$todoId", "shared/http/controllers/web-todo.ts"),
   route("/api/v1/web/notes", "shared/http/controllers/web-notes.ts"),
