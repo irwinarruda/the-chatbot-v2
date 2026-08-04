@@ -260,7 +260,7 @@ export function TerminalWindow({
                 <nav
                   aria-label={title}
                   className={cn(
-                    "mb-7 hidden items-center gap-1 sm:flex",
+                    "mb-7 hidden flex-wrap items-center gap-1 sm:flex",
                     navigationClassName,
                   )}
                 >
