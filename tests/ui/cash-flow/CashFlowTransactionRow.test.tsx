@@ -8,7 +8,7 @@ import { getDictionary } from "~/shared/client/i18n";
 function createTransaction(isLast: boolean): CashFlowTransactionResponseDTO {
   return {
     position: 0,
-    date: "2026-07-02T12:00:00.000Z",
+    date: "2026-07-02",
     value: -25,
     type: CashFlowTransactionType.Expense,
     category: "Food",

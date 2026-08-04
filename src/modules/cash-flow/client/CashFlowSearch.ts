@@ -24,21 +24,31 @@ function isDate(value: unknown): value is string {
   return /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
+function normalizeOptionalString(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  return value;
+}
+
+function normalizeTransactionType(value: unknown): CashFlowSearch["type"] {
+  if (value === CashFlowTransactionType.Expense) return value;
+  if (value === CashFlowTransactionType.Earning) return value;
+  if (value === "all") return value;
+  return "all";
+}
+
+function optionalFilterValue(value: string): string | undefined {
+  if (!value) return undefined;
+  return value;
+}
+
 export function normalizeCashFlowSearch(
   search: Record<string, unknown>,
 ): CashFlowSearch {
-  const type = search.type;
   return {
-    q: typeof search.q === "string" ? search.q : undefined,
-    type:
-      type === CashFlowTransactionType.Expense ||
-      type === CashFlowTransactionType.Earning ||
-      type === "all"
-        ? type
-        : "all",
-    bankAccount:
-      typeof search.bankAccount === "string" ? search.bankAccount : undefined,
-    category: typeof search.category === "string" ? search.category : undefined,
+    q: normalizeOptionalString(search.q),
+    type: normalizeTransactionType(search.type),
+    bankAccount: normalizeOptionalString(search.bankAccount),
+    category: normalizeOptionalString(search.category),
     from: isDate(search.from) ? search.from : undefined,
     to: isDate(search.to) ? search.to : undefined,
   };
@@ -47,13 +57,15 @@ export function normalizeCashFlowSearch(
 export function toCashFlowRouteSearch(
   filters: CashFlowFilterValues,
 ): CashFlowSearch {
+  let type: CashFlowSearch["type"];
+  if (filters.type !== "all") type = filters.type;
   return {
-    q: filters.q || undefined,
-    type: filters.type === "all" ? undefined : filters.type,
-    bankAccount: filters.bankAccount || undefined,
-    category: filters.category || undefined,
-    from: filters.from || undefined,
-    to: filters.to || undefined,
+    q: optionalFilterValue(filters.q),
+    type,
+    bankAccount: optionalFilterValue(filters.bankAccount),
+    category: optionalFilterValue(filters.category),
+    from: optionalFilterValue(filters.from),
+    to: optionalFilterValue(filters.to),
   };
 }
 

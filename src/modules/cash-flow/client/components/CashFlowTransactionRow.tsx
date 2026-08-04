@@ -42,7 +42,7 @@ export function CashFlowTransactionRow({
     day: "2-digit",
     month: "short",
     year: "numeric",
-    timeZone: "America/Sao_Paulo",
+    timeZone: "UTC",
   }).format(new Date(transaction.date));
 
   return (

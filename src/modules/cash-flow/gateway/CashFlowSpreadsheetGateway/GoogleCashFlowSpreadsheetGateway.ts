@@ -8,6 +8,11 @@ import type {
   SheetConfigDTO,
   TransactionDTO,
 } from "~/modules/cash-flow/gateway/CashFlowSpreadsheetGateway";
+import {
+  formatCashFlowSpreadsheetDate,
+  getCashFlowMonth,
+  parseCashFlowSpreadsheetDate,
+} from "~/modules/cash-flow/utils/CashFlowDate";
 import type { GoogleConfig, GoogleSheetsConfig } from "~/shared/config/Config";
 import { ServiceException } from "~/shared/errors/ApplicationErrors";
 import { ValidationException } from "~/shared/errors/DomainErrors";
@@ -291,7 +296,7 @@ export class GoogleCashFlowSpreadsheetGateway
         valueRenderOption: "UNFORMATTED_VALUE",
       });
       this.throwWrongSpreadsheetException(yearResult.data.valueRanges);
-      const expectedYear = date.getFullYear();
+      const { year: expectedYear, monthIndex } = getCashFlowMonth(date);
       const sheetTitle = (yearResult.data.valueRanges ?? [])
         .map((range, index) => ({
           title: candidateTitles[index],
@@ -320,7 +325,7 @@ export class GoogleCashFlowSpreadsheetGateway
         "W",
         "Y",
       ];
-      const balanceColumn = monthColumns[date.getMonth()];
+      const balanceColumn = monthColumns[monthIndex];
       if (!balanceColumn) {
         throw new ValidationException("Invalid date");
       }
@@ -413,16 +418,11 @@ export class GoogleCashFlowSpreadsheetGateway
   }
 
   private formatDate(date: Date): string {
-    const day = String(date.getDate()).padStart(2, "0");
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
+    return formatCashFlowSpreadsheetDate(date);
   }
 
   private parseDate(value: string): Date {
-    const parts = value.split("/");
-    if (parts.length !== 3) return new Date();
-    return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+    return parseCashFlowSpreadsheetDate(value);
   }
 
   private parseDouble(value: string): number {

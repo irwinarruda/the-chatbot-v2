@@ -37,11 +37,13 @@ describe("Cash flow web contracts", () => {
     expect(wireResponse.transactions).toEqual([
       expect.objectContaining({
         position: 0,
+        date: "2026-07-01",
         type: CashFlowTransactionType.Expense,
         is_last: false,
       }),
       expect.objectContaining({
         position: 1,
+        date: "2026-07-02",
         type: CashFlowTransactionType.Earning,
         is_last: true,
       }),

@@ -13,7 +13,7 @@ function createDashboard(position: number): CashFlowDashboardResponseDTO {
     transactions: [
       {
         position,
-        date: "2026-07-02T12:00:00.000Z",
+        date: "2026-07-02",
         value: 200,
         type: CashFlowTransactionType.Earning,
         category: "Refund",
@@ -93,6 +93,31 @@ describe("cashFlowSlice", () => {
     });
 
     expect(created).toBe(true);
+    expect(store.getState().cashFlowError).toBe("loading");
+  });
+
+  test("invalidates the stale delete target when refresh fails", async () => {
+    let loadCount = 0;
+    const service: CashFlowClientService = {
+      async load() {
+        loadCount += 1;
+        if (loadCount > 1) throw new Error("refresh failed");
+        return createDashboard(0);
+      },
+      async create() {},
+      async sync() {},
+      deleteLast: vi.fn(async () => {}),
+    };
+    const store = create<CashFlowSlice>()(createCashFlowSlice(service));
+    await store.getState().bootstrapCashFlow();
+
+    const deleted = await store.getState().deleteLastCashFlowTransaction();
+    const retried = await store.getState().deleteLastCashFlowTransaction();
+
+    expect(deleted).toBe(true);
+    expect(retried).toBe(false);
+    expect(service.deleteLast).toHaveBeenCalledOnce();
+    expect(store.getState().cashFlowDashboard.transactions).toEqual([]);
     expect(store.getState().cashFlowError).toBe("loading");
   });
 });

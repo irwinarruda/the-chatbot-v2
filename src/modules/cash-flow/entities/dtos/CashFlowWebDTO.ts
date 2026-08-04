@@ -3,7 +3,7 @@ import { CashFlowTransactionType } from "~/modules/cash-flow/entities/enums/Cash
 
 export const CashFlowTransactionResponseDTO = z.object({
   position: z.number().int().nonnegative(),
-  date: z.iso.datetime(),
+  date: z.iso.date(),
   value: z.number().finite(),
   type: z.enum(CashFlowTransactionType),
   category: z.string(),

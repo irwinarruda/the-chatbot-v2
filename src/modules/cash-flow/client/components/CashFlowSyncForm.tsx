@@ -56,9 +56,10 @@ export function CashFlowSyncForm({
 
   function onFormSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    const numericBalance = Number(currentBalance);
+    const normalizedBalance = currentBalance.trim();
+    const numericBalance = Number(normalizedBalance);
     const nextErrors: SyncFormErrors = {};
-    if (!Number.isFinite(numericBalance)) {
+    if (!normalizedBalance || !Number.isFinite(numericBalance)) {
       nextErrors.currentBalance = t.invalidBalanceError;
     }
     if (!bankAccount) nextErrors.bankAccount = t.requiredFieldError;

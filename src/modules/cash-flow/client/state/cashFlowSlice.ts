@@ -41,13 +41,11 @@ export function createCashFlowSlice(
   service: CashFlowClientService = cashFlowService,
 ): StateCreator<CashFlowSlice> {
   return (set, get) => {
-    async function refreshDashboard(): Promise<boolean> {
+    async function refreshDashboard(): Promise<void> {
       try {
         set({ cashFlowDashboard: await service.load() });
-        return true;
       } catch {
         set({ cashFlowError: "loading" });
-        return false;
       }
     }
 
@@ -95,11 +93,22 @@ export function createCashFlowSlice(
         }
       },
       async deleteLastCashFlowTransaction() {
-        const { isCashFlowSubmitting } = get();
+        const { cashFlowDashboard, isCashFlowSubmitting } = get();
         if (isCashFlowSubmitting) return false;
+        if (!cashFlowDashboard.transactions.some(({ isLast }) => isLast)) {
+          return false;
+        }
         set({ isCashFlowSubmitting: true, cashFlowError: undefined });
         try {
           await service.deleteLast();
+          set((state) => ({
+            cashFlowDashboard: {
+              ...state.cashFlowDashboard,
+              transactions: state.cashFlowDashboard.transactions.filter(
+                ({ isLast }) => !isLast,
+              ),
+            },
+          }));
           await refreshDashboard();
           return true;
         } catch {
