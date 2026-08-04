@@ -9,7 +9,6 @@ dist/
 .env.production
 .env.tui
 *.gen.ts
-bun.lock
 deno.lock
 coverage
 
