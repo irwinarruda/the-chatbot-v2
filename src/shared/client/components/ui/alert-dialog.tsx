@@ -2,6 +2,7 @@ import { AlertDialog as AlertDialogPrimitive } from "@base-ui/react/alert-dialog
 import type { ComponentProps } from "react";
 import { Button } from "~/shared/client/components/ui/button";
 import { cn } from "~/shared/client/components/ui/lib/utils";
+import { modalBackdropClassName } from "~/shared/client/components/ui/overlay";
 
 function AlertDialog(props: AlertDialogPrimitive.Root.Props) {
   return <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />;
@@ -27,7 +28,8 @@ function AlertDialogOverlay({
     <AlertDialogPrimitive.Backdrop
       data-slot="alert-dialog-overlay"
       className={cn(
-        "data-closed:fade-out-0 data-open:fade-in-0 fixed inset-0 isolate z-50 min-h-dvh bg-black/65 backdrop-blur-sm duration-150 data-closed:animate-out data-open:animate-in motion-reduce:duration-0",
+        modalBackdropClassName,
+        "data-closed:fade-out-0 data-open:fade-in-0 isolate bg-black/65 backdrop-blur-sm duration-150 data-closed:animate-out data-open:animate-in motion-reduce:duration-0",
         className,
       )}
       {...props}

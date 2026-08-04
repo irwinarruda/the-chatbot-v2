@@ -88,6 +88,39 @@ describe("TerminalResponsiveOverlay", () => {
     expect(sheet).toBeVisible();
     expect(screen.getByRole("button", { name: "Save account" })).toBeVisible();
 
+    const backdrop = document.querySelector('[data-slot="drawer-overlay"]');
+    expect(backdrop).toHaveClass("fixed");
+    expect(backdrop).toHaveClass(
+      "supports-[-webkit-touch-callout:none]:absolute",
+    );
+
     await closeAndReopenOverlay(user);
+  });
+
+  test("dismisses the mobile drawer from its backdrop and Escape", async () => {
+    mockDesktopOverlay(false);
+    const user = userEvent.setup();
+    render(<ResponsiveOverlayExample />);
+
+    const backdrop = document.querySelector<HTMLElement>(
+      '[data-slot="drawer-overlay"]',
+    );
+    expect(backdrop).toBeInTheDocument();
+    if (!backdrop) return;
+    await user.click(backdrop);
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+
+    const trigger = screen.getByRole("button", {
+      name: "Open account details",
+    });
+    await user.click(trigger);
+    expect(await screen.findByRole("dialog")).toBeVisible();
+    await user.keyboard("{Escape}");
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+    expect(trigger).toHaveFocus();
   });
 });

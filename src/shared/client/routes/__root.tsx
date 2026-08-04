@@ -77,7 +77,9 @@ function RootDocument({ children }: { children: ReactNode }) {
         />
       </head>
       <body suppressHydrationWarning={suppressHydrationWarning}>
-        <TooltipProvider delay={250}>{children}</TooltipProvider>
+        <TooltipProvider delay={250}>
+          <div className="isolate">{children}</div>
+        </TooltipProvider>
         <Scripts />
       </body>
     </html>

@@ -2,6 +2,7 @@ import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { XIcon } from "lucide-react";
 import { Button } from "~/shared/client/components/ui/button";
 import { cn } from "~/shared/client/components/ui/lib/utils";
+import { modalBackdropClassName } from "~/shared/client/components/ui/overlay";
 
 function Dialog(props: DialogPrimitive.Root.Props) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />;
@@ -43,7 +44,8 @@ function DialogOverlay({
     <DialogPrimitive.Backdrop
       data-slot="dialog-overlay"
       className={cn(
-        "data-closed:fade-out-0 data-open:fade-in-0 fixed inset-0 isolate z-50 bg-black/65 backdrop-blur-sm duration-150 data-closed:animate-out data-open:animate-in motion-reduce:duration-0",
+        modalBackdropClassName,
+        "data-closed:fade-out-0 data-open:fade-in-0 isolate bg-black/65 backdrop-blur-sm duration-150 data-closed:animate-out data-open:animate-in motion-reduce:duration-0",
         className,
       )}
       {...props}
