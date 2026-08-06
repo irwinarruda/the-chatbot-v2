@@ -1,17 +1,13 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
   CalendarRange,
-  CheckCircle2,
   CircleAlert,
-  CircleDollarSign,
-  ListChecks,
   MessageSquare,
   Plus,
   ReceiptText,
-  WalletCards,
   X,
 } from "lucide-react";
-import { type ReactNode, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   type BillsSearch,
   getCurrentBillsMonth,
@@ -20,6 +16,7 @@ import {
 import { BillsMonthSelect } from "~/modules/cash-flow/client/components/BillsMonthSelect";
 import { MonthlyExpenseDialog } from "~/modules/cash-flow/client/components/MonthlyExpenseDialog";
 import type { MonthlyExpenseFormValue } from "~/modules/cash-flow/client/components/MonthlyExpenseForm";
+import { MonthlyExpenseProgress } from "~/modules/cash-flow/client/components/MonthlyExpenseProgress";
 import { MonthlyExpenseRow } from "~/modules/cash-flow/client/components/MonthlyExpenseRow";
 import type { MonthlyExpenseErrorCode } from "~/modules/cash-flow/client/state/monthlyExpenseSlice";
 import type { MonthlyExpenseDTO } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
@@ -32,14 +29,7 @@ import {
 } from "~/shared/client/components/ui/alert";
 import { Badge } from "~/shared/client/components/ui/badge";
 import { Button } from "~/shared/client/components/ui/button";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "~/shared/client/components/ui/card";
+import { Card, CardContent } from "~/shared/client/components/ui/card";
 import {
   Empty,
   EmptyDescription,
@@ -48,7 +38,6 @@ import {
   EmptyTitle,
 } from "~/shared/client/components/ui/empty";
 import { Field, FieldLabel } from "~/shared/client/components/ui/field";
-import { Progress } from "~/shared/client/components/ui/progress";
 import { Skeleton } from "~/shared/client/components/ui/skeleton";
 import {
   Tooltip,
@@ -82,25 +71,9 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
   const t = dictionary.billsPage;
   const currentMonth = getCurrentBillsMonth();
   const selectedMonth = search.month ?? currentMonth;
-  const paidCount = monthlyExpenses.filter((expense) => expense.isPaid).length;
-  const unpaidCount = monthlyExpenses.length - paidCount;
-  const progress =
-    monthlyExpenses.length === 0
-      ? 0
-      : Math.round((paidCount / monthlyExpenses.length) * 100);
-  const expectedTotal = monthlyExpenses.reduce(
-    (total, expense) => total + (expense.expectedAmount ?? 0),
-    0,
-  );
-  const paidTotal = monthlyExpenses.reduce(
-    (total, expense) =>
-      total + (expense.isPaid ? (expense.expectedAmount ?? 0) : 0),
-    0,
-  );
-  const currency = new Intl.NumberFormat(
-    prefs.locale === "pt-BR" ? "pt-BR" : "en-US",
-    { style: "currency", currency: "BRL" },
-  );
+  const unpaidCount = monthlyExpenses.filter(
+    (expense) => !expense.isPaid,
+  ).length;
   const monthLabel = new Intl.DateTimeFormat(
     prefs.locale === "pt-BR" ? "pt-BR" : "en-US",
     {
@@ -316,52 +289,11 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
           )}
         </CardContent>
       </Card>
-      <Card
-        className="mb-4 gap-0 border-term-border bg-term-chrome/45 py-0 shadow-none"
-        size="sm"
-      >
-        <CardHeader className="border-term-border border-b px-3 py-3">
-          <CardTitle className="flex items-center gap-2 font-mono text-term-green text-xs uppercase tracking-wider">
-            <ListChecks aria-hidden="true" className="size-3.5" />
-            {t.progressLabel}
-          </CardTitle>
-          <CardDescription className="font-mono text-2xs text-term-muted">
-            {paidCount} {t.of} {monthlyExpenses.length} {t.paidThisMonth}
-          </CardDescription>
-          <CardAction>
-            <span className="font-mono font-semibold text-2xl text-term-green tabular-nums">
-              {progress}%
-            </span>
-          </CardAction>
-        </CardHeader>
-        <Progress
-          aria-label={t.progressLabel}
-          className="gap-0 px-0 [&_[data-slot=progress-indicator]]:bg-term-green [&_[data-slot=progress-indicator]]:motion-reduce:transition-none [&_[data-slot=progress-track]]:h-1.5 [&_[data-slot=progress-track]]:rounded-none [&_[data-slot=progress-track]]:bg-term-border/60"
-          value={progress}
-        />
-        <dl className="grid grid-cols-2 sm:grid-cols-4">
-          <SummaryMetric
-            icon={<CheckCircle2 className="size-3.5 text-term-green" />}
-            label={t.paid}
-            value={paidCount.toString()}
-          />
-          <SummaryMetric
-            icon={<ReceiptText className="size-3.5 text-term-amber" />}
-            label={t.unpaid}
-            value={unpaidCount.toString()}
-          />
-          <SummaryMetric
-            icon={<WalletCards className="size-3.5 text-term-cyan" />}
-            label={t.expectedTotal}
-            value={currency.format(expectedTotal)}
-          />
-          <SummaryMetric
-            icon={<CircleDollarSign className="size-3.5 text-term-green" />}
-            label={t.paidAmount}
-            value={currency.format(paidTotal)}
-          />
-        </dl>
-      </Card>
+      <MonthlyExpenseProgress
+        expenses={monthlyExpenses}
+        locale={prefs.locale}
+        t={t}
+      />
       <section aria-labelledby="monthly-bills-list" className="space-y-2">
         <div
           className="flex items-center gap-2 font-mono text-2xs text-term-muted uppercase tracking-wide"
@@ -417,28 +349,6 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
         t={t}
       />
     </TerminalWindow>
-  );
-}
-
-function SummaryMetric({
-  icon,
-  label,
-  value,
-}: {
-  icon: ReactNode;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="min-w-0 border-term-border/70 border-t p-3 even:border-l sm:border-l sm:first:border-l-0">
-      <dt className="mb-1 flex items-center gap-1.5 font-mono text-2xs text-term-muted">
-        <span aria-hidden="true">{icon}</span>
-        <span className="truncate">{label}</span>
-      </dt>
-      <dd className="m-0 truncate font-medium font-mono text-sm text-term-bright tabular-nums">
-        {value}
-      </dd>
-    </div>
   );
 }
 
