@@ -1,218 +1,211 @@
 <div align="center">
   <img src="public/logo.svg" alt="The Chatbot logo" height="120" />
   <h1>The Chatbot</h1>
-  <p><em>A personal, terminal-flavored assistant that lives in WhatsApp — and is slowly growing a face on the web.</em></p>
+  <p><em>A personal AI workspace across WhatsApp and the web.</em></p>
   <p>
-    <code>WhatsApp</code> &middot;
-    <code>Web Chat</code> &middot;
-    <code>Google Sheets</code> &middot;
-    <code>LLMs</code>
+    <code>AI Chat</code> &middot;
+    <code>Todos</code> &middot;
+    <code>Markdown Notes</code> &middot;
+    <code>Cash Flow</code> &middot;
+    <code>Monthly Bills</code>
   </p>
 </div>
 
 ---
 
-```
+```text
 the-chatbot: ~/welcome
-> A versatile conversational agent designed to help me organize
-> my life directly from WhatsApp — and from anywhere a browser opens.
+$ One assistant for conversations, tasks, notes, and personal finances.
 ```
 
 <p align="center">
-  <img src="public/screenshot-home.png" alt="The Chatbot — home page in terminal aesthetic" width="420" />
+  <img src="public/screenshot-home.png" alt="The Chatbot home page with its current personal workspaces" width="900" />
 </p>
 
-## Why this exists
+## What it is
 
-This is a **personal-use** assistant, not a SaaS. It started as the smallest possible bridge between me and a Google Sheet — "send a WhatsApp message, log an expense" — and has been quietly turning into a long-running platform for the small automations I want in my real life:
+The Chatbot is a **personal-use assistant**, not a SaaS. It started as a small bridge between WhatsApp and a Google Sheet: send a message, log an expense. It has grown into a compact personal operating surface with two front doors and one application core.
 
-- track expenses and earnings without opening a spreadsheet
-- transcribe voice notes I send to myself on WhatsApp
-- soon: see balances across all my bank accounts at a glance
-- soon: a personal note-taker whose real purpose is to feed structured context back to an LLM
+| Workspace | What it does |
+| --- | --- |
+| **AI Chat** | Text and voice conversations, live activity over SSE, runtime model selection, reasoning-effort controls, and tools that act on the other workspaces. |
+| **Todos** | Capture tasks from chat or the web, assign due dates, filter the queue, and track completion. |
+| **Markdown Notes** | Create durable, portable notes; edit and preview Markdown; refine a draft with AI before explicitly saving it. |
+| **Cash Flow** | Review balances and transactions, add entries, transfer between accounts, and synchronize real bank balances with Google Sheets. |
+| **Monthly Bills** | Maintain a recurring checklist, follow monthly progress by count and value, mark payments from chat or the web, and preserve history. |
 
-The bot is the entry point. The platform behind it is what I actually care about.
+Google sign-in protects the private web workspaces and returns the user to the exact page they originally requested. The interface is responsive, terminal-flavored, and available in Portuguese and English.
 
-## A short history: from C# to TypeScript
+## Why it exists
 
-The first version of this project was written in **C# / .NET 9** ([irwinarruda/the-chatbot](https://github.com/irwinarruda/the-chatbot)). It was clean, fast, and well-tested — and there is nothing wrong with it. The reason for the rewrite is purely about where the project is going:
+The bot is the entry point; the reusable personal platform behind it is the point. The project favors small automations that remove friction from real life:
 
-- **Frontends are now part of the product.** A welcome page, a privacy page, a web chat, and eventually richer dashboards (bank balances, notes). Living in a single TypeScript codebase with React + TanStack Start removes an entire context switch.
-- **One language, end to end.** Server, client, scripts (CLI, migrations) and shared domain entities now share types. The `User`, `Chat`, and `Message` you see in a route loader are literally the same class the service uses.
-- **Faster iteration on AI tooling.** The JS/TS ecosystem around LLMs and agent runtimes moves fast and is where most experimentation happens.
-- **Edge-friendly deploys.** TanStack Start + Nitro runs comfortably in environments where .NET would be heavy or awkward.
+- send a WhatsApp message instead of opening a finance spreadsheet
+- turn voice into a useful conversation or task
+- keep personal notes in a format that remains portable
+- see tasks, balances, transactions, and bills without asking the model to reconstruct state
+- let the assistant use those same capabilities through explicit application tools
 
-The architecture, the layering, the "no repositories, raw SQL inside services" philosophy — all of that survived the rewrite intentionally. The language changed; the discipline did not.
-
-## The stack, and why each piece is here
-
-| Layer            | Choice                             | Why                                                                                                                                                  |
-| ---------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Runtime          | **Bun**                            | Fast install, fast scripts, native TypeScript. Used as the package manager and script runner; production still runs on Node-compatible Nitro output. |
-| Server framework | **TanStack Start** (+ Nitro)       | File-based API routes, server functions, and a real React app share the same router. No separate Express/Next split.                                 |
-| Client           | **React 19** + **TanStack Router** | Type-safe routing all the way into loaders and search params. Pairs naturally with Start.                                                            |
-| Language         | **TypeScript** (strict-ish)        | Feature code lives under `src/modules`; app-wide HTTP, client, contracts, and technical infrastructure live under `src/shared`.                    |
-| Database         | **PostgreSQL** + `postgres` driver | Tagged-template SQL inside services. No ORM, no repository layer — see Architecture below.                                                           |
-| Migrations       | **node-pg-migrate**                | Plain JS migrations under `infra/migrations/`. Versioned, reversible, simple.                                                                        |
-| LLM              | **Pi AI** + **Pi Agent Core**      | Provider normalization and the model/tool loop live behind `IAiChatGateway`; PostgreSQL remains the conversation source of truth.                    |
-| Speech           | **OpenAI Whisper** (via SDK)       | Voice notes sent on WhatsApp are downloaded, persisted, and transcribed before being fed to the LLM.                                                 |
-| Storage          | **Cloudflare R2** (S3 SDK)         | Permanent storage for audio media (WhatsApp media URLs expire).                                                                                      |
-| Messaging        | **WhatsApp Business Cloud API**    | The original — and still primary — interface.                                                                                                        |
-| Tooling          | **Biome**, **Vitest**, **Docker**  | Lint + format in one tool, fast tests, local Postgres via Compose.                                                                                   |
-| Styling          | **Tailwind v4** + **shadcn/ui**    | Utility-first, with a small set of accessible primitives. Drives the terminal-window look without bespoke CSS.                                       |
+The first version was written in **C# / .NET 9** ([irwinarruda/the-chatbot](https://github.com/irwinarruda/the-chatbot)). The TypeScript rewrite keeps the same practical discipline while putting the server, web app, scripts, and shared contracts in one codebase.
 
 ## Architecture
 
-Same layering as v1, just expressed in TypeScript:
+The application is a **feature-oriented modular monolith**. Each capability owns its entities, Services, gateway contracts, DTOs, and client code. Shared HTTP and client infrastructure coordinate modules without taking ownership of their business rules.
 
+```text
+WhatsApp webhook        TanStack web app
+        │                      │
+        └──────────┬───────────┘
+                   ▼
+          shared HTTP controllers
+                   ▼
+             module Services
+            ┌──────┼──────┐
+            ▼      ▼      ▼
+         entities  SQL   gateway contracts
+                    │      │
+                    ▼      ▼
+               PostgreSQL  Google / Meta / Pi / OpenAI / R2
 ```
-Route (TanStack)  ─►  Service  ─►  Entity (shared)
-                      │   ▲
-                      ▼   │
-                    Gateway (resource interface + impl)
-                      │
-                      ▼
-                External API / DB / LLM / Storage
+
+- **Services own workflows and persistence.** SQL stays close to the behavior that uses it. There is no ORM or repository layer.
+- **Entities own invariants and transitions.** Application code does not pass loosely shaped records around when the domain owns a stronger type.
+- **Gateways isolate external systems.** Real providers and deterministic test implementations share the same module-owned contracts.
+- **Zod DTOs protect boundaries.** HTTP, SSE, provider, and client mappings are parsed before they enter application behavior.
+- **Composition is explicit.** [`infra/bootstrap.ts`](./infra/bootstrap.ts) constructs the typed application graph and supports targeted dependency overrides in tests.
+- **Both interfaces share the same core.** WhatsApp and web chat enter the same messaging workflow; only their delivery gateways differ.
+
+### Repository shape
+
+```text
+infra/
+  bootstrap.ts          # Typed application composition root
+  database.ts           # postgres.js connection boundary
+  migrations/           # node-pg-migrate migrations
+  scripts/              # Local, credential, migration, and release utilities
+
+src/
+  modules/
+    chat/                # Conversations, AI tools, model selection, messaging
+    identity/            # Users, Google auth, credentials, access control
+    cash-flow/           # Transactions, balances, Sheets integration, bills
+    todos/               # Todo domain, Service, HTTP contracts, and UI
+    notes/               # Markdown notes, AI refinement, and UI
+    system/              # Status and migration capabilities
+  shared/
+    client/              # Routes, terminal UI, preferences, and i18n
+    http/                # Controllers, middleware, and web server composition
+    config/              # Runtime configuration schemas
+
+tests/
+  entities/ services/ dtos/ client/ integration/ http/ architecture/ ui/
 ```
-
-### Why this layering is good (for this project)
-
-- **Entities are not anemic.** A `Chat` knows how to add a user message, a button reply, or an audio message. A `User` creates and updates its own `Credential`. Logic lives where the data lives — DDD-light.
-- **No repositories, no mappers.** SQL is written as `private` methods inside the service that owns it, using tagged templates (`this.database.sql\`SELECT ...\``). Reading the service tells you the whole story — domain rules and the exact query that backs them — in one file.
-- **Gateways isolate the outside world.** Every external dependency (WhatsApp, Google Auth, Google Sheets, Pi-backed LLM providers, R2, Whisper, the web SSE bus) is behind an `I*Gateway` interface with at least a real and a `Test*` implementation. Swapping providers stays inside the resource and configuration boundary.
-- **A tiny DI container wires everything.** [`infra/container.ts`](./infra/container.ts) + [`infra/bootstrap.ts`](./infra/bootstrap.ts) keeps construction in one place. Tests rebuild the container with fakes via [`tests/orquestrator.ts`](./tests/orquestrator.ts), which also wipes the schema between files.
-- **A mediator decouples cross-service effects.** Sending a "signed in" WhatsApp message after Google login, or deleting a chat when a user is removed, happens through `Mediator` events — services don't need to know about each other directly.
-- **Two front-doors, one core.** WhatsApp messages and the web chat share the exact same `MessagingService` pipeline; the only thing that changes is which `IMessagingGateway` writes the reply.
 
 <p align="center">
-  <img src="public/screenshot-chat.png" alt="The Chatbot — web chat with audio transcription and tool calls" width="720" />
-  <br/>
-  <sub><em>Web chat: voice notes are uploaded, transcribed by Whisper, then handed to the LLM — which calls real services (here, logging an expense to Google Sheets) and reports back.</em></sub>
+  <img src="public/screenshot-chat.png" alt="The Chatbot web chat with audio transcription and tool activity" width="720" />
+  <br />
+  <sub><em>Web chat and WhatsApp can reach the same application tools and persisted conversation state.</em></sub>
 </p>
 
-### Where things live
+## Stack
 
-```
-infra/
-  bootstrap.ts        # DI wiring (the one place that knows what implements what)
-  container.ts        # Tiny dependency container
-  database.ts         # postgres.js client wrapper
-  mediator.ts         # In-process event bus
-  config.ts           # Runtime config built from process.env
-  migrations/         # node-pg-migrate, plain JS
-src/
-  server/
-    services/         # 5 services described above (this is where logic lives)
-    resources/        # Gateway interfaces + real / test implementations
-    tanstack/         # Server-side TanStack helpers
-    utils/            # Mediator wiring helpers, MessageLoader, WhatsAppTextChunker, ...
-  shared/
-    entities/         # User, Chat, Message, Credential, CashFlowSpreadsheet, ...
-  client/
-    routes/           # File-based TanStack routes (welcome, privacy, chat)
-    components/       # UI (terminal-themed shadcn/ui)
-    i18n/             # PT/EN strings
-tests/                # Vitest, runs serially, wipes schema per file
-```
+| Area | Choice | Role |
+| --- | --- | --- |
+| Runtime and package manager | **Bun** | Installs dependencies and runs the TypeScript scripts. |
+| Full-stack web | **TanStack Start**, **React 19**, **TanStack Router**, **Vite** | Type-safe routes, server handlers, SSR, and the browser UI. |
+| Database | **PostgreSQL**, `postgres`, **node-pg-migrate** | Conversation and workspace state, raw tagged-template SQL, reversible migrations. |
+| AI runtime | **Pi AI** + **Pi Agent Core** | Provider/model normalization, reasoning configuration, streaming, and the tool loop. |
+| Speech and storage | **OpenAI speech-to-text**, **Cloudflare R2** | Audio transcription and durable media storage. |
+| Integrations | **WhatsApp Business Cloud API**, **Google OAuth**, **Google Sheets** | Messaging, authentication, and finance data. |
+| Interface | **Tailwind CSS v4**, **shadcn/ui** | Responsive terminal visual system and accessible primitives. |
+| Quality | **TypeScript**, **Biome**, **Vitest** | Static checking, formatting/linting, and layered tests. |
 
-## Running it
+## Running locally
 
-> Personal-use project. The setup is documented but assumes you know your way around Postgres, ngrok, and Google Cloud OAuth credentials.
+> This is a personal project. Local setup assumes access to its provider credentials and some familiarity with PostgreSQL, Google Cloud, and Meta webhooks.
 
 ### Prerequisites
 
-- **Bun** ≥ 1.3
-- **Docker** + Docker Compose (for local Postgres)
-- **ngrok** (for receiving WhatsApp webhooks locally)
-- A Google Cloud project with OAuth client + Sheets API enabled
+- Bun 1.3 or newer
+- Docker with Docker Compose for local PostgreSQL
+- ngrok when receiving WhatsApp webhooks locally
+- Google OAuth and Sheets credentials
 - WhatsApp Business Cloud API credentials
-- An API key for the configured OpenAI, Anthropic, or Z.AI/GLM model
-- A Cloudflare R2 bucket (or any S3-compatible storage)
+- credentials for at least one supported Pi model provider
+- an S3-compatible bucket for durable audio storage
 
 ### First run
 
 ```bash
 bun install
-cp .env .env.development   # then fill in real values for your providers
+cp .env .env.development # replace placeholders with development credentials
 bun run services:ready
-bun run dev                # mode=development, http://localhost:3000
+bun run dev              # http://localhost:3000
 ```
 
-To expose the local server to WhatsApp:
+To start Vite and the local WhatsApp tunnel together:
 
 ```bash
-bun run dev:local          # starts vite + ngrok in parallel
+bun run dev:local
 ```
 
-### Common scripts
+### Environment modes
 
-| Command                  | What it does                                                     |
-| ------------------------ | ---------------------------------------------------------------- |
-| `bun run dev`            | Dev server in `mode=development` on port 3000                    |
-| `bun run dev:local`      | Same as above + ngrok tunnel for WhatsApp webhooks               |
-| `bun run test`           | Spin up Postgres, migrate, run Vitest serially against a real DB |
-| `bun run typecheck`      | `tsc --noEmit`                                                   |
-| `bun run check`          | Biome lint + format check                                        |
-| `bun run check:fix`      | Auto-fix lint and formatting                                     |
-| `bun run migrate:create` | `bun run migrate:create -- <name>` — scaffold a new migration    |
-| `bun run migrate:up`     | Apply pending migrations                                         |
-| `bun run migrate:down`   | Roll back one migration                                          |
-| `bun run ai:smoke`       | Run the configured Pi provider smoke check with real credentials |
+The environment loader always reads `.env` first and then overlays `.env.<mode>`. Supported modes are `development`, `test`, `preview`, and `production`; `bun run dev` defaults to `development`, and Vitest defaults to `test`.
 
-### Environments
+Keep real credentials in the ignored mode-specific files. Never add production secrets to `.env` or the repository.
 
-`--mode` is the single source of truth. Valid values: `development`, `test`, `preview`, `production`.
-`.env` is always loaded first (template with placeholders), then `.env.${mode}` overrides it. Vite and Vitest have `envDir: false`, so only the explicitly selected mode file is loaded by the project config.
+## Common commands
 
-### Pi upgrades
+| Command | What it does |
+| --- | --- |
+| `bun run dev` | Start the development server on port 3000. |
+| `bun run dev:local` | Start the app, local PostgreSQL, seeded access, and ngrok. |
+| `bun run build` | Build the production application. |
+| `bun run test` | Prepare test PostgreSQL and run the serial Node test suite. |
+| `bun run test:ui` | Run the separate jsdom React UI suite. |
+| `bun run typecheck` | Run TypeScript without emitting files. |
+| `bun run check` | Run Biome formatting and lint checks. |
 
-`@earendil-works/pi-ai` and `@earendil-works/pi-agent-core` are pinned to the same exact version, currently `0.80.6`. Upgrade them together, then run:
+Migration, credential, provider smoke-test, and production delivery commands remain available in [`package.json`](./package.json) and the project agent instructions; they are intentionally kept out of the everyday setup path.
 
-```bash
-bun run check
-bun run typecheck
-bun run test
-bun run build
-```
+## AI models and credentials
 
-Run `bun run ai:smoke` once for each configured OpenAI, Anthropic, and Z.AI/GLM path. These checks require explicit development credentials and stay outside the default Vitest suite.
+The chat is not tied to one hard-coded model. The configured default can be changed at runtime from the web controls or the `/model` and `/effort` commands. Pi normalizes the supported provider/model paths while the application keeps conversation state and generation traces in PostgreSQL.
 
-## Testing philosophy
+Per-user provider credentials are encrypted before persistence. OpenAI Codex authentication has a dedicated local login script; other supported credentials can be imported explicitly. The Pi packages are pinned to the same exact version and should always be upgraded together.
 
-- Vitest runs **serially** with a 30s timeout. Each test file gets a clean schema (`DROP SCHEMA public CASCADE` → recreate → migrate) via [`tests/orquestrator.ts`](./tests/orquestrator.ts), so tests are isolated without mocks-of-mocks.
-- Only **application** tests live in the default suite: services, entities, utils. Routes, controllers, gateways and infra are deliberately excluded — they are exercised end-to-end through service tests.
-- Gateways have `Test*` implementations registered by the test orchestrator, so business logic is covered without hitting Pi providers, Google, or WhatsApp during CI.
+Provider credential setup, smoke tests, and Pi upgrade validation are maintainer operations documented by the repository scripts rather than part of the everyday setup path.
 
----
+## Testing
 
-## Roadmap
+- The main Vitest suite runs serially with a 30-second timeout and prepares a real PostgreSQL test database through the project scripts.
+- Entity, DTO, and provider-independent Service tests stay deterministic and infrastructure-free where possible.
+- PostgreSQL integration tests own database, migration, transaction, hydration, and concurrency behavior.
+- UI tests run separately under jsdom through `bun run test:ui`.
+- Architecture tests protect module ownership and dependency direction.
+- Test gateways keep Google, Meta, storage, speech, and AI calls out of ordinary CI runs.
 
-### Done (v1 → v2 parity and beyond)
+## Current status
 
-- [x] Port from C# / .NET to TypeScript (TanStack Start + React 19)
-- [x] Controller → Service → Entity layering preserved
-- [x] Raw SQL inside services, no ORM, no repositories
-- [x] Postgres migrations via `node-pg-migrate`
-- [x] DI container + bootstrap + mediator
-- [x] Google OAuth (app flow with encrypted state, web flow with JWT)
-- [x] WhatsApp Business Cloud API integration (text, buttons, audio)
-- [x] Cash flow: add expense / add earning / list / delete last
-- [x] Audio messages: download → R2 → Whisper transcript → fed to LLM
-- [x] Conversation summarization to keep LLM prompts bounded
-- [x] `allowed_numbers` gating
-- [x] Web chat gateway (SSE) + welcome / privacy pages with terminal aesthetic
-- [x] PT / EN translations on the web side
-- [x] Vitest suite with full schema reset between test files
+### Available now
+
+- [x] Text and voice chat on WhatsApp and the web
+- [x] Runtime AI provider/model selection and reasoning effort
+- [x] Persisted conversation history, summaries, and generation traces
+- [x] Cash-flow entries, transfers, transaction history, and bank balances
+- [x] Recurring monthly bills with progress and payment history
+- [x] Todos with due dates, filters, chat tools, and source transcripts
+- [x] Portable Markdown notes with explicit AI-assisted refinement
+- [x] Google-authenticated private web workspaces
+- [x] Responsive Portuguese and English terminal UI
 
 ### Next
 
-- [ ] Add bank balance list for the user
-- [ ] Add a note taker feature that integrates flawlessly with the chat but has a web interface
-- [ ] Add audio files/transcriptions to the note taker feature
-- [ ] Add a reminder feature that notifies the user for something
-- [ ] Use the database as source-of-truth for spreadsheet data (cache layer)
-- [ ] Structured logging service (replace ad-hoc `console`)
-- [ ] Log + alert on disallowed phone numbers attempting to use the bot
+- [ ] Attach audio files and transcriptions to notes
+- [ ] Add reminders and proactive notifications
+- [ ] Move spreadsheet-backed finance data toward a database source of truth
+- [ ] Replace remaining ad-hoc logs with structured logging and security alerts
 
 ---
 

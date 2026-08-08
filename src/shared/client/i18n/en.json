@@ -29,26 +29,36 @@
   "welcomePage": {
     "windowTitle": "the-chatbot: ~/welcome",
     "heading": "The Chatbot",
-    "subtitle": "WhatsApp · Google Sheets · AI",
-    "description": "is a versatile conversational agent designed to help you organize your life directly from WhatsApp.",
-    "features": [
-      {
-        "title": "Financial Control",
-        "description": "Track expenses and cash flow automatically in Google Sheets.",
+    "subtitle": "Web · WhatsApp · Google Sheets · AI",
+    "description": "is your personal workspace for conversations, tasks, notes, cash flow, and monthly bills — available in the browser and through WhatsApp.",
+    "features": {
+      "chat": {
+        "title": "AI Chat",
+        "description": "Talk by text or voice, switch AI models, and let the assistant work across your personal tools.",
+        "tags": ["#voice", "#ai"]
+      },
+      "todos": {
+        "title": "Todos",
+        "description": "Capture tasks from chat or the web, add due dates, filter the queue, and track completion.",
+        "tags": ["#tasks", "#due-dates"]
+      },
+      "notes": {
+        "title": "Markdown Notes",
+        "description": "Keep lasting notes in portable Markdown and refine drafts with AI before you save.",
+        "tags": ["#markdown", "#ai-drafts"]
+      },
+      "cashFlow": {
+        "title": "Cash Flow",
+        "description": "Review balances and transactions, add entries, and sync your real bank balance with Google Sheets.",
         "tags": ["#google-sheets", "#finance"]
       },
-      {
-        "title": "Secure Integration",
-        "description": "Your data is protected with Google Authentication.",
-        "tags": ["#oauth", "#security"]
-      },
-      {
-        "title": "Always Available",
-        "description": "Interact naturally at any time, anywhere.",
-        "tags": ["#whatsapp", "#24h"]
+      "bills": {
+        "title": "Monthly Bills",
+        "description": "Maintain a recurring monthly checklist, follow payment progress, and preserve payment history.",
+        "tags": ["#recurring", "#checklist"]
       }
-    ],
-    "footerPrompt": "Send a message to get started"
+    },
+    "footerPrompt": "Choose a workspace to get started"
   },
   "privacyPage": {
     "windowTitle": "the-chatbot: ~/privacy",
@@ -304,19 +314,19 @@
     "errorSaving": "Failed to save the monthly bill. Please try again.",
     "errorDeleting": "Failed to archive the monthly bill. Please try again."
   },
-  "chatLoginPage": {
-    "windowTitle": "the-chatbot: ~/chat/login",
-    "heading": "Sign in to chat",
+  "loginPage": {
+    "windowTitle": "the-chatbot: ~/login",
+    "heading": "Sign in to The Chatbot",
     "subtitle": "Use your Google account to continue",
-    "body": "Sign in with the same Google account already registered in The Chatbot app. If your account is eligible, you will be redirected straight into the web chat.",
+    "body": "Sign in with the same Google account already registered in The Chatbot. After authentication, you will return to the workspace you requested.",
     "loginButton": "Log in with Google",
-    "footerPrompt": "Authenticate with Google to open your chat session"
+    "footerPrompt": "Authenticate with Google to open your workspace"
   },
-  "chatNotRegisteredPage": {
-    "windowTitle": "the-chatbot: ~/chat/not-registered",
+  "notRegisteredPage": {
+    "windowTitle": "the-chatbot: ~/not-registered",
     "heading": "Not Registered",
     "subtitle": "Account not found",
-    "body": "You need to register via WhatsApp first before using the web chat. Send a message to our WhatsApp bot to get started.",
+    "body": "You need to register via WhatsApp before using The Chatbot on the web. Send a message to the WhatsApp bot to get started.",
     "backLink": "Back to home"
   }
 }

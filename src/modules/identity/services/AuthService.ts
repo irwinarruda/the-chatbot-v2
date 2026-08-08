@@ -154,11 +154,8 @@ export class AuthService {
     return { type: "success" };
   }
 
-  async handleWebGoogleLogin(): Promise<WebGoogleLoginResultDTO> {
-    const url = this.googleAuthGateway.createAuthorizationCodeUrl(
-      undefined,
-      "web",
-    );
+  async handleWebGoogleLogin(state: string): Promise<WebGoogleLoginResultDTO> {
+    const url = this.googleAuthGateway.createAuthorizationCodeUrl(state, "web");
     return { type: "redirect", url };
   }
 

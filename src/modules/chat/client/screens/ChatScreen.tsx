@@ -273,9 +273,9 @@ export function ChatScreen() {
     bootstrapChat().then((result) => {
       if (cancelled) return;
       if (result === "unauthorized") {
-        navigate({ to: "/chat/login" });
+        navigate({ to: "/login", search: { redirect: "/chat" } });
       } else if (result === "not_registered") {
-        navigate({ to: "/chat/not-registered" });
+        navigate({ to: "/not-registered", search: { redirect: "/chat" } });
       }
     });
     return () => {

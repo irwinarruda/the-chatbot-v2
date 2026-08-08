@@ -403,8 +403,10 @@ describe("AuthService", () => {
 
   test("handleWebGoogleLogin", async () => {
     await orquestrator.clearDatabase();
+    const webLoginState = "web-login-state";
 
-    const result = await orquestrator.authService.handleWebGoogleLogin();
+    const result =
+      await orquestrator.authService.handleWebGoogleLogin(webLoginState);
     expect(result.type).toBe("redirect");
     if (result.type === "redirect") {
       const uri = new URL(result.url);
@@ -418,7 +420,7 @@ describe("AuthService", () => {
       const scope = params.get("scope");
       expect(scope).toContain(GoogleAuthScopes.email);
       expect(scope).toContain(GoogleAuthScopes.profile);
-      expect(params.get("state")).toBeNull();
+      expect(params.get("state")).toBe(webLoginState);
     }
   });
 

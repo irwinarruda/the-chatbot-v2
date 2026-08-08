@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { getWebLoginActivePath } from "~/modules/identity/utils/WebLoginNavigation";
 import { TerminalFooter } from "~/shared/client/components/terminal/TerminalFooter";
 import { TerminalPageHeader } from "~/shared/client/components/terminal/TerminalPageHeader";
 import { TerminalPanel } from "~/shared/client/components/terminal/TerminalPanel";
@@ -7,14 +8,15 @@ import { TerminalWindow } from "~/shared/client/components/terminal/TerminalWind
 import { Button } from "~/shared/client/components/ui/button";
 import { useDictionary } from "~/shared/client/providers/useDictionary";
 
-export function NotRegisteredScreen() {
+export function NotRegisteredScreen({ redirectTo }: { redirectTo: string }) {
   const dictionary = useDictionary();
-  const t = dictionary.chatNotRegisteredPage;
+  const t = dictionary.notRegisteredPage;
+  const activePath = getWebLoginActivePath(redirectTo);
 
   return (
     <TerminalWindow
       title={t.windowTitle}
-      activePath="/chat"
+      activePath={activePath}
       dictionary={dictionary}
     >
       <TerminalPageHeader

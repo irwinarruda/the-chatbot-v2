@@ -3,11 +3,9 @@ import { index, rootRoute, route } from "@tanstack/virtual-file-routes";
 export const routes = rootRoute("shared/client/routes/__root.tsx", [
   index("shared/client/routes/index.tsx"),
   route("/privacy", "shared/client/routes/privacy.tsx"),
-  route("/chat", [
-    index("shared/client/routes/chat/index.tsx"),
-    route("/login", "shared/client/routes/chat/login.tsx"),
-    route("/not-registered", "shared/client/routes/chat/not-registered.tsx"),
-  ]),
+  route("/login", "shared/client/routes/login.tsx"),
+  route("/not-registered", "shared/client/routes/not-registered.tsx"),
+  route("/chat", [index("shared/client/routes/chat/index.tsx")]),
   route("/todo", "shared/client/routes/todo.tsx", [
     index("shared/client/routes/todo/index.tsx"),
     route("/$todoId", "shared/client/routes/todo/$todoId.tsx"),

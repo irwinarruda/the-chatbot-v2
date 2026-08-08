@@ -1,12 +1,16 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { ChatScreen } from "~/modules/chat/client";
+import { normalizeWebLoginRedirect } from "~/modules/identity/utils/WebLoginNavigation";
 import { requireWebAccess } from "~/shared/http/functions/require-web-access";
 
 export const Route = createFileRoute("/chat/")({
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     const authResult = await requireWebAccess();
     if (!authResult.ok) {
-      throw redirect({ to: "/chat/login" });
+      throw redirect({
+        to: "/login",
+        search: { redirect: normalizeWebLoginRedirect(location.href) },
+      });
     }
   },
   component: ChatScreen,

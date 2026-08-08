@@ -5,6 +5,11 @@ import {
   deleteWebAuthCookie,
   setWebAuthCookie,
 } from "~/shared/http/utils/WebAuthCookie";
+import {
+  deleteWebLoginCookies,
+  getWebLoginRedirect,
+  hasValidWebLoginState,
+} from "~/shared/http/utils/WebLoginCookie";
 
 export const Route = createFileRoute("/api/v1/web/auth/redirect")({
   server: {
@@ -13,20 +18,31 @@ export const Route = createFileRoute("/api/v1/web/auth/redirect")({
         const authService = ServerBootstrap.getApplication().services.auth;
         const url = new URL(request.url);
         const code = url.searchParams.get("code") ?? "";
+        const state = url.searchParams.get("state") ?? "";
+        const redirectTo = getWebLoginRedirect(request);
+        const headers = new Headers();
+        if (!hasValidWebLoginState(request, state)) {
+          deleteWebAuthCookie(headers, request);
+          deleteWebLoginCookies(headers, request);
+          const loginUrl = new URL("/login", request.url);
+          loginUrl.searchParams.set("redirect", redirectTo);
+          return Http.redirect(loginUrl.href, { headers });
+        }
         let token = "";
         try {
           token = await authService.handleWebGoogleRedirect(code);
         } catch {
-          const headers = new Headers();
           deleteWebAuthCookie(headers, request);
-          return Http.redirect(
-            new URL("/chat/not-registered", request.url).href,
-            { headers },
-          );
+          deleteWebLoginCookies(headers, request);
+          const notRegisteredUrl = new URL("/not-registered", request.url);
+          notRegisteredUrl.searchParams.set("redirect", redirectTo);
+          return Http.redirect(notRegisteredUrl.href, { headers });
         }
-        const headers = new Headers();
         setWebAuthCookie(headers, request, token);
-        return Http.redirect(new URL("/chat", request.url).href, { headers });
+        deleteWebLoginCookies(headers, request);
+        return Http.redirect(new URL(redirectTo, request.url).href, {
+          headers,
+        });
       },
     },
   },

@@ -3,12 +3,18 @@ import {
   CashFlowScreen,
   normalizeCashFlowSearch,
 } from "~/modules/cash-flow/client";
+import { normalizeWebLoginRedirect } from "~/modules/identity/utils/WebLoginNavigation";
 import { requireWebAccess } from "~/shared/http/functions/require-web-access";
 
 export const Route = createFileRoute("/cash-flow")({
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     const authResult = await requireWebAccess();
-    if (!authResult.ok) throw redirect({ to: "/chat/login" });
+    if (!authResult.ok) {
+      throw redirect({
+        to: "/login",
+        search: { redirect: normalizeWebLoginRedirect(location.href) },
+      });
+    }
   },
   validateSearch: normalizeCashFlowSearch,
   component: CashFlowRoute,

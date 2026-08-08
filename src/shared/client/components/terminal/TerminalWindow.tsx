@@ -142,7 +142,7 @@ export function TerminalWindow({
   async function onLogout() {
     setIsNavigationOpen(false);
     await logout();
-    router.navigate({ to: "/chat/login" });
+    router.navigate({ to: "/login", search: { redirect: "/chat" } });
   }
 
   const localeThemeControls = (
