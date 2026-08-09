@@ -8,6 +8,7 @@ const transactionBatchSize = 20;
 
 export function CashFlowTransactionList({
   currency,
+  hiddenMonetaryValueLabel,
   isSubmitting,
   locale,
   onDelete,
@@ -15,6 +16,7 @@ export function CashFlowTransactionList({
   transactions,
 }: {
   currency: Intl.NumberFormat;
+  hiddenMonetaryValueLabel: string;
   isSubmitting: boolean;
   locale: Locale;
   onDelete: () => void;
@@ -57,6 +59,7 @@ export function CashFlowTransactionList({
           <li key={transaction.position}>
             <CashFlowTransactionRow
               currency={currency}
+              hiddenMonetaryValueLabel={hiddenMonetaryValueLabel}
               isSubmitting={isSubmitting}
               locale={locale}
               onDelete={onDelete}

@@ -1,9 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, test } from "vitest";
 import { MonthlyExpenseProgress } from "~/modules/cash-flow/client/components/MonthlyExpenseProgress";
 import type { MonthlyExpenseDTO } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
 import { getDictionary } from "~/shared/client/i18n";
+import { useApp } from "~/shared/client/stores";
 
 function createExpense(
   expectedAmount: number,
@@ -24,6 +25,13 @@ function createExpense(
 }
 
 describe("MonthlyExpenseProgress", () => {
+  beforeEach(() => {
+    useApp.setState({
+      isMoneyHidden: false,
+      isMoneyPrivacyHydrated: true,
+    });
+  });
+
   test("switches progress from paid bill count to paid amount", async () => {
     const user = userEvent.setup();
     const t = getDictionary("en").billsPage;
@@ -33,7 +41,14 @@ describe("MonthlyExpenseProgress", () => {
       createExpense(50, false),
       createExpense(50, false),
     ];
-    render(<MonthlyExpenseProgress expenses={expenses} locale="en" t={t} />);
+    render(
+      <MonthlyExpenseProgress
+        expenses={expenses}
+        hiddenMonetaryValueLabel="Hidden monetary value"
+        locale="en"
+        t={t}
+      />,
+    );
 
     expect(screen.getByText("50%")).toBeInTheDocument();
     expect(screen.getByText("2 of 4 paid this month")).toBeInTheDocument();
@@ -49,9 +64,12 @@ describe("MonthlyExpenseProgress", () => {
       currency: "BRL",
     });
     expect(screen.getByText("90%")).toBeInTheDocument();
+    const valueDescription = `${currency.format(900)} ${t.of} ${currency.format(1000)} ${t.paidValueThisMonth}`;
     expect(
       screen.getByText(
-        `${currency.format(900)} of ${currency.format(1000)} paid this month`,
+        (_, element) =>
+          element?.getAttribute("data-slot") === "card-description" &&
+          element.textContent === valueDescription,
       ),
     ).toBeInTheDocument();
     expect(screen.getByRole("progressbar")).toHaveAttribute(

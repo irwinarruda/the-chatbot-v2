@@ -42,6 +42,7 @@ describe("CashFlowTransactionList", () => {
             currency: "BRL",
           })
         }
+        hiddenMonetaryValueLabel="Hidden monetary value"
         isSubmitting={false}
         locale="en"
         onDelete={() => {}}

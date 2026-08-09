@@ -11,11 +11,13 @@ export function TerminalChromeButton({
   children,
   className,
   onClick,
+  pressed,
   title,
 }: {
   children: ReactNode;
   className?: string;
   onClick: () => void;
+  pressed?: boolean;
   title: string;
 }) {
   return (
@@ -26,6 +28,7 @@ export function TerminalChromeButton({
             type="button"
             onClick={onClick}
             aria-label={title}
+            aria-pressed={pressed}
             variant="ghost"
             size="xs"
             className={cn(

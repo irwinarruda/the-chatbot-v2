@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import type { MonthlyExpenseDTO } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
+import { MonetaryValue } from "~/shared/client/components/MonetaryValue";
 import { Button } from "~/shared/client/components/ui/button";
 import {
   Card,
@@ -27,10 +28,12 @@ type ProgressMeasure = ValueOf<typeof ProgressMeasure>;
 
 export function MonthlyExpenseProgress({
   expenses,
+  hiddenMonetaryValueLabel,
   locale,
   t,
 }: {
   expenses: MonthlyExpenseDTO[];
+  hiddenMonetaryValueLabel: string;
   locale: Locale;
   t: Dictionary["billsPage"];
 }) {
@@ -54,14 +57,25 @@ export function MonthlyExpenseProgress({
     currency: "BRL",
   });
   let progress = 0;
-  let progressDescription = `${paidCount} ${t.of} ${expenses.length} ${t.paidThisMonth}`;
+  let progressDescription: ReactNode = `${paidCount} ${t.of} ${expenses.length} ${t.paidThisMonth}`;
   let progressMeasure = t.progressByCount;
   if (measure === ProgressMeasure.Count && expenses.length > 0) {
     progress = Math.round((paidCount / expenses.length) * 100);
   }
   if (measure === ProgressMeasure.Value) {
     progressMeasure = t.progressByValue;
-    progressDescription = `${currency.format(paidTotal)} ${t.of} ${currency.format(expectedTotal)} ${t.paidValueThisMonth}`;
+    progressDescription = (
+      <>
+        <MonetaryValue hiddenLabel={hiddenMonetaryValueLabel}>
+          {currency.format(paidTotal)}
+        </MonetaryValue>{" "}
+        {t.of}{" "}
+        <MonetaryValue hiddenLabel={hiddenMonetaryValueLabel}>
+          {currency.format(expectedTotal)}
+        </MonetaryValue>{" "}
+        {t.paidValueThisMonth}
+      </>
+    );
     if (expectedTotal > 0) {
       progress = Math.round((paidTotal / expectedTotal) * 100);
     }
@@ -140,12 +154,20 @@ export function MonthlyExpenseProgress({
         <SummaryMetric
           icon={<WalletCards className="size-3.5 text-term-cyan" />}
           label={t.expectedTotal}
-          value={currency.format(expectedTotal)}
+          value={
+            <MonetaryValue hiddenLabel={hiddenMonetaryValueLabel}>
+              {currency.format(expectedTotal)}
+            </MonetaryValue>
+          }
         />
         <SummaryMetric
           icon={<CircleDollarSign className="size-3.5 text-term-green" />}
           label={t.paidAmount}
-          value={currency.format(paidTotal)}
+          value={
+            <MonetaryValue hiddenLabel={hiddenMonetaryValueLabel}>
+              {currency.format(paidTotal)}
+            </MonetaryValue>
+          }
         />
       </dl>
     </Card>
@@ -159,7 +181,7 @@ function SummaryMetric({
 }: {
   icon: ReactNode;
   label: string;
-  value: string;
+  value: ReactNode;
 }) {
   return (
     <div className="min-w-0 border-term-border/70 border-t p-3 even:border-l sm:border-l sm:first:border-l-0">

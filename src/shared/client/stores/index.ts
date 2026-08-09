@@ -28,18 +28,24 @@ import {
   type PrefsSlice,
   prefsSlice,
 } from "~/shared/client/stores/slices/prefsSlice";
+import {
+  type PrivacySlice,
+  privacySlice,
+} from "~/shared/client/stores/slices/privacySlice";
 
 export type AppSlices = CashFlowSlice &
   ChatSlice &
   MonthlyExpenseSlice &
   RecordingSlice &
   PrefsSlice &
+  PrivacySlice &
   NoteSlice &
   TodoSlice;
 
 export const useApp = create<AppSlices>()(
   computed((...args) => ({
     ...prefsSlice(...args),
+    ...privacySlice(...args),
     ...cashFlowSlice(...args),
     ...monthlyExpenseSlice(...args),
     ...chatSlice(...args),
@@ -55,6 +61,7 @@ export type {
   MonthlyExpenseSlice,
   NoteSlice,
   PrefsSlice,
+  PrivacySlice,
   RecordingSlice,
   TodoSlice,
 };

@@ -1,6 +1,7 @@
 import { Link, useRouter } from "@tanstack/react-router";
 import { LogOut, Moon, Sun, TextAlignJustify } from "lucide-react";
 import { type ReactNode, useState } from "react";
+import { MonetaryPrivacyControl } from "~/shared/client/components/terminal/MonetaryPrivacyControl";
 import { TerminalChromeButton } from "~/shared/client/components/terminal/TerminalChromeButton";
 import { TerminalResponsiveOverlay } from "~/shared/client/components/terminal/TerminalResponsiveOverlay";
 import { Button } from "~/shared/client/components/ui/button";
@@ -113,6 +114,10 @@ export function TerminalWindow({
   const skipToContentLabel = dictionary?.common.skipToContent ?? title;
   const logoutLabel = dictionary?.common.logout ?? "logout";
   const openNavigationLabel = dictionary?.common.openNavigation ?? activeLabel;
+  const hideMonetaryValuesLabel =
+    dictionary?.common.hideMonetaryValues ?? "Hide monetary values";
+  const showMonetaryValuesLabel =
+    dictionary?.common.showMonetaryValues ?? "Show monetary values";
   const themeLabel =
     prefs.theme === "light"
       ? (dictionary?.common.switchToDarkTheme ?? "dark")
@@ -145,8 +150,12 @@ export function TerminalWindow({
     router.navigate({ to: "/login", search: { redirect: "/chat" } });
   }
 
-  const localeThemeControls = (
+  const standardControls = (
     <>
+      <MonetaryPrivacyControl
+        hideLabel={hideMonetaryValuesLabel}
+        showLabel={showMonetaryValuesLabel}
+      />
       <TerminalChromeButton onClick={onToggleLocale} title={prefs.locale}>
         {prefs.locale === "pt-BR" ? "PT" : "EN"}
       </TerminalChromeButton>
@@ -242,7 +251,7 @@ export function TerminalWindow({
             </span>
             <div className="flex shrink-0 items-center gap-1.5">
               {chromeControls}
-              {localeThemeControls}
+              {standardControls}
               {logoutControl}
             </div>
           </div>
@@ -341,22 +350,7 @@ export function TerminalWindow({
                     })}
                   </nav>
                   <div className="mt-4 flex flex-wrap items-center gap-2 border-term-border border-t pt-4">
-                    <TerminalChromeButton
-                      onClick={onToggleLocale}
-                      title={prefs.locale}
-                    >
-                      {prefs.locale === "pt-BR" ? "PT" : "EN"}
-                    </TerminalChromeButton>
-                    <TerminalChromeButton
-                      onClick={toggleTheme}
-                      title={themeLabel}
-                    >
-                      {prefs.theme === "light" ? (
-                        <Sun className="size-3" />
-                      ) : (
-                        <Moon className="size-3" />
-                      )}
-                    </TerminalChromeButton>
+                    {standardControls}
                     {showLogout && (
                       <Button
                         type="button"

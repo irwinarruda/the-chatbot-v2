@@ -291,6 +291,7 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
       </Card>
       <MonthlyExpenseProgress
         expenses={monthlyExpenses}
+        hiddenMonetaryValueLabel={dictionary.common.hiddenMonetaryValue}
         locale={prefs.locale}
         t={t}
       />
@@ -313,6 +314,9 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
               <li key={expense.id}>
                 <MonthlyExpenseRow
                   expense={expense}
+                  hiddenMonetaryValueLabel={
+                    dictionary.common.hiddenMonetaryValue
+                  }
                   isSubmitting={isSubmitting}
                   locale={prefs.locale}
                   onEdit={() => onOpenEdit(expense)}

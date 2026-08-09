@@ -28,6 +28,7 @@ describe("CashFlowTransactionRow", () => {
     const { rerender } = render(
       <CashFlowTransactionRow
         currency={currency}
+        hiddenMonetaryValueLabel="Hidden monetary value"
         isSubmitting={false}
         locale="en"
         onDelete={() => {}}
@@ -43,6 +44,7 @@ describe("CashFlowTransactionRow", () => {
     rerender(
       <CashFlowTransactionRow
         currency={currency}
+        hiddenMonetaryValueLabel="Hidden monetary value"
         isSubmitting={false}
         locale="en"
         onDelete={() => {}}

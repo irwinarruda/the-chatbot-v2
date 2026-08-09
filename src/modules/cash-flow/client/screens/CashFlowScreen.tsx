@@ -26,6 +26,7 @@ import type {
   CreateCashFlowTransactionRequestDTO,
   SyncCashFlowBankAccountRequestDTO,
 } from "~/modules/cash-flow/entities/dtos/CashFlowWebDTO";
+import { MonetaryValue } from "~/shared/client/components/MonetaryValue";
 import { TerminalPageHeader } from "~/shared/client/components/terminal/TerminalPageHeader";
 import { TerminalWindow } from "~/shared/client/components/terminal/TerminalWindow";
 import {
@@ -243,7 +244,11 @@ export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
                   balanceColorClassName(netBalance),
                 )}
               >
-                {currency.format(netBalance)}
+                <MonetaryValue
+                  hiddenLabel={dictionary.common.hiddenMonetaryValue}
+                >
+                  {currency.format(netBalance)}
+                </MonetaryValue>
               </strong>
             </p>
           </div>
@@ -264,7 +269,11 @@ export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
                       balanceColorClassName(account.balance),
                     )}
                   >
-                    {currency.format(account.balance)}
+                    <MonetaryValue
+                      hiddenLabel={dictionary.common.hiddenMonetaryValue}
+                    >
+                      {currency.format(account.balance)}
+                    </MonetaryValue>
                   </p>
                 </CardContent>
               </Card>
@@ -313,6 +322,7 @@ export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
         ) : filteredTransactions.length > 0 ? (
           <CashFlowTransactionList
             currency={currency}
+            hiddenMonetaryValueLabel={dictionary.common.hiddenMonetaryValue}
             isSubmitting={isSubmitting}
             key={transactionListKey}
             locale={prefs.locale}

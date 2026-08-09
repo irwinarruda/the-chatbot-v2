@@ -52,10 +52,12 @@ function RootDocument({ children }: { children: ReactNode }) {
   const prefs = Route.useRouteContext();
   const suppressHydrationWarning = import.meta.env.DEV;
   const hydratePrefs = useApp((state) => state.hydratePrefs);
+  const hydrateMoneyPrivacy = useApp((state) => state.hydrateMoneyPrivacy);
 
   useEffect(() => {
     hydratePrefs(prefs);
-  }, [hydratePrefs, prefs]);
+    hydrateMoneyPrivacy();
+  }, [hydrateMoneyPrivacy, hydratePrefs, prefs]);
 
   return (
     <html lang={prefs.locale} data-theme={prefs.theme}>

@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import type { CashFlowTransactionResponseDTO } from "~/modules/cash-flow/entities/dtos/CashFlowWebDTO";
 import { CashFlowTransactionType } from "~/modules/cash-flow/entities/enums/CashFlowTransactionType";
+import { MonetaryValue } from "~/shared/client/components/MonetaryValue";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,6 +25,7 @@ import type { Dictionary, Locale } from "~/shared/client/i18n";
 
 export function CashFlowTransactionRow({
   currency,
+  hiddenMonetaryValueLabel,
   isSubmitting,
   locale,
   onDelete,
@@ -31,6 +33,7 @@ export function CashFlowTransactionRow({
   transaction,
 }: {
   currency: Intl.NumberFormat;
+  hiddenMonetaryValueLabel: string;
   isSubmitting: boolean;
   locale: Locale;
   onDelete: () => void;
@@ -91,7 +94,9 @@ export function CashFlowTransactionRow({
               : "whitespace-nowrap font-semibold text-sm text-term-green tabular-nums"
           }
         >
-          {currency.format(transaction.value)}
+          <MonetaryValue hiddenLabel={hiddenMonetaryValueLabel}>
+            {currency.format(transaction.value)}
+          </MonetaryValue>
         </span>
         {transaction.isLast && (
           <AlertDialog>

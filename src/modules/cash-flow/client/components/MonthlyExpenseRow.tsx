@@ -1,5 +1,6 @@
 import { CalendarDays, Pencil, ReceiptText } from "lucide-react";
 import type { MonthlyExpenseDTO } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
+import { MonetaryValue } from "~/shared/client/components/MonetaryValue";
 import { Badge } from "~/shared/client/components/ui/badge";
 import { Button } from "~/shared/client/components/ui/button";
 import { Card, CardContent } from "~/shared/client/components/ui/card";
@@ -14,6 +15,7 @@ import type { Dictionary, Locale } from "~/shared/client/i18n";
 
 export function MonthlyExpenseRow({
   expense,
+  hiddenMonetaryValueLabel,
   isSubmitting,
   locale,
   onEdit,
@@ -21,6 +23,7 @@ export function MonthlyExpenseRow({
   t,
 }: {
   expense: MonthlyExpenseDTO;
+  hiddenMonetaryValueLabel: string;
   isSubmitting: boolean;
   locale: Locale;
   onEdit: () => void;
@@ -82,7 +85,13 @@ export function MonthlyExpenseRow({
                 expense.expectedAmount ? "text-term-cyan" : "text-term-muted"
               }
             >
-              {amount}
+              {expense.expectedAmount ? (
+                <MonetaryValue hiddenLabel={hiddenMonetaryValueLabel}>
+                  {amount}
+                </MonetaryValue>
+              ) : (
+                amount
+              )}
             </span>
             <span className="inline-flex items-center gap-1">
               <CalendarDays
