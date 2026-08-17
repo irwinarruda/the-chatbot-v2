@@ -16,6 +16,7 @@ type TerminalPath =
   | "/chat"
   | "/todo"
   | "/notes"
+  | "/artifacts"
   | "/cash-flow"
   | "/bills";
 
@@ -102,6 +103,7 @@ export function TerminalWindow({
         { label: dictionary.nav.chat, href: "/chat" },
         { label: dictionary.nav.todo, href: "/todo" },
         { label: dictionary.nav.notes, href: "/notes" },
+        { label: dictionary.nav.artifacts, href: "/artifacts" },
         { label: dictionary.nav.cashFlow, href: "/cash-flow" },
         { label: dictionary.nav.bills, href: "/bills" },
       ]

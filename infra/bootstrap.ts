@@ -1,5 +1,6 @@
 import { registerBunOAuthFlows } from "@earendil-works/pi-ai/bun-oauth";
 import { Database } from "~/infra/database";
+import { ArtifactService } from "~/modules/artifacts/services/ArtifactService";
 import type { CashFlowSpreadsheetGateway } from "~/modules/cash-flow/gateway/CashFlowSpreadsheetGateway";
 import { GoogleCashFlowSpreadsheetGateway } from "~/modules/cash-flow/gateway/CashFlowSpreadsheetGateway/GoogleCashFlowSpreadsheetGateway";
 import { CashFlowService } from "~/modules/cash-flow/services/CashFlowService";
@@ -53,6 +54,7 @@ export interface Application {
     identityChat: IdentityChatCoordinator;
   };
   services: {
+    artifacts: ArtifactService;
     auth: AuthService;
     aiModels: AiModelService;
     cashFlow: CashFlowService;
@@ -137,6 +139,7 @@ export function createApplication(
     gateways.cashFlowSpreadsheet,
   );
   const monthlyExpenseService = new MonthlyExpenseService(database);
+  const artifactService = new ArtifactService(database);
   const todoService = new TodoService(database);
   const aiModelPreferenceService = new AiModelPreferenceService(database);
   const aiModelService = new AiModelService(
@@ -169,6 +172,7 @@ export function createApplication(
     gateways,
     coordination: { identityChat: chatCoordinator },
     services: {
+      artifacts: artifactService,
       auth: authService,
       aiModels: aiModelService,
       cashFlow: cashFlowService,

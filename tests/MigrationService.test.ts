@@ -1,3 +1,4 @@
+import { readdirSync } from "node:fs";
 import { runner } from "node-pg-migrate";
 import { Paths } from "~/infra/paths";
 import { UnauthorizedException } from "~/shared/errors/ApplicationErrors";
@@ -5,11 +6,28 @@ import { orquestrator } from "./orquestrator";
 
 const noop = () => {};
 const noopLogger = { debug: noop, info: noop, warn: noop, error: noop };
+const migrationFilePattern = /^\d+_.+\.(?:js|ts)$/;
+
+function listMigrationNames(): string[] {
+  return readdirSync(Paths.migrationsDir())
+    .filter((file) => migrationFilePattern.test(file))
+    .sort()
+    .map((file) => file.replace(/\.(?:js|ts)$/, ""));
+}
+
+function rollbackCountFrom(migrationName: string): number {
+  const migrationNames = listMigrationNames();
+  const migrationIndex = migrationNames.indexOf(migrationName);
+  if (migrationIndex === -1) {
+    throw new Error(`Migration ${migrationName} does not exist`);
+  }
+  return migrationNames.length - migrationIndex;
+}
 
 describe("MigrationService", () => {
   test("testMigration", async () => {
     await orquestrator.wipeDatabase();
-    const migrationCount = 25;
+    const migrationCount = listMigrationNames().length;
     let migrations =
       await orquestrator.migrationService.listPendingMigrations();
     expect(migrations.length).toBeGreaterThan(0);
@@ -63,7 +81,9 @@ describe("MigrationService", () => {
       dir: Paths.migrationsDir(),
       direction: "down",
       migrationsTable: "pgmigrations",
-      count: 6,
+      count: rollbackCountFrom(
+        "1784254416707_reset-google-credentials-encryption",
+      ),
       noLock: true,
       logger: noopLogger,
     });
@@ -119,7 +139,9 @@ describe("MigrationService", () => {
       dir: Paths.migrationsDir(),
       direction: "down",
       migrationsTable: "pgmigrations",
-      count: 2,
+      count: rollbackCountFrom(
+        "1785458983196_ai-generation-traces-and-reasoning-effort",
+      ),
       noLock: true,
       logger: noopLogger,
     });

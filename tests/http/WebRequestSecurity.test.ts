@@ -1,11 +1,13 @@
 import { describe, expect, test } from "vitest";
 import {
   ForbiddenException,
+  PayloadTooLargeException,
   UnsupportedMediaTypeException,
 } from "~/shared/errors/ApplicationErrors";
 import { ValidationException } from "~/shared/errors/DomainErrors";
 import { requiresWebAuthentication } from "~/shared/http/middleware/auth";
 import { enforceWebRequestSecurity } from "~/shared/http/middleware/webRequestSecurity";
+import { requireBearerToken } from "~/shared/http/utils/BearerToken";
 import { parseJsonRequest } from "~/shared/http/utils/JsonRequest";
 import {
   deleteWebAuthCookie,
@@ -22,6 +24,8 @@ describe("web request security", () => {
     expect(requiresWebAuthentication("/api/v1/web/auth/me")).toBe(true);
     expect(requiresWebAuthentication("/api/v1/web/notes")).toBe(true);
     expect(requiresWebAuthentication("/api/v1/web/notes/refine")).toBe(true);
+    expect(requiresWebAuthentication("/api/v1/web/artifacts")).toBe(true);
+    expect(requiresWebAuthentication("/api/v1/artifacts")).toBe(false);
     expect(requiresWebAuthentication("/api/v1/web/future-route")).toBe(true);
   });
 
@@ -95,6 +99,26 @@ describe("web request security", () => {
   });
 });
 
+describe("bearer authentication", () => {
+  test("accepts a single bearer credential without changing it", () => {
+    const request = new Request("https://app.example.com/api/v1/artifacts", {
+      headers: { Authorization: "Bearer tca_example-secret" },
+    });
+
+    expect(requireBearerToken(request)).toBe("tca_example-secret");
+  });
+
+  test("rejects missing and malformed credentials", () => {
+    const missing = new Request("https://app.example.com/api/v1/artifacts");
+    const basic = new Request("https://app.example.com/api/v1/artifacts", {
+      headers: { Authorization: "Basic value" },
+    });
+
+    expect(() => requireBearerToken(missing)).toThrow();
+    expect(() => requireBearerToken(basic)).toThrow();
+  });
+});
+
 describe("web JSON requests", () => {
   test("application/json with parameters is parsed", async () => {
     const request = new Request("https://app.example.com/api/v1/web/todos", {
@@ -150,6 +174,18 @@ describe("web JSON requests", () => {
     await expect(parseJsonRequest(malformedRequest)).rejects.toBeInstanceOf(
       ValidationException,
     );
+  });
+
+  test("bounded JSON parsing stops oversized request bodies", async () => {
+    const request = new Request("https://app.example.com/api/v1/artifacts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ html: "a".repeat(64) }),
+    });
+
+    await expect(
+      parseJsonRequest(request, { maxBytes: 32 }),
+    ).rejects.toBeInstanceOf(PayloadTooLargeException);
   });
 });
 

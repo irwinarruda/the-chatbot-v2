@@ -12,6 +12,7 @@ describe("WebLoginNavigation", () => {
     expect(normalizeWebLoginRedirect("/cash-flow?type=expense")).toBe(
       "/cash-flow?type=expense",
     );
+    expect(normalizeWebLoginRedirect("/artifacts")).toBe("/artifacts");
   });
 
   test("rejects external, public, and lookalike destinations", () => {
@@ -33,6 +34,7 @@ describe("WebLoginNavigation", () => {
 
   test("derives navigation state from nested destinations", () => {
     expect(getWebLoginActivePath("/notes/note-id?q=planning")).toBe("/notes");
+    expect(getWebLoginActivePath("/artifacts")).toBe("/artifacts");
     expect(getWebLoginActivePath("/bills?month=2026-08")).toBe("/bills");
   });
 });

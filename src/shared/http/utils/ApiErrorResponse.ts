@@ -1,3 +1,5 @@
+import { ZodError } from "zod";
+import { ApiErrorResponseDTO } from "~/shared/entities/dtos/ApiErrorDTO";
 import {
   AppError,
   type ApplicationFailure,
@@ -16,6 +18,21 @@ export const ExceptionResponse = {
         statusCode: 400,
       };
     }
+    if (error instanceof ZodError) {
+      return {
+        message: "The request contains invalid data.",
+        action: "Correct the invalid fields and try again.",
+        name: "ValidationException",
+        statusCode: 400,
+        details: {
+          issues: error.issues.map((issue) => ({
+            code: issue.code,
+            message: issue.message,
+            path: issue.path.map(String),
+          })),
+        },
+      };
+    }
     if (error instanceof AppError) {
       if (error.statusCode >= 500) {
         console.error("[InternalError]", error.message, error.cause ?? "");
@@ -29,7 +46,7 @@ export const ExceptionResponse = {
 };
 
 export function createApiErrorResponse(error: unknown): Response {
-  const response = ExceptionResponse.handle(error);
+  const response = ApiErrorResponseDTO.parse(ExceptionResponse.handle(error));
   return new Response(Printable.make(response), {
     status: response.statusCode,
     headers: { "Content-Type": "application/json" },

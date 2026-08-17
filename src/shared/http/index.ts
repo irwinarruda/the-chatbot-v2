@@ -14,6 +14,8 @@ export const routes = rootRoute("shared/client/routes/__root.tsx", [
     index("shared/client/routes/notes/index.tsx"),
     route("/$noteId", "shared/client/routes/notes/$noteId.tsx"),
   ]),
+  route("/artifacts", "shared/client/routes/artifacts.tsx"),
+  route("/a/$artifactId", "shared/client/routes/a/$artifactId.tsx"),
   route("/cash-flow", "shared/client/routes/cash-flow.tsx"),
   route("/bills", "shared/client/routes/bills.tsx"),
   route("/google", [
@@ -67,6 +69,17 @@ export const routes = rootRoute("shared/client/routes/__root.tsx", [
     "shared/http/controllers/web-note-refinement.ts",
   ),
   route("/api/v1/web/notes/$noteId", "shared/http/controllers/web-note.ts"),
+  route("/api/v1/artifacts", "shared/http/controllers/artifacts.ts"),
+  route("/api/v1/artifacts/$artifactId", "shared/http/controllers/artifact.ts"),
+  route("/api/v1/web/artifacts", "shared/http/controllers/web-artifacts.ts"),
+  route(
+    "/api/v1/web/artifacts/token",
+    "shared/http/controllers/web-artifact-token.ts",
+  ),
+  route(
+    "/api/v1/web/artifacts/$artifactId",
+    "shared/http/controllers/web-artifact.ts",
+  ),
   route(
     "/api/v1/web/monthly-expenses",
     "shared/http/controllers/web-monthly-expenses.ts",

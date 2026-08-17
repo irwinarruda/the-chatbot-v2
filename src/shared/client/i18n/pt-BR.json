@@ -26,6 +26,7 @@
     "chat": "chat",
     "todo": "tarefas",
     "notes": "notas",
+    "artifacts": "artefatos",
     "cashFlow": "fluxo de caixa",
     "bills": "contas"
   },
@@ -49,6 +50,11 @@
         "title": "Notas em Markdown",
         "description": "Guarde notas duradouras em Markdown portátil e refine rascunhos com IA antes de salvar.",
         "tags": ["#markdown", "#rascunhos-com-ia"]
+      },
+      "artifacts": {
+        "title": "Artefatos HTML",
+        "description": "Publique páginas ricas e autocontidas com layouts, SVG inline, código destacado e links compartilháveis.",
+        "tags": ["#html", "#compartilhamento"]
       },
       "cashFlow": {
         "title": "Fluxo de Caixa",
@@ -205,6 +211,43 @@
     "errorSaving": "Falha ao salvar a nota. O rascunho continua aqui.",
     "errorDeleting": "Falha ao excluir a nota. Tente novamente.",
     "errorRefining": "A IA não conseguiu refatorar este rascunho. Tente novamente."
+  },
+  "artifactsPage": {
+    "windowTitle": "the-chatbot: ~/artefatos",
+    "viewerWindowTitle": "the-chatbot: ~/artefato",
+    "heading": "Artefatos HTML",
+    "subtitle": "Publique páginas estruturadas pelos seus agentes de código e compartilhe sem dar acesso da página à aplicação.",
+    "listLabel": "índice de artefatos",
+    "loading": "Carregando artefatos...",
+    "emptyState": "Nenhum artefato foi publicado. Use a skill global de publicação para criar o primeiro.",
+    "tokenTitle": "Token de upload para agentes",
+    "tokenDescription": "A skill global usa esta credencial revogável. O servidor guarda apenas o hash.",
+    "tokenOnceHint": "Copie esta configuração para o arquivo privado da skill agora. O token não será exibido novamente depois que você sair ou atualizar esta página. Se o arquivo já tiver outros ambientes, adicione ou substitua somente o ambiente mostrado abaixo.",
+    "configuredLabel": "configurado",
+    "notConfiguredLabel": "não configurado",
+    "createTokenAction": "Criar token",
+    "rotateTokenAction": "Rotacionar token",
+    "revokeTokenAction": "Revogar",
+    "copyConfigAction": "Copiar configuração da skill",
+    "configJsonLabel": "JSON de configuração da skill",
+    "lastUsedLabel": "último uso",
+    "rotateConfirmation": "Rotacionar o token de upload? O token atual deixará de funcionar imediatamente.",
+    "revokeConfirmation": "Revogar o token de upload? Os agentes não poderão publicar até que você crie outro.",
+    "publicLabel": "público",
+    "privateLabel": "privado",
+    "openAction": "Abrir artefato",
+    "manageAction": "Gerenciar",
+    "copyLinkAction": "Copiar link",
+    "makePublicAction": "Tornar público",
+    "makePrivateAction": "Tornar privado",
+    "deleteAction": "Excluir artefato",
+    "deleteConfirmation": "Excluir este artefato? Esta ação não pode ser desfeita.",
+    "viewerError": "Este artefato não existe ou você não tem acesso a ele.",
+    "errorLoading": "Falha ao carregar os artefatos. Tente novamente.",
+    "errorSaving": "Falha ao atualizar a visibilidade. Tente novamente.",
+    "errorDeleting": "Falha ao excluir o artefato. Tente novamente.",
+    "errorToken": "Falha ao atualizar o token de upload. Tente novamente.",
+    "errorCopy": "Não foi possível copiar a configuração da skill. Copie-a manualmente antes de sair desta página."
   },
   "cashFlowPage": {
     "windowTitle": "the-chatbot: ~/fluxo-de-caixa",

@@ -2,6 +2,7 @@ import { faker } from "@faker-js/faker";
 import { v4 as uuidv4 } from "uuid";
 import { createApplication } from "~/infra/bootstrap";
 import { Database } from "~/infra/database";
+import type { ArtifactService } from "~/modules/artifacts/services/ArtifactService";
 import { TestCashFlowSpreadsheetGateway } from "~/modules/cash-flow/gateway/CashFlowSpreadsheetGateway/TestCashFlowSpreadsheetGateway";
 import type { CashFlowService } from "~/modules/cash-flow/services/CashFlowService";
 import type { MonthlyExpenseService } from "~/modules/cash-flow/services/MonthlyExpenseService";
@@ -59,6 +60,7 @@ export class Orquestrator {
   jwtConfig: JwtConfig;
 
   authService: AuthService;
+  artifactService: ArtifactService;
   messagingService: MessagingService;
   statusService: StatusService;
   cashFlowService: CashFlowService;
@@ -108,6 +110,7 @@ export class Orquestrator {
       },
     });
     this.authService = application.services.auth;
+    this.artifactService = application.services.artifacts;
     this.messagingService = application.services.messaging;
     this.statusService = application.services.status;
     this.cashFlowService = application.services.cashFlow;

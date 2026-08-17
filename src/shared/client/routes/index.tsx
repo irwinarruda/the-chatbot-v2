@@ -3,6 +3,7 @@ import {
   ListTodo,
   MessageSquareText,
   NotebookText,
+  PanelsTopLeft,
   ReceiptText,
   WalletCards,
 } from "lucide-react";
@@ -17,6 +18,7 @@ const welcomeFeatures = [
   { href: "/chat", icon: MessageSquareText, key: "chat" },
   { href: "/todo", icon: ListTodo, key: "todos" },
   { href: "/notes", icon: NotebookText, key: "notes" },
+  { href: "/artifacts", icon: PanelsTopLeft, key: "artifacts" },
   { href: "/cash-flow", icon: WalletCards, key: "cashFlow" },
   { href: "/bills", icon: ReceiptText, key: "bills" },
 ] as const;
@@ -55,7 +57,7 @@ function IndexRoute() {
           const feature = t.features[item.key];
           const Icon = item.icon;
           return (
-            <li key={item.href} className="last:sm:col-span-2">
+            <li key={item.href}>
               <Link
                 to={item.href}
                 className="group flex h-full flex-col rounded-lg border border-term-border/60 bg-term-chrome/30 p-4 transition-all duration-300 hover:border-term-green/30 hover:bg-term-chrome/50"

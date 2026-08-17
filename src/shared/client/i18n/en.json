@@ -26,6 +26,7 @@
     "chat": "chat",
     "todo": "todo",
     "notes": "notes",
+    "artifacts": "artifacts",
     "cashFlow": "cash flow",
     "bills": "bills"
   },
@@ -49,6 +50,11 @@
         "title": "Markdown Notes",
         "description": "Keep lasting notes in portable Markdown and refine drafts with AI before you save.",
         "tags": ["#markdown", "#ai-drafts"]
+      },
+      "artifacts": {
+        "title": "HTML Artifacts",
+        "description": "Publish rich, self-contained pages with layouts, inline SVG, highlighted code, and shareable links.",
+        "tags": ["#html", "#sharing"]
       },
       "cashFlow": {
         "title": "Cash Flow",
@@ -205,6 +211,43 @@
     "errorSaving": "Failed to save the note. The draft is still here.",
     "errorDeleting": "Failed to delete the note. Please try again.",
     "errorRefining": "The AI could not refactor this draft. Please try again."
+  },
+  "artifactsPage": {
+    "windowTitle": "the-chatbot: ~/artifacts",
+    "viewerWindowTitle": "the-chatbot: ~/artifact",
+    "heading": "HTML Artifacts",
+    "subtitle": "Publish structured pages from your coding agents and share them without giving their code access to the application.",
+    "listLabel": "artifact index",
+    "loading": "Loading artifacts...",
+    "emptyState": "No artifacts have been published yet. Use the global publishing skill to create the first one.",
+    "tokenTitle": "Agent upload token",
+    "tokenDescription": "The global skill uses this revocable credential. The server stores only its hash.",
+    "tokenOnceHint": "Copy this configuration into the private skill file now. The token will not be shown again after you leave or refresh this page. If the file already contains other environments, add or replace only the environment shown below.",
+    "configuredLabel": "configured",
+    "notConfiguredLabel": "not configured",
+    "createTokenAction": "Create token",
+    "rotateTokenAction": "Rotate token",
+    "revokeTokenAction": "Revoke",
+    "copyConfigAction": "Copy skill configuration",
+    "configJsonLabel": "Skill configuration JSON",
+    "lastUsedLabel": "last used",
+    "rotateConfirmation": "Rotate the upload token? The current token will stop working immediately.",
+    "revokeConfirmation": "Revoke the artifact upload token? Agents will not be able to publish until you create another one.",
+    "publicLabel": "public",
+    "privateLabel": "private",
+    "openAction": "Open artifact",
+    "manageAction": "Manage",
+    "copyLinkAction": "Copy share link",
+    "makePublicAction": "Make public",
+    "makePrivateAction": "Make private",
+    "deleteAction": "Delete artifact",
+    "deleteConfirmation": "Delete this artifact? This action cannot be undone.",
+    "viewerError": "This artifact does not exist or you do not have access to it.",
+    "errorLoading": "Failed to load artifacts. Please try again.",
+    "errorSaving": "Failed to update artifact visibility. Please try again.",
+    "errorDeleting": "Failed to delete the artifact. Please try again.",
+    "errorToken": "Failed to update the upload token. Please try again.",
+    "errorCopy": "Could not copy the skill configuration. Copy it manually before leaving this page."
   },
   "cashFlowPage": {
     "windowTitle": "the-chatbot: ~/cash-flow",

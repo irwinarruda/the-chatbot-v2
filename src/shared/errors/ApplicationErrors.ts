@@ -1,9 +1,6 @@
-export interface ApplicationFailure {
-  message: string;
-  action: string;
-  name: string;
-  statusCode: number;
-}
+import type { ApiErrorResponseDTO } from "~/shared/entities/dtos/ApiErrorDTO";
+
+export type ApplicationFailure = ApiErrorResponseDTO;
 
 export class AppError extends Error {
   constructor(
@@ -11,17 +8,20 @@ export class AppError extends Error {
     public readonly action: string,
     override readonly name: string,
     public readonly statusCode: number,
+    public readonly details?: unknown,
   ) {
     super(message);
   }
 
   toResponse(): ApplicationFailure {
-    return {
+    const response: ApplicationFailure = {
       message: this.message,
       action: this.action,
       name: this.name,
       statusCode: this.statusCode,
     };
+    if (this.details !== undefined) response.details = this.details;
+    return response;
   }
 }
 
@@ -70,6 +70,17 @@ export class ForbiddenException extends AppError {
   }
 }
 
+export class ConflictException extends AppError {
+  constructor(message?: string, action?: string) {
+    super(
+      message ?? "The resource changed before the operation completed.",
+      action ?? "Refresh the resource and try again.",
+      "ConflictException",
+      409,
+    );
+  }
+}
+
 export class MethodNotAllowedException extends AppError {
   constructor(message?: string, action?: string) {
     super(
@@ -88,6 +99,17 @@ export class UnsupportedMediaTypeException extends AppError {
       action ?? "Send the request with a supported content type.",
       "UnsupportedMediaTypeException",
       415,
+    );
+  }
+}
+
+export class PayloadTooLargeException extends AppError {
+  constructor(message?: string, action?: string) {
+    super(
+      message ?? "The request body is too large.",
+      action ?? "Reduce the request size and try again.",
+      "PayloadTooLargeException",
+      413,
     );
   }
 }

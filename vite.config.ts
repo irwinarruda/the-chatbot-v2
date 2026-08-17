@@ -1,3 +1,4 @@
+import { resolve as resolvePath } from "node:path";
 import babel from "@rolldown/plugin-babel";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
@@ -12,7 +13,21 @@ export default defineConfig(({ mode }) => {
   loadModeEnv(mode);
   return {
     envDir: false,
-    resolve: { tsconfigPaths: true },
+    nitro: {
+      // The compiler is lazy-loaded, so Nitro must trace these packages for the
+      // Vercel function even though they are absent from the initial server chunk.
+      traceDeps: ["css-tree", "jsdom"],
+    },
+    resolve: {
+      alias: [
+        {
+          find: /^css-tree$/,
+          replacement: resolvePath("node_modules/css-tree/dist/csstree.esm.js"),
+        },
+      ],
+      tsconfigPaths: true,
+    },
+    ssr: { external: ["jsdom"] },
     plugins: [
       tailwindcss(),
       tanstackStart({

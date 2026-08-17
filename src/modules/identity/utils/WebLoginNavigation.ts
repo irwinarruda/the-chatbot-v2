@@ -2,6 +2,7 @@ export const WEB_LOGIN_PATHS = [
   "/chat",
   "/todo",
   "/notes",
+  "/artifacts",
   "/cash-flow",
   "/bills",
 ] as const;
