@@ -3,7 +3,6 @@ import { z } from "zod";
 export const databaseConfigSchema = z.object({
   connectionString: z.string().min(1),
   name: z.string().min(1),
-  serverVersion: z.string().default(""),
 });
 export type DatabaseConfig = z.infer<typeof databaseConfigSchema>;
 
@@ -117,7 +116,6 @@ export function loadConfig(): Config {
     database: {
       connectionString: process.env.DATABASE_CONNECTION_STRING,
       name: process.env.DATABASE_NAME,
-      serverVersion: process.env.DATABASE_SERVER_VERSION,
     },
     deployment: {
       commitSha: process.env.VERCEL_GIT_COMMIT_SHA,

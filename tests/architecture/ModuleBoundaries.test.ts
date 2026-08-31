@@ -1,10 +1,10 @@
 import { readFileSync } from "fs";
-import { globSync } from "tinyglobby";
+import * as tinyglobby from "tinyglobby";
 import { describe, expect, test } from "vitest";
 
 describe("module boundaries", () => {
   test("entities do not import services, gateways, HTTP, or client code", () => {
-    const files = globSync([
+    const files = tinyglobby.globSync([
       "src/modules/*/entities/**/*.ts",
       "src/shared/entities/**/*.ts",
     ]);
@@ -23,7 +23,7 @@ describe("module boundaries", () => {
   });
 
   test("services and gateways do not import client implementation", () => {
-    const files = globSync([
+    const files = tinyglobby.globSync([
       "src/shared/http/**/*.ts",
       "src/modules/*/services/**/*.ts",
       "src/modules/*/gateway/**/*.ts",
@@ -36,7 +36,7 @@ describe("module boundaries", () => {
   });
 
   test("legacy layer directories are not reintroduced", () => {
-    const files = globSync([
+    const files = tinyglobby.globSync([
       "src/modules/*/domain/**",
       "src/modules/*/application/**",
       "src/modules/*/server/**",
@@ -48,7 +48,7 @@ describe("module boundaries", () => {
   });
 
   test("every gateway directory publishes its interface from index.ts", () => {
-    const gatewayFiles = globSync([
+    const gatewayFiles = tinyglobby.globSync([
       "src/modules/*/gateway/*/*.ts",
       "src/shared/gateway/*/*.ts",
     ]);
@@ -63,7 +63,10 @@ describe("module boundaries", () => {
   });
 
   test("DTO declarations live in an entities/dtos directory", () => {
-    const files = globSync(["src/modules/**/*.ts", "src/shared/**/*.ts"]);
+    const files = tinyglobby.globSync([
+      "src/modules/**/*.ts",
+      "src/shared/**/*.ts",
+    ]);
     const violations = files.filter((file) => {
       if (file.includes("/entities/dtos/")) return false;
       return /export (?:const|interface|type) [A-Za-z0-9]+DTO\b/.test(
@@ -75,7 +78,7 @@ describe("module boundaries", () => {
   });
 
   test("DTO directory declarations use the uppercase DTO suffix", () => {
-    const files = globSync([
+    const files = tinyglobby.globSync([
       "src/modules/*/entities/dtos/**/*.ts",
       "src/modules/*/client/entities/dtos/**/*.ts",
       "src/shared/entities/dtos/**/*.ts",
@@ -93,7 +96,7 @@ describe("module boundaries", () => {
   });
 
   test("contracts contain mappers rather than DTO schemas", () => {
-    const files = globSync("src/modules/*/contracts/**/*.ts");
+    const files = tinyglobby.globSync("src/modules/*/contracts/**/*.ts");
     const violations = files.filter((file) =>
       readFileSync(file, "utf8").includes('from "zod"'),
     );
@@ -102,7 +105,7 @@ describe("module boundaries", () => {
   });
 
   test("shared client primitives do not import feature modules", () => {
-    const files = globSync([
+    const files = tinyglobby.globSync([
       "src/shared/client/components/**/*.ts",
       "src/shared/client/components/**/*.tsx",
       "src/shared/client/entities/**/*.ts",
@@ -119,7 +122,7 @@ describe("module boundaries", () => {
   });
 
   test("feature slices do not import the app store composition", () => {
-    const files = globSync("src/modules/*/client/state/**/*.ts");
+    const files = tinyglobby.globSync("src/modules/*/client/state/**/*.ts");
     const violations = files.filter((file) =>
       readFileSync(file, "utf8").includes('from "~/shared/client/stores'),
     );

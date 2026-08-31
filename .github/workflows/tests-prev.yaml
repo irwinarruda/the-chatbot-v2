@@ -8,7 +8,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
-      - run: bun install
+      - run: bun install --frozen-lockfile
       - run: echo "$ENV_PREVIEW" > .env.preview
         env:
           ENV_PREVIEW: ${{ secrets.ENV_PREVIEW }}

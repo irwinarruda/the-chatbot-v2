@@ -1,5 +1,5 @@
 import { defineConfig } from "vitest/config";
-import { loadModeEnv } from "./plugins/env";
+import { loadModeEnv } from "./plugins/env.ts";
 
 export default defineConfig(({ mode = "test" }) => {
   loadModeEnv(mode);

@@ -5,9 +5,9 @@ import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
 import { defineConfig } from "vite";
-import { loadModeEnv } from "./plugins/env";
-import { persist } from "./plugins/persist";
-import { routes as virtualRoutes } from "./src/shared/http";
+import { loadModeEnv } from "./plugins/env.ts";
+import { persist } from "./plugins/persist.ts";
+import { routes as virtualRoutes } from "./src/shared/http/index.ts";
 
 export default defineConfig(({ mode }) => {
   loadModeEnv(mode);
