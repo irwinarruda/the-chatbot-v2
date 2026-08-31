@@ -679,13 +679,13 @@ describe("MessagingService", () => {
       );
       await orquestrator.messagingService.receiveWebMessage(
         webAddress,
-        { text: "/model missing/nope" },
+        { text: "/model nope" },
         undefined,
         MessageLocale.En,
       );
       await orquestrator.messagingService.receiveWebMessage(
         webAddress,
-        { text: "/model openai-codex/codex-test" },
+        { text: "/model codex-test" },
         undefined,
         MessageLocale.En,
       );
@@ -697,9 +697,8 @@ describe("MessagingService", () => {
       expect(aiGateway.requests).toHaveLength(initialRequestCount);
       expect(chat?.reasoningEffort).toBe(ReasoningEffort.Off);
       expect(chat?.getModelMessages()).toHaveLength(0);
-      expect(chat?.messages.at(-1)?.text).toContain(
-        "Model set to openai-codex/codex-test",
-      );
+      expect(chat?.messages.at(-1)?.text).toContain("Model set to codex-test");
+      expect(chat?.messages.at(-1)?.text).not.toContain("openai-codex/");
       expect(chat?.messages.at(-1)?.text).toContain("reset to off");
       const [preference] = await orquestrator.database.sql<
         Array<{ provider_id: string; model_id: string }>
@@ -722,6 +721,94 @@ describe("MessagingService", () => {
         ChatChannel.Web,
       );
       expect(chat?.generations.at(-1)).toMatchObject(codexModel);
+    } finally {
+      aiGateway.availableModels = defaultModels;
+      aiGateway.supportedReasoningEffortsByModel = defaultEfforts;
+    }
+  });
+
+  test("model commands reject ambiguous model IDs", async () => {
+    await orquestrator.clearDatabase();
+    const aiGateway = orquestrator.aiGateway;
+    const defaultModels = aiGateway.availableModels;
+    aiGateway.availableModels = [
+      { provider: "openai", model: "shared-model" },
+      { provider: "openai-codex", model: "shared-model" },
+    ];
+    try {
+      const user = await orquestrator.createUser({
+        phoneNumber: "5511912345678",
+      });
+      const webAddress = user.email ?? "";
+
+      await orquestrator.messagingService.receiveWebMessage(
+        webAddress,
+        { text: "/model shared-model" },
+        undefined,
+        MessageLocale.En,
+      );
+
+      const chat = await orquestrator.messagingService.getChatByChannelAddress(
+        webAddress,
+        ChatChannel.Web,
+      );
+      expect(chat?.messages.at(-1)?.text?.trim()).toBe(
+        "Invalid model selection: shared-model. Current model: test-model. Available: shared-model.",
+      );
+      const preferences = await orquestrator.database.sql`
+        SELECT provider_id, model_id
+        FROM ai_model_preferences
+        WHERE id_user = ${user.id}
+      `;
+      expect(preferences).toHaveLength(0);
+    } finally {
+      aiGateway.availableModels = defaultModels;
+    }
+  });
+
+  test("model commands choose a supported effort for GLM-5.3", async () => {
+    await orquestrator.clearDatabase();
+    const aiGateway = orquestrator.aiGateway;
+    const defaultModels = aiGateway.availableModels;
+    const defaultEfforts = aiGateway.supportedReasoningEffortsByModel;
+    const glmModel = { provider: "zai", model: "glm-5.3" };
+    aiGateway.availableModels = [aiGateway.getDefaultModel(), glmModel];
+    aiGateway.supportedReasoningEffortsByModel = new Map([
+      [
+        "zai/glm-5.3",
+        [ReasoningEffort.Low, ReasoningEffort.High, ReasoningEffort.Max],
+      ],
+    ]);
+    try {
+      const user = await orquestrator.createUser({
+        phoneNumber: "5511912345678",
+      });
+      const webAddress = user.email ?? "";
+
+      await orquestrator.messagingService.receiveWebMessage(
+        webAddress,
+        { text: "/model glm-5.3" },
+        undefined,
+        MessageLocale.En,
+      );
+
+      const chat = await orquestrator.messagingService.getChatByChannelAddress(
+        webAddress,
+        ChatChannel.Web,
+      );
+      expect(chat?.reasoningEffort).toBe(ReasoningEffort.Low);
+      expect(chat?.messages.at(-1)?.text).toContain("reset to low");
+      const [preference] = await orquestrator.database.sql<
+        Array<{ provider_id: string; model_id: string }>
+      >`
+        SELECT provider_id, model_id
+        FROM ai_model_preferences
+        WHERE id_user = ${user.id}
+      `;
+      expect(preference).toEqual({
+        provider_id: "zai",
+        model_id: "glm-5.3",
+      });
     } finally {
       aiGateway.availableModels = defaultModels;
       aiGateway.supportedReasoningEffortsByModel = defaultEfforts;

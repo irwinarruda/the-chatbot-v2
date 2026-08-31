@@ -171,7 +171,7 @@ Migration, credential, provider smoke-test, and production delivery commands rem
 
 ## AI models and credentials
 
-The chat is not tied to one hard-coded model. The configured default can be changed at runtime from the web controls or the `/model` and `/effort` commands. Pi normalizes the supported provider/model paths while the application keeps conversation state and generation traces in PostgreSQL.
+The chat is not tied to one hard-coded model. The configured default can be changed at runtime from the web controls or the `/model <model-id>` and `/effort` commands. Pi owns provider routing while the application exposes globally unique model IDs and keeps conversation state and generation traces in PostgreSQL.
 
 Per-user provider credentials are encrypted before persistence. OpenAI Codex authentication has a dedicated local login script; other supported credentials can be imported explicitly. The Pi packages are pinned to the same exact version and should always be upgraded together.
 

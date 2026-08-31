@@ -1,1 +1,1 @@
-Modelo definido como {{ActiveModelLocator}}. {{EffortResetNote}}
+Modelo definido como {{ActiveModelId}}. {{EffortResetNote}}

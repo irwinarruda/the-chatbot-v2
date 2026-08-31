@@ -29,6 +29,63 @@ describe("PiAiChatGateway", () => {
     ).toEqual([ReasoningEffort.Off, ReasoningEffort.High, ReasoningEffort.Max]);
   });
 
+  test("exposes GLM-5.3 models from the Z.AI catalog", async () => {
+    const gateway = createGateway();
+
+    await expect(gateway.getAvailableModels("test-user")).resolves.toEqual(
+      expect.arrayContaining([
+        { provider: "zai", model: "glm-5.3" },
+        { provider: "zai", model: "glm-5.3-flash" },
+      ]),
+    );
+    expect(
+      gateway.getSupportedReasoningEfforts({
+        provider: "zai",
+        model: "glm-5.3",
+      }),
+    ).toEqual([ReasoningEffort.Low, ReasoningEffort.High, ReasoningEffort.Max]);
+  });
+
+  test("exposes each model ID once across configured providers", async () => {
+    const credentials: CredentialStore = {
+      read: async (providerId) => {
+        if (providerId !== "openai-codex") return undefined;
+        return {
+          type: "oauth",
+          refresh: "refresh-token",
+          access: "access-token",
+          expires: Date.now() + 60_000,
+        };
+      },
+      list: async () => [{ providerId: "openai-codex", type: "oauth" }],
+      modify: async (_providerId, update) =>
+        update({
+          type: "oauth",
+          refresh: "refresh-token",
+          access: "access-token",
+          expires: Date.now() + 60_000,
+        }),
+      delete: async () => {},
+    };
+    const gateway = new PiAiChatGateway(
+      {
+        provider: "openai",
+        apiKey: "test",
+        model: "gpt-5.4",
+      },
+      { create: () => credentials },
+    );
+
+    const models = await gateway.getAvailableModels("test-user");
+
+    expect(models.filter((model) => model.model === "gpt-5.4")).toEqual([
+      { provider: "openai", model: "gpt-5.4" },
+    ]);
+    expect(new Set(models.map((model) => model.model)).size).toBe(
+      models.length,
+    );
+  });
+
   test("input estimates exclude repeated response-only generation metadata", () => {
     const gateway = createGateway();
     const generation = {

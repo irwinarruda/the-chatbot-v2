@@ -36,9 +36,9 @@ export interface MessageParams {
   reasoningEffort?: string;
   requestedReasoningEffort?: string;
   supportedReasoningEfforts?: string;
-  activeModelLocator?: string;
-  availableModelLocators?: string;
-  requestedModelLocator?: string;
+  activeModelId?: string;
+  availableModelIds?: string;
+  requestedModelId?: string;
   effortResetNote?: string;
 }
 
@@ -140,14 +140,14 @@ export class MessageLoader {
     if (data.supportedReasoningEfforts !== undefined) {
       dict.SupportedReasoningEfforts = data.supportedReasoningEfforts;
     }
-    if (data.activeModelLocator !== undefined) {
-      dict.ActiveModelLocator = data.activeModelLocator;
+    if (data.activeModelId !== undefined) {
+      dict.ActiveModelId = data.activeModelId;
     }
-    if (data.availableModelLocators !== undefined) {
-      dict.AvailableModelLocators = data.availableModelLocators;
+    if (data.availableModelIds !== undefined) {
+      dict.AvailableModelIds = data.availableModelIds;
     }
-    if (data.requestedModelLocator !== undefined) {
-      dict.RequestedModelLocator = data.requestedModelLocator;
+    if (data.requestedModelId !== undefined) {
+      dict.RequestedModelId = data.requestedModelId;
     }
     if (data.effortResetNote !== undefined) {
       dict.EffortResetNote = data.effortResetNote;

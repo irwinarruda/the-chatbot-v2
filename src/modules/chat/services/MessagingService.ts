@@ -39,7 +39,6 @@ import {
   createAiContextCompactionPolicy,
   selectCompactableTurns,
 } from "~/modules/chat/utils/AiContextCompactionPolicy";
-import { toAiModelLocator } from "~/modules/chat/utils/AiModelLocator";
 import { parseChatCommand } from "~/modules/chat/utils/ChatCommandParser";
 import {
   MessageLoader,
@@ -594,52 +593,41 @@ export class MessagingService {
     const activeModel = await this.aiModelService.getForUser(idUser);
     const availableModels =
       await this.aiModelService.getAvailableForUser(idUser);
-    const availableLocators = availableModels.map(toAiModelLocator).join(", ");
-    let availableModelLocators = availableLocators;
-    if (!availableModelLocators) {
-      availableModelLocators = "nenhum";
-      if (locale === MessageLocale.En) availableModelLocators = "none";
+    const availableIds = [
+      ...new Set(availableModels.map((model) => model.model)),
+    ].join(", ");
+    let availableModelIds = availableIds;
+    if (!availableModelIds) {
+      availableModelIds = "nenhum";
+      if (locale === MessageLocale.En) availableModelIds = "none";
     }
-    const requestedProvider = sourceMessage.content.arguments.provider;
     const requestedModel = sourceMessage.content.arguments.model;
-    const requestedLocator =
-      sourceMessage.content.arguments.locator ?? sourceMessage.content.raw;
     let selectedModel = activeModel;
     let responseText: string;
     let shouldSave = false;
     let effortReset = false;
     const previousReasoningEffort = chat.reasoningEffort;
-    if (requestedProvider === undefined && requestedModel === undefined) {
-      const hasMalformedLocator =
-        sourceMessage.content.arguments.locator !== undefined;
-      let template: MessageTemplate = MessageTemplate.ModelStatus;
-      if (hasMalformedLocator) template = MessageTemplate.ModelInvalid;
+    if (requestedModel === undefined) {
       responseText = MessageLoader.getMessage(
-        template,
+        MessageTemplate.ModelStatus,
         {
-          activeModelLocator: toAiModelLocator(activeModel),
-          availableModelLocators,
-          requestedModelLocator: requestedLocator,
+          activeModelId: activeModel.model,
+          availableModelIds,
         },
         locale,
       );
     } else {
-      const candidate = {
-        provider: requestedProvider ?? "",
-        model: requestedModel ?? "",
-      };
-      const isAvailable = availableModels.some(
-        (model) =>
-          model.provider === candidate.provider &&
-          model.model === candidate.model,
+      const candidates = availableModels.filter(
+        (model) => model.model === requestedModel,
       );
-      if (!isAvailable) {
+      const candidate = candidates.length === 1 ? candidates[0] : undefined;
+      if (!candidate) {
         responseText = MessageLoader.getMessage(
           MessageTemplate.ModelInvalid,
           {
-            activeModelLocator: toAiModelLocator(activeModel),
-            availableModelLocators,
-            requestedModelLocator: requestedLocator,
+            activeModelId: activeModel.model,
+            availableModelIds,
+            requestedModelId: requestedModel,
           },
           locale,
         );
@@ -649,22 +637,26 @@ export class MessagingService {
         const supported =
           this.aiChatGateway.getSupportedReasoningEfforts(selectedModel);
         if (!supported.includes(chat.reasoningEffort)) {
-          chat.setReasoningEffort("off");
+          const fallbackEffort = supported[0];
+          if (!fallbackEffort) {
+            throw new ValidationException(
+              `Model ${selectedModel.model} has no supported reasoning effort`,
+            );
+          }
+          chat.setReasoningEffort(fallbackEffort);
           effortReset = true;
         }
         let effortResetNote = "";
         if (effortReset) {
-          effortResetNote =
-            "O nível de raciocínio foi redefinido para off para este modelo.";
+          effortResetNote = `O nível de raciocínio foi redefinido para ${chat.reasoningEffort} para este modelo.`;
           if (locale === MessageLocale.En) {
-            effortResetNote =
-              "Reasoning effort was reset to off for this model.";
+            effortResetNote = `Reasoning effort was reset to ${chat.reasoningEffort} for this model.`;
           }
         }
         responseText = MessageLoader.getMessage(
           MessageTemplate.ModelUpdated,
           {
-            activeModelLocator: toAiModelLocator(selectedModel),
+            activeModelId: selectedModel.model,
             effortResetNote,
           },
           locale,

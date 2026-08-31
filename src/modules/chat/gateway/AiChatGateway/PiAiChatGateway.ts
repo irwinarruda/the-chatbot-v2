@@ -73,16 +73,19 @@ export class PiAiChatGateway implements AiChatGateway {
     for (const credential of (await credentials?.list()) ?? []) {
       providerIds.add(credential.providerId);
     }
-    const available: AiModelSelectionDTO[] = [];
+    const availableByModelId = new Map<string, AiModelSelectionDTO>();
     for (const providerId of providerIds) {
       for (const model of await models.getAvailable(providerId)) {
-        available.push({ provider: model.provider, model: model.id });
+        if (!availableByModelId.has(model.id)) {
+          availableByModelId.set(model.id, {
+            provider: model.provider,
+            model: model.id,
+          });
+        }
       }
     }
-    return available.sort((left, right) =>
-      `${left.provider}/${left.model}`.localeCompare(
-        `${right.provider}/${right.model}`,
-      ),
+    return [...availableByModelId.values()].sort((left, right) =>
+      left.model.localeCompare(right.model),
     );
   }
 

@@ -35,21 +35,11 @@ export function parseChatCommand(text: string): ParsedChatCommand | undefined {
   }
   const modelMatch = /^\/model(?:\s+([\s\S]*))?$/i.exec(raw);
   if (!modelMatch) return undefined;
-  const locator = modelMatch[1]?.trim();
+  const model = modelMatch[1]?.trim();
   const commandArguments: Record<string, string> = {};
-  if (!locator) {
+  if (!model) {
     return { raw, name: "model", arguments: commandArguments };
   }
-  commandArguments.locator = locator;
-  const locatorMatch = /^([^/\s]+)\/(\S+)$/.exec(locator);
-  if (locatorMatch) {
-    const provider = locatorMatch[1]?.toLowerCase();
-    const model = locatorMatch[2];
-    if (provider && model) {
-      commandArguments.provider = provider;
-      commandArguments.model = model;
-      commandArguments.locator = `${provider}/${model}`;
-    }
-  }
+  commandArguments.model = model;
   return { raw, name: "model", arguments: commandArguments };
 }

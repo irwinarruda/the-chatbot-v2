@@ -31,15 +31,11 @@ describe("ChatCommandParser", () => {
     });
   });
 
-  test("normalizes the provider and preserves the model ID", () => {
-    expect(parseChatCommand(" /model OpenAI-Codex/GPT-5.3-Codex ")).toEqual({
-      raw: "/model OpenAI-Codex/GPT-5.3-Codex",
+  test("preserves the model ID without a provider locator", () => {
+    expect(parseChatCommand(" /model GPT-5.3-Codex ")).toEqual({
+      raw: "/model GPT-5.3-Codex",
       name: "model",
-      arguments: {
-        locator: "openai-codex/GPT-5.3-Codex",
-        provider: "openai-codex",
-        model: "GPT-5.3-Codex",
-      },
+      arguments: { model: "GPT-5.3-Codex" },
     });
   });
 
@@ -49,15 +45,13 @@ describe("ChatCommandParser", () => {
     "/model zai/",
     "/model zai/glm-5.2 extra",
     "/model\nzai/glm-5.2 extra",
-  ])("keeps malformed known model command %s out of model context", (raw) => {
+  ])("keeps invalid model selection %s for service validation", (raw) => {
     const command = parseChatCommand(raw);
 
     expect(command).toMatchObject({
       name: "model",
-      arguments: { locator: raw.replace(/^\/model\s*/i, "") },
+      arguments: { model: raw.replace(/^\/model\s*/i, "") },
     });
-    expect(command?.arguments.provider).toBeUndefined();
-    expect(command?.arguments.model).toBeUndefined();
   });
 
   test("does not parse unrelated slash-prefixed text", () => {

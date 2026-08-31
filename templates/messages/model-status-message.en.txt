@@ -1,1 +1,1 @@
-Current model: {{ActiveModelLocator}}. Available: {{AvailableModelLocators}}.
+Current model: {{ActiveModelId}}. Available: {{AvailableModelIds}}.

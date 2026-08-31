@@ -27,7 +27,6 @@ import { ChatResponseProgress } from "~/modules/chat/client/components/ChatRespo
 import { audioInputService } from "~/modules/chat/client/services/audioInputService";
 import type { ChatErrorCode } from "~/modules/chat/client/state/chatSlice";
 import { isReasoningEffort } from "~/modules/chat/entities/enums/ReasoningEffort";
-import { toAiModelLocator } from "~/modules/chat/utils/AiModelLocator";
 import { TerminalWindow } from "~/shared/client/components/terminal/TerminalWindow";
 import { Alert, AlertDescription } from "~/shared/client/components/ui/alert";
 import { Button } from "~/shared/client/components/ui/button";
@@ -97,8 +96,8 @@ export function ChatScreen() {
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const isAssistantResponding =
     isChatSubmitting && chatMessages.at(-1)?.userType === "user";
-  let currentModelLocator = "";
-  if (currentModel) currentModelLocator = toAiModelLocator(currentModel);
+  let currentModelId = "";
+  if (currentModel) currentModelId = currentModel.model;
   let lastChatItemIndex = chatMessages.length - 1;
   let chatItemCount = chatMessages.length;
   if (isAssistantResponding) {
@@ -174,7 +173,7 @@ export function ChatScreen() {
 
   function onModelChange(event: ChangeEvent<HTMLSelectElement>) {
     const selected = availableModels.find(
-      (model) => toAiModelLocator(model) === event.target.value,
+      (model) => model.model === event.target.value,
     );
     if (!selected) return;
     void setModel(selected);
@@ -548,19 +547,19 @@ export function ChatScreen() {
                   id="chat-model"
                   size="sm"
                   className="min-w-0 flex-1 **:data-[slot=native-select-icon]:right-1.5 **:data-[slot=native-select-icon]:size-3 **:data-[slot=native-select-icon]:text-term-cyan [&_[data-slot=native-select]]:h-11 pointer-fine:[&_[data-slot=native-select]]:h-7 [&_[data-slot=native-select]]:truncate [&_[data-slot=native-select]]:rounded-md [&_[data-slot=native-select]]:border-transparent [&_[data-slot=native-select]]:bg-term-cyan/8 [&_[data-slot=native-select]]:py-0.5 [&_[data-slot=native-select]]:pr-6 [&_[data-slot=native-select]]:pl-2 [&_[data-slot=native-select]]:font-mono [&_[data-slot=native-select]]:text-sm [&_[data-slot=native-select]]:text-term-cyan pointer-fine:[&_[data-slot=native-select]]:text-xs [&_[data-slot=native-select]]:transition-colors [&_[data-slot=native-select]]:hover:border-term-cyan/30 [&_[data-slot=native-select]]:hover:bg-term-cyan/12 [&_[data-slot=native-select]]:focus-visible:border-term-cyan/40 [&_[data-slot=native-select]]:focus-visible:ring-0"
-                  value={currentModelLocator}
+                  value={currentModelId}
                   onChange={onModelChange}
                   disabled={isChatSubmitting || availableModels.length === 0}
                   aria-label={t.modelLabel}
                 >
-                  {availableModels.map((model) => {
-                    const locator = toAiModelLocator(model);
-                    return (
-                      <NativeSelectOption key={locator} value={locator}>
-                        {model.model}
-                      </NativeSelectOption>
-                    );
-                  })}
+                  {availableModels.map((model) => (
+                    <NativeSelectOption
+                      key={`${model.provider}/${model.model}`}
+                      value={model.model}
+                    >
+                      {model.model}
+                    </NativeSelectOption>
+                  ))}
                 </NativeSelect>
               </div>
               <div className="flex shrink-0 items-center gap-1">

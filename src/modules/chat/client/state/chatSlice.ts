@@ -16,7 +16,6 @@ import {
   ReasoningEffort,
   type ReasoningEffort as ReasoningEffortType,
 } from "~/modules/chat/entities/enums/ReasoningEffort";
-import { toAiModelLocator } from "~/modules/chat/utils/AiModelLocator";
 import type { CurrentUserDTO } from "~/modules/identity/entities/dtos/IdentityDTO";
 
 export type ChatErrorCode = "loading" | "sending" | "microphone";
@@ -180,11 +179,7 @@ export function createChatSlice(
         ) {
           return;
         }
-        await sendTextMessage(
-          `/model ${toAiModelLocator(model)}`,
-          "command",
-          false,
-        );
+        await sendTextMessage(`/model ${model.model}`, "command", false);
       },
       async setReasoningEffort(effort) {
         const { reasoningEffort, isChatSubmitting } = get();

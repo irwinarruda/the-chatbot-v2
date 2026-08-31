@@ -1,1 +1,1 @@
-Seleção de modelo inválida: {{RequestedModelLocator}}. Modelo atual: {{ActiveModelLocator}}. Disponíveis: {{AvailableModelLocators}}.
+Seleção de modelo inválida: {{RequestedModelId}}. Modelo atual: {{ActiveModelId}}. Disponíveis: {{AvailableModelIds}}.

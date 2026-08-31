@@ -1,1 +1,1 @@
-Model set to {{ActiveModelLocator}}. {{EffortResetNote}}
+Model set to {{ActiveModelId}}. {{EffortResetNote}}

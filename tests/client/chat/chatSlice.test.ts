@@ -361,7 +361,7 @@ describe("chatSlice", () => {
     await store.getState().setModel(selectedModel);
 
     expect(sentMessage).toMatchObject({
-      text: "/model zai-coding-cn/glm-5.2",
+      text: "/model glm-5.2",
     });
     expect(store.getState().currentModel).toEqual(selectedModel);
   });

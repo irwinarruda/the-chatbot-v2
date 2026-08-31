@@ -177,7 +177,7 @@ describe("ChatScreen", () => {
     ).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("AI model"), {
-      target: { value: "zai-coding-cn/glm-5.2" },
+      target: { value: "glm-5.2" },
     });
 
     expect(chatState.setModel).toHaveBeenCalledWith({
