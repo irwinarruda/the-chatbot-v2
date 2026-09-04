@@ -420,18 +420,20 @@ function MonthlyExpenseListSkeleton({ label }: { label: string }) {
       {[0, 1, 2].map((item) => (
         <Card
           aria-hidden="true"
-          className="gap-0 border-term-border border-l-2 bg-term-bg/45 py-0 shadow-none"
+          className="gap-0 border-term-border border-l-2 bg-term-bg/45 shadow-none data-[size=sm]:py-0"
           key={item}
           size="sm"
         >
-          <CardContent className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-2.5 px-2.5 py-2">
+          <CardContent className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2.5 py-2.5">
             <Skeleton className="size-4 rounded-sm" />
             <div className="space-y-1">
               <Skeleton className="h-3.5 w-2/3" />
               <Skeleton className="h-3 w-1/2" />
             </div>
-            <Skeleton className="h-5 w-14" />
-            <Skeleton className="size-7" />
+            <div className="flex items-center gap-0.5">
+              <Skeleton className="pointer-fine:size-7 size-11" />
+              <Skeleton className="pointer-fine:size-7 size-11" />
+            </div>
           </CardContent>
         </Card>
       ))}

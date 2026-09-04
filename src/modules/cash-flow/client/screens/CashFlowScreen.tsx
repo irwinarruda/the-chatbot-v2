@@ -239,8 +239,9 @@ export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
           </AlertAction>
         </Alert>
       )}
-      <div className="mb-4 grid gap-2 sm:flex sm:flex-wrap">
+      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
         <Button
+          className="col-span-2 h-auto pointer-fine:h-auto min-h-11 pointer-fine:min-h-8 min-w-0 whitespace-normal pointer-fine:py-1 py-2 sm:col-span-1"
           disabled={isBootstrapping || dashboard.bankAccounts.length === 0}
           onClick={() => setIsCreateOpen(true)}
           type="button"
@@ -249,22 +250,24 @@ export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
           {t.newTransaction}
         </Button>
         <Button
+          className="h-auto pointer-fine:h-auto min-h-11 pointer-fine:min-h-8 min-w-0 whitespace-normal pointer-fine:py-1 py-2"
           disabled={isBootstrapping || isSubmitting}
           onClick={() => onOpenTransfer()}
           type="button"
           variant="outline"
         >
           <ArrowRightLeft className="text-term-cyan" />
-          {t.transferAction}
+          <span>{t.transferAction}</span>
         </Button>
         <Button
+          className="h-auto pointer-fine:h-auto min-h-11 pointer-fine:min-h-8 min-w-0 whitespace-normal pointer-fine:py-1 py-2"
           disabled={isBootstrapping || dashboard.bankAccounts.length === 0}
           onClick={() => setIsSyncOpen(true)}
           type="button"
           variant="outline"
         >
           <RefreshCw />
-          {t.syncAction}
+          <span>{t.syncAction}</span>
         </Button>
       </div>
       {dashboard.bankAccountStatuses.length > 0 && (
