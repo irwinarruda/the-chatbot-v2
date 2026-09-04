@@ -31,6 +31,9 @@ describe("monthlyExpenseSlice", () => {
     let updatedMonth: string | undefined;
     const listedMonths: Array<string | undefined> = [];
     const service: MonthlyExpenseClientService = {
+      async payFromAccount() {
+        return rent;
+      },
       async list(month) {
         listedMonths.push(month);
         const selectedMonth = month ?? "2026-07";

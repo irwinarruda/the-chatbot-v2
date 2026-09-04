@@ -192,6 +192,7 @@ export class MonthlyExpenseService {
     id: string,
     isPaid: boolean,
     month = this.currentMonth(),
+    paidAt?: Date,
   ): Promise<MonthlyExpenseItemDTO> {
     this.validateMonth(month);
     await this.getMonthlyExpense(idUser, id, month);
@@ -204,9 +205,10 @@ export class MonthlyExpenseService {
         ) VALUES (
           ${id},
           ${`${month}-01`}::date,
-          ${this.now()}
+          ${paidAt ?? this.now()}
         )
-        ON CONFLICT (id_monthly_expense, month) DO NOTHING
+        ON CONFLICT (id_monthly_expense, month) DO UPDATE SET
+          paid_at = COALESCE(${paidAt ?? null}, monthly_expense_payments.paid_at)
       `;
     } else {
       await this.database.sql`

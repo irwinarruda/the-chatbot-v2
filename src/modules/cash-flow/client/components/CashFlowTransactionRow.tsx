@@ -1,7 +1,9 @@
 import {
   AlertTriangle,
   ArrowDownLeft,
+  ArrowRightLeft,
   ArrowUpRight,
+  Pencil,
   Trash2,
 } from "lucide-react";
 import type { CashFlowTransactionResponseDTO } from "~/modules/cash-flow/entities/dtos/CashFlowWebDTO";
@@ -29,6 +31,7 @@ export function CashFlowTransactionRow({
   isSubmitting,
   locale,
   onDelete,
+  onEditTransfer,
   t,
   transaction,
 }: {
@@ -37,6 +40,7 @@ export function CashFlowTransactionRow({
   isSubmitting: boolean;
   locale: Locale;
   onDelete: () => void;
+  onEditTransfer?: () => void;
   t: Dictionary["cashFlowPage"];
   transaction: CashFlowTransactionResponseDTO;
 }) {
@@ -67,8 +71,18 @@ export function CashFlowTransactionRow({
       <div className="min-w-0 space-y-1">
         <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
           <h3 className="min-w-0 truncate font-medium text-sm text-term-bright">
-            {transaction.description}
+            {transaction.description ||
+              (transaction.transferId ? t.transferLabel : "")}
           </h3>
+          {transaction.transferId && (
+            <Badge
+              className="border-term-cyan/25 bg-term-cyan/8 text-term-cyan"
+              variant="outline"
+            >
+              <ArrowRightLeft />
+              {t.transferLabel}
+            </Badge>
+          )}
           {transaction.isLast && (
             <Badge
               className="border-term-cyan/25 bg-term-cyan/8 text-term-cyan"
@@ -86,7 +100,7 @@ export function CashFlowTransactionRow({
           <span>{transaction.category}</span>
         </p>
       </div>
-      <div className="flex items-center gap-1.5">
+      <div className="flex flex-wrap items-center justify-end gap-1.5">
         <span
           className={
             isExpense
@@ -98,12 +112,29 @@ export function CashFlowTransactionRow({
             {currency.format(transaction.value)}
           </MonetaryValue>
         </span>
-        {transaction.isLast && (
+        {transaction.transferId && (
+          <Button
+            aria-label={t.transferEditAction}
+            disabled={isSubmitting}
+            onClick={onEditTransfer}
+            size="icon-sm"
+            type="button"
+            variant="ghost"
+          >
+            <Pencil className="text-term-cyan" />
+          </Button>
+        )}
+        {(Boolean(transaction.transferId) ||
+          (transaction.isLast && !transaction.paymentId)) && (
           <AlertDialog>
             <AlertDialogTrigger
               render={
                 <Button
-                  aria-label={t.deleteLastAction}
+                  aria-label={
+                    transaction.transferId
+                      ? t.transferDeleteAction
+                      : t.deleteLastAction
+                  }
                   disabled={isSubmitting}
                   size="icon-sm"
                   type="button"
@@ -118,9 +149,15 @@ export function CashFlowTransactionRow({
                 <AlertDialogMedia className="bg-term-red/10 text-term-red">
                   <AlertTriangle />
                 </AlertDialogMedia>
-                <AlertDialogTitle>{t.deleteLastTitle}</AlertDialogTitle>
+                <AlertDialogTitle>
+                  {transaction.transferId
+                    ? t.transferDeleteTitle
+                    : t.deleteLastTitle}
+                </AlertDialogTitle>
                 <AlertDialogDescription>
-                  {t.deleteLastConfirmation}
+                  {transaction.transferId
+                    ? t.transferDeleteHint
+                    : t.deleteLastConfirmation}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

@@ -1,4 +1,5 @@
-import { google } from "googleapis";
+import { google, type sheets_v4 } from "googleapis";
+import type { SaveSpreadsheetTransferDTO } from "~/modules/cash-flow/entities/dtos/CashFlowTransferDTO";
 import type {
   AddEarningDTO,
   AddExpenseDTO,
@@ -9,6 +10,7 @@ import type {
   TransactionDTO,
 } from "~/modules/cash-flow/gateway/CashFlowSpreadsheetGateway";
 import {
+  formatCashFlowDate,
   formatCashFlowSpreadsheetDate,
   getCashFlowMonth,
   parseCashFlowSpreadsheetDate,
@@ -129,30 +131,248 @@ export class GoogleCashFlowSpreadsheetGateway
   async getAllTransactions(
     sheetConfig: SheetConfigDTO,
   ): Promise<TransactionDTO[]> {
-    return this.withRetry(async () => {
-      const sheetsService = this.getSheetsService(
-        sheetConfig.sheetId,
-        sheetConfig.sheetAccessToken,
-      );
-      const query = "Diário!B:G";
-      const sheet = await sheetsService.spreadsheets.values.get({
-        spreadsheetId: sheetConfig.sheetId,
-        range: query,
+    const journal = await this.readJournal(sheetConfig);
+    return journal.transactions.map(
+      ({ rowIndex, ...transaction }) => transaction,
+    );
+  }
+
+  async saveTransfer(
+    dto: SaveSpreadsheetTransferDTO,
+    replace: boolean,
+  ): Promise<void> {
+    const journal = await this.readJournal(dto);
+    const existing = journal.transactions.filter(
+      (item) => item.transferId === dto.id,
+    );
+    if ((replace || existing.length > 0) && existing.length !== 2) {
+      throw new ValidationException("The linked transfer could not be found");
+    }
+    if (!replace && existing.length > 0) return;
+    const common = {
+      sheetId: dto.sheetId,
+      date: dto.date,
+      category: dto.category,
+      description: dto.description,
+      transferId: dto.id,
+    };
+    await this.writeJournal(dto, journal.sheetId, journal.rowCount, [
+      {
+        ...common,
+        value: -dto.value,
+        bankAccount: dto.from,
+        rowIndex: existing[0]?.rowIndex ?? journal.nextRow,
+      },
+      {
+        ...common,
+        value: dto.value,
+        bankAccount: dto.to,
+        rowIndex: existing[1]?.rowIndex ?? journal.nextRow + 1,
+      },
+    ]);
+  }
+
+  async deleteTransfer(config: SheetConfigDTO, id: string): Promise<void> {
+    const journal = await this.readJournal(config);
+    const entries = journal.transactions.filter(
+      (item) => item.transferId === id,
+    );
+    if (entries.length === 0) return;
+    if (entries.length !== 2)
+      throw new ValidationException("The transfer is missing a linked entry");
+    const requests: sheets_v4.Schema$Request[] = entries.flatMap(
+      ({ rowIndex }) => [
+        {
+          updateCells: {
+            range: {
+              sheetId: journal.sheetId,
+              startRowIndex: rowIndex,
+              endRowIndex: rowIndex + 1,
+              startColumnIndex: 1,
+              endColumnIndex: 2,
+            },
+            fields: "userEnteredValue,note",
+          },
+        },
+        {
+          updateCells: {
+            range: {
+              sheetId: journal.sheetId,
+              startRowIndex: rowIndex,
+              endRowIndex: rowIndex + 1,
+              startColumnIndex: 3,
+              endColumnIndex: 7,
+            },
+            fields: "userEnteredValue",
+          },
+        },
+      ],
+    );
+    await this.getSheetsService(
+      config.sheetId,
+      config.sheetAccessToken,
+    ).spreadsheets.batchUpdate({
+      spreadsheetId: config.sheetId,
+      requestBody: { requests },
+    });
+  }
+
+  async addBillPayment(
+    dto: AddExpenseDTO & { paymentId: string },
+  ): Promise<TransactionDTO> {
+    const journal = await this.readJournal(dto);
+    const existing = journal.transactions.find(
+      (item) => item.paymentId === dto.paymentId,
+    );
+    if (existing) return existing;
+    const transaction = {
+      sheetId: dto.sheetId,
+      date: dto.date,
+      value: -Math.abs(dto.value),
+      category: dto.category,
+      description: dto.description,
+      bankAccount: dto.bankAccount,
+      paymentId: dto.paymentId,
+    };
+    await this.writeJournal(dto, journal.sheetId, journal.rowCount, [
+      { ...transaction, rowIndex: journal.nextRow },
+    ]);
+    return transaction;
+  }
+
+  private async readJournal(config: SheetConfigDTO) {
+    const result = await this.getSheetsService(
+      config.sheetId,
+      config.sheetAccessToken,
+    ).spreadsheets.get({
+      spreadsheetId: config.sheetId,
+      ranges: ["Diário!B:G"],
+      fields:
+        "sheets(properties(sheetId,gridProperties(rowCount)),data(startRow,rowData(values(formattedValue,note))))",
+    });
+    const sheet = result.data.sheets?.[0];
+    const sheetId = sheet?.properties?.sheetId;
+    if (sheetId === undefined || sheetId === null)
+      throw new ValidationException("Journal sheet not found");
+    const rowCount = sheet?.properties?.gridProperties?.rowCount;
+    if (rowCount === undefined || rowCount === null)
+      throw new ValidationException("Journal grid not found");
+    const rows = sheet?.data?.[0]?.rowData ?? [];
+    const transactions = rows.flatMap((row, rowIndex) => {
+      const cells = row.values ?? [];
+      if (
+        rowIndex < 2 ||
+        !cells[0]?.formattedValue ||
+        !cells[2]?.formattedValue
+      )
+        return [];
+      const note = cells[0]?.note ?? "";
+      let transferId: string | undefined;
+      let paymentId: string | undefined;
+      if (note.startsWith("the-chatbot:transfer:"))
+        transferId = note.slice("the-chatbot:transfer:".length);
+      if (note.startsWith("the-chatbot:bill:"))
+        paymentId = note.slice("the-chatbot:bill:".length);
+      return [
+        {
+          sheetId: config.sheetId,
+          rowIndex,
+          transferId,
+          paymentId,
+          date: this.parseDate(cells[0].formattedValue),
+          value: this.parseDouble(cells[2].formattedValue),
+          category: cells[3]?.formattedValue ?? "",
+          description: cells[4]?.formattedValue ?? "",
+          bankAccount: cells[5]?.formattedValue ?? "",
+        },
+      ];
+    });
+    let nextRow = 2;
+    rows.forEach((row, index) => {
+      const cells = row.values ?? [];
+      if (
+        index >= 2 &&
+        [0, 2, 3, 4, 5].some(
+          (column) => cells[column]?.formattedValue || cells[column]?.note,
+        )
+      ) {
+        nextRow = index + 1;
+      }
+    });
+    return { sheetId, rowCount, transactions, nextRow };
+  }
+
+  private async writeJournal(
+    config: SheetConfigDTO,
+    sheetId: number,
+    rowCount: number,
+    transactions: (TransactionDTO & { rowIndex: number })[],
+  ) {
+    const requests: sheets_v4.Schema$Request[] = transactions.flatMap(
+      (item) => {
+        let note = "";
+        if (item.transferId) note = `the-chatbot:transfer:${item.transferId}`;
+        if (item.paymentId) note = `the-chatbot:bill:${item.paymentId}`;
+        const date = new Date(`${formatCashFlowDate(item.date)}T00:00:00Z`);
+        const serialDate = date.getTime() / 86400000 + 25569;
+        return [
+          {
+            updateCells: {
+              start: { sheetId, rowIndex: item.rowIndex, columnIndex: 1 },
+              rows: [
+                {
+                  values: [
+                    {
+                      userEnteredValue: { numberValue: serialDate },
+                      note,
+                      userEnteredFormat: {
+                        numberFormat: { type: "DATE", pattern: "dd/mm/yyyy" },
+                      },
+                    },
+                  ],
+                },
+              ],
+              fields: "userEnteredValue,note,userEnteredFormat.numberFormat",
+            },
+          },
+          {
+            updateCells: {
+              start: { sheetId, rowIndex: item.rowIndex, columnIndex: 3 },
+              rows: [
+                {
+                  values: [
+                    { userEnteredValue: { numberValue: item.value } },
+                    ...[item.category, item.description, item.bankAccount].map(
+                      (stringValue) => ({ userEnteredValue: { stringValue } }),
+                    ),
+                  ],
+                },
+              ],
+              fields: "userEnteredValue",
+            },
+          },
+        ];
+      },
+    );
+    const requiredRows = Math.max(
+      rowCount,
+      ...transactions.map((item) => item.rowIndex + 1),
+    );
+    if (requiredRows > rowCount) {
+      requests.unshift({
+        appendDimension: {
+          sheetId,
+          dimension: "ROWS",
+          length: requiredRows - rowCount,
+        },
       });
-      this.throwWrongSpreadsheetException(sheet.data.values);
-      const values = sheet.data.values ?? [];
-      if (values.length <= 2) return [];
-      const items = values.slice(2);
-      return items
-        .filter((row) => Array.isArray(row) && row.length >= 5)
-        .map((row) => ({
-          sheetId: sheetConfig.sheetId,
-          date: this.parseDate(String(row[0] ?? "")),
-          value: this.parseDouble(String(row[2] ?? "")),
-          category: String(row[3] ?? ""),
-          description: String(row[4] ?? ""),
-          bankAccount: String(row[5] ?? ""),
-        }));
+    }
+    await this.getSheetsService(
+      config.sheetId,
+      config.sheetAccessToken,
+    ).spreadsheets.batchUpdate({
+      spreadsheetId: config.sheetId,
+      requestBody: { requests },
     });
   }
 

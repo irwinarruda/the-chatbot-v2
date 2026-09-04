@@ -64,3 +64,13 @@ export const SetMonthlyExpensePaidRequestDTO = z.object({
 export type SetMonthlyExpensePaidRequestDTO = z.infer<
   typeof SetMonthlyExpensePaidRequestDTO
 >;
+
+export const PayMonthlyExpenseRequestDTO = z.object({
+  month: MonthlyExpenseMonthDTO,
+  bankAccount: z.string().trim().min(1),
+  category: z.string().trim().min(1),
+  date: z.iso.date(),
+});
+export type PayMonthlyExpenseRequestDTO = z.infer<
+  typeof PayMonthlyExpenseRequestDTO
+>;

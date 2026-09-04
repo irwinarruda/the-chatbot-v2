@@ -12,6 +12,8 @@ export function CashFlowTransactionList({
   isSubmitting,
   locale,
   onDelete,
+  onEditTransfer,
+  onDeleteTransfer,
   t,
   transactions,
 }: {
@@ -20,6 +22,8 @@ export function CashFlowTransactionList({
   isSubmitting: boolean;
   locale: Locale;
   onDelete: () => void;
+  onEditTransfer?: (id: string) => void;
+  onDeleteTransfer?: (id: string) => void;
   t: Dictionary["cashFlowPage"];
   transactions: CashFlowTransactionResponseDTO[];
 }) {
@@ -62,7 +66,17 @@ export function CashFlowTransactionList({
               hiddenMonetaryValueLabel={hiddenMonetaryValueLabel}
               isSubmitting={isSubmitting}
               locale={locale}
-              onDelete={onDelete}
+              onDelete={() => {
+                if (transaction.transferId) {
+                  onDeleteTransfer?.(transaction.transferId);
+                  return;
+                }
+                onDelete();
+              }}
+              onEditTransfer={() => {
+                if (transaction.transferId)
+                  onEditTransfer?.(transaction.transferId);
+              }}
               t={t}
               transaction={transaction}
             />

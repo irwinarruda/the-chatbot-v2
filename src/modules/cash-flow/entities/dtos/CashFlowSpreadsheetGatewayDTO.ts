@@ -13,6 +13,8 @@ export interface SheetConfigDTO {
 
 export interface TransactionDTO {
   sheetId: string;
+  transferId?: string;
+  paymentId?: string;
   date: Date;
   value: number;
   category: string;

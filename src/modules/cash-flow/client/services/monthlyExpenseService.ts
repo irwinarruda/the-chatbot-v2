@@ -3,6 +3,7 @@ import {
   MonthlyExpenseItemResponseDTO,
   MonthlyExpenseResponseDTO,
   MonthlyExpensesResponseDTO,
+  type PayMonthlyExpenseRequestDTO,
   type SetMonthlyExpensePaidRequestDTO,
   type UpdateMonthlyExpenseRequestDTO,
 } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
@@ -35,6 +36,10 @@ export interface MonthlyExpenseClientService {
     dto: UpdateMonthlyExpenseRequestDTO,
   ): Promise<MonthlyExpenseResponseDTO>;
   archive(id: string): Promise<void>;
+  payFromAccount(
+    id: string,
+    dto: PayMonthlyExpenseRequestDTO,
+  ): Promise<MonthlyExpenseResponseDTO>;
   setPaid(
     id: string,
     dto: SetMonthlyExpensePaidRequestDTO,
@@ -42,6 +47,21 @@ export interface MonthlyExpenseClientService {
 }
 
 export const monthlyExpenseService: MonthlyExpenseClientService = {
+  async payFromAccount(id, dto) {
+    const response = await fetch(
+      `/api/v1/web/monthly-expenses/${id}/bank-payment`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dto),
+      },
+    );
+    if (!response.ok) throw await parseError(response);
+    return parseApiResponse(
+      MonthlyExpenseItemResponseDTO,
+      await response.json(),
+    ).expense;
+  },
   async list(month) {
     const params = new URLSearchParams();
     if (month) params.set("month", month);

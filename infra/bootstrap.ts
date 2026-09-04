@@ -4,6 +4,7 @@ import { ArtifactService } from "~/modules/artifacts/services/ArtifactService";
 import type { CashFlowSpreadsheetGateway } from "~/modules/cash-flow/gateway/CashFlowSpreadsheetGateway";
 import { GoogleCashFlowSpreadsheetGateway } from "~/modules/cash-flow/gateway/CashFlowSpreadsheetGateway/GoogleCashFlowSpreadsheetGateway";
 import { CashFlowService } from "~/modules/cash-flow/services/CashFlowService";
+import { MonthlyExpensePaymentService } from "~/modules/cash-flow/services/MonthlyExpensePaymentService";
 import { MonthlyExpenseService } from "~/modules/cash-flow/services/MonthlyExpenseService";
 import type { AiChatGateway } from "~/modules/chat/gateway/AiChatGateway";
 import { PiAiChatGateway } from "~/modules/chat/gateway/AiChatGateway/PiAiChatGateway";
@@ -59,6 +60,7 @@ export interface Application {
     aiModels: AiModelService;
     cashFlow: CashFlowService;
     monthlyExpenses: MonthlyExpenseService;
+    monthlyExpensePayments: MonthlyExpensePaymentService;
     messaging: MessagingService;
     migration: MigrationService;
     notes: NoteService;
@@ -177,6 +179,10 @@ export function createApplication(
       aiModels: aiModelService,
       cashFlow: cashFlowService,
       monthlyExpenses: monthlyExpenseService,
+      monthlyExpensePayments: new MonthlyExpensePaymentService(
+        monthlyExpenseService,
+        cashFlowService,
+      ),
       messaging: messagingService,
       migration: new MigrationService(database, config.database, config.auth),
       notes: noteService,

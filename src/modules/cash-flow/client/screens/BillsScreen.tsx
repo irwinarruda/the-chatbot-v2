@@ -16,10 +16,14 @@ import {
 import { BillsMonthSelect } from "~/modules/cash-flow/client/components/BillsMonthSelect";
 import { MonthlyExpenseDialog } from "~/modules/cash-flow/client/components/MonthlyExpenseDialog";
 import type { MonthlyExpenseFormValue } from "~/modules/cash-flow/client/components/MonthlyExpenseForm";
+import { MonthlyExpensePaymentDialog } from "~/modules/cash-flow/client/components/MonthlyExpensePaymentDialog";
 import { MonthlyExpenseProgress } from "~/modules/cash-flow/client/components/MonthlyExpenseProgress";
 import { MonthlyExpenseRow } from "~/modules/cash-flow/client/components/MonthlyExpenseRow";
 import type { MonthlyExpenseErrorCode } from "~/modules/cash-flow/client/state/monthlyExpenseSlice";
-import type { MonthlyExpenseDTO } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
+import type {
+  MonthlyExpenseDTO,
+  PayMonthlyExpenseRequestDTO,
+} from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
 import { TerminalPageHeader } from "~/shared/client/components/terminal/TerminalPageHeader";
 import { TerminalWindow } from "~/shared/client/components/terminal/TerminalWindow";
 import {
@@ -64,8 +68,17 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
   const archiveExpense = useApp((state) => state.archiveMonthlyExpense);
   const setPaid = useApp((state) => state.setMonthlyExpensePaid);
   const clearError = useApp((state) => state.clearMonthlyExpenseError);
+  const payFromAccount = useApp((state) => state.payMonthlyExpenseFromAccount);
+  const dashboard = useApp((state) => state.cashFlowDashboard);
+  const loadAccounts = useApp((state) => state.bootstrapCashFlow);
+  const isLoadingAccounts = useApp((state) => state.isCashFlowBootstrapping);
+  const accountError = useApp((state) => state.cashFlowError);
+  const [payingExpenseId, setPayingExpenseId] = useState<string>();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<MonthlyExpenseDTO>();
+  const payingExpense = monthlyExpenses.find(
+    (item) => item.id === payingExpenseId,
+  );
   const isDialogOpen = isCreateOpen || editingExpense !== undefined;
   const dictionary = getDictionary(prefs.locale);
   const t = dictionary.billsPage;
@@ -88,6 +101,20 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
     deleting: t.errorDeleting,
   };
   const errorMessage = error ? errorMessages[error] : undefined;
+
+  function onOpenPayment(id: string) {
+    clearError();
+    setPayingExpenseId(id);
+    void loadAccounts();
+  }
+
+  async function onPayFromAccount(dto: PayMonthlyExpenseRequestDTO) {
+    if (!payingExpense) return;
+    const paid = await payFromAccount(payingExpense.id, dto);
+    if (!paid) return;
+    setPayingExpenseId(undefined);
+    await loadAccounts();
+  }
 
   function onCloseDialog() {
     setIsCreateOpen(false);
@@ -129,11 +156,16 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
   function onMonthSelect(nextMonth: string) {
     if (!nextMonth) return;
     onCloseDialog();
+    setPayingExpenseId(undefined);
     navigate({
       to: "/bills",
       search: toBillsRouteSearch(nextMonth),
     });
   }
+
+  useEffect(() => {
+    void loadAccounts();
+  }, [loadAccounts]);
 
   useEffect(() => {
     void bootstrap(selectedMonth);
@@ -313,6 +345,13 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
             {monthlyExpenses.map((expense) => (
               <li key={expense.id}>
                 <MonthlyExpenseRow
+                  bankAccount={
+                    dashboard.transactions.find(
+                      (transaction) =>
+                        transaction.paymentId ===
+                        `${expense.id}:${expense.month}`,
+                    )?.bankAccount
+                  }
                   expense={expense}
                   hiddenMonetaryValueLabel={
                     dictionary.common.hiddenMonetaryValue
@@ -320,6 +359,7 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
                   isSubmitting={isSubmitting}
                   locale={prefs.locale}
                   onEdit={() => onOpenEdit(expense)}
+                  onPayFromAccount={() => onOpenPayment(expense.id)}
                   onTogglePaid={() => setPaid(expense.id, !expense.isPaid)}
                   t={t}
                 />
@@ -342,6 +382,23 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
           </Empty>
         )}
       </section>
+      {payingExpense && (
+        <MonthlyExpensePaymentDialog
+          bankAccounts={dashboard.bankAccounts}
+          categories={dashboard.expenseCategories}
+          expense={payingExpense}
+          hiddenMonetaryValueLabel={dictionary.common.hiddenMonetaryValue}
+          isLoading={isLoadingAccounts}
+          isSubmitting={isSubmitting}
+          key={`${payingExpense.id}:${payingExpense.month}`}
+          loadError={accountError !== undefined}
+          locale={prefs.locale}
+          onClose={() => setPayingExpenseId(undefined)}
+          onSave={(dto) => void onPayFromAccount(dto)}
+          paymentError={error === "saving"}
+          t={t}
+        />
+      )}
       <MonthlyExpenseDialog
         canArchive={selectedMonth === currentMonth}
         expense={editingExpense}

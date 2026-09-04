@@ -1,3 +1,4 @@
+import type { SaveSpreadsheetTransferDTO } from "~/modules/cash-flow/entities/dtos/CashFlowTransferDTO";
 import type {
   AddEarningDTO,
   AddExpenseDTO,
@@ -25,6 +26,68 @@ export class TestCashFlowSpreadsheetGateway
     if (accessToken !== "ya29.a0ARrdaM9test_access_token_123456789") {
       throw new ValidationException("Invalid access token");
     }
+  }
+
+  reset(): void {
+    TestCashFlowSpreadsheetGateway.transactions = [];
+  }
+
+  async saveTransfer(
+    dto: SaveSpreadsheetTransferDTO,
+    replace: boolean,
+  ): Promise<void> {
+    const transactions = await this.getAllTransactions(dto);
+    const existing = transactions.filter((item) => item.transferId === dto.id);
+    if ((replace || existing.length > 0) && existing.length !== 2)
+      throw new ValidationException("The linked transfer could not be found");
+    if (!replace && existing.length > 0) return;
+    const common = {
+      sheetId: dto.sheetId,
+      transferId: dto.id,
+      date: dto.date,
+      category: dto.category,
+      description: dto.description,
+    };
+    const entries = [
+      { ...common, value: -dto.value, bankAccount: dto.from },
+      { ...common, value: dto.value, bankAccount: dto.to },
+    ];
+    if (replace) {
+      existing.forEach((item, index) => {
+        Object.assign(item, entries[index]);
+      });
+      return;
+    }
+    transactions.push(...entries);
+  }
+
+  async deleteTransfer(config: SheetConfigDTO, id: string): Promise<void> {
+    await this.getAllTransactions(config);
+    TestCashFlowSpreadsheetGateway.transactions =
+      TestCashFlowSpreadsheetGateway.transactions.filter(
+        (item) => item.transferId !== id,
+      );
+  }
+
+  async addBillPayment(
+    dto: AddExpenseDTO & { paymentId: string },
+  ): Promise<TransactionDTO> {
+    const transactions = await this.getAllTransactions(dto);
+    const existing = transactions.find(
+      (item) => item.paymentId === dto.paymentId,
+    );
+    if (existing) return existing;
+    const transaction = {
+      sheetId: dto.sheetId,
+      date: dto.date,
+      value: -Math.abs(dto.value),
+      category: dto.category,
+      description: dto.description,
+      bankAccount: dto.bankAccount,
+      paymentId: dto.paymentId,
+    };
+    transactions.push(transaction);
+    return transaction;
   }
 
   async addTransaction(transaction: AddTransactionDTO): Promise<void> {

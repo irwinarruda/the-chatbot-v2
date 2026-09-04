@@ -1,4 +1,4 @@
-import { CalendarDays, Pencil, ReceiptText } from "lucide-react";
+import { CalendarDays, Landmark, Pencil, ReceiptText } from "lucide-react";
 import type { MonthlyExpenseDTO } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
 import { MonetaryValue } from "~/shared/client/components/MonetaryValue";
 import { Badge } from "~/shared/client/components/ui/badge";
@@ -14,19 +14,23 @@ import {
 import type { Dictionary, Locale } from "~/shared/client/i18n";
 
 export function MonthlyExpenseRow({
+  bankAccount,
   expense,
   hiddenMonetaryValueLabel,
   isSubmitting,
   locale,
   onEdit,
+  onPayFromAccount,
   onTogglePaid,
   t,
 }: {
   expense: MonthlyExpenseDTO;
+  bankAccount?: string;
   hiddenMonetaryValueLabel: string;
   isSubmitting: boolean;
   locale: Locale;
   onEdit: () => void;
+  onPayFromAccount: () => void;
   onTogglePaid: () => void;
   t: Dictionary["billsPage"];
 }) {
@@ -133,6 +137,35 @@ export function MonthlyExpenseRow({
           </TooltipTrigger>
           <TooltipContent>{t.editAction}</TooltipContent>
         </Tooltip>
+        <div className="col-start-2 col-end-5 flex min-w-0 items-center border-term-border/60 border-t pt-2">
+          {bankAccount ? (
+            <span className="inline-flex min-w-0 items-center gap-1.5 text-2xs text-term-muted">
+              <Landmark
+                aria-hidden="true"
+                className="size-3 shrink-0 text-term-cyan"
+              />
+              <span className="truncate">
+                {t.paymentRecorded} {bankAccount}
+              </span>
+            </span>
+          ) : expense.expectedAmount ? (
+            <Button
+              className="h-7 text-term-cyan hover:bg-term-cyan/10 hover:text-term-cyan"
+              disabled={isSubmitting}
+              onClick={onPayFromAccount}
+              size="sm"
+              type="button"
+              variant="ghost"
+            >
+              <Landmark />
+              {t.payFromAccount}
+            </Button>
+          ) : (
+            <span className="text-2xs text-term-muted">
+              {t.paymentAmountRequired}
+            </span>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

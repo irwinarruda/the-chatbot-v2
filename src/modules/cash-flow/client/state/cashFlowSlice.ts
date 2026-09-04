@@ -3,6 +3,7 @@ import {
   type CashFlowClientService,
   cashFlowService,
 } from "~/modules/cash-flow/client/services/cashFlowService";
+import type { SaveCashFlowTransferRequestDTO } from "~/modules/cash-flow/entities/dtos/CashFlowTransferDTO";
 import type {
   CashFlowDashboardResponseDTO,
   CreateCashFlowTransactionRequestDTO,
@@ -25,6 +26,11 @@ export interface CashFlowSlice {
   ) => Promise<boolean>;
   deleteLastCashFlowTransaction: () => Promise<boolean>;
   clearCashFlowError: () => void;
+  saveCashFlowTransfer: (
+    dto: SaveCashFlowTransferRequestDTO,
+    replace: boolean,
+  ) => Promise<boolean>;
+  deleteCashFlowTransfer: (id: string) => Promise<boolean>;
 }
 
 function emptyCashFlowDashboard(): CashFlowDashboardResponseDTO {
@@ -105,10 +111,45 @@ export function createCashFlowSlice(
             cashFlowDashboard: {
               ...state.cashFlowDashboard,
               transactions: state.cashFlowDashboard.transactions.filter(
-                ({ isLast }) => !isLast,
+                ({ isLast, transferId }) =>
+                  !isLast &&
+                  (!transferId ||
+                    transferId !==
+                      cashFlowDashboard.transactions.find((item) => item.isLast)
+                        ?.transferId),
               ),
             },
           }));
+          await refreshDashboard();
+          return true;
+        } catch {
+          set({ cashFlowError: "deleting" });
+          return false;
+        } finally {
+          set({ isCashFlowSubmitting: false });
+        }
+      },
+      async saveCashFlowTransfer(dto, replace) {
+        const { isCashFlowSubmitting } = get();
+        if (isCashFlowSubmitting) return false;
+        set({ isCashFlowSubmitting: true, cashFlowError: undefined });
+        try {
+          await service.saveTransfer(dto, replace);
+          await refreshDashboard();
+          return true;
+        } catch {
+          set({ cashFlowError: "saving" });
+          return false;
+        } finally {
+          set({ isCashFlowSubmitting: false });
+        }
+      },
+      async deleteCashFlowTransfer(id) {
+        const { isCashFlowSubmitting } = get();
+        if (isCashFlowSubmitting) return false;
+        set({ isCashFlowSubmitting: true, cashFlowError: undefined });
+        try {
+          await service.deleteTransfer(id);
           await refreshDashboard();
           return true;
         } catch {

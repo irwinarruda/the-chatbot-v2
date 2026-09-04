@@ -50,6 +50,7 @@ export interface CashFlowAddEarningDTO {
 }
 
 export interface CashFlowTransferDTO {
+  id?: string;
   phoneNumber: string;
   date: Date;
   value: number;

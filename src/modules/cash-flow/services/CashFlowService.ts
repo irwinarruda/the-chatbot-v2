@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { CashFlowSpreadsheet } from "~/modules/cash-flow/entities/CashFlowSpreadsheet";
 import type {
   CashFlowAddEarningDTO,
@@ -123,9 +124,21 @@ export class CashFlowService {
 
   async deleteLastTransaction(phoneNumber: string): Promise<void> {
     const { sheet, credential } = await this.getUserAndSheet(phoneNumber);
-    await this.spreadsheetResource.deleteLastTransaction({
+    const config = {
       sheetId: sheet.idSheet,
       sheetAccessToken: credential.accessToken,
+    };
+    await this.withSheetLock(config.sheetId, async () => {
+      const last = await this.spreadsheetResource.getLastTransaction(config);
+      if (last?.transferId) {
+        await this.spreadsheetResource.deleteTransfer(config, last.transferId);
+        return;
+      }
+      if (last?.paymentId)
+        throw new ValidationException(
+          "This transaction is linked to a bill payment",
+        );
+      await this.spreadsheetResource.deleteLastTransaction(config);
     });
   }
 
@@ -142,15 +155,17 @@ export class CashFlowService {
     const { sheet, credential } = await this.getUserAndSheet(
       expense.phoneNumber,
     );
-    await this.spreadsheetResource.addExpense({
-      sheetId: sheet.idSheet,
-      sheetAccessToken: credential.accessToken,
-      date: expense.date,
-      value: expense.value,
-      category: expense.category,
-      description: expense.description,
-      bankAccount: expense.bankAccount,
-    });
+    await this.withSheetLock(sheet.idSheet, () =>
+      this.spreadsheetResource.addExpense({
+        sheetId: sheet.idSheet,
+        sheetAccessToken: credential.accessToken,
+        date: expense.date,
+        value: expense.value,
+        category: expense.category,
+        description: expense.description,
+        bankAccount: expense.bankAccount,
+      }),
+    );
   }
 
   async addEarning(earning: CashFlowAddEarningDTO): Promise<void> {
@@ -158,19 +173,22 @@ export class CashFlowService {
     const { sheet, credential } = await this.getUserAndSheet(
       earning.phoneNumber,
     );
-    await this.spreadsheetResource.addEarning({
-      sheetId: sheet.idSheet,
-      sheetAccessToken: credential.accessToken,
-      date: earning.date,
-      value: earning.value,
-      category: earning.category,
-      description: earning.description,
-      bankAccount: earning.bankAccount,
-    });
+    await this.withSheetLock(sheet.idSheet, () =>
+      this.spreadsheetResource.addEarning({
+        sheetId: sheet.idSheet,
+        sheetAccessToken: credential.accessToken,
+        date: earning.date,
+        value: earning.value,
+        category: earning.category,
+        description: earning.description,
+        bankAccount: earning.bankAccount,
+      }),
+    );
   }
 
   async transferBetweenBankAccounts(
     transfer: CashFlowTransferDTO,
+    replace = false,
   ): Promise<string> {
     const { sheet, credential } = await this.getUserAndSheet(
       transfer.phoneNumber,
@@ -191,29 +209,66 @@ export class CashFlowService {
         "The transfer must be between two different bank accounts.",
       );
     }
-    if (transfer.value <= 0) {
-      throw new ValidationException(
-        "Transfer value must be a positive number",
-        `Received: ${transfer.value}`,
-      );
+    if (
+      !Number.isFinite(transfer.value) ||
+      transfer.value <= 0 ||
+      Number.isNaN(transfer.date.getTime())
+    ) {
+      throw new ValidationException("Transfer amount and date must be valid");
     }
-    await this.addExpense({
-      phoneNumber: transfer.phoneNumber,
-      date: transfer.date,
-      value: transfer.value,
-      category,
-      description: transfer.description,
-      bankAccount: transfer.from,
-    });
-    await this.addEarning({
-      phoneNumber: transfer.phoneNumber,
-      date: transfer.date,
-      value: transfer.value,
-      category,
-      description: transfer.description,
-      bankAccount: transfer.to,
-    });
+    await this.withSheetLock(sheet.idSheet, () =>
+      this.spreadsheetResource.saveTransfer(
+        {
+          ...sheetConfig,
+          ...transfer,
+          id: transfer.id ?? randomUUID(),
+          category,
+        },
+        replace,
+      ),
+    );
     return category;
+  }
+
+  async deleteTransfer(phoneNumber: string, id: string): Promise<void> {
+    const { sheet, credential } = await this.getUserAndSheet(phoneNumber);
+    await this.withSheetLock(sheet.idSheet, () =>
+      this.spreadsheetResource.deleteTransfer(
+        {
+          sheetId: sheet.idSheet,
+          sheetAccessToken: credential.accessToken,
+        },
+        id,
+      ),
+    );
+  }
+
+  async payBill(
+    expense: CashFlowAddExpenseDTO,
+    paymentId: string,
+  ): Promise<TransactionDTO> {
+    this.validateTransactionInput(expense);
+    const { sheet, credential } = await this.getUserAndSheet(
+      expense.phoneNumber,
+    );
+    const config = {
+      sheetId: sheet.idSheet,
+      sheetAccessToken: credential.accessToken,
+    };
+    const [accounts, categories] = await Promise.all([
+      this.spreadsheetResource.getBankAccount(config),
+      this.spreadsheetResource.getExpenseCategories(config),
+    ]);
+    this.validateBankAccountExists(expense.bankAccount, accounts, "Payment");
+    if (!categories.includes(expense.category))
+      throw new ValidationException("Expense category not found");
+    return this.withSheetLock(sheet.idSheet, () =>
+      this.spreadsheetResource.addBillPayment({
+        ...config,
+        ...expense,
+        paymentId,
+      }),
+    );
   }
 
   async getExpenseCategories(phoneNumber: string): Promise<string[]> {
@@ -308,6 +363,16 @@ export class CashFlowService {
       ...new Set([...expenseCategories, ...earningCategories]),
     ];
     return { categories, bankAccounts };
+  }
+
+  private async withSheetLock<T>(
+    sheetId: string,
+    operation: () => Promise<T>,
+  ): Promise<T> {
+    return this.database.transaction(async (sql) => {
+      await sql`SELECT pg_advisory_xact_lock(hashtextextended(${`cash-flow:${sheetId}`}, 0))`;
+      return operation();
+    });
   }
 
   private validateTransactionInput(

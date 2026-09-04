@@ -1,3 +1,4 @@
+import type { SaveCashFlowTransferRequestDTO } from "~/modules/cash-flow/entities/dtos/CashFlowTransferDTO";
 import {
   type CashFlowDashboardResponseDTO,
   CashFlowDashboardResponseDTO as CashFlowDashboardResponseSchema,
@@ -24,6 +25,11 @@ export interface CashFlowClientService {
   create(dto: CreateCashFlowTransactionRequestDTO): Promise<void>;
   sync(dto: SyncCashFlowBankAccountRequestDTO): Promise<void>;
   deleteLast(): Promise<void>;
+  saveTransfer(
+    dto: SaveCashFlowTransferRequestDTO,
+    replace: boolean,
+  ): Promise<void>;
+  deleteTransfer(id: string): Promise<void>;
 }
 
 export function parseCashFlowDashboard(
@@ -33,6 +39,26 @@ export function parseCashFlowDashboard(
 }
 
 export const cashFlowService: CashFlowClientService = {
+  async saveTransfer(dto, replace) {
+    let url = "/api/v1/web/cash-flow/transfers";
+    let method = "POST";
+    if (replace) {
+      url += `/${dto.id}`;
+      method = "PATCH";
+    }
+    const response = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(dto),
+    });
+    if (!response.ok) throw await parseError(response);
+  },
+  async deleteTransfer(id) {
+    const response = await fetch(`/api/v1/web/cash-flow/transfers/${id}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) throw await parseError(response);
+  },
   async load() {
     const response = await fetch("/api/v1/web/cash-flow");
     if (!response.ok) throw await parseError(response);

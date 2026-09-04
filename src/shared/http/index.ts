@@ -61,6 +61,18 @@ export const routes = rootRoute("shared/client/routes/__root.tsx", [
     "/api/v1/web/cash-flow/sync",
     "shared/http/controllers/web-cash-flow-sync.ts",
   ),
+  route(
+    "/api/v1/web/cash-flow/transfers",
+    "shared/http/controllers/web-cash-flow-transfers.ts",
+  ),
+  route(
+    "/api/v1/web/cash-flow/transfers/$transferId",
+    "shared/http/controllers/web-cash-flow-transfer.ts",
+  ),
+  route(
+    "/api/v1/web/monthly-expenses/$expenseId/bank-payment",
+    "shared/http/controllers/web-monthly-expense-bank-payment.ts",
+  ),
   route("/api/v1/web/todos", "shared/http/controllers/web-todos.ts"),
   route("/api/v1/web/todos/$todoId", "shared/http/controllers/web-todo.ts"),
   route("/api/v1/web/notes", "shared/http/controllers/web-notes.ts"),

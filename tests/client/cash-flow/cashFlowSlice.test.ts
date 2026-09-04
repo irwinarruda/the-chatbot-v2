@@ -33,6 +33,8 @@ describe("cashFlowSlice", () => {
   test("refreshes authoritative spreadsheet data after every mutation", async () => {
     let loadCount = 0;
     const service: CashFlowClientService = {
+      async saveTransfer() {},
+      async deleteTransfer() {},
       load: vi.fn(async () => createDashboard(loadCount++)),
       create: vi.fn(async () => {}),
       sync: vi.fn(async () => {}),
@@ -71,6 +73,8 @@ describe("cashFlowSlice", () => {
   test("keeps a successful mutation distinct from a failed refresh", async () => {
     let loadCount = 0;
     const service: CashFlowClientService = {
+      async saveTransfer() {},
+      async deleteTransfer() {},
       async load() {
         loadCount += 1;
         if (loadCount > 1) throw new Error("refresh failed");
@@ -99,6 +103,8 @@ describe("cashFlowSlice", () => {
   test("invalidates the stale delete target when refresh fails", async () => {
     let loadCount = 0;
     const service: CashFlowClientService = {
+      async saveTransfer() {},
+      async deleteTransfer() {},
       async load() {
         loadCount += 1;
         if (loadCount > 1) throw new Error("refresh failed");

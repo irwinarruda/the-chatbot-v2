@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
+  ArrowRightLeft,
   CircleAlert,
   Landmark,
   ListFilter,
@@ -21,11 +22,14 @@ import { CashFlowFilters } from "~/modules/cash-flow/client/components/CashFlowF
 import { CashFlowSyncDialog } from "~/modules/cash-flow/client/components/CashFlowSyncDialog";
 import { CashFlowTransactionDialog } from "~/modules/cash-flow/client/components/CashFlowTransactionDialog";
 import { CashFlowTransactionList } from "~/modules/cash-flow/client/components/CashFlowTransactionList";
+import { CashFlowTransferDialog } from "~/modules/cash-flow/client/components/CashFlowTransferDialog";
 import type { CashFlowErrorCode } from "~/modules/cash-flow/client/state/cashFlowSlice";
+import type { SaveCashFlowTransferRequestDTO } from "~/modules/cash-flow/entities/dtos/CashFlowTransferDTO";
 import type {
   CreateCashFlowTransactionRequestDTO,
   SyncCashFlowBankAccountRequestDTO,
 } from "~/modules/cash-flow/entities/dtos/CashFlowWebDTO";
+import { formatCashFlowDate } from "~/modules/cash-flow/utils/CashFlowDate";
 import { MonetaryValue } from "~/shared/client/components/MonetaryValue";
 import { TerminalPageHeader } from "~/shared/client/components/terminal/TerminalPageHeader";
 import { TerminalWindow } from "~/shared/client/components/terminal/TerminalWindow";
@@ -76,6 +80,11 @@ export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
     (state) => state.deleteLastCashFlowTransaction,
   );
   const clearError = useApp((state) => state.clearCashFlowError);
+  const saveTransfer = useApp((state) => state.saveCashFlowTransfer);
+  const deleteTransfer = useApp((state) => state.deleteCashFlowTransfer);
+  const [transferDraft, setTransferDraft] =
+    useState<SaveCashFlowTransferRequestDTO>();
+  const [editingTransferId, setEditingTransferId] = useState<string>();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isSyncOpen, setIsSyncOpen] = useState(false);
   const dictionary = getDictionary(prefs.locale);
@@ -118,6 +127,29 @@ export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
   const hasFilters = Object.values(filters).some(
     (value) => value && value !== "all",
   );
+
+  function onOpenTransfer(id?: string) {
+    clearError();
+    setEditingTransferId(id);
+    const entries = dashboard.transactions.filter(
+      (item) => id && item.transferId === id,
+    );
+    const debit = entries.find((item) => item.value < 0);
+    const credit = entries.find((item) => item.value > 0);
+    setTransferDraft({
+      id: id ?? crypto.randomUUID(),
+      from: debit?.bankAccount ?? dashboard.bankAccounts[0] ?? "",
+      to: credit?.bankAccount ?? "",
+      value: Math.abs(debit?.value ?? 0),
+      date: debit?.date ?? formatCashFlowDate(new Date()),
+      description: debit?.description ?? "",
+    });
+  }
+
+  async function onSaveTransfer(value: SaveCashFlowTransferRequestDTO) {
+    if (await saveTransfer(value, editingTransferId !== undefined))
+      setTransferDraft(undefined);
+  }
 
   function onChangeFilters(patch: Partial<CashFlowFilterValues>) {
     navigate({
@@ -207,7 +239,7 @@ export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
           </AlertAction>
         </Alert>
       )}
-      <div className="mb-4 grid grid-cols-2 gap-2">
+      <div className="mb-4 grid gap-2 sm:flex sm:flex-wrap">
         <Button
           disabled={isBootstrapping || dashboard.bankAccounts.length === 0}
           onClick={() => setIsCreateOpen(true)}
@@ -215,6 +247,15 @@ export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
         >
           <Plus />
           {t.newTransaction}
+        </Button>
+        <Button
+          disabled={isBootstrapping || isSubmitting}
+          onClick={() => onOpenTransfer()}
+          type="button"
+          variant="outline"
+        >
+          <ArrowRightLeft className="text-term-cyan" />
+          {t.transferAction}
         </Button>
         <Button
           disabled={isBootstrapping || dashboard.bankAccounts.length === 0}
@@ -327,6 +368,8 @@ export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
             key={transactionListKey}
             locale={prefs.locale}
             onDelete={() => void deleteLastTransaction()}
+            onEditTransfer={onOpenTransfer}
+            onDeleteTransfer={(id) => void deleteTransfer(id)}
             t={t}
             transactions={filteredTransactions}
           />
@@ -346,6 +389,19 @@ export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
           </Empty>
         )}
       </section>
+      {transferDraft && (
+        <CashFlowTransferDialog
+          bankAccounts={dashboard.bankAccounts}
+          error={errorMessage}
+          initialValue={transferDraft}
+          isEditing={editingTransferId !== undefined}
+          isSubmitting={isSubmitting}
+          key={transferDraft.id}
+          onClose={() => setTransferDraft(undefined)}
+          onSave={(value) => void onSaveTransfer(value)}
+          t={t}
+        />
+      )}
       <CashFlowTransactionDialog
         bankAccounts={dashboard.bankAccounts}
         earningCategories={dashboard.earningCategories}

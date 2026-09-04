@@ -13,6 +13,8 @@ export function toCashFlowDashboardResponse(
   return CashFlowDashboardResponseSchema.parse({
     transactions: dashboard.transactions.map((transaction, index) => ({
       position: index,
+      transferId: transaction.transferId,
+      paymentId: transaction.paymentId,
       date: formatCashFlowDate(transaction.date),
       value: transaction.value,
       type:

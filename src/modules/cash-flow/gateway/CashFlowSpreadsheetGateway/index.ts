@@ -6,6 +6,7 @@ import type {
   SheetConfigDTO,
   TransactionDTO,
 } from "~/modules/cash-flow/entities/dtos/CashFlowSpreadsheetGatewayDTO";
+import type { SaveSpreadsheetTransferDTO } from "~/modules/cash-flow/entities/dtos/CashFlowTransferDTO";
 
 export type {
   AddEarningDTO,
@@ -17,6 +18,15 @@ export type {
 } from "~/modules/cash-flow/entities/dtos/CashFlowSpreadsheetGatewayDTO";
 
 export interface CashFlowSpreadsheetGateway {
+  saveTransfer(
+    dto: SaveSpreadsheetTransferDTO,
+    replace: boolean,
+  ): Promise<void>;
+  deleteTransfer(config: SheetConfigDTO, id: string): Promise<void>;
+  addBillPayment(
+    dto: AddExpenseDTO & { paymentId: string },
+  ): Promise<TransactionDTO>;
+
   addTransaction(transaction: AddTransactionDTO): Promise<void>;
   addExpense(expense: AddExpenseDTO): Promise<void>;
   addEarning(earning: AddEarningDTO): Promise<void>;

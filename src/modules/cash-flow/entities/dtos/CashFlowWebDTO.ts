@@ -2,6 +2,8 @@ import { z } from "zod";
 import { CashFlowTransactionType } from "~/modules/cash-flow/entities/enums/CashFlowTransactionType";
 
 export const CashFlowTransactionResponseDTO = z.object({
+  transferId: z.uuid().optional(),
+  paymentId: z.string().optional(),
   position: z.number().int().nonnegative(),
   date: z.iso.date(),
   value: z.number().finite(),

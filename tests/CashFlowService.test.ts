@@ -43,13 +43,10 @@ describe("CashFlowService", () => {
     try {
       return await run();
     } finally {
-      const currentTransactionCount = (
-        await orquestrator.cashFlowService.getAllTransactions(phoneNumber)
-      ).length;
-      const extraTransactions =
-        currentTransactionCount - initialTransactionCount;
-
-      for (let i = 0; i < extraTransactions; i++) {
+      while (
+        (await orquestrator.cashFlowService.getAllTransactions(phoneNumber))
+          .length > initialTransactionCount
+      ) {
         await orquestrator.cashFlowService.deleteLastTransaction(phoneNumber);
       }
     }

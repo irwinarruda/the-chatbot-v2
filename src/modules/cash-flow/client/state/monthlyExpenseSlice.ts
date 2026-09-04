@@ -6,6 +6,7 @@ import {
 import type {
   CreateMonthlyExpenseRequestDTO,
   MonthlyExpenseDTO,
+  PayMonthlyExpenseRequestDTO,
   UpdateMonthlyExpenseRequestDTO,
 } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
 
@@ -31,6 +32,10 @@ export interface MonthlyExpenseSlice {
     isPaid: boolean,
   ) => Promise<MonthlyExpenseDTO | undefined>;
   clearMonthlyExpenseError: () => void;
+  payMonthlyExpenseFromAccount: (
+    id: string,
+    dto: PayMonthlyExpenseRequestDTO,
+  ) => Promise<MonthlyExpenseDTO | undefined>;
 }
 
 function sortMonthlyExpenses(
@@ -160,6 +165,31 @@ export function createMonthlyExpenseSlice(
             ),
           ),
         }));
+        return expense;
+      } catch {
+        set({ monthlyExpenseError: "saving" });
+        return undefined;
+      } finally {
+        set({ isMonthlyExpenseSubmitting: false });
+      }
+    },
+    async payMonthlyExpenseFromAccount(id, dto) {
+      const { isMonthlyExpenseSubmitting } = get();
+      if (isMonthlyExpenseSubmitting) return undefined;
+      set({ isMonthlyExpenseSubmitting: true, monthlyExpenseError: undefined });
+      try {
+        const expense = await service.payFromAccount(id, dto);
+        set((state) => {
+          if (state.monthlyExpenseMonth !== expense.month) return {};
+          return {
+            monthlyExpenses: sortMonthlyExpenses(
+              state.monthlyExpenses.map((item) => {
+                if (item.id === id) return expense;
+                return item;
+              }),
+            ),
+          };
+        });
         return expense;
       } catch {
         set({ monthlyExpenseError: "saving" });
