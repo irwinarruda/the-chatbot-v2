@@ -1,8 +1,10 @@
 import type {
+  Api,
   AssistantMessage,
   Model,
   Message as PiMessage,
   StopReason,
+  TextContent,
   Usage,
 } from "@earendil-works/pi-ai";
 import type {
@@ -32,7 +34,7 @@ export class PiMessageMapper {
 
   static map(
     messages: AiChatContextMessageDTO[],
-    model: Model<any>,
+    model: Model<Api>,
   ): PiMessage[] {
     const mapped: PiMessage[] = [];
     const toolNames = new Map<string, string>();
@@ -113,10 +115,7 @@ export class PiMessageMapper {
           text =
             `${content.text}\n\nSelectable options: ${(content.options ?? []).join("; ")}`.trim();
         }
-        const textContent: Extract<
-          AssistantMessage["content"][number],
-          { type: "text" }
-        > = {
+        const textContent: TextContent = {
           type: "text",
           text,
         };
@@ -155,7 +154,7 @@ export class PiMessageMapper {
 
   private static createAssistantMessage(
     generation: AiGenerationContextDTO | undefined,
-    model: Model<any>,
+    model: Model<Api>,
     timestamp: number,
     hasToolCall: boolean,
   ): AssistantMessage {

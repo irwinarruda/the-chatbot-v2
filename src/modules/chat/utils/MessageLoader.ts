@@ -1,7 +1,5 @@
-import { existsSync, readFileSync } from "fs";
-import { join } from "path";
 import { Paths } from "~/infra/paths";
-import { NotFoundException } from "~/shared/errors/ApplicationErrors";
+import { ChatTemplateLoader } from "./ChatTemplateLoader";
 
 export const MessageTemplate = {
   SignedIn: "SignedIn",
@@ -43,31 +41,10 @@ export interface MessageParams {
 }
 
 export class MessageLoader {
-  private static cache = new Map<string, string>();
-
-  private static readFile(fileName: string): string {
-    const filePath = join(Paths.templatesDir("messages"), fileName);
-    if (!existsSync(filePath)) {
-      throw new NotFoundException(
-        `Message template file not found: ${filePath}`,
-      );
-    }
-    const cached = MessageLoader.cache.get(filePath);
-    if (cached) return cached;
-    const text = readFileSync(filePath, "utf-8");
-    MessageLoader.cache.set(filePath, text);
-    return text;
-  }
-
-  private static applyTemplate(
-    text: string,
-    data: Record<string, string>,
-  ): string {
-    if (Object.keys(data).length === 0) return text;
-    return text.replace(/\{\{([A-Za-z0-9_]+)\}\}/g, (match, key: string) => {
-      return key in data ? (data[key] ?? match) : match;
-    });
-  }
+  private static readonly templates = new ChatTemplateLoader(
+    Paths.templatesDir("messages"),
+    "Message template file",
+  );
 
   private static templateToBaseName(template: MessageTemplate): string {
     switch (template) {
@@ -120,38 +97,23 @@ export class MessageLoader {
   ): string {
     const baseName = MessageLoader.templateToBaseName(template);
     const fileName = baseName + MessageLoader.localeToFileSuffix(locale);
-    let text: string;
+    const parameters = {
+      LoginUrl: data?.loginUrl,
+      ReasoningEffort: data?.reasoningEffort,
+      RequestedReasoningEffort: data?.requestedReasoningEffort,
+      SupportedReasoningEfforts: data?.supportedReasoningEfforts,
+      ActiveModelId: data?.activeModelId,
+      AvailableModelIds: data?.availableModelIds,
+      RequestedModelId: data?.requestedModelId,
+      EffortResetNote: data?.effortResetNote,
+    };
     try {
-      text = MessageLoader.readFile(fileName);
+      return MessageLoader.templates.load(fileName, parameters);
     } catch {
-      text = MessageLoader.readFile(
+      return MessageLoader.templates.load(
         baseName + MessageLoader.localeToFileSuffix(MessageLocale.PtBr),
+        parameters,
       );
     }
-    if (!data) return text;
-    const dict: Record<string, string> = {};
-    if (data.loginUrl !== undefined) dict.LoginUrl = data.loginUrl;
-    if (data.reasoningEffort !== undefined) {
-      dict.ReasoningEffort = data.reasoningEffort;
-    }
-    if (data.requestedReasoningEffort !== undefined) {
-      dict.RequestedReasoningEffort = data.requestedReasoningEffort;
-    }
-    if (data.supportedReasoningEfforts !== undefined) {
-      dict.SupportedReasoningEfforts = data.supportedReasoningEfforts;
-    }
-    if (data.activeModelId !== undefined) {
-      dict.ActiveModelId = data.activeModelId;
-    }
-    if (data.availableModelIds !== undefined) {
-      dict.AvailableModelIds = data.availableModelIds;
-    }
-    if (data.requestedModelId !== undefined) {
-      dict.RequestedModelId = data.requestedModelId;
-    }
-    if (data.effortResetNote !== undefined) {
-      dict.EffortResetNote = data.effortResetNote;
-    }
-    return MessageLoader.applyTemplate(text, dict);
   }
 }

@@ -6,7 +6,7 @@ import {
   SaveNoteRequestDTO,
 } from "~/modules/notes/entities/dtos/NoteDTO";
 import { Note } from "~/modules/notes/entities/Note";
-import { Printable } from "~/shared/http/utils/Printable";
+import { Printable } from "~/shared/utils/Printable";
 
 describe("Note contracts", () => {
   test("maps exact Markdown through the wire response", () => {

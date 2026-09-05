@@ -1,7 +1,10 @@
 import type postgres from "postgres";
 
+export type DatabaseGatewaySql = postgres.ISql;
+export type DatabaseGatewayParameter = postgres.Parameter;
+
 export interface DatabaseGateway {
-  readonly sql: postgres.Sql;
-  json(value: unknown): postgres.Parameter;
-  transaction<T>(cb: (sql: postgres.Sql) => T | Promise<T>): Promise<T>;
+  readonly sql: DatabaseGatewaySql;
+  json(value: unknown): DatabaseGatewayParameter;
+  transaction<T>(cb: (sql: DatabaseGatewaySql) => T | Promise<T>): Promise<T>;
 }

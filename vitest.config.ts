@@ -10,14 +10,14 @@ export default defineConfig(({ mode = "test" }) => {
       globals: true,
       environment: "node",
       include: ["tests/**/*.test.ts"],
-      setupFiles: ["tests/orquestrator.ts"],
       fileParallelism: false,
       hookTimeout: 120000,
       testTimeout: 120000,
       coverage: {
         include: [
-          "src/modules/*/application/**/*.ts",
-          "src/modules/*/domain/**/*.ts",
+          "src/modules/*/services/**/*.ts",
+          "src/modules/*/entities/**/*.ts",
+          "src/modules/*/contracts/**/*.ts",
           "src/shared/http/**/*.ts",
         ],
       },

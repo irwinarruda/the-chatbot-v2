@@ -11,25 +11,31 @@ export interface SendInteractiveButtonMessageDTO {
   buttons: string[];
 }
 
-export interface ReceiveMessageDTO {
+export interface ReceiveMessageMetadataDTO {
   fromAddress: string;
   whatsAppBsuid?: string;
   channelMessageId: string;
   channel: ChatChannel;
 }
 
-export interface ReceiveTextMessageDTO extends ReceiveMessageDTO {
+export interface ReceiveTextMessageDTO extends ReceiveMessageMetadataDTO {
   text: string;
 }
 
-export interface ReceiveInteractiveButtonMessageDTO extends ReceiveMessageDTO {
+export interface ReceiveInteractiveButtonMessageDTO
+  extends ReceiveMessageMetadataDTO {
   buttonReply: string;
 }
 
-export interface ReceiveAudioMessageDTO extends ReceiveMessageDTO {
+export interface ReceiveAudioMessageDTO extends ReceiveMessageMetadataDTO {
   mediaId: string;
   mimeType: string;
 }
+
+export type ReceiveMessageDTO =
+  | ReceiveTextMessageDTO
+  | ReceiveInteractiveButtonMessageDTO
+  | ReceiveAudioMessageDTO;
 
 export type WebIncomingMessageBodyDTO =
   | {

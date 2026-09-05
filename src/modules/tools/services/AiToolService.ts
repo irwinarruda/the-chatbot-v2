@@ -39,7 +39,7 @@ import {
   UnauthorizedException,
 } from "~/shared/errors/ApplicationErrors";
 import { ValidationException } from "~/shared/errors/DomainErrors";
-import { Printable } from "~/shared/http/utils/Printable";
+import { Printable } from "~/shared/utils/Printable";
 
 const currentTimeZone = "America/Sao_Paulo";
 const currentDateFormatter = new Intl.DateTimeFormat("en-CA", {
@@ -742,9 +742,7 @@ export class AiToolService extends ToolExecutor {
     ];
   }
 
-  private serializeMonthlyExpense(
-    item: Awaited<ReturnType<MonthlyExpenseService["createMonthlyExpense"]>>,
-  ) {
+  private serializeMonthlyExpense(item: MonthlyExpenseItemDTO) {
     return {
       id: item.expense.id,
       name: item.expense.name,

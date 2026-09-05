@@ -1,6 +1,5 @@
-import type { MessageAudience } from "~/modules/chat/entities/enums/MessageAudience";
-import type { MessageRole } from "~/modules/chat/entities/enums/MessageRole";
-import { Message, type MessageContent } from "~/modules/chat/entities/Message";
+import type { Message } from "~/modules/chat/entities/Message";
+import type { ChatHistoryService } from "~/modules/chat/services/ChatHistoryService";
 import type {
   CreateTodoDTO,
   TodoFiltersDTO,
@@ -10,10 +9,16 @@ import { TodoStatus } from "~/modules/todos/entities/enums/TodoStatus";
 import { Todo } from "~/modules/todos/entities/Todo";
 import { NotFoundException } from "~/shared/errors/ApplicationErrors";
 import { ValidationException } from "~/shared/errors/DomainErrors";
-import type { DatabaseGateway } from "~/shared/gateway/DatabaseGateway";
+import type {
+  DatabaseGateway,
+  DatabaseGatewaySql,
+} from "~/shared/gateway/DatabaseGateway";
 
 export class TodoService {
-  constructor(private database: DatabaseGateway) {}
+  constructor(
+    private database: DatabaseGateway,
+    private chatHistory: ChatHistoryService,
+  ) {}
 
   async listTodos(
     idUser: string,
@@ -63,21 +68,9 @@ export class TodoService {
   }
 
   private async list(idUser: string, filters: TodoFiltersDTO): Promise<Todo[]> {
-    const rows = await this.database.sql<DbTodoWithSourceMessage[]>`
-      SELECT
-        t.*,
-        m.id AS source_message_id,
-        m.id_chat AS source_message_chat_id,
-        m.channel_message_id AS source_message_channel_message_id,
-        m.turn_id AS source_message_turn_id,
-        m.sequence AS source_message_sequence,
-        m.role AS source_message_role,
-        m.audience AS source_message_audience,
-        m.content AS source_message_content,
-        m.created_at AS source_message_created_at,
-        m.updated_at AS source_message_updated_at
+    const rows = await this.database.sql<DbTodo[]>`
+      SELECT t.*
       FROM todos t
-      LEFT JOIN messages m ON m.id = t.id_source_message
       WHERE t.id_user = ${idUser}
       AND (${filters.search?.trim() ?? null}::text IS NULL OR (
         t.name ILIKE ${filters.search?.trim() ? `%${filters.search.trim()}%` : null}
@@ -96,36 +89,23 @@ export class TodoService {
         t.due_date ASC,
         t.created_at DESC
     `;
-    return rows.map((row) => this.mapTodo(row));
+    return this.restoreTodos(idUser, rows);
   }
 
   private async get(idUser: string, id: string): Promise<Todo | undefined> {
-    const rows = await this.database.sql<DbTodoWithSourceMessage[]>`
-      SELECT
-        t.*,
-        m.id AS source_message_id,
-        m.id_chat AS source_message_chat_id,
-        m.channel_message_id AS source_message_channel_message_id,
-        m.turn_id AS source_message_turn_id,
-        m.sequence AS source_message_sequence,
-        m.role AS source_message_role,
-        m.audience AS source_message_audience,
-        m.content AS source_message_content,
-        m.created_at AS source_message_created_at,
-        m.updated_at AS source_message_updated_at
+    const rows = await this.database.sql<DbTodo[]>`
+      SELECT t.*
       FROM todos t
-      LEFT JOIN messages m ON m.id = t.id_source_message
       WHERE t.id_user = ${idUser}
       AND t.id = ${id}
     `;
-    const row = rows[0];
-    if (!row) return undefined;
-    return this.mapTodo(row);
+    const todos = await this.restoreTodos(idUser, rows);
+    return todos[0];
   }
 
   private async create(
     todo: Todo,
-    sql: DatabaseGateway["sql"] = this.database.sql,
+    sql: DatabaseGatewaySql = this.database.sql,
   ): Promise<void> {
     await sql`
       INSERT INTO todos (
@@ -209,39 +189,36 @@ export class TodoService {
     );
   }
 
-  private mapTodo(row: DbTodoWithSourceMessage): Todo {
-    return Todo.restore({
-      id: row.id,
-      idUser: row.id_user,
-      idSourceMessage: row.id_source_message ?? undefined,
-      sourceMessage: this.mapSourceMessage(row),
-      name: row.name,
-      description: row.description,
-      dueDate: row.due_date ?? undefined,
-      status: row.status as TodoStatus,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-    });
-  }
-
-  private mapSourceMessage(row: DbTodoWithSourceMessage): Message | undefined {
-    if (!row.source_message_id || !row.source_message_chat_id) return undefined;
-    const rawContent = row.source_message_content;
-    return Message.restore({
-      id: row.source_message_id,
-      idChat: row.source_message_chat_id,
-      channelMessageId: row.source_message_channel_message_id ?? undefined,
-      turnId: row.source_message_turn_id,
-      sequence: Number(row.source_message_sequence),
-      role: row.source_message_role,
-      audience: row.source_message_audience,
-      content:
-        typeof rawContent === "string"
-          ? (JSON.parse(rawContent) as MessageContent)
-          : (rawContent as MessageContent),
-      createdAt: row.source_message_created_at ?? row.created_at,
-      updatedAt: row.source_message_updated_at ?? row.updated_at,
-    });
+  private async restoreTodos(idUser: string, rows: DbTodo[]): Promise<Todo[]> {
+    const sourceMessageIds = [
+      ...new Set(
+        rows.map((row) => row.id_source_message).filter((id) => id !== null),
+      ),
+    ];
+    let sourceMessages: Message[] = [];
+    if (sourceMessageIds.length > 0) {
+      sourceMessages = await this.chatHistory.getMessagesByIds(
+        idUser,
+        sourceMessageIds,
+      );
+    }
+    const messagesById = new Map(
+      sourceMessages.map((message) => [message.id, message]),
+    );
+    return rows.map((row) =>
+      Todo.restore({
+        id: row.id,
+        idUser: row.id_user,
+        idSourceMessage: row.id_source_message ?? undefined,
+        sourceMessage: messagesById.get(row.id_source_message ?? ""),
+        name: row.name,
+        description: row.description,
+        dueDate: row.due_date ?? undefined,
+        status: row.status,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      }),
+    );
   }
 }
 
@@ -252,22 +229,7 @@ interface DbTodo {
   name: string;
   description: string;
   due_date: Date | null;
-  status: string;
+  status: TodoStatus;
   created_at: Date;
   updated_at: Date;
 }
-
-interface DbSourceMessage {
-  source_message_id: string | null;
-  source_message_chat_id: string | null;
-  source_message_channel_message_id: string | null;
-  source_message_turn_id: string;
-  source_message_sequence: string | null;
-  source_message_role: MessageRole;
-  source_message_audience: MessageAudience;
-  source_message_content: unknown;
-  source_message_created_at: Date | null;
-  source_message_updated_at: Date | null;
-}
-
-interface DbTodoWithSourceMessage extends DbTodo, DbSourceMessage {}

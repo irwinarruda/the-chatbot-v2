@@ -3,6 +3,7 @@ import type { AuthInteraction, AuthPrompt } from "@earendil-works/pi-ai";
 import { builtinModels } from "@earendil-works/pi-ai/providers/all";
 import { z } from "zod";
 import { Database } from "~/infra/database";
+import { createPiCredentialStore } from "~/modules/chat/gateway/AiChatGateway/PiCredentialStore";
 import { AiCredentialEncryption } from "~/modules/chat/gateway/AiCredentialStore/AiCredentialEncryption";
 import { PostgresAiCredentialStore } from "~/modules/chat/gateway/AiCredentialStore/PostgresAiCredentialStore";
 import { loadConfig } from "~/shared/config/Config";
@@ -64,7 +65,7 @@ try {
     idUser,
   );
   const models = builtinModels({
-    credentials: store,
+    credentials: createPiCredentialStore(store),
     authContext: {
       env: async () => undefined,
       fileExists: async () => false,

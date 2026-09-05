@@ -1,6 +1,7 @@
 import { ChatChannel } from "~/modules/chat/entities/enums/ChatChannel";
 import type {
   ReceiveMessageDTO,
+  ReceiveMessageMetadataDTO,
   SendInteractiveButtonMessageDTO,
   SendTextMessageDTO,
 } from "~/modules/chat/gateway/MessagingGateway";
@@ -28,7 +29,7 @@ export class TestWebMessagingGateway implements WebMessagingGateway {
         ),
         mediaId,
         mimeType: parsedBody.mimeType,
-      } as ReceiveMessageDTO;
+      };
     }
     if ("buttonReply" in parsedBody) {
       return {
@@ -37,12 +38,12 @@ export class TestWebMessagingGateway implements WebMessagingGateway {
           parsedBody.clientMessageId,
         ),
         buttonReply: parsedBody.buttonReply,
-      } as ReceiveMessageDTO;
+      };
     }
     return {
       ...this.createBaseReceiveMessage(webAddress, parsedBody.clientMessageId),
       text: parsedBody.text,
-    } as ReceiveMessageDTO;
+    };
   }
 
   async sendTextMessage(dto: SendTextMessageDTO): Promise<void> {
@@ -62,7 +63,7 @@ export class TestWebMessagingGateway implements WebMessagingGateway {
   private createBaseReceiveMessage(
     webAddress: string,
     channelMessageId: string = crypto.randomUUID(),
-  ): ReceiveMessageDTO {
+  ): ReceiveMessageMetadataDTO {
     return {
       fromAddress: webAddress.toLowerCase(),
       channel: ChatChannel.Web,

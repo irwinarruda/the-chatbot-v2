@@ -5,6 +5,7 @@ import {
   toTodoResponse,
 } from "~/modules/todos/contracts/TodoContractMapper";
 import { SaveTodoRequestDTO } from "~/modules/todos/entities/dtos/TodoDTO";
+import type { UpdateTodoDTO } from "~/modules/todos/entities/dtos/TodoServiceDTO";
 import { Http } from "~/shared/http/utils/Http";
 import { parseJsonRequest } from "~/shared/http/utils/JsonRequest";
 
@@ -22,7 +23,7 @@ export const Route = createFileRoute("/api/v1/web/todos/$todoId")({
       async PATCH({ request, context, params }) {
         const todoService = ServerBootstrap.getApplication().services.todos;
         const body = SaveTodoRequestDTO.parse(await parseJsonRequest(request));
-        const patch: Parameters<typeof todoService.updateTodo>[0] = {
+        const patch: UpdateTodoDTO = {
           idUser: context.webAuth.userId,
           id: params.todoId,
           name: body.name,

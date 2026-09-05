@@ -1,10 +1,9 @@
 import crypto from "crypto";
+import { z } from "zod";
 import { ChatChannel } from "~/modules/chat/entities/enums/ChatChannel";
 import type {
-  ReceiveAudioMessageDTO,
-  ReceiveInteractiveButtonMessageDTO,
   ReceiveMessageDTO,
-  ReceiveTextMessageDTO,
+  ReceiveMessageMetadataDTO,
   SendInteractiveButtonMessageDTO,
   SendTextMessageDTO,
 } from "~/modules/chat/gateway/MessagingGateway";
@@ -13,6 +12,46 @@ import { WhatsAppTextChunker } from "~/modules/chat/gateway/WhatsAppMessagingGat
 import { BsuidUtils } from "~/modules/identity/entities/BsuidUtils";
 import { PhoneNumberUtils } from "~/modules/identity/entities/PhoneNumberUtils";
 import type { WhatsAppConfig } from "~/shared/config/Config";
+
+const incomingMessageSchema = z.object({
+  id: z.string().min(1),
+  from_user_id: z.string().optional(),
+  audio: z
+    .object({
+      id: z.string().min(1),
+      mime_type: z.string().min(1),
+    })
+    .optional(),
+  interactive: z
+    .object({
+      button_reply: z.object({ title: z.string() }).optional(),
+    })
+    .optional(),
+  text: z.object({ body: z.string() }).optional(),
+});
+
+const webhookValueSchema = z.object({
+  metadata: z.object({ phone_number_id: z.string() }),
+  contacts: z
+    .array(
+      z.object({
+        user_id: z.string().optional(),
+        wa_id: z.string().optional(),
+      }),
+    )
+    .optional(),
+  messages: z.array(incomingMessageSchema).optional(),
+});
+
+const webhookSchema = z.object({
+  entry: z.array(
+    z.object({
+      changes: z.array(z.object({ value: webhookValueSchema })),
+    }),
+  ),
+});
+
+const mediaMetadataSchema = z.object({ url: z.url() });
 
 export class MetaWhatsAppMessagingGateway implements WhatsAppMessagingGateway {
   private readonly baseUrl = "https://graph.facebook.com";
@@ -97,6 +136,7 @@ export class MetaWhatsAppMessagingGateway implements WhatsAppMessagingGateway {
     if (signatureParts.length !== 2 || signatureParts[0] !== "sha256")
       return false;
     const hash = signatureParts[1];
+    if (!/^[a-f0-9]{64}$/.test(hash)) return false;
     const computedHash = crypto
       .createHmac("sha256", appSecret)
       .update(rawBody)
@@ -112,75 +152,45 @@ export class MetaWhatsAppMessagingGateway implements WhatsAppMessagingGateway {
   }
 
   receiveWhatsAppMessage(data: unknown): ReceiveMessageDTO | undefined {
-    try {
-      const root = data as Record<string, unknown>;
-      const entry = (root?.entry as Record<string, unknown>[])?.[0];
-      const change = (entry?.changes as Record<string, unknown>[])?.[0];
-      const value = change?.value as Record<string, unknown> | undefined;
-      const metadataPhoneNumberId = (
-        value?.metadata as Record<string, unknown> | undefined
-      )?.phone_number_id;
-      if (metadataPhoneNumberId !== this.config.phoneNumberId) {
-        return undefined;
-      }
-      const messages = value?.messages as Record<string, unknown>[] | undefined;
-      if (!messages || messages.length === 0) return undefined;
-      const message = messages[0];
-      const contact = (value?.contacts as Record<string, unknown>[])?.[0];
-      const bsuid =
-        (message.from_user_id as string | undefined) ??
-        (contact?.user_id as string | undefined) ??
-        undefined;
-      const waId = contact?.wa_id as string | undefined;
-      const phoneNumber = waId
-        ? PhoneNumberUtils.addDigitNine(waId)
-        : undefined;
-      const fromAddress = phoneNumber ?? bsuid;
-      if (!fromAddress) return undefined;
-      const channelMessageId = message.id as string;
-      const channel = ChatChannel.WhatsApp;
-      if (message.audio) {
-        const audio = message.audio as Record<string, unknown>;
-        return {
-          fromAddress,
-          whatsAppBsuid: bsuid,
-          channelMessageId,
-          channel,
-          mediaId: audio.id as string,
-          mimeType: audio.mime_type as string,
-        } as ReceiveAudioMessageDTO;
-      }
-      if (
-        (message.interactive as Record<string, unknown> | undefined)
-          ?.button_reply
-      ) {
-        const buttonReply = (
-          (message.interactive as Record<string, unknown>)
-            .button_reply as Record<string, unknown>
-        ).title as string;
-        return {
-          fromAddress,
-          whatsAppBsuid: bsuid,
-          channelMessageId,
-          channel,
-          buttonReply,
-        } as ReceiveInteractiveButtonMessageDTO;
-      }
-      if (message.text) {
-        const textBody = (message.text as Record<string, unknown>)
-          .body as string;
-        return {
-          fromAddress,
-          whatsAppBsuid: bsuid,
-          channelMessageId,
-          channel,
-          text: textBody,
-        } as ReceiveTextMessageDTO;
-      }
-      return undefined;
-    } catch {
+    const parsed = webhookSchema.safeParse(data);
+    if (!parsed.success) return undefined;
+    const value = parsed.data.entry[0]?.changes[0]?.value;
+    if (value?.metadata.phone_number_id !== this.config.phoneNumberId) {
       return undefined;
     }
+    const message = value.messages?.[0];
+    if (!message) return undefined;
+    const contact = value.contacts?.[0];
+    const bsuid = message.from_user_id ?? contact?.user_id;
+    let phoneNumber: string | undefined;
+    if (contact?.wa_id) {
+      phoneNumber = PhoneNumberUtils.addDigitNine(contact.wa_id);
+    }
+    const fromAddress = phoneNumber ?? bsuid;
+    if (!fromAddress) return undefined;
+    const metadata: ReceiveMessageMetadataDTO = {
+      fromAddress,
+      whatsAppBsuid: bsuid,
+      channelMessageId: message.id,
+      channel: ChatChannel.WhatsApp,
+    };
+    if (message.audio) {
+      return {
+        ...metadata,
+        mediaId: message.audio.id,
+        mimeType: message.audio.mime_type,
+      };
+    }
+    if (message.interactive?.button_reply) {
+      return {
+        ...metadata,
+        buttonReply: message.interactive.button_reply.title,
+      };
+    }
+    if (message.text) {
+      return { ...metadata, text: message.text.body };
+    }
+    return undefined;
   }
 
   async downloadMediaAsync(mediaId: string): Promise<Buffer> {
@@ -201,17 +211,15 @@ export class MetaWhatsAppMessagingGateway implements WhatsAppMessagingGateway {
         `WhatsApp media metadata request failed with status ${mediaUrlResponse.status}`,
       );
     }
-    const mediaData = (await mediaUrlResponse.json()) as Record<
-      string,
-      unknown
-    >;
-    const mediaUrl = mediaData.url as string | undefined;
-    if (!mediaUrl) {
+    const mediaData = mediaMetadataSchema.safeParse(
+      await mediaUrlResponse.json(),
+    );
+    if (!mediaData.success) {
       throw new Error(
-        `WhatsApp media metadata response missing 'url' for mediaId ${mediaId}`,
+        `WhatsApp media metadata response missing or invalid 'url' for mediaId ${mediaId}`,
       );
     }
-    const response = await fetch(mediaUrl, {
+    const response = await fetch(mediaData.data.url, {
       headers: {
         Authorization: `Bearer ${this.config.accessToken}`,
       },

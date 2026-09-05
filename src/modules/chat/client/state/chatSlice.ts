@@ -152,14 +152,22 @@ export function createChatSlice(
         }
       },
       async refreshChat() {
-        const { currentUser, isChatSubmitting } = get();
+        const { currentUser, isChatSubmitting, chatMessages } = get();
         if (!currentUser || isChatSubmitting || isRefreshing) return;
+        function isCurrentRefresh() {
+          const current = get();
+          return (
+            current.currentUser === currentUser &&
+            current.chatMessages === chatMessages &&
+            !current.isChatSubmitting
+          );
+        }
         isRefreshing = true;
         try {
           const chat = await service.getChat();
-          applyChatSnapshot(chat);
+          if (isCurrentRefresh()) applyChatSnapshot(chat);
         } catch {
-          set({ chatError: "loading" });
+          if (isCurrentRefresh()) set({ chatError: "loading" });
         } finally {
           isRefreshing = false;
         }

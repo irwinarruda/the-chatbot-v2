@@ -12,7 +12,6 @@ import { TestSpeechToTextGateway } from "~/modules/chat/gateway/SpeechToTextGate
 import { TestStorageGateway } from "~/modules/chat/gateway/StorageGateway/TestStorageGateway";
 import { TestWebMessagingGateway } from "~/modules/chat/gateway/WebMessagingGateway/TestWebMessagingGateway";
 import { TestWhatsAppMessagingGateway } from "~/modules/chat/gateway/WhatsAppMessagingGateway/TestWhatsAppMessagingGateway";
-import type { AiToolService } from "~/modules/chat/services/AiToolService";
 import type { MessagingService } from "~/modules/chat/services/MessagingService";
 import { BsuidUtils } from "~/modules/identity/entities/BsuidUtils";
 import { PhoneNumberUtils } from "~/modules/identity/entities/PhoneNumberUtils";
@@ -26,6 +25,7 @@ import type { NoteService } from "~/modules/notes/services/NoteService";
 import type { MigrationService } from "~/modules/system/services/MigrationService";
 import type { StatusService } from "~/modules/system/services/StatusService";
 import type { TodoService } from "~/modules/todos/services/TodoService";
+import type { AiToolService } from "~/modules/tools/services/AiToolService";
 import type {
   AiConfig,
   AuthConfig,

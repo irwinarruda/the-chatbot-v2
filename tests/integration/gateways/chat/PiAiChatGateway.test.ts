@@ -1,9 +1,9 @@
-import type { CredentialStore } from "@earendil-works/pi-ai";
 import { describe, expect, test, vi } from "vitest";
 import { MessageContentType } from "~/modules/chat/entities/enums/MessageContentType";
 import { MessageRole } from "~/modules/chat/entities/enums/MessageRole";
 import { ReasoningEffort } from "~/modules/chat/entities/enums/ReasoningEffort";
 import { PiAiChatGateway } from "~/modules/chat/gateway/AiChatGateway/PiAiChatGateway";
+import type { AiCredentialStore } from "~/modules/chat/gateway/AiCredentialStore";
 
 function createGateway() {
   return new PiAiChatGateway({
@@ -47,7 +47,7 @@ describe("PiAiChatGateway", () => {
   });
 
   test("exposes each model ID once across configured providers", async () => {
-    const credentials: CredentialStore = {
+    const credentials: AiCredentialStore = {
       read: async (providerId) => {
         if (providerId !== "openai-codex") return undefined;
         return {
@@ -153,7 +153,7 @@ describe("PiAiChatGateway", () => {
       authorization_code: "authorization-secret-value",
       api_key: "provider-specific-secret-value",
     });
-    const credentials: CredentialStore = {
+    const credentials: AiCredentialStore = {
       read: async () => {
         throw new Error(secretResponse);
       },

@@ -1,5 +1,9 @@
 import postgres from "postgres";
-import type { DatabaseGateway } from "~/shared/gateway/DatabaseGateway";
+import type {
+  DatabaseGateway,
+  DatabaseGatewayParameter,
+  DatabaseGatewaySql,
+} from "~/shared/gateway/DatabaseGateway";
 
 export class Database implements DatabaseGateway {
   readonly sql: postgres.Sql;
@@ -18,7 +22,7 @@ export class Database implements DatabaseGateway {
     });
   }
 
-  json(value: unknown): postgres.Parameter {
+  json(value: unknown): DatabaseGatewayParameter {
     return this.sql.json(value as postgres.JSONValue);
   }
 
@@ -26,9 +30,9 @@ export class Database implements DatabaseGateway {
     await this.sql.end();
   }
 
-  async transaction<T>(cb: (sql: postgres.Sql) => T | Promise<T>): Promise<T> {
-    return this.sql.begin((sql) =>
-      cb(sql as unknown as postgres.Sql),
-    ) as Promise<T>;
+  async transaction<T>(
+    cb: (sql: DatabaseGatewaySql) => T | Promise<T>,
+  ): Promise<T> {
+    return this.sql.begin(cb) as Promise<T>;
   }
 }

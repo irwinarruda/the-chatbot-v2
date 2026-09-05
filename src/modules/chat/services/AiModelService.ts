@@ -1,8 +1,8 @@
-import type postgres from "postgres";
 import type { AiModelSelectionDTO } from "~/modules/chat/entities/dtos/AiChatGatewayDTO";
 import type { AiChatGateway } from "~/modules/chat/gateway/AiChatGateway";
 import type { AiModelPreferenceService } from "~/modules/chat/services/AiModelPreferenceService";
 import { ValidationException } from "~/shared/errors/DomainErrors";
+import type { DatabaseGatewaySql } from "~/shared/gateway/DatabaseGateway";
 import type { TextGenerationGateway } from "~/shared/gateway/TextGenerationGateway";
 
 export class AiModelService implements TextGenerationGateway {
@@ -50,7 +50,7 @@ export class AiModelService implements TextGenerationGateway {
   async saveForUser(
     idUser: string,
     selection: AiModelSelectionDTO,
-    sql?: postgres.Sql,
+    sql?: DatabaseGatewaySql,
   ): Promise<void> {
     if (!(await this.isAvailableForUser(idUser, selection))) {
       throw new ValidationException(

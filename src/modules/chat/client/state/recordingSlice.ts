@@ -66,7 +66,7 @@ export const recordingSlice: StateCreator<
   async startRecording() {
     try {
       const { selectedAudioInputId } = get();
-      await audioRecordingService.start({
+      const started = await audioRecordingService.start({
         audioInputDeviceId: selectedAudioInputId || undefined,
         onTick: (duration) => set({ recordingDuration: duration }),
         onRecorded: async ({ blob, url }) => {
@@ -104,7 +104,13 @@ export const recordingSlice: StateCreator<
               supportedReasoningEfforts: chat.supportedReasoningEfforts,
             });
           } catch {
-            set({ chatError: "sending", chatResponseProgress: undefined });
+            set((state) => ({
+              chatMessages: state.chatMessages.filter(
+                (message) => message.id !== optimistic.id,
+              ),
+              chatError: "sending",
+              chatResponseProgress: undefined,
+            }));
           } finally {
             progressBatcher.cancel();
             set({ isChatSubmitting: false });
@@ -112,6 +118,7 @@ export const recordingSlice: StateCreator<
         },
         onEmptyRecording: () => set({ chatError: "sending" }),
       });
+      if (!started) return;
     } catch {
       set({ chatError: "microphone" });
       return;

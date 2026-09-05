@@ -12,6 +12,7 @@ import type {
   WebChatDTO,
 } from "~/modules/chat/entities/dtos/ChatDTO";
 import { ReasoningEffort } from "~/modules/chat/entities/enums/ReasoningEffort";
+import { createDeferred } from "~/tests/utils/createDeferred";
 
 type TestChatState = ChatSlice & {
   stopRecording: (shouldSend: boolean) => void;
@@ -365,4 +366,53 @@ describe("chatSlice", () => {
     });
     expect(store.getState().currentModel).toEqual(selectedModel);
   });
+});
+
+describe("chat refresh during sending", () => {
+  test.each(["during", "after"] as const)(
+    "ignores a refresh response arriving %s a newer send",
+    async (arrival) => {
+      const refreshing = createDeferred<WebChatDTO>();
+      const sending = createDeferred<WebChatDTO>();
+      const before = createChat([createMessage({ text: "Before" })]);
+      const after = createChat([createMessage({ text: "After" })]);
+      let chatReads = 0;
+      const service: WebChatClientService = {
+        async getCurrentUser() {
+          return { id: "user", name: "Irwin", phoneNumber: "5511999999999" };
+        },
+        async getChat() {
+          chatReads += 1;
+          if (chatReads === 1) return before;
+          return refreshing.promise;
+        },
+        async sendMessage() {
+          return sending.promise;
+        },
+        async sendAudio() {
+          return after;
+        },
+        async logout() {},
+      };
+      const store = createStore(service);
+      await store.getState().bootstrapChat();
+      const refresh = store.getState().refreshChat();
+      store.getState().setChatInput("New message");
+      const send = store.getState().sendChatInput();
+      if (arrival === "after") {
+        sending.resolve(after);
+        await send;
+      }
+      const expectedMessages = store.getState().chatMessages;
+      refreshing.resolve(before);
+      await refresh;
+      expect(store.getState().chatMessages).toBe(expectedMessages);
+      if (arrival === "during") {
+        expect(store.getState().isChatSubmitting).toBe(true);
+        sending.resolve(after);
+        await send;
+      }
+      expect(store.getState().chatMessages).toEqual(after.messages);
+    },
+  );
 });

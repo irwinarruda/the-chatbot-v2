@@ -1,4 +1,6 @@
 import {
+  type Api,
+  type CredentialStore,
   getSupportedThinkingLevels,
   type Model,
   type MutableModels,
@@ -29,6 +31,7 @@ import type {
 } from "~/modules/chat/gateway/AiChatGateway";
 import { mapPiAssistantProgress } from "~/modules/chat/gateway/AiChatGateway/mapPiAssistantProgress";
 import { mapPiAssistantResponse } from "~/modules/chat/gateway/AiChatGateway/mapPiAssistantResponse";
+import { createPiCredentialStore } from "~/modules/chat/gateway/AiChatGateway/PiCredentialStore";
 import { PiMessageMapper } from "~/modules/chat/gateway/AiChatGateway/PiMessageMapper";
 import type { AiCredentialStore } from "~/modules/chat/gateway/AiCredentialStore";
 import { PromptLoader, PromptLocale } from "~/modules/chat/utils/PromptLoader";
@@ -297,7 +300,7 @@ export class PiAiChatGateway implements AiChatGateway {
   }
 
   private getProviderReasoningLevel(
-    model: Model<any>,
+    model: Model<Api>,
     level: ReasoningEffortType,
   ): string {
     if (
@@ -313,8 +316,10 @@ export class PiAiChatGateway implements AiChatGateway {
   }
 
   private createModels(credentials?: AiCredentialStore): MutableModels {
+    let providerCredentials: CredentialStore | undefined;
+    if (credentials) providerCredentials = createPiCredentialStore(credentials);
     return builtinModels({
-      credentials,
+      credentials: providerCredentials,
       authContext: {
         env: async (name) => {
           if (name !== this.defaultProviderEnvironmentName()) return undefined;
@@ -328,7 +333,7 @@ export class PiAiChatGateway implements AiChatGateway {
   private getModel(
     selection: AiModelSelectionDTO,
     models: MutableModels = this.createModels(),
-  ): Model<any> {
+  ): Model<Api> {
     const model = models.getModel(selection.provider, selection.model);
     if (!model) {
       throw new ValidationException(

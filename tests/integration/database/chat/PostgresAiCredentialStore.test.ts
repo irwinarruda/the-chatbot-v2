@@ -1,5 +1,5 @@
-import type { Credential } from "@earendil-works/pi-ai";
 import { Database } from "~/infra/database";
+import type { AiProviderCredentialDTO } from "~/modules/chat/entities/dtos/AiProviderCredentialDTO";
 import { AiCredentialEncryption } from "~/modules/chat/gateway/AiCredentialStore/AiCredentialEncryption";
 import { PostgresAiCredentialStore } from "~/modules/chat/gateway/AiCredentialStore/PostgresAiCredentialStore";
 import { orquestrator } from "~/tests/orquestrator";
@@ -108,8 +108,8 @@ describe("PostgresAiCredentialStore", () => {
     const secondStore = createStore(secondDatabase, user.id);
     let refreshCount = 0;
     const refresh = async (
-      current: Credential | undefined,
-    ): Promise<Credential | undefined> => {
+      current: AiProviderCredentialDTO | undefined,
+    ): Promise<AiProviderCredentialDTO | undefined> => {
       if (current?.type !== "oauth" || Date.now() < current.expires) {
         return undefined;
       }
@@ -149,8 +149,8 @@ describe("PostgresAiCredentialStore", () => {
     const secondStore = createStore(secondDatabase, user.id);
     let creationCount = 0;
     const create = async (
-      current: Credential | undefined,
-    ): Promise<Credential | undefined> => {
+      current: AiProviderCredentialDTO | undefined,
+    ): Promise<AiProviderCredentialDTO | undefined> => {
       if (current) return undefined;
       creationCount += 1;
       await wait(30);
@@ -198,7 +198,7 @@ function createStore(
   );
 }
 
-function createExpiredOAuthCredential(): Credential {
+function createExpiredOAuthCredential(): AiProviderCredentialDTO {
   return {
     type: "oauth",
     access: "expired-access",

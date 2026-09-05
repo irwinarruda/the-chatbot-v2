@@ -12,7 +12,7 @@ import {
   SaveTodoRequestDTO,
 } from "~/modules/todos/entities/dtos/TodoDTO";
 import { Todo } from "~/modules/todos/entities/Todo";
-import { Printable } from "~/shared/http/utils/Printable";
+import { Printable } from "~/shared/utils/Printable";
 
 describe("Todo contracts", () => {
   test("serialized API todos are mapped to the client contract", () => {

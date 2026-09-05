@@ -10,10 +10,10 @@ import { ToolResultStatus } from "~/modules/chat/entities/enums/ToolResultStatus
 import { Message } from "~/modules/chat/entities/Message";
 import type { AiChatContextMessageDTO } from "~/modules/chat/gateway/AiChatGateway";
 import { TestWhatsAppMessagingGateway } from "~/modules/chat/gateway/WhatsAppMessagingGateway/TestWhatsAppMessagingGateway";
-import type { AiToolService } from "~/modules/chat/services/AiToolService";
 import { createAiContextCompactionPolicy } from "~/modules/chat/utils/AiContextCompactionPolicy";
 import { MessageLocale } from "~/modules/chat/utils/MessageLoader";
 import { User } from "~/modules/identity/entities/User";
+import type { AiToolService } from "~/modules/tools/services/AiToolService";
 import { UnauthorizedException } from "~/shared/errors/ApplicationErrors";
 import { ValidationException } from "~/shared/errors/DomainErrors";
 import { createAppGoogleLoginState } from "./createAppGoogleLoginState";
@@ -923,14 +923,15 @@ describe("MessagingService", () => {
     const user = new User("Web Sync User", phoneNumber, email);
     user.createGoogleCredential("access", "refresh", 3600);
     await orquestrator.authService.createUser(user);
-    const service = orquestrator.messagingService as unknown as {
-      createChat: (chat: Chat) => Promise<void>;
-    };
-    const chat = new Chat();
-    chat.setChannelAddress(ChatChannel.WhatsApp, phoneNumber);
-    chat.addUser(user.id);
-    chat.addUserTextMessage("existing chat");
-    await service.createChat(chat);
+    await orquestrator.addAllowedNumber(phoneNumber);
+    await orquestrator.messagingService.listenToMessage({
+      fromAddress: phoneNumber,
+      channelMessageId: uuidv4(),
+      channel: ChatChannel.WhatsApp,
+      text: "existing chat",
+    });
+    const chat =
+      await orquestrator.messagingService.getChatByPhoneNumber(phoneNumber);
 
     await orquestrator.authService.handleWebGoogleRedirect("rightCode");
 
@@ -939,7 +940,7 @@ describe("MessagingService", () => {
         email,
         ChatChannel.Web,
       );
-    expect(syncedChat?.id).toBe(chat.id);
+    expect(syncedChat?.id).toBe(chat?.id);
     expect(syncedChat?.webAddress).toBe(email);
   });
 

@@ -7,6 +7,7 @@ export type {
   ReceiveAudioMessageDTO,
   ReceiveInteractiveButtonMessageDTO,
   ReceiveMessageDTO,
+  ReceiveMessageMetadataDTO,
   ReceiveTextMessageDTO,
   SendInteractiveButtonMessageDTO,
   SendMessageRecipientDTO,

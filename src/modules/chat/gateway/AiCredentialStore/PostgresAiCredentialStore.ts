@@ -1,13 +1,16 @@
-import type { Credential, CredentialInfo } from "@earendil-works/pi-ai";
-import type postgres from "postgres";
 import { z } from "zod";
-import { AiProviderCredentialDTO } from "~/modules/chat/entities/dtos/AiProviderCredentialDTO";
+import {
+  AiProviderCredentialDTO,
+  AiProviderCredentialInfoDTO,
+} from "~/modules/chat/entities/dtos/AiProviderCredentialDTO";
 import type { AiCredentialStore } from "~/modules/chat/gateway/AiCredentialStore";
 import type { AiCredentialEncryption } from "~/modules/chat/gateway/AiCredentialStore/AiCredentialEncryption";
-import type { DatabaseGateway } from "~/shared/gateway/DatabaseGateway";
+import type {
+  DatabaseGateway,
+  DatabaseGatewaySql,
+} from "~/shared/gateway/DatabaseGateway";
 
 const providerIdSchema = z.string().trim().min(1).max(100);
-const credentialTypeSchema = z.enum(["api_key", "oauth"]);
 
 export class PostgresAiCredentialStore implements AiCredentialStore {
   constructor(
@@ -16,29 +19,31 @@ export class PostgresAiCredentialStore implements AiCredentialStore {
     private idUser: string,
   ) {}
 
-  async read(providerId: string): Promise<Credential | undefined> {
+  async read(providerId: string): Promise<AiProviderCredentialDTO | undefined> {
     return this.readCredential(providerIdSchema.parse(providerId));
   }
 
-  async list(): Promise<readonly CredentialInfo[]> {
+  async list(): Promise<readonly AiProviderCredentialInfoDTO[]> {
     const rows = await this.database.sql<DbAiProviderCredentialInfo[]>`
       SELECT provider_id, credential_type
       FROM ai_provider_credentials
       WHERE id_user = ${this.idUser}
       ORDER BY provider_id
     `;
-    return rows.map((row) => ({
-      providerId: row.provider_id,
-      type: credentialTypeSchema.parse(row.credential_type),
-    }));
+    return rows.map((row) =>
+      AiProviderCredentialInfoDTO.parse({
+        providerId: row.provider_id,
+        type: row.credential_type,
+      }),
+    );
   }
 
   async modify(
     providerId: string,
     update: (
-      current: Credential | undefined,
-    ) => Promise<Credential | undefined>,
-  ): Promise<Credential | undefined> {
+      current: AiProviderCredentialDTO | undefined,
+    ) => Promise<AiProviderCredentialDTO | undefined>,
+  ): Promise<AiProviderCredentialDTO | undefined> {
     const parsedProviderId = providerIdSchema.parse(providerId);
     return this.database.transaction(async (sql) => {
       await this.lockCredential(sql, parsedProviderId);
@@ -88,8 +93,8 @@ export class PostgresAiCredentialStore implements AiCredentialStore {
 
   private async readCredential(
     providerId: string,
-    sql: postgres.Sql = this.database.sql,
-  ): Promise<Credential | undefined> {
+    sql: DatabaseGatewaySql = this.database.sql,
+  ): Promise<AiProviderCredentialDTO | undefined> {
     const rows = await sql<DbAiProviderCredential[]>`
       SELECT credential_envelope
       FROM ai_provider_credentials
@@ -106,7 +111,7 @@ export class PostgresAiCredentialStore implements AiCredentialStore {
   }
 
   private async lockCredential(
-    sql: postgres.Sql,
+    sql: DatabaseGatewaySql,
     providerId: string,
   ): Promise<void> {
     const lockKey = `ai-provider-credential:${this.idUser}:${providerId}`;

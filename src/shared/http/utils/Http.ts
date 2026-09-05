@@ -1,4 +1,4 @@
-import { Printable } from "./Printable";
+import { Printable } from "~/shared/utils/Printable";
 
 type Init = Omit<ResponseInit, "body" | "statusText">;
 

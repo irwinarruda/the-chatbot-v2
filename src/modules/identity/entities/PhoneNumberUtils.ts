@@ -1,7 +1,7 @@
 export class PhoneNumberUtils {
   static addDigitNine(phoneNumber: string): string {
     const sanitized = PhoneNumberUtils.sanitize(phoneNumber);
-    const ddiAndDdd = sanitized.length >= 4 ? sanitized.slice(0, 4) : sanitized;
+    const ddiAndDdd = sanitized.slice(0, 4);
     if (!ddiAndDdd.startsWith("55")) {
       return sanitized;
     }

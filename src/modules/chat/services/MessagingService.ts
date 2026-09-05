@@ -4,6 +4,11 @@ import type { AssistantMessageOptions } from "~/modules/chat/entities/Chat";
 import { Chat } from "~/modules/chat/entities/Chat";
 import { ConversationSummary } from "~/modules/chat/entities/ConversationSummary";
 import type { ChatResponseProgressEventDTO } from "~/modules/chat/entities/dtos/ChatDTO";
+import {
+  StoredAiGenerationMetadataDTO,
+  StoredChatChannelDTO,
+  StoredConversationSummaryDTO,
+} from "~/modules/chat/entities/dtos/ChatPersistenceDTO";
 import { ChatChannel } from "~/modules/chat/entities/enums/ChatChannel";
 import { MessageAudience } from "~/modules/chat/entities/enums/MessageAudience";
 import { MessageContentType } from "~/modules/chat/entities/enums/MessageContentType";
@@ -23,10 +28,7 @@ import type {
 } from "~/modules/chat/gateway/AiChatGateway";
 import type {
   MessagingGateway,
-  ReceiveAudioMessageDTO,
-  ReceiveInteractiveButtonMessageDTO,
   ReceiveMessageDTO,
-  ReceiveTextMessageDTO,
   SendMessageRecipientDTO,
 } from "~/modules/chat/gateway/MessagingGateway";
 import type { SpeechToTextGateway } from "~/modules/chat/gateway/SpeechToTextGateway";
@@ -54,7 +56,11 @@ import {
   UnauthorizedException,
 } from "~/shared/errors/ApplicationErrors";
 import { ValidationException } from "~/shared/errors/DomainErrors";
-import type { DatabaseGateway } from "~/shared/gateway/DatabaseGateway";
+import type {
+  DatabaseGateway,
+  DatabaseGatewayParameter,
+  DatabaseGatewaySql,
+} from "~/shared/gateway/DatabaseGateway";
 
 type ChatResponseProgressListener = (
   event: ChatResponseProgressEventDTO,
@@ -170,7 +176,8 @@ export class MessagingService {
     onProgress?: ChatResponseProgressListener,
     locale: MessageLocale = MessageLocale.PtBr,
   ): Promise<void> {
-    if (await this.isMessageDuplicate(receiveMessage.channelMessageId)) return;
+    const { channelMessageId } = receiveMessage;
+    if (await this.isMessageDuplicate(channelMessageId)) return;
     if (!(await this.isAllowedChannelAddress(receiveMessage))) return;
     let chat = await this.getChatByChannelAddress(
       receiveMessage.fromAddress,
@@ -193,8 +200,7 @@ export class MessagingService {
     }
     let message: Message;
     if ("text" in receiveMessage) {
-      const textMsg = receiveMessage as ReceiveTextMessageDTO;
-      const command = parseChatCommand(textMsg.text);
+      const command = parseChatCommand(receiveMessage.text);
       if (command) {
         message = chat.addUserCommandMessage(
           command.raw,
@@ -204,25 +210,23 @@ export class MessagingService {
         );
       } else {
         message = chat.addUserTextMessage(
-          textMsg.text,
+          receiveMessage.text,
           receiveMessage.channelMessageId,
         );
       }
     } else if ("buttonReply" in receiveMessage) {
-      const buttonMsg = receiveMessage as ReceiveInteractiveButtonMessageDTO;
       message = chat.addUserButtonMessage(
-        buttonMsg.buttonReply,
+        receiveMessage.buttonReply,
         receiveMessage.channelMessageId,
       );
     } else if ("mediaId" in receiveMessage) {
-      const audioMsg = receiveMessage as ReceiveAudioMessageDTO;
       message = chat.addUserAudioMessage(
-        audioMsg.mediaId,
-        audioMsg.mimeType,
+        receiveMessage.mediaId,
+        receiveMessage.mimeType,
         receiveMessage.channelMessageId,
       );
     } else {
-      message = chat.addUserTextMessage("", receiveMessage.channelMessageId);
+      message = chat.addUserTextMessage("", channelMessageId);
     }
     const created = isNewChat
       ? await this.database.transaction(async (sql) => {
@@ -1297,14 +1301,11 @@ export class MessagingService {
       ORDER BY sequence ASC
     `;
     const generations = dbGenerations.map((dbGeneration) => {
-      let usage: AiGeneration["usage"];
-      if (dbGeneration.usage) {
-        usage = this.parseJsonColumn(dbGeneration.usage);
-      }
-      let diagnostics: AiGeneration["diagnostics"];
-      if (dbGeneration.diagnostics) {
-        diagnostics = this.parseJsonColumn(dbGeneration.diagnostics);
-      }
+      const metadata = StoredAiGenerationMetadataDTO.parse({
+        usage: this.parseJsonColumn(dbGeneration.usage) ?? undefined,
+        diagnostics:
+          this.parseJsonColumn(dbGeneration.diagnostics) ?? undefined,
+      });
       return AiGeneration.restore({
         id: dbGeneration.id,
         idChat: dbGeneration.id_chat,
@@ -1317,26 +1318,25 @@ export class MessagingService {
         responseId: dbGeneration.response_id ?? undefined,
         reasoningEffort: dbGeneration.reasoning_effort,
         finishReason: dbGeneration.finish_reason,
-        usage,
-        diagnostics,
+        ...metadata,
         createdAt: dbGeneration.created_at,
       });
     });
     let summary: ConversationSummary | undefined;
-    const conversationSummary = dbChat.conversation_summary
-      ? this.parseJsonColumn<ConversationSummary>(dbChat.conversation_summary)
-      : undefined;
-    if (conversationSummary) {
-      summary = new ConversationSummary({
-        userProfile: conversationSummary.userProfile,
-        durableFacts: conversationSummary.durableFacts,
-        compactedThroughSequence: conversationSummary.compactedThroughSequence,
-      });
+    if (
+      dbChat.conversation_summary !== null &&
+      dbChat.conversation_summary !== undefined
+    ) {
+      summary = new ConversationSummary(
+        StoredConversationSummaryDTO.parse(
+          this.parseJsonColumn(dbChat.conversation_summary),
+        ),
+      );
     }
     return Chat.restore({
       id: dbChat.id,
       idUser: dbChat.id_user ?? undefined,
-      channel: dbChat.channel as ChatChannel,
+      channel: StoredChatChannelDTO.parse(dbChat.channel),
       whatsAppAddress: dbChat.whatsapp_address ?? undefined,
       webAddress: dbChat.web_address ?? undefined,
       messages,
@@ -1349,14 +1349,14 @@ export class MessagingService {
     });
   }
 
-  private parseJsonColumn<T>(value: unknown): T {
-    if (typeof value === "string") return JSON.parse(value) as T;
-    return value as T;
+  private parseJsonColumn(value: unknown): unknown {
+    if (typeof value === "string") return JSON.parse(value);
+    return value;
   }
 
   private async createChat(
     chat: Chat,
-    sql: DatabaseGateway["sql"] = this.database.sql,
+    sql: DatabaseGatewaySql = this.database.sql,
   ): Promise<void> {
     const idUser = chat.idUser ?? null;
     const whatsAppAddress = chat.whatsAppAddress ?? null;
@@ -1389,7 +1389,7 @@ export class MessagingService {
 
   private async createMessage(
     message: Message,
-    sql: DatabaseGateway["sql"] = this.database.sql,
+    sql: DatabaseGatewaySql = this.database.sql,
   ): Promise<boolean> {
     const result = await sql<{ sequence: string }[]>`
       INSERT INTO messages (
@@ -1427,11 +1427,11 @@ export class MessagingService {
 
   private async createAiGeneration(
     generation: AiGeneration,
-    sql: DatabaseGateway["sql"] = this.database.sql,
+    sql: DatabaseGatewaySql = this.database.sql,
   ): Promise<void> {
-    let usage: ReturnType<DatabaseGateway["json"]> | null = null;
+    let usage: DatabaseGatewayParameter | null = null;
     if (generation.usage) usage = this.database.json(generation.usage);
-    let diagnostics: ReturnType<DatabaseGateway["json"]> | null = null;
+    let diagnostics: DatabaseGatewayParameter | null = null;
     if (generation.diagnostics) {
       diagnostics = this.database.json(generation.diagnostics);
     }
@@ -1506,7 +1506,7 @@ export class MessagingService {
 
   private async saveChat(
     chat: Chat,
-    sql: DatabaseGateway["sql"] = this.database.sql,
+    sql: DatabaseGatewaySql = this.database.sql,
   ): Promise<void> {
     await sql`
       UPDATE chats SET

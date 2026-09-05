@@ -3,7 +3,7 @@ import { parseCashFlowDashboard } from "~/modules/cash-flow/client/services/cash
 import { toCashFlowDashboardResponse } from "~/modules/cash-flow/contracts/CashFlowContractMapper";
 import type { CashFlowDashboardDTO } from "~/modules/cash-flow/entities/dtos/CashFlowServiceDTO";
 import { CashFlowTransactionType } from "~/modules/cash-flow/entities/enums/CashFlowTransactionType";
-import { Printable } from "~/shared/http/utils/Printable";
+import { Printable } from "~/shared/utils/Printable";
 
 describe("Cash flow web contracts", () => {
   test("maps transaction order and types through the wire contract", () => {

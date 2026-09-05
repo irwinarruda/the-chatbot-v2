@@ -22,6 +22,15 @@ export const AiProviderCredentialDTO = z.discriminatedUnion("type", [
 
 export type AiProviderCredentialDTO = z.infer<typeof AiProviderCredentialDTO>;
 
+export const AiProviderCredentialInfoDTO = z.object({
+  providerId: z.string(),
+  type: z.enum(["api_key", "oauth"]),
+});
+
+export type AiProviderCredentialInfoDTO = z.infer<
+  typeof AiProviderCredentialInfoDTO
+>;
+
 export const AiProviderCredentialEnvelopeDTO = z.object({
   nonce: z.base64(),
   ciphertext: z.base64(),

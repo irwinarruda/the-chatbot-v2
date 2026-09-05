@@ -6,6 +6,7 @@ import {
   type MonthlyExpenseSlice,
 } from "~/modules/cash-flow/client/state/monthlyExpenseSlice";
 import type { MonthlyExpenseDTO } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
+import { createDeferred } from "~/tests/utils/createDeferred";
 
 function createExpense(
   patch: Partial<MonthlyExpenseDTO> = {},
@@ -84,5 +85,104 @@ describe("monthlyExpenseSlice", () => {
     expect(updatedMonth).toBe("2026-06");
     expect(listedMonths).toEqual(["2026-06", "2026-06"]);
     expect(store.getState().isMonthlyExpenseSubmitting).toBe(false);
+  });
+});
+
+function createService(): MonthlyExpenseClientService {
+  return {
+    async list(month) {
+      return { month: month ?? "2026-07", expenses: [] };
+    },
+    async create() {
+      return createExpense();
+    },
+    async update() {
+      return createExpense();
+    },
+    async archive() {},
+    async setPaid() {
+      return createExpense();
+    },
+    async payFromAccount() {
+      return createExpense();
+    },
+  };
+}
+
+describe("monthly expense navigation", () => {
+  test("ignores an older month's response and loading completion", async () => {
+    const june = createDeferred<{
+      month: string;
+      expenses: MonthlyExpenseDTO[];
+    }>();
+    const july = createDeferred<{
+      month: string;
+      expenses: MonthlyExpenseDTO[];
+    }>();
+    const service = createService();
+    service.list = (month) => {
+      if (month === "2026-06") return june.promise;
+      return july.promise;
+    };
+    const store = create<MonthlyExpenseSlice>()(
+      createMonthlyExpenseSlice(service),
+    );
+    const juneLoad = store.getState().bootstrapMonthlyExpenses("2026-06");
+    const julyLoad = store.getState().bootstrapMonthlyExpenses("2026-07");
+    june.resolve({
+      month: "2026-06",
+      expenses: [createExpense({ month: "2026-06" })],
+    });
+    await juneLoad;
+    expect(store.getState().monthlyExpenseMonth).toBe("2026-07");
+    expect(store.getState().isMonthlyExpenseBootstrapping).toBe(true);
+    july.resolve({ month: "2026-07", expenses: [] });
+    await julyLoad;
+    expect(store.getState().monthlyExpenses).toEqual([]);
+    expect(store.getState().isMonthlyExpenseBootstrapping).toBe(false);
+  });
+
+  test.each(["create", "update", "setPaid"] as const)(
+    "%s completing after navigation preserves the selected month's expenses",
+    async (operation) => {
+      const result = createDeferred<MonthlyExpenseDTO>();
+      const expense = createExpense({ month: "2026-06" });
+      const service = createService();
+      service[operation] = () => result.promise;
+      const store = create<MonthlyExpenseSlice>()(
+        createMonthlyExpenseSlice(service),
+      );
+      await store.getState().bootstrapMonthlyExpenses("2026-06");
+      let mutation: Promise<MonthlyExpenseDTO | undefined>;
+      if (operation === "create")
+        mutation = store.getState().createMonthlyExpense({ name: "Rent" });
+      else if (operation === "update")
+        mutation = store
+          .getState()
+          .updateMonthlyExpense(expense.id, { name: "Rent" });
+      else mutation = store.getState().setMonthlyExpensePaid(expense.id, true);
+      await store.getState().bootstrapMonthlyExpenses("2026-07");
+      result.resolve(expense);
+      await mutation;
+      expect(store.getState().monthlyExpenseMonth).toBe("2026-07");
+      expect(store.getState().monthlyExpenses).toEqual([]);
+      expect(store.getState().isMonthlyExpenseSubmitting).toBe(false);
+    },
+  );
+
+  test("archive refresh cannot restore a month left during the request", async () => {
+    const archived = createDeferred<void>();
+    const service = createService();
+    service.archive = () => archived.promise;
+    const store = create<MonthlyExpenseSlice>()(
+      createMonthlyExpenseSlice(service),
+    );
+    await store.getState().bootstrapMonthlyExpenses("2026-06");
+    const mutation = store.getState().archiveMonthlyExpense("rent");
+    await store.getState().bootstrapMonthlyExpenses("2026-07");
+    archived.resolve(undefined);
+    await mutation;
+    expect(store.getState().monthlyExpenseMonth).toBe("2026-07");
+    expect(store.getState().monthlyExpenses).toEqual([]);
   });
 });

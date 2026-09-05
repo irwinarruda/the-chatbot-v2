@@ -1,9 +1,11 @@
-import type postgres from "postgres";
 import {
   type AiModelPreferenceDTO as AiModelPreference,
   AiModelPreferenceDTO,
 } from "~/modules/chat/entities/dtos/AiModelPreferenceDTO";
-import type { DatabaseGateway } from "~/shared/gateway/DatabaseGateway";
+import type {
+  DatabaseGateway,
+  DatabaseGatewaySql,
+} from "~/shared/gateway/DatabaseGateway";
 
 export class AiModelPreferenceService {
   constructor(private database: DatabaseGateway) {}
@@ -25,7 +27,7 @@ export class AiModelPreferenceService {
 
   async save(
     preference: AiModelPreference,
-    sql: postgres.Sql = this.database.sql,
+    sql: DatabaseGatewaySql = this.database.sql,
   ): Promise<AiModelPreference> {
     const parsed = AiModelPreferenceDTO.parse(preference);
     await sql`

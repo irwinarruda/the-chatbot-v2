@@ -20,7 +20,7 @@ import type { WhatsAppMessagingGateway } from "~/modules/chat/gateway/WhatsAppMe
 import { MetaWhatsAppMessagingGateway } from "~/modules/chat/gateway/WhatsAppMessagingGateway/MetaWhatsAppMessagingGateway";
 import { AiModelPreferenceService } from "~/modules/chat/services/AiModelPreferenceService";
 import { AiModelService } from "~/modules/chat/services/AiModelService";
-import { AiToolService } from "~/modules/chat/services/AiToolService";
+import { ChatHistoryService } from "~/modules/chat/services/ChatHistoryService";
 import { MessagingService } from "~/modules/chat/services/MessagingService";
 import type { AuthGateway } from "~/modules/identity/gateway/AuthGateway";
 import { GoogleAuthGateway } from "~/modules/identity/gateway/AuthGateway/GoogleAuthGateway";
@@ -33,6 +33,7 @@ import { NoteService } from "~/modules/notes/services/NoteService";
 import { MigrationService } from "~/modules/system/services/MigrationService";
 import { StatusService } from "~/modules/system/services/StatusService";
 import { TodoService } from "~/modules/todos/services/TodoService";
+import { AiToolService } from "~/modules/tools/services/AiToolService";
 import type { Config } from "~/shared/config/Config";
 
 registerBunOAuthFlows();
@@ -142,7 +143,8 @@ export function createApplication(
   );
   const monthlyExpenseService = new MonthlyExpenseService(database);
   const artifactService = new ArtifactService(database);
-  const todoService = new TodoService(database);
+  const chatHistory = new ChatHistoryService(database);
+  const todoService = new TodoService(database, chatHistory);
   const aiModelPreferenceService = new AiModelPreferenceService(database);
   const aiModelService = new AiModelService(
     aiModelPreferenceService,

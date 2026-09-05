@@ -29,7 +29,9 @@ describe("module boundaries", () => {
       "src/modules/*/gateway/**/*.ts",
     ]);
     const violations = files.filter((file) =>
-      readFileSync(file, "utf8").includes('from "~/shared/client/'),
+      /from ["']~\/(?:shared|modules\/[^/]+)\/client\//.test(
+        readFileSync(file, "utf8"),
+      ),
     );
 
     expect(violations).toEqual([]);
@@ -45,6 +47,59 @@ describe("module boundaries", () => {
     ]);
 
     expect(files).toEqual([]);
+  });
+
+  test("services do not resolve the application graph", () => {
+    const files = tinyglobby.globSync("src/modules/*/services/**/*.ts");
+    const violations = files.filter((file) =>
+      /from ["']~\/infra\/(?:bootstrap|server-bootstrap)["']/.test(
+        readFileSync(file, "utf8"),
+      ),
+    );
+
+    expect(violations).toEqual([]);
+  });
+
+  test("services do not depend on HTTP implementation", () => {
+    const files = tinyglobby.globSync("src/modules/*/services/**/*.ts");
+    const violations = files.filter((file) =>
+      /from ["']~\/shared\/http\//.test(readFileSync(file, "utf8")),
+    );
+
+    expect(violations).toEqual([]);
+  });
+
+  test("feature modules have no circular dependencies", () => {
+    const files = tinyglobby.globSync("src/modules/**/*.{ts,tsx}");
+    const dependencies = new Map<string, Set<string>>();
+    for (const file of files) {
+      const module = file.split("/")[2];
+      const imports = dependencies.get(module) ?? new Set<string>();
+      const source = readFileSync(file, "utf8");
+      for (const match of source.matchAll(
+        /(?:from\s*|import\s*\(\s*)["']~\/modules\/([^/"']+)/g,
+      )) {
+        if (match[1] !== module) imports.add(match[1]);
+      }
+      dependencies.set(module, imports);
+    }
+
+    const visited = new Set<string>();
+    const cycles: string[] = [];
+    function visit(module: string, path: string[]) {
+      if (path.includes(module)) {
+        cycles.push([...path, module].join(" -> "));
+        return;
+      }
+      if (visited.has(module)) return;
+      visited.add(module);
+      for (const dependency of dependencies.get(module) ?? []) {
+        visit(dependency, [...path, module]);
+      }
+    }
+    for (const module of dependencies.keys()) visit(module, []);
+
+    expect(cycles).toEqual([]);
   });
 
   test("every gateway directory publishes its interface from index.ts", () => {

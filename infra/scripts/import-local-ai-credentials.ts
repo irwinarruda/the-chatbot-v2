@@ -1,9 +1,9 @@
 import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { resolve } from "node:path";
-import type { Credential } from "@earendil-works/pi-ai";
 import { z } from "zod";
 import { Database } from "~/infra/database";
+import type { AiProviderCredentialDTO } from "~/modules/chat/entities/dtos/AiProviderCredentialDTO";
 import { AiCredentialEncryption } from "~/modules/chat/gateway/AiCredentialStore/AiCredentialEncryption";
 import { PostgresAiCredentialStore } from "~/modules/chat/gateway/AiCredentialStore/PostgresAiCredentialStore";
 import { loadConfig } from "~/shared/config/Config";
@@ -102,7 +102,7 @@ async function resolveUserId(
 }
 
 async function localCredentials(): Promise<
-  Array<{ providerId: string; credential: Credential }>
+  Array<{ providerId: string; credential: AiProviderCredentialDTO }>
 > {
   let pi: z.infer<typeof piAuthSchema>;
   let codex: z.infer<typeof codexAuthSchema>;

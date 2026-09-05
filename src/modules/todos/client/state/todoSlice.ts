@@ -32,117 +32,147 @@ export interface TodoSlice {
     id: string,
     patch: Partial<TodoInput>,
   ) => Promise<TodoDTO | undefined>;
-  deleteTodo: (id: string) => Promise<void>;
+  deleteTodo: (id: string) => Promise<boolean>;
   clearTodoError: () => void;
 }
 
-export const todoSlice: StateCreator<TodoSlice> = (set, get) => ({
-  todos: [],
-  selectedTodo: undefined,
-  isTodoBootstrapping: false,
-  isTodoSubmitting: false,
-  todoError: undefined,
-  ...compute("todo", get, (state) => ({
-    hasTodos: state.todos.length > 0,
-    pendingTodoCount: state.todos.filter((todo) => todo.status === "Pending")
-      .length,
-    completedTodoCount: state.todos.filter(
-      (todo) => todo.status === "Completed",
-    ).length,
-  })),
-  async bootstrapTodos(filters) {
-    set({
-      isTodoBootstrapping: true,
+export function createTodoSlice(
+  service: typeof todoService = todoService,
+): StateCreator<TodoSlice> {
+  return (set, get) => {
+    let listRequest = 0;
+    let detailRequest = 0;
+    return {
+      todos: [],
+      selectedTodo: undefined,
+      isTodoBootstrapping: false,
+      isTodoSubmitting: false,
       todoError: undefined,
-    });
-    try {
-      const todos = await todoService.listTodos(filters);
-      set({ todos });
-    } catch {
-      set({ todoError: "loading" });
-    } finally {
-      set({ isTodoBootstrapping: false });
-    }
-  },
-  async createTodo(input) {
-    const { isTodoSubmitting } = get();
-    const name = input.name.trim();
-    if (!name || isTodoSubmitting) return undefined;
-    set({ isTodoSubmitting: true, todoError: undefined });
-    try {
-      const todo = await todoService.createTodo({
-        name,
-        description: input.description,
-        dueDate: input.dueDate || undefined,
-        status: input.status,
-      });
-      set((state) => ({
-        todos: [todo, ...state.todos],
-      }));
-      return todo;
-    } catch {
-      set({ todoError: "saving" });
-      return undefined;
-    } finally {
-      set({ isTodoSubmitting: false });
-    }
-  },
-  async loadTodo(id) {
-    const { todos } = get();
-    const existing = todos.find((todo) => todo.id === id);
-    if (existing) {
-      set({ selectedTodo: existing });
-      return existing;
-    }
-    set({ todoError: undefined });
-    try {
-      const todo = await todoService.getTodo(id);
-      set({ selectedTodo: todo });
-      return todo;
-    } catch {
-      set({ todoError: "loading", selectedTodo: undefined });
-      return undefined;
-    }
-  },
-  async updateTodo(id, patch) {
-    const { isTodoSubmitting } = get();
-    if (isTodoSubmitting) return undefined;
-    set({ isTodoSubmitting: true, todoError: undefined });
-    try {
-      const todo = await todoService.updateTodo(id, {
-        name: patch.name,
-        description: patch.description,
-        dueDate: patch.dueDate,
-        status: patch.status,
-      });
-      set((state) => ({
-        todos: state.todos.map((item) => (item.id === id ? todo : item)),
-        selectedTodo: todo,
-      }));
-      return todo;
-    } catch {
-      set({ todoError: "saving" });
-      return undefined;
-    } finally {
-      set({ isTodoSubmitting: false });
-    }
-  },
-  async deleteTodo(id) {
-    set({ isTodoSubmitting: true, todoError: undefined });
-    try {
-      await todoService.deleteTodo(id);
-      set((state) => ({
-        todos: state.todos.filter((todo) => todo.id !== id),
-        selectedTodo:
-          state.selectedTodo?.id === id ? undefined : state.selectedTodo,
-      }));
-    } catch {
-      set({ todoError: "deleting" });
-    } finally {
-      set({ isTodoSubmitting: false });
-    }
-  },
-  clearTodoError() {
-    set({ todoError: undefined });
-  },
-});
+      ...compute("todo", get, (state) => ({
+        hasTodos: state.todos.length > 0,
+        pendingTodoCount: state.todos.filter(
+          (todo) => todo.status === "Pending",
+        ).length,
+        completedTodoCount: state.todos.filter(
+          (todo) => todo.status === "Completed",
+        ).length,
+      })),
+      async bootstrapTodos(filters) {
+        const request = ++listRequest;
+        set({
+          isTodoBootstrapping: true,
+          todoError: undefined,
+        });
+        try {
+          const todos = await service.listTodos(filters);
+          if (request === listRequest) set({ todos });
+        } catch {
+          if (request === listRequest) set({ todoError: "loading" });
+        } finally {
+          if (request === listRequest) set({ isTodoBootstrapping: false });
+        }
+      },
+      async createTodo(input) {
+        const { isTodoSubmitting } = get();
+        const name = input.name.trim();
+        if (!name || isTodoSubmitting) return undefined;
+        set({ isTodoSubmitting: true, todoError: undefined });
+        try {
+          const todo = await service.createTodo({
+            name,
+            description: input.description,
+            dueDate: input.dueDate || undefined,
+            status: input.status,
+          });
+          set((state) => ({
+            todos: [todo, ...state.todos],
+          }));
+          return todo;
+        } catch {
+          set({ todoError: "saving" });
+          return undefined;
+        } finally {
+          set({ isTodoSubmitting: false });
+        }
+      },
+      async loadTodo(id) {
+        const request = ++detailRequest;
+        const { todos } = get();
+        const existing = todos.find((todo) => todo.id === id);
+        if (existing) {
+          set({ selectedTodo: existing });
+          return existing;
+        }
+        set({ todoError: undefined, selectedTodo: undefined });
+        try {
+          const todo = await service.getTodo(id);
+          if (request !== detailRequest) return undefined;
+          set({ selectedTodo: todo });
+          return todo;
+        } catch {
+          if (request === detailRequest) {
+            set({ todoError: "loading", selectedTodo: undefined });
+          }
+          return undefined;
+        }
+      },
+      async updateTodo(id, patch) {
+        const { isTodoSubmitting } = get();
+        if (isTodoSubmitting) return undefined;
+        set({ isTodoSubmitting: true, todoError: undefined });
+        try {
+          const todo = await service.updateTodo(id, {
+            name: patch.name,
+            description: patch.description,
+            dueDate: patch.dueDate,
+            status: patch.status,
+          });
+          set((state) => {
+            let selectedTodo = state.selectedTodo;
+            if (selectedTodo?.id === id) selectedTodo = todo;
+            return {
+              todos: state.todos.map((item) => {
+                if (item.id === id) return todo;
+                return item;
+              }),
+              selectedTodo,
+            };
+          });
+          return todo;
+        } catch {
+          set({ todoError: "saving" });
+          return undefined;
+        } finally {
+          set({ isTodoSubmitting: false });
+        }
+      },
+      async deleteTodo(id) {
+        const { isTodoSubmitting } = get();
+        if (isTodoSubmitting) return false;
+        set({ isTodoSubmitting: true, todoError: undefined });
+        try {
+          await service.deleteTodo(id);
+          set((state) => {
+            let selectedTodo = state.selectedTodo;
+            if (selectedTodo?.id === id) selectedTodo = undefined;
+            return {
+              todos: state.todos.filter((todo) => todo.id !== id),
+              selectedTodo,
+            };
+          });
+          return true;
+        } catch {
+          set({ todoError: "deleting" });
+          return false;
+        } finally {
+          set({ isTodoSubmitting: false });
+        }
+      },
+      clearTodoError() {
+        set({ todoError: undefined });
+      },
+    };
+  };
+}
+
+export const todoSlice = createTodoSlice();

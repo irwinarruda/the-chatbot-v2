@@ -18,7 +18,7 @@ import { MessageAudience } from "~/modules/chat/entities/enums/MessageAudience";
 import { MessageContentType } from "~/modules/chat/entities/enums/MessageContentType";
 import { ReasoningEffort } from "~/modules/chat/entities/enums/ReasoningEffort";
 import { ToolResultStatus } from "~/modules/chat/entities/enums/ToolResultStatus";
-import { Printable } from "~/shared/http/utils/Printable";
+import { Printable } from "~/shared/utils/Printable";
 
 function createModelConfiguration(
   supportedReasoningEfforts: ReasoningEffort[],

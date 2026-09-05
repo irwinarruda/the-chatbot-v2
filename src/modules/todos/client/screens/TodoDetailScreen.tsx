@@ -16,7 +16,6 @@ export function TodoDetailScreen({
 }) {
   const navigate = useNavigate();
   const prefs = usePrefs();
-  const todos = useApp((s) => s.todos);
   const selectedTodo = useApp((s) => s.selectedTodo);
   const isTodoSubmitting = useApp((s) => s.isTodoSubmitting);
   const loadTodo = useApp((s) => s.loadTodo);
@@ -24,6 +23,7 @@ export function TodoDetailScreen({
   const deleteTodo = useApp((s) => s.deleteTodo);
   const dictionary = getDictionary(prefs.locale);
   const t = dictionary.todoPage;
+  const todo = selectedTodo?.id === todoId ? selectedTodo : undefined;
 
   function onCloseDialog() {
     navigate({ to: "/todo", search });
@@ -35,19 +35,19 @@ export function TodoDetailScreen({
     dueDate: string | null;
     status: TodoStatusDTO;
   }) {
-    if (!selectedTodo) return;
-    await updateTodo(selectedTodo.id, patch);
+    if (!todo) return;
+    await updateTodo(todo.id, patch);
   }
 
   async function onDeleteTodo() {
-    if (!selectedTodo) return;
-    await deleteTodo(selectedTodo.id);
-    onCloseDialog();
+    if (!todo) return;
+    const deleted = await deleteTodo(todo.id);
+    if (deleted) onCloseDialog();
   }
 
   useEffect(() => {
     void loadTodo(todoId);
-  }, [todoId, todos.length]);
+  }, [todoId, loadTodo]);
 
   return (
     <TodoDetailDialog
@@ -59,7 +59,7 @@ export function TodoDetailScreen({
       open={Boolean(todoId)}
       t={t}
       theme={prefs.theme}
-      todo={selectedTodo}
+      todo={todo}
     />
   );
 }

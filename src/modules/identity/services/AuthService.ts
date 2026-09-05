@@ -25,7 +25,10 @@ import {
   UnauthorizedException,
 } from "~/shared/errors/ApplicationErrors";
 import { ValidationException } from "~/shared/errors/DomainErrors";
-import type { DatabaseGateway } from "~/shared/gateway/DatabaseGateway";
+import type {
+  DatabaseGateway,
+  DatabaseGatewaySql,
+} from "~/shared/gateway/DatabaseGateway";
 
 export interface IdentityChatCoordinator {
   deleteChat(channelAddress: string): Promise<void>;
@@ -270,7 +273,7 @@ export class AuthService {
     channelAddress: string,
     userToken: GoogleTokensDTO,
     userinfo: GoogleUserInfoDTO,
-    sql: DatabaseGateway["sql"],
+    sql: DatabaseGatewaySql,
   ): Promise<GoogleAuthUserSaveResult> {
     const email = userinfo.email.toLowerCase();
     const userByEmail = await this.findUserByEmail(email, sql);
@@ -420,7 +423,7 @@ export class AuthService {
 
   private async findUserByChatChannelAddress(
     id: string,
-    sql: DatabaseGateway["sql"],
+    sql: DatabaseGatewaySql,
   ): Promise<User | undefined> {
     const dbUsers = await sql<DbUser[]>`
       SELECT * FROM users
@@ -436,7 +439,7 @@ export class AuthService {
 
   private async findUserByEmail(
     email: string,
-    sql: DatabaseGateway["sql"],
+    sql: DatabaseGatewaySql,
   ): Promise<User | undefined> {
     const dbUsers = await sql<DbUser[]>`
       SELECT * FROM users
@@ -449,7 +452,7 @@ export class AuthService {
 
   private async getActiveAppLoginChallenge(
     challenge: string,
-    sql: DatabaseGateway["sql"] = this.database.sql,
+    sql: DatabaseGatewaySql = this.database.sql,
     lock = false,
   ): Promise<DbGoogleAuthChallenge> {
     if (!/^[A-Za-z0-9_-]{22}$/.test(challenge)) {
@@ -493,10 +496,7 @@ export class AuthService {
     );
   }
 
-  private async insertUser(
-    user: User,
-    sql: DatabaseGateway["sql"],
-  ): Promise<void> {
+  private async insertUser(user: User, sql: DatabaseGatewaySql): Promise<void> {
     const email = user.email ?? null;
     const phoneNumber = user.phoneNumber ?? null;
     const bsuid = user.bsuid ?? null;
@@ -511,7 +511,7 @@ export class AuthService {
 
   private async saveUser(
     user: User,
-    sql: DatabaseGateway["sql"] = this.database.sql,
+    sql: DatabaseGatewaySql = this.database.sql,
   ): Promise<void> {
     const email = user.email ?? null;
     const phoneNumber = user.phoneNumber ?? null;
@@ -531,7 +531,7 @@ export class AuthService {
 
   private async saveGoogleCredential(
     googleCredential: Credential,
-    sql: DatabaseGateway["sql"] = this.database.sql,
+    sql: DatabaseGatewaySql = this.database.sql,
   ): Promise<void> {
     const expiresInSeconds = googleCredential.expiresInSeconds ?? null;
     const expirationDate = googleCredential.expirationDate ?? null;
@@ -550,7 +550,7 @@ export class AuthService {
 
   private async createGoogleCredential(
     googleCredential: Credential,
-    sql: DatabaseGateway["sql"] = this.database.sql,
+    sql: DatabaseGatewaySql = this.database.sql,
   ): Promise<void> {
     const expiresInSeconds = googleCredential.expiresInSeconds ?? null;
     const expirationDate = googleCredential.expirationDate ?? null;
@@ -580,7 +580,7 @@ export class AuthService {
 
   private async hydrateUser(
     dbUser: DbUser,
-    sql: DatabaseGateway["sql"] = this.database.sql,
+    sql: DatabaseGatewaySql = this.database.sql,
   ): Promise<User> {
     const dbCredentials = await sql<DbGoogleCredential[]>`
       SELECT * FROM google_credentials

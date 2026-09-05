@@ -1,5 +1,4 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
-import type { Credential } from "@earendil-works/pi-ai";
 import {
   AiProviderCredentialDTO,
   type AiProviderCredentialEnvelopeDTO as AiProviderCredentialEnvelope,
@@ -23,7 +22,7 @@ export class AiCredentialEncryption {
   }
 
   encrypt(
-    credential: Credential,
+    credential: AiProviderCredentialDTO,
     idUser: string,
     providerId: string,
   ): AiProviderCredentialEnvelope {
@@ -42,7 +41,11 @@ export class AiCredentialEncryption {
     };
   }
 
-  decrypt(envelope: unknown, idUser: string, providerId: string): Credential {
+  decrypt(
+    envelope: unknown,
+    idUser: string,
+    providerId: string,
+  ): AiProviderCredentialDTO {
     try {
       const parsedEnvelope = AiProviderCredentialEnvelopeDTO.parse(envelope);
       const nonce = Buffer.from(parsedEnvelope.nonce, "base64");

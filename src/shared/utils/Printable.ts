@@ -7,7 +7,7 @@ function transformToSnakeCase(obj: unknown): unknown {
   if (obj instanceof Date) return obj;
   if (obj && typeof obj === "object") {
     return Object.fromEntries(
-      Object.entries(obj as Record<string, unknown>).map(([key, value]) => [
+      Object.entries(obj).map(([key, value]) => [
         toSnakeCase(key),
         transformToSnakeCase(value),
       ]),
@@ -17,12 +17,10 @@ function transformToSnakeCase(obj: unknown): unknown {
 }
 
 export class Printable {
-  static make<T>(data: T): string {
+  static make(data: unknown): string {
     const snakeCased = transformToSnakeCase(data);
-    return JSON.stringify(
-      snakeCased,
-      undefined,
-      process.env.NODE_ENV === "production" ? undefined : 2,
-    );
+    let indentation: number | undefined;
+    if (process.env.NODE_ENV !== "production") indentation = 2;
+    return JSON.stringify(snakeCased, undefined, indentation);
   }
 }

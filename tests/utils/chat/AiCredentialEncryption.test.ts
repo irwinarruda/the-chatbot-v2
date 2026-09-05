@@ -1,4 +1,4 @@
-import type { Credential } from "@earendil-works/pi-ai";
+import type { AiProviderCredentialDTO } from "~/modules/chat/entities/dtos/AiProviderCredentialDTO";
 import { AiCredentialEncryption } from "~/modules/chat/gateway/AiCredentialStore/AiCredentialEncryption";
 
 describe("AiCredentialEncryption", () => {
@@ -10,7 +10,8 @@ describe("AiCredentialEncryption", () => {
       refresh: "codex-refresh-token",
       expires: 2_000_000_000_000,
       accountId: "account-123",
-    } satisfies Credential;
+      providerData: { organization: "organization-456" },
+    } satisfies AiProviderCredentialDTO;
 
     const envelope = encryption.encrypt(
       credential,
@@ -63,7 +64,7 @@ describe("AiCredentialEncryption", () => {
           type: "oauth",
           access: "access",
           refresh: "refresh",
-        } as Credential,
+        } as AiProviderCredentialDTO,
         "d3f607ee-8022-4fe2-a467-74635c26f7c7",
         "openai-codex",
       ),

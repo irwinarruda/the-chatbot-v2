@@ -12,6 +12,7 @@ import type {
   AiToolDefinitionDTO,
 } from "~/modules/chat/gateway/AiChatGateway";
 import { AppError } from "~/shared/errors/ApplicationErrors";
+import { DomainError } from "~/shared/errors/DomainErrors";
 
 export interface AiToolContext {
   chat: Chat;
@@ -68,7 +69,10 @@ export class ToolExecutor {
             .join("; ")}`,
         );
       }
-      if (error instanceof AppError && error.statusCode < 500) {
+      if (
+        error instanceof DomainError ||
+        (error instanceof AppError && error.statusCode < 500)
+      ) {
         return this.failedResult(call, error.name, error.message);
       }
       if (tool.mutating) {

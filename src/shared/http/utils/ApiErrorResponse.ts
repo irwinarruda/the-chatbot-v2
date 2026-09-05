@@ -6,7 +6,7 @@ import {
   InternalServerException,
 } from "~/shared/errors/ApplicationErrors";
 import { ValidationException } from "~/shared/errors/DomainErrors";
-import { Printable } from "~/shared/http/utils/Printable";
+import { Printable } from "~/shared/utils/Printable";
 
 export const ExceptionResponse = {
   handle(error: unknown): ApplicationFailure {

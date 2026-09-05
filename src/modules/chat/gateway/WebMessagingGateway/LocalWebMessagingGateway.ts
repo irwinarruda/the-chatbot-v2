@@ -3,6 +3,7 @@ import type {
   ReceiveAudioMessageDTO,
   ReceiveInteractiveButtonMessageDTO,
   ReceiveMessageDTO,
+  ReceiveMessageMetadataDTO,
   ReceiveTextMessageDTO,
   SendInteractiveButtonMessageDTO,
   SendTextMessageDTO,
@@ -97,7 +98,7 @@ export class LocalWebMessagingGateway implements WebMessagingGateway {
   private createBaseReceiveMessage(
     webAddress: string,
     channelMessageId: string = crypto.randomUUID(),
-  ): ReceiveMessageDTO {
+  ): ReceiveMessageMetadataDTO {
     return {
       fromAddress: webAddress.toLowerCase(),
       channel: ChatChannel.Web,

@@ -1,7 +1,5 @@
-import { existsSync, readFileSync } from "fs";
-import { join } from "path";
 import { Paths } from "~/infra/paths";
-import { NotFoundException } from "~/shared/errors/ApplicationErrors";
+import { ChatTemplateLoader } from "./ChatTemplateLoader";
 
 export const PromptLocale = {
   En: "En",
@@ -14,29 +12,10 @@ export interface AiChatGatewayParams {
 }
 
 export class PromptLoader {
-  private static cache = new Map<string, string>();
-
-  private static readFile(fileName: string): string {
-    const filePath = join(Paths.templatesDir("prompts"), fileName);
-    if (!existsSync(filePath)) {
-      throw new NotFoundException(`Prompt file not found: ${filePath}`);
-    }
-    const cached = PromptLoader.cache.get(filePath);
-    if (cached) return cached;
-    const text = readFileSync(filePath, "utf-8");
-    PromptLoader.cache.set(filePath, text);
-    return text;
-  }
-
-  private static applyTemplate(
-    text: string,
-    data: Record<string, string>,
-  ): string {
-    if (Object.keys(data).length === 0) return text;
-    return text.replace(/\{\{([A-Za-z0-9_]+)\}\}/g, (match, key: string) => {
-      return key in data ? (data[key] ?? match) : match;
-    });
-  }
+  private static readonly templates = new ChatTemplateLoader(
+    Paths.templatesDir("prompts"),
+    "Prompt file",
+  );
 
   private static localeToFileSuffix(locale: PromptLocale): string {
     switch (locale) {
@@ -54,22 +33,21 @@ export class PromptLoader {
     data: AiChatGatewayParams,
   ): string {
     const fileBase = `ai-chat-gateway${PromptLoader.localeToFileSuffix(locale)}`;
-    const text = PromptLoader.readFile(fileBase);
     const dict: Record<string, string> = {
       PhoneNumber: data.channelAddress,
       ChannelAddress: data.channelAddress,
     };
-    return PromptLoader.applyTemplate(text, dict);
+    return PromptLoader.templates.load(fileBase, dict);
   }
 
   static getTransactionClassification(locale: PromptLocale): string {
     const fileBase = `transaction-classification${PromptLoader.localeToFileSuffix(locale)}`;
-    return PromptLoader.readFile(fileBase);
+    return PromptLoader.templates.load(fileBase);
   }
 
   static getTransferClassification(locale: PromptLocale): string {
     const fileBase = `transfer-classification${PromptLoader.localeToFileSuffix(locale)}`;
-    return PromptLoader.readFile(fileBase);
+    return PromptLoader.templates.load(fileBase);
   }
 
   static getConversationMemory(
@@ -77,8 +55,7 @@ export class PromptLoader {
     memoryData: string,
   ): string {
     const fileBase = `conversation-memory${PromptLoader.localeToFileSuffix(locale)}`;
-    const text = PromptLoader.readFile(fileBase);
-    return PromptLoader.applyTemplate(text, { MemoryData: memoryData });
+    return PromptLoader.templates.load(fileBase, { MemoryData: memoryData });
   }
 
   static getSummarization(
@@ -86,10 +63,9 @@ export class PromptLoader {
     existingSummary: string | undefined,
   ): string {
     const fileBase = `summarization${PromptLoader.localeToFileSuffix(locale)}`;
-    const text = PromptLoader.readFile(fileBase);
     const dict: Record<string, string> = {
       ExistingSummary: existingSummary ?? "",
     };
-    return PromptLoader.applyTemplate(text, dict);
+    return PromptLoader.templates.load(fileBase, dict);
   }
 }

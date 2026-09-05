@@ -55,153 +55,188 @@ function sortMonthlyExpenses(
 export function createMonthlyExpenseSlice(
   service: MonthlyExpenseClientService = monthlyExpenseService,
 ): StateCreator<MonthlyExpenseSlice> {
-  return (set, get) => ({
-    monthlyExpenses: [],
-    monthlyExpenseMonth: "",
-    isMonthlyExpenseBootstrapping: false,
-    isMonthlyExpenseSubmitting: false,
-    monthlyExpenseError: undefined,
-    async bootstrapMonthlyExpenses(month) {
-      set({
-        isMonthlyExpenseBootstrapping: true,
-        monthlyExpenseMonth: month ?? "",
-        monthlyExpenses: [],
-        monthlyExpenseError: undefined,
-      });
-      try {
-        const result = await service.list(month);
+  return (set, get) => {
+    let listRequest = 0;
+    return {
+      monthlyExpenses: [],
+      monthlyExpenseMonth: "",
+      isMonthlyExpenseBootstrapping: false,
+      isMonthlyExpenseSubmitting: false,
+      monthlyExpenseError: undefined,
+      async bootstrapMonthlyExpenses(month) {
+        const request = ++listRequest;
         set({
-          monthlyExpenseMonth: result.month,
-          monthlyExpenses: result.expenses,
+          isMonthlyExpenseBootstrapping: true,
+          monthlyExpenseMonth: month ?? "",
+          monthlyExpenses: [],
+          monthlyExpenseError: undefined,
         });
-      } catch {
-        set({ monthlyExpenseError: "loading" });
-      } finally {
-        set({ isMonthlyExpenseBootstrapping: false });
-      }
-    },
-    async createMonthlyExpense(dto) {
-      const { isMonthlyExpenseSubmitting } = get();
-      if (isMonthlyExpenseSubmitting) return undefined;
-      set({ isMonthlyExpenseSubmitting: true, monthlyExpenseError: undefined });
-      try {
-        const { monthlyExpenseMonth } = get();
-        const expense = await service.create({
-          ...dto,
-          month: monthlyExpenseMonth || undefined,
-        });
-        set((state) => ({
-          monthlyExpenses: sortMonthlyExpenses([
-            ...state.monthlyExpenses,
-            expense,
-          ]),
-          monthlyExpenseMonth: expense.month,
-        }));
-        return expense;
-      } catch {
-        set({ monthlyExpenseError: "saving" });
-        return undefined;
-      } finally {
-        set({ isMonthlyExpenseSubmitting: false });
-      }
-    },
-    async updateMonthlyExpense(id, dto) {
-      const { isMonthlyExpenseSubmitting } = get();
-      if (isMonthlyExpenseSubmitting) return undefined;
-      set({ isMonthlyExpenseSubmitting: true, monthlyExpenseError: undefined });
-      try {
-        const { monthlyExpenseMonth } = get();
-        const expense = await service.update(id, {
-          ...dto,
-          month: monthlyExpenseMonth || undefined,
-        });
-        set((state) => ({
-          monthlyExpenses: sortMonthlyExpenses(
-            state.monthlyExpenses.map((item) =>
-              item.id === id ? expense : item,
-            ),
-          ),
-        }));
-        return expense;
-      } catch {
-        set({ monthlyExpenseError: "saving" });
-        return undefined;
-      } finally {
-        set({ isMonthlyExpenseSubmitting: false });
-      }
-    },
-    async archiveMonthlyExpense(id) {
-      const { isMonthlyExpenseSubmitting, monthlyExpenseMonth } = get();
-      if (isMonthlyExpenseSubmitting) return false;
-      set({ isMonthlyExpenseSubmitting: true, monthlyExpenseError: undefined });
-      try {
-        await service.archive(id);
-        const result = await service.list(monthlyExpenseMonth || undefined);
+        try {
+          const result = await service.list(month);
+          if (request !== listRequest) return;
+          set({
+            monthlyExpenseMonth: result.month,
+            monthlyExpenses: result.expenses,
+          });
+        } catch {
+          if (request === listRequest) set({ monthlyExpenseError: "loading" });
+        } finally {
+          if (request === listRequest)
+            set({ isMonthlyExpenseBootstrapping: false });
+        }
+      },
+      async createMonthlyExpense(dto) {
+        const { isMonthlyExpenseSubmitting } = get();
+        if (isMonthlyExpenseSubmitting) return undefined;
         set({
-          monthlyExpenseMonth: result.month,
-          monthlyExpenses: result.expenses,
+          isMonthlyExpenseSubmitting: true,
+          monthlyExpenseError: undefined,
         });
-        return true;
-      } catch {
-        set({ monthlyExpenseError: "deleting" });
-        return false;
-      } finally {
-        set({ isMonthlyExpenseSubmitting: false });
-      }
-    },
-    async setMonthlyExpensePaid(id, isPaid) {
-      const { isMonthlyExpenseSubmitting, monthlyExpenseMonth } = get();
-      if (isMonthlyExpenseSubmitting) return undefined;
-      set({ isMonthlyExpenseSubmitting: true, monthlyExpenseError: undefined });
-      try {
-        const expense = await service.setPaid(id, {
-          isPaid,
-          month: monthlyExpenseMonth || undefined,
+        try {
+          const { monthlyExpenseMonth } = get();
+          const expense = await service.create({
+            ...dto,
+            month: monthlyExpenseMonth || undefined,
+          });
+          set((state) => {
+            if (state.monthlyExpenseMonth !== monthlyExpenseMonth) return {};
+            return {
+              monthlyExpenses: sortMonthlyExpenses([
+                ...state.monthlyExpenses,
+                expense,
+              ]),
+              monthlyExpenseMonth: expense.month,
+            };
+          });
+          return expense;
+        } catch {
+          set({ monthlyExpenseError: "saving" });
+          return undefined;
+        } finally {
+          set({ isMonthlyExpenseSubmitting: false });
+        }
+      },
+      async updateMonthlyExpense(id, dto) {
+        const { isMonthlyExpenseSubmitting } = get();
+        if (isMonthlyExpenseSubmitting) return undefined;
+        set({
+          isMonthlyExpenseSubmitting: true,
+          monthlyExpenseError: undefined,
         });
-        set((state) => ({
-          monthlyExpenses: sortMonthlyExpenses(
-            state.monthlyExpenses.map((item) =>
-              item.id === id ? expense : item,
-            ),
-          ),
-        }));
-        return expense;
-      } catch {
-        set({ monthlyExpenseError: "saving" });
-        return undefined;
-      } finally {
-        set({ isMonthlyExpenseSubmitting: false });
-      }
-    },
-    async payMonthlyExpenseFromAccount(id, dto) {
-      const { isMonthlyExpenseSubmitting } = get();
-      if (isMonthlyExpenseSubmitting) return undefined;
-      set({ isMonthlyExpenseSubmitting: true, monthlyExpenseError: undefined });
-      try {
-        const expense = await service.payFromAccount(id, dto);
-        set((state) => {
-          if (state.monthlyExpenseMonth !== expense.month) return {};
-          return {
-            monthlyExpenses: sortMonthlyExpenses(
-              state.monthlyExpenses.map((item) => {
-                if (item.id === id) return expense;
-                return item;
-              }),
-            ),
-          };
+        try {
+          const { monthlyExpenseMonth } = get();
+          const expense = await service.update(id, {
+            ...dto,
+            month: monthlyExpenseMonth || undefined,
+          });
+          set((state) => {
+            if (state.monthlyExpenseMonth !== monthlyExpenseMonth) return {};
+            return {
+              monthlyExpenses: sortMonthlyExpenses(
+                state.monthlyExpenses.map((item) => {
+                  if (item.id === id) return expense;
+                  return item;
+                }),
+              ),
+            };
+          });
+          return expense;
+        } catch {
+          set({ monthlyExpenseError: "saving" });
+          return undefined;
+        } finally {
+          set({ isMonthlyExpenseSubmitting: false });
+        }
+      },
+      async archiveMonthlyExpense(id) {
+        const { isMonthlyExpenseSubmitting, monthlyExpenseMonth } = get();
+        if (isMonthlyExpenseSubmitting) return false;
+        set({
+          isMonthlyExpenseSubmitting: true,
+          monthlyExpenseError: undefined,
         });
-        return expense;
-      } catch {
-        set({ monthlyExpenseError: "saving" });
-        return undefined;
-      } finally {
-        set({ isMonthlyExpenseSubmitting: false });
-      }
-    },
-    clearMonthlyExpenseError() {
-      set({ monthlyExpenseError: undefined });
-    },
-  });
+        try {
+          await service.archive(id);
+          const result = await service.list(monthlyExpenseMonth || undefined);
+          set((state) => {
+            if (state.monthlyExpenseMonth !== monthlyExpenseMonth) return {};
+            return {
+              monthlyExpenseMonth: result.month,
+              monthlyExpenses: result.expenses,
+            };
+          });
+          return true;
+        } catch {
+          set({ monthlyExpenseError: "deleting" });
+          return false;
+        } finally {
+          set({ isMonthlyExpenseSubmitting: false });
+        }
+      },
+      async setMonthlyExpensePaid(id, isPaid) {
+        const { isMonthlyExpenseSubmitting, monthlyExpenseMonth } = get();
+        if (isMonthlyExpenseSubmitting) return undefined;
+        set({
+          isMonthlyExpenseSubmitting: true,
+          monthlyExpenseError: undefined,
+        });
+        try {
+          const expense = await service.setPaid(id, {
+            isPaid,
+            month: monthlyExpenseMonth || undefined,
+          });
+          set((state) => {
+            if (state.monthlyExpenseMonth !== monthlyExpenseMonth) return {};
+            return {
+              monthlyExpenses: sortMonthlyExpenses(
+                state.monthlyExpenses.map((item) => {
+                  if (item.id === id) return expense;
+                  return item;
+                }),
+              ),
+            };
+          });
+          return expense;
+        } catch {
+          set({ monthlyExpenseError: "saving" });
+          return undefined;
+        } finally {
+          set({ isMonthlyExpenseSubmitting: false });
+        }
+      },
+      async payMonthlyExpenseFromAccount(id, dto) {
+        const { isMonthlyExpenseSubmitting } = get();
+        if (isMonthlyExpenseSubmitting) return undefined;
+        set({
+          isMonthlyExpenseSubmitting: true,
+          monthlyExpenseError: undefined,
+        });
+        try {
+          const expense = await service.payFromAccount(id, dto);
+          set((state) => {
+            if (state.monthlyExpenseMonth !== expense.month) return {};
+            return {
+              monthlyExpenses: sortMonthlyExpenses(
+                state.monthlyExpenses.map((item) => {
+                  if (item.id === id) return expense;
+                  return item;
+                }),
+              ),
+            };
+          });
+          return expense;
+        } catch {
+          set({ monthlyExpenseError: "saving" });
+          return undefined;
+        } finally {
+          set({ isMonthlyExpenseSubmitting: false });
+        }
+      },
+      clearMonthlyExpenseError() {
+        set({ monthlyExpenseError: undefined });
+      },
+    };
+  };
 }
 
 export const monthlyExpenseSlice = createMonthlyExpenseSlice();

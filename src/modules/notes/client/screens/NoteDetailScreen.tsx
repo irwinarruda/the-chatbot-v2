@@ -53,7 +53,9 @@ export function NoteDetailScreen({
 
   async function onSaveNote() {
     if (!note || !name.trim()) return;
-    await updateNote(note.id, { name, markdown });
+    const normalizedName = name.trim();
+    setName(normalizedName);
+    await updateNote(note.id, { name: normalizedName, markdown });
   }
 
   async function onDeleteNote() {
@@ -74,7 +76,7 @@ export function NoteDetailScreen({
   useBlocker({
     disabled: !isDirty,
     enableBeforeUnload: isDirty,
-    shouldBlockFn: () => window.confirm(t.discardConfirmation),
+    shouldBlockFn: () => !window.confirm(t.discardConfirmation),
   });
 
   useEffect(() => {
@@ -86,7 +88,7 @@ export function NoteDetailScreen({
     setName(note.name);
     setMarkdown(note.markdown);
     editorRef.current?.setMarkdown(note.markdown);
-  }, [note?.id, note?.updatedAt]);
+  }, [note?.id]);
 
   if (!note) {
     return (
