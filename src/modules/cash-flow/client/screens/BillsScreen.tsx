@@ -50,10 +50,12 @@ import {
 } from "~/shared/client/components/ui/tooltip";
 import { getDictionary } from "~/shared/client/i18n";
 import { usePrefs } from "~/shared/client/providers/usePrefs";
+import { clientErrorMessage } from "~/shared/client/services/ApiClient";
 import { useApp } from "~/shared/client/stores";
 
 export function BillsScreen({ search }: { search: BillsSearch }) {
   const navigate = useNavigate();
+  const resetFeature = useApp((state) => state.resetMonthlyExpenses);
   const prefs = usePrefs();
   const monthlyExpenses = useApp((state) => state.monthlyExpenses);
   const month = useApp((state) => state.monthlyExpenseMonth);
@@ -100,7 +102,7 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
     saving: t.errorSaving,
     deleting: t.errorDeleting,
   };
-  const errorMessage = error ? errorMessages[error] : undefined;
+  const errorMessage = clientErrorMessage(error, errorMessages);
 
   function onOpenPayment(id: string) {
     clearError();
@@ -162,6 +164,8 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
       search: toBillsRouteSearch(nextMonth),
     });
   }
+
+  useEffect(() => resetFeature, [resetFeature]);
 
   useEffect(() => {
     void loadAccounts();

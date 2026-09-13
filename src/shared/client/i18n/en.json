@@ -7,6 +7,7 @@
     "connectedTitle": "Connected - The Chatbot"
   },
   "common": {
+    "errorLogout": "Could not log out. Try again.",
     "close": "Close",
     "dismiss": "Dismiss",
     "hideMonetaryValues": "Hide monetary values",

@@ -1,5 +1,5 @@
 import { StatusService } from "~/modules/system/services/StatusService";
-import { orquestrator } from "./orquestrator";
+import { orquestrator } from "~/tests/utils/database/orquestrator";
 
 describe("StatusService", () => {
   test("getStatus should work", async () => {

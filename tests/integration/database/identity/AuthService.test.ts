@@ -8,8 +8,8 @@ import {
 import {
   createAppGoogleLoginChallenge,
   createAppGoogleLoginState,
-} from "./createAppGoogleLoginState";
-import { orquestrator } from "./orquestrator";
+} from "~/tests/utils/builders/createAppGoogleLoginState";
+import { orquestrator } from "~/tests/utils/database/orquestrator";
 
 describe("AuthService", () => {
   test("stores new Google credentials in one encrypted envelope", async () => {

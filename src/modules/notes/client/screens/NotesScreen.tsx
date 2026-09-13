@@ -26,6 +26,7 @@ import { Input } from "~/shared/client/components/ui/input";
 import { Skeleton } from "~/shared/client/components/ui/skeleton";
 import { getDictionary } from "~/shared/client/i18n";
 import { usePrefs } from "~/shared/client/providers/usePrefs";
+import { clientErrorMessage } from "~/shared/client/services/ApiClient";
 import { useApp } from "~/shared/client/stores";
 
 const loadingRows = ["first", "second", "third", "fourth"];
@@ -44,6 +45,7 @@ export function NotesScreen({ search }: { search: NotesSearchDTO }) {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
+  const resetFeature = useApp((state) => state.resetNotes);
   const prefs = usePrefs();
   const notes = useApp((state) => state.notes);
   const noteError = useApp((state) => state.noteError);
@@ -62,7 +64,7 @@ export function NotesScreen({ search }: { search: NotesSearchDTO }) {
     deleting: t.errorDeleting,
     refining: t.errorRefining,
   };
-  const errorMessage = noteError ? errorMessages[noteError] : undefined;
+  const errorMessage = clientErrorMessage(noteError, errorMessages);
 
   function onSearchChange(value: string) {
     navigate({ to: "/notes", search: value.trim() ? { q: value } : {} });
@@ -79,6 +81,8 @@ export function NotesScreen({ search }: { search: NotesSearchDTO }) {
       search,
     });
   }
+
+  useEffect(() => resetFeature, [resetFeature]);
 
   useEffect(() => {
     void bootstrapNotes(search.q);

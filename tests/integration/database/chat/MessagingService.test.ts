@@ -16,8 +16,8 @@ import { User } from "~/modules/identity/entities/User";
 import type { AiToolService } from "~/modules/tools/services/AiToolService";
 import { UnauthorizedException } from "~/shared/errors/ApplicationErrors";
 import { ValidationException } from "~/shared/errors/DomainErrors";
-import { createAppGoogleLoginState } from "./createAppGoogleLoginState";
-import { orquestrator } from "./orquestrator";
+import { createAppGoogleLoginState } from "~/tests/utils/builders/createAppGoogleLoginState";
+import { orquestrator } from "~/tests/utils/database/orquestrator";
 
 function createReceiveMessage(message: string): string {
   return JSON.stringify(message);

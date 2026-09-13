@@ -46,12 +46,14 @@ import {
 } from "~/shared/client/components/ui/tooltip";
 import { getDictionary } from "~/shared/client/i18n";
 import { usePrefs } from "~/shared/client/providers/usePrefs";
+import { clientErrorMessage } from "~/shared/client/services/ApiClient";
 import { useApp } from "~/shared/client/stores";
 
 const loadingRows = ["first", "second", "third"];
 
 export function TodoScreen({ search }: { search: TodoSearch }) {
   const navigate = useNavigate();
+  const resetFeature = useApp((state) => state.resetTodos);
   const prefs = usePrefs();
   const todos = useApp((s) => s.todos);
   const todoError = useApp((s) => s.todoError);
@@ -77,7 +79,7 @@ export function TodoScreen({ search }: { search: TodoSearch }) {
     saving: t.errorSaving,
     deleting: t.errorDeleting,
   };
-  const todoErrorMessage = todoError ? errorMessages[todoError] : undefined;
+  const todoErrorMessage = clientErrorMessage(todoError, errorMessages);
 
   function onChangeFilters(patch: Partial<TodoFilterValues>) {
     const next = { ...filters, ...patch };
@@ -117,6 +119,8 @@ export function TodoScreen({ search }: { search: TodoSearch }) {
       status: status === "Completed" ? "Pending" : "Completed",
     });
   }
+
+  useEffect(() => resetFeature, [resetFeature]);
 
   useEffect(() => {
     void bootstrapTodos(filters);

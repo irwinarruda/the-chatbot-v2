@@ -65,6 +65,8 @@ const chatState = vi.hoisted(() => ({
   setReasoningEffort: vi.fn(),
   sendButtonReply: vi.fn(),
   startRecording: vi.fn(),
+  resetRecording: vi.fn(),
+  resetChat: vi.fn(),
   stopRecording: vi.fn(),
 }));
 

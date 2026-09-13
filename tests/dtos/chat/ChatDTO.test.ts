@@ -50,8 +50,8 @@ describe("Chat contracts", () => {
     const wireResponse = JSON.parse(Printable.make(response));
 
     expect(wireResponse).toMatchObject({
-      client_message_id: message.channelMessageId,
-      user_type: "user",
+      clientMessageId: message.channelMessageId,
+      userType: "user",
     });
     expect(parseChatMessage(wireResponse)).toMatchObject({
       id: message.id,
@@ -106,15 +106,15 @@ describe("Chat contracts", () => {
     const messages = parseChatMessages(wireResponse);
 
     expect(wireResponse).toMatchObject({
-      current_model: {
+      currentModel: {
         provider: "openai-codex",
         model: "gpt-5.6-sol",
       },
-      available_models: [
+      availableModels: [
         { provider: "openai-codex", model: "gpt-5.6-sol" },
         { provider: "zai-coding-cn", model: "glm-5.2" },
       ],
-      messages: [{ id: message.id, user_type: "bot" }],
+      messages: [{ id: message.id, userType: "bot" }],
     });
     expect(messages).toEqual([
       expect.objectContaining({ id: message.id, text: "done" }),

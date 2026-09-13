@@ -21,9 +21,9 @@ describe("artifactService", () => {
             title: "Plan",
             visibility: "public",
             version: 1,
-            created_at: timestamp,
-            updated_at: timestamp,
-            rendered_html: renderedHtml,
+            createdAt: timestamp,
+            updatedAt: timestamp,
+            renderedHtml: renderedHtml,
           },
         }),
       ),
@@ -41,8 +41,8 @@ describe("artifactService", () => {
         title: "Plan",
         visibility: "public",
         version: 1,
-        created_at: timestamp,
-        updated_at: timestamp,
+        createdAt: timestamp,
+        updatedAt: timestamp,
       }),
     );
     vi.stubGlobal("fetch", fetchMock);

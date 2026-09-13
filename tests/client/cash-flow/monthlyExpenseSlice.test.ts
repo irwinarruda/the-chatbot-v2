@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import { create } from "zustand";
 import type { MonthlyExpenseClientService } from "~/modules/cash-flow/client/services/monthlyExpenseService";
 import {
@@ -185,4 +185,81 @@ describe("monthly expense navigation", () => {
     expect(store.getState().monthlyExpenseMonth).toBe("2026-07");
     expect(store.getState().monthlyExpenses).toEqual([]);
   });
+  test("reset ignores an earlier payment even when the same month is reopened", async () => {
+    const internet = createExpense({ name: "Internet" });
+    const payment = createDeferred<MonthlyExpenseDTO>();
+    const service: MonthlyExpenseClientService = {
+      async list() {
+        return { month: "2026-07", expenses: [internet] };
+      },
+      async create() {
+        return internet;
+      },
+      async update() {
+        return internet;
+      },
+      async archive() {},
+      async payFromAccount() {
+        return internet;
+      },
+      setPaid: () => payment.promise,
+    };
+    const store = create<MonthlyExpenseSlice>()(
+      createMonthlyExpenseSlice(service),
+    );
+    await store.getState().bootstrapMonthlyExpenses("2026-07");
+    const old = store.getState().setMonthlyExpensePaid(internet.id, true);
+    store.getState().resetMonthlyExpenses();
+    await store.getState().bootstrapMonthlyExpenses("2026-07");
+    payment.resolve({ ...internet, isPaid: true });
+    expect(await old).toBeUndefined();
+    expect(store.getState().monthlyExpenses[0].isPaid).toBe(false);
+  });
+});
+
+describe("monthly expense list and write ordering", () => {
+  test.each(["list-first", "write-first", "write-failed"] as const)(
+    "retains existing bills when the initial load overlaps a create: %s",
+    async (order) => {
+      const rent = createExpense();
+      const internet = createExpense({ name: "Internet", dueDay: 10 });
+      const list = createDeferred<{
+        month: string;
+        expenses: MonthlyExpenseDTO[];
+      }>();
+      const write = createDeferred<MonthlyExpenseDTO>();
+      const service = createService();
+      service.list = vi
+        .fn<typeof service.list>()
+        .mockReturnValueOnce(list.promise)
+        .mockResolvedValue({ month: "2026-07", expenses: [rent, internet] });
+      service.create = () => write.promise;
+      const store = create<MonthlyExpenseSlice>()(
+        createMonthlyExpenseSlice(service),
+      );
+      const loading = store.getState().bootstrapMonthlyExpenses();
+      const creating = store
+        .getState()
+        .createMonthlyExpense({ name: "Internet" });
+      expect(store.getState().isMonthlyExpenseBootstrapping).toBe(true);
+      if (order === "list-first") {
+        list.resolve({ month: "2026-07", expenses: [rent] });
+        await loading;
+      }
+      if (order === "write-failed") write.reject(new Error("Write failed"));
+      else write.resolve(internet);
+      await creating;
+      if (order !== "list-first") {
+        list.resolve({ month: "2026-07", expenses: [rent] });
+        await loading;
+      }
+      if (order === "write-failed") {
+        expect(store.getState().monthlyExpenses).toEqual([rent]);
+        expect(store.getState().monthlyExpenseError).toBe("saving");
+      } else expect(store.getState().monthlyExpenses).toEqual([rent, internet]);
+      expect(store.getState().monthlyExpenseMonth).toBe("2026-07");
+      expect(store.getState().isMonthlyExpenseBootstrapping).toBe(false);
+      expect(store.getState().isMonthlyExpenseSubmitting).toBe(false);
+    },
+  );
 });

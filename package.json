@@ -12,7 +12,7 @@
     "build:local": "vite build --mode development && vite preview --mode development",
     "build": "vite build",
     "start": "vite preview",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "bun run routes:generate && tsc --noEmit",
     "test": "MODE=test bun run services:ready && vitest run",
     "test:unit": "vitest run tests/architecture tests/entities tests/dtos tests/services tests/client tests/utils",
     "test:coverage": "MODE=test bun run services:ready && vitest run --coverage",
@@ -41,7 +41,8 @@
     "services:up": "docker compose -f infra/compose.yaml up -d",
     "services:down": "docker compose -f infra/compose.yaml down",
     "services:ready": "bun run services:up && bun infra/scripts/wait-for-postgres.ts && bun run migrate:up",
-    "ai:smoke": "bun infra/scripts/smoke-pi-ai.ts"
+    "ai:smoke": "bun infra/scripts/smoke-pi-ai.ts",
+    "routes:generate": "bun infra/scripts/generate-routes.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1129.0",

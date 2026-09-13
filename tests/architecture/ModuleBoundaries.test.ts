@@ -184,4 +184,10 @@ describe("module boundaries", () => {
 
     expect(violations).toEqual([]);
   });
+  test("all tests are centralized under their test level and owner", () => {
+    const files = tinyglobby.globSync(["src/**/*.test.*", "tests/**/*.test.*"]);
+    const placement =
+      /^tests\/(entities|dtos|services|client|utils|architecture|integration\/(database|gateways))\//;
+    expect(files.filter((file) => !placement.test(file))).toEqual([]);
+  });
 });

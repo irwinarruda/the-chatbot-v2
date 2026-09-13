@@ -18,6 +18,7 @@ export function TodoDetailScreen({
   const prefs = usePrefs();
   const selectedTodo = useApp((s) => s.selectedTodo);
   const isTodoSubmitting = useApp((s) => s.isTodoSubmitting);
+  const closeTodo = useApp((state) => state.closeTodo);
   const loadTodo = useApp((s) => s.loadTodo);
   const updateTodo = useApp((s) => s.updateTodo);
   const deleteTodo = useApp((s) => s.deleteTodo);
@@ -47,7 +48,8 @@ export function TodoDetailScreen({
 
   useEffect(() => {
     void loadTodo(todoId);
-  }, [todoId, loadTodo]);
+    return closeTodo;
+  }, [todoId, loadTodo, closeTodo]);
 
   return (
     <TodoDetailDialog

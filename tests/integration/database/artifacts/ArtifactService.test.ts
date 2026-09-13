@@ -7,7 +7,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from "~/shared/errors/ApplicationErrors";
-import { orquestrator } from "~/tests/orquestrator";
+import { orquestrator } from "~/tests/utils/database/orquestrator";
 
 describe("ArtifactService", () => {
   beforeEach(async () => {

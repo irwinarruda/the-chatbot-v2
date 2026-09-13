@@ -2,7 +2,6 @@ import type { StateCreator } from "zustand";
 import { compute } from "zustand-computed-state";
 import type { ChatResponseProgressDTO } from "~/modules/chat/client/entities/dtos/ChatResponseProgressDTO";
 import {
-  WebChatAuthError,
   type WebChatClientService,
   webChatService,
 } from "~/modules/chat/client/services/webChatService";
@@ -16,12 +15,12 @@ import {
   ReasoningEffort,
   type ReasoningEffort as ReasoningEffortType,
 } from "~/modules/chat/entities/enums/ReasoningEffort";
-import type { CurrentUserDTO } from "~/modules/identity/entities/dtos/IdentityDTO";
+import type { SessionSlice } from "~/modules/identity/client/state/sessionSlice";
+import { type ApiError, clientError } from "~/shared/client/services/ApiClient";
 
 export type ChatErrorCode = "loading" | "sending" | "microphone";
 
 export type ChatSlice = {
-  currentUser?: CurrentUserDTO;
   chatMessages: ChatMessageDTO[];
   chatInput: string;
   chatResponseProgress?: ChatResponseProgressDTO;
@@ -29,7 +28,7 @@ export type ChatSlice = {
   availableModels: AiModelSelectionResponseDTO[];
   reasoningEffort: ReasoningEffortType;
   supportedReasoningEfforts: ReasoningEffortType[];
-  chatError?: ChatErrorCode;
+  chatError?: ChatErrorCode | ApiError;
 
   isChatBootstrapping: boolean;
   isChatSubmitting: boolean;
@@ -45,19 +44,24 @@ export type ChatSlice = {
   sendChatInput: () => Promise<void>;
   setModel: (model: AiModelSelectionResponseDTO) => Promise<void>;
   setReasoningEffort: (effort: ReasoningEffortType) => Promise<void>;
+  sendChatAudio: (blob: Blob, url: string) => Promise<void>;
   sendButtonReply: (buttonReply: string) => Promise<void>;
-  logout: () => Promise<void>;
+  resetChat: () => void;
+  invalidateChatRequests: () => void;
 };
 
-type ChatState = ChatSlice & {
-  stopRecording: (shouldSend: boolean) => void;
-};
+type ChatState = ChatSlice &
+  Pick<SessionSlice, "currentUser" | "bootstrapSession">;
 
 export function createChatSlice(
   service: WebChatClientService = webChatService,
 ): StateCreator<ChatState, [], [], ChatSlice> {
   return (set, get) => {
+    let generation = 0;
     let isRefreshing = false;
+    const progressBatchers = new Set<
+      ReturnType<typeof createChatProgressBatcher>
+    >();
     function applyChatSnapshot(chat: WebChatDTO) {
       set({
         chatMessages: chat.messages,
@@ -75,6 +79,10 @@ export function createChatSlice(
     ) {
       const { isChatSubmitting } = get();
       if (!text || isChatSubmitting) return;
+      const { invalidateChatRequests } = get();
+
+      invalidateChatRequests();
+      const request = generation;
       const submittingState: Partial<ChatSlice> = {
         chatResponseProgress: undefined,
         isChatSubmitting: true,
@@ -90,8 +98,11 @@ export function createChatSlice(
       };
       set((state) => ({ chatMessages: [...state.chatMessages, optimistic] }));
       const progressBatcher = createChatProgressBatcher(
-        (chatResponseProgress) => set({ chatResponseProgress }),
+        (chatResponseProgress) => {
+          if (request === generation) set({ chatResponseProgress });
+        },
       );
+      progressBatchers.add(progressBatcher);
       try {
         const chat = await service.sendMessage(
           {
@@ -101,16 +112,21 @@ export function createChatSlice(
           progressBatcher.push,
         );
         progressBatcher.cancel();
+        if (request !== generation) return;
         applyChatSnapshot(chat);
-      } catch {
-        set({ chatError: "sending", chatResponseProgress: undefined });
+      } catch (error) {
+        if (request !== generation) return;
+        set({
+          chatError: clientError(error, "sending"),
+          chatResponseProgress: undefined,
+        });
       } finally {
         progressBatcher.cancel();
-        set({ isChatSubmitting: false });
+        progressBatchers.delete(progressBatcher);
+        if (request === generation) set({ isChatSubmitting: false });
       }
     }
     return {
-      currentUser: undefined,
       chatMessages: [],
       chatInput: "",
       chatResponseProgress: undefined,
@@ -132,31 +148,36 @@ export function createChatSlice(
         set({ chatError: undefined });
       },
       async bootstrapChat() {
+        const { isChatSubmitting } = get();
+        if (isChatSubmitting) return "ok";
+        const request = ++generation;
         set({ isChatBootstrapping: true, chatError: undefined });
         try {
-          const user = await service.getCurrentUser();
-          if (!user) {
-            set({ chatError: "loading" });
-            return "error";
-          }
-          set({ currentUser: user });
+          const { bootstrapSession } = get();
+          const result = await bootstrapSession();
+          if (result === "not_registered") return result;
+          if (request !== generation) return "error";
+          if (result !== "ok") return result;
           const chat = await service.getChat();
+          if (request !== generation) return "error";
           applyChatSnapshot(chat);
           return "ok";
-        } catch (e) {
-          if (e instanceof WebChatAuthError) return e.reason;
-          set({ chatError: "loading" });
+        } catch (error) {
+          if (request === generation)
+            set({ chatError: clientError(error, "loading") });
           return "error";
         } finally {
-          set({ isChatBootstrapping: false });
+          if (request === generation) set({ isChatBootstrapping: false });
         }
       },
       async refreshChat() {
         const { currentUser, isChatSubmitting, chatMessages } = get();
         if (!currentUser || isChatSubmitting || isRefreshing) return;
+        const request = generation;
         function isCurrentRefresh() {
           const current = get();
           return (
+            request === generation &&
             current.currentUser === currentUser &&
             current.chatMessages === chatMessages &&
             !current.isChatSubmitting
@@ -166,10 +187,11 @@ export function createChatSlice(
         try {
           const chat = await service.getChat();
           if (isCurrentRefresh()) applyChatSnapshot(chat);
-        } catch {
-          if (isCurrentRefresh()) set({ chatError: "loading" });
+        } catch (error) {
+          if (isCurrentRefresh())
+            set({ chatError: clientError(error, "loading") });
         } finally {
-          isRefreshing = false;
+          if (request === generation) isRefreshing = false;
         }
       },
       async sendChatInput() {
@@ -197,6 +219,9 @@ export function createChatSlice(
       async sendButtonReply(buttonReply) {
         const { isChatSubmitting } = get();
         if (isChatSubmitting) return;
+        const { invalidateChatRequests } = get();
+        invalidateChatRequests();
+        const request = generation;
         set({ chatResponseProgress: undefined, isChatSubmitting: true });
         const optimistic: ChatMessageDTO = {
           id: crypto.randomUUID(),
@@ -207,8 +232,11 @@ export function createChatSlice(
         };
         set((state) => ({ chatMessages: [...state.chatMessages, optimistic] }));
         const progressBatcher = createChatProgressBatcher(
-          (chatResponseProgress) => set({ chatResponseProgress }),
+          (chatResponseProgress) => {
+            if (request === generation) set({ chatResponseProgress });
+          },
         );
+        progressBatchers.add(progressBatcher);
         try {
           const chat = await service.sendMessage(
             {
@@ -218,20 +246,78 @@ export function createChatSlice(
             progressBatcher.push,
           );
           progressBatcher.cancel();
+          if (request !== generation) return;
           applyChatSnapshot(chat);
-        } catch {
-          set({ chatError: "sending", chatResponseProgress: undefined });
+        } catch (error) {
+          if (request !== generation) return;
+          set({
+            chatError: clientError(error, "sending"),
+            chatResponseProgress: undefined,
+          });
         } finally {
           progressBatcher.cancel();
-          set({ isChatSubmitting: false });
+          progressBatchers.delete(progressBatcher);
+          if (request === generation) set({ isChatSubmitting: false });
         }
       },
-      async logout() {
-        await service.logout();
-        const { stopRecording } = get();
-        stopRecording(false);
+      async sendChatAudio(blob, url) {
+        const { isChatSubmitting, invalidateChatRequests } = get();
+        if (isChatSubmitting) return;
+        invalidateChatRequests();
+        const request = generation;
+        const optimistic: ChatMessageDTO = {
+          id: crypto.randomUUID(),
+          type: "audio",
+          userType: "user",
+          mediaUrl: url,
+          mimeType: blob.type,
+          createdAt: new Date().toISOString(),
+        };
+        set((state) => ({
+          chatMessages: [...state.chatMessages, optimistic],
+          chatResponseProgress: undefined,
+          chatError: undefined,
+          isChatSubmitting: true,
+        }));
+        const progressBatcher = createChatProgressBatcher(
+          (chatResponseProgress) => {
+            if (request === generation) set({ chatResponseProgress });
+          },
+        );
+        progressBatchers.add(progressBatcher);
+        try {
+          const chat = await service.sendAudio(
+            { blob, mimeType: blob.type, clientMessageId: optimistic.id },
+            progressBatcher.push,
+          );
+          if (request !== generation) return;
+          applyChatSnapshot(chat);
+        } catch (error) {
+          if (request !== generation) return;
+          set((state) => ({
+            chatMessages: state.chatMessages.filter(
+              (message) => message.id !== optimistic.id,
+            ),
+            chatError: clientError(error, "sending"),
+            chatResponseProgress: undefined,
+          }));
+        } finally {
+          progressBatcher.cancel();
+          progressBatchers.delete(progressBatcher);
+          if (request === generation) set({ isChatSubmitting: false });
+        }
+      },
+      invalidateChatRequests() {
+        generation += 1;
+        isRefreshing = false;
+        for (const batcher of progressBatchers) batcher.cancel();
+        progressBatchers.clear();
+        set({ isChatBootstrapping: false });
+      },
+      resetChat() {
+        const { invalidateChatRequests } = get();
+        invalidateChatRequests();
         set({
-          currentUser: undefined,
           chatMessages: [],
           chatInput: "",
           chatResponseProgress: undefined,
@@ -240,7 +326,7 @@ export function createChatSlice(
           reasoningEffort: ReasoningEffort.Off,
           supportedReasoningEfforts: [ReasoningEffort.Off],
           chatError: undefined,
-          isChatBootstrapping: true,
+          isChatBootstrapping: false,
           isChatSubmitting: false,
         });
       },

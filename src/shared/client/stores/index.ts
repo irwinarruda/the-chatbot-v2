@@ -17,6 +17,10 @@ import {
   recordingSlice,
 } from "~/modules/chat/client/state/recordingSlice";
 import {
+  createSessionSlice,
+  type SessionSlice,
+} from "~/modules/identity/client/state/sessionSlice";
+import {
   type NoteSlice,
   noteSlice,
 } from "~/modules/notes/client/state/noteSlice";
@@ -24,6 +28,7 @@ import {
   type TodoSlice,
   todoSlice,
 } from "~/modules/todos/client/state/todoSlice";
+import { apiClient } from "~/shared/client/services/ApiClient";
 import {
   type PrefsSlice,
   prefsSlice,
@@ -33,7 +38,8 @@ import {
   privacySlice,
 } from "~/shared/client/stores/slices/privacySlice";
 
-export type AppSlices = CashFlowSlice &
+export type AppSlices = SessionSlice &
+  CashFlowSlice &
   ChatSlice &
   MonthlyExpenseSlice &
   RecordingSlice &
@@ -44,6 +50,22 @@ export type AppSlices = CashFlowSlice &
 
 export const useApp = create<AppSlices>()(
   computed((...args) => ({
+    ...createSessionSlice(() => {
+      const {
+        resetRecording,
+        resetChat,
+        resetNotes,
+        resetTodos,
+        resetCashFlow,
+        resetMonthlyExpenses,
+      } = args[1]();
+      resetRecording();
+      resetChat();
+      resetNotes();
+      resetTodos();
+      resetCashFlow();
+      resetMonthlyExpenses();
+    })(...args),
     ...prefsSlice(...args),
     ...privacySlice(...args),
     ...cashFlowSlice(...args),
@@ -64,4 +86,9 @@ export type {
   PrivacySlice,
   RecordingSlice,
   TodoSlice,
+};
+
+apiClient.onUnauthorized = () => {
+  const { expireSession } = useApp.getState();
+  expireSession();
 };

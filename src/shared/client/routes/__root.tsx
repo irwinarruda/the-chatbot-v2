@@ -1,5 +1,6 @@
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { type ReactNode, useEffect } from "react";
+import { SessionBoundary } from "~/modules/identity/client/components/SessionBoundary";
 import { TerminalFooter } from "~/shared/client/components/terminal/TerminalFooter";
 import { TerminalPageHeader } from "~/shared/client/components/terminal/TerminalPageHeader";
 import { TerminalPanel } from "~/shared/client/components/terminal/TerminalPanel";
@@ -80,7 +81,9 @@ function RootDocument({ children }: { children: ReactNode }) {
       </head>
       <body suppressHydrationWarning={suppressHydrationWarning}>
         <TooltipProvider delay={250}>
-          <div className="isolate">{children}</div>
+          <div className="isolate">
+            <SessionBoundary>{children}</SessionBoundary>
+          </div>
         </TooltipProvider>
         <Scripts />
       </body>

@@ -36,6 +36,7 @@ export function NoteDetailScreen({
   const selectedNote = useApp((state) => state.selectedNote);
   const isNoteSubmitting = useApp((state) => state.isNoteSubmitting);
   const isNoteRefining = useApp((state) => state.isNoteRefining);
+  const closeNote = useApp((state) => state.closeNote);
   const loadNote = useApp((state) => state.loadNote);
   const updateNote = useApp((state) => state.updateNote);
   const deleteNote = useApp((state) => state.deleteNote);
@@ -81,7 +82,8 @@ export function NoteDetailScreen({
 
   useEffect(() => {
     void loadNote(noteId);
-  }, [noteId]);
+    return closeNote;
+  }, [noteId, loadNote, closeNote]);
 
   useEffect(() => {
     if (!note) return;

@@ -9,6 +9,7 @@ import type {
   CreateCashFlowTransactionRequestDTO,
   SyncCashFlowBankAccountRequestDTO,
 } from "~/modules/cash-flow/entities/dtos/CashFlowWebDTO";
+import { type ApiError, clientError } from "~/shared/client/services/ApiClient";
 
 export type CashFlowErrorCode = "loading" | "saving" | "syncing" | "deleting";
 
@@ -16,7 +17,7 @@ export interface CashFlowSlice {
   cashFlowDashboard: CashFlowDashboardResponseDTO;
   isCashFlowBootstrapping: boolean;
   isCashFlowSubmitting: boolean;
-  cashFlowError?: CashFlowErrorCode;
+  cashFlowError?: CashFlowErrorCode | ApiError;
   bootstrapCashFlow: () => Promise<void>;
   createCashFlowTransaction: (
     dto: CreateCashFlowTransactionRequestDTO,
@@ -26,6 +27,7 @@ export interface CashFlowSlice {
   ) => Promise<boolean>;
   deleteLastCashFlowTransaction: () => Promise<boolean>;
   clearCashFlowError: () => void;
+  resetCashFlow: () => void;
   saveCashFlowTransfer: (
     dto: SaveCashFlowTransferRequestDTO,
     replace: boolean,
@@ -47,11 +49,45 @@ export function createCashFlowSlice(
   service: CashFlowClientService = cashFlowService,
 ): StateCreator<CashFlowSlice> {
   return (set, get) => {
-    async function refreshDashboard(): Promise<void> {
+    let generation = 0;
+    let listRequest = 0;
+    async function refreshDashboard() {
+      const request = ++listRequest;
+      set({ isCashFlowBootstrapping: false });
       try {
-        set({ cashFlowDashboard: await service.load() });
-      } catch {
-        set({ cashFlowError: "loading" });
+        const dashboard = await service.load();
+        if (request === listRequest) set({ cashFlowDashboard: dashboard });
+      } catch (error) {
+        if (request === listRequest)
+          set({ cashFlowError: clientError(error, "loading") });
+      }
+    }
+    async function mutateCashFlow(
+      action: () => Promise<unknown>,
+      failure: CashFlowErrorCode,
+      onCommitted?: () => void,
+    ) {
+      const { isCashFlowSubmitting } = get();
+      if (isCashFlowSubmitting) return false;
+      const request = generation;
+      listRequest += 1;
+      set({
+        isCashFlowBootstrapping: false,
+        isCashFlowSubmitting: true,
+        cashFlowError: undefined,
+      });
+      try {
+        await action();
+        if (request !== generation) return false;
+        onCommitted?.();
+        await refreshDashboard();
+        return request === generation;
+      } catch (error) {
+        if (request === generation)
+          set({ cashFlowError: clientError(error, failure) });
+        return false;
+      } finally {
+        if (request === generation) set({ isCashFlowSubmitting: false });
       }
     }
 
@@ -60,104 +96,67 @@ export function createCashFlowSlice(
       isCashFlowBootstrapping: false,
       isCashFlowSubmitting: false,
       cashFlowError: undefined,
+      resetCashFlow() {
+        generation += 1;
+        listRequest += 1;
+        set({
+          cashFlowDashboard: emptyCashFlowDashboard(),
+          isCashFlowBootstrapping: false,
+          isCashFlowSubmitting: false,
+          cashFlowError: undefined,
+        });
+      },
       async bootstrapCashFlow() {
+        const request = ++listRequest;
         set({ isCashFlowBootstrapping: true, cashFlowError: undefined });
         try {
-          await refreshDashboard();
+          const dashboard = await service.load();
+          if (request === listRequest) set({ cashFlowDashboard: dashboard });
+        } catch (error) {
+          if (request === listRequest)
+            set({ cashFlowError: clientError(error, "loading") });
         } finally {
-          set({ isCashFlowBootstrapping: false });
+          if (request === listRequest) set({ isCashFlowBootstrapping: false });
         }
       },
-      async createCashFlowTransaction(dto) {
-        const { isCashFlowSubmitting } = get();
-        if (isCashFlowSubmitting) return false;
-        set({ isCashFlowSubmitting: true, cashFlowError: undefined });
-        try {
-          await service.create(dto);
-          await refreshDashboard();
-          return true;
-        } catch {
-          set({ cashFlowError: "saving" });
-          return false;
-        } finally {
-          set({ isCashFlowSubmitting: false });
-        }
+      createCashFlowTransaction(dto) {
+        return mutateCashFlow(() => service.create(dto), "saving");
       },
-      async syncCashFlowBankAccount(dto) {
-        const { isCashFlowSubmitting } = get();
-        if (isCashFlowSubmitting) return false;
-        set({ isCashFlowSubmitting: true, cashFlowError: undefined });
-        try {
-          await service.sync(dto);
-          await refreshDashboard();
-          return true;
-        } catch {
-          set({ cashFlowError: "syncing" });
-          return false;
-        } finally {
-          set({ isCashFlowSubmitting: false });
-        }
+      syncCashFlowBankAccount(dto) {
+        return mutateCashFlow(() => service.sync(dto), "syncing");
       },
       async deleteLastCashFlowTransaction() {
-        const { cashFlowDashboard, isCashFlowSubmitting } = get();
-        if (isCashFlowSubmitting) return false;
-        if (!cashFlowDashboard.transactions.some(({ isLast }) => isLast)) {
+        const { cashFlowDashboard } = get();
+        if (!cashFlowDashboard.transactions.some(({ isLast }) => isLast))
           return false;
-        }
-        set({ isCashFlowSubmitting: true, cashFlowError: undefined });
-        try {
-          await service.deleteLast();
-          set((state) => ({
-            cashFlowDashboard: {
-              ...state.cashFlowDashboard,
-              transactions: state.cashFlowDashboard.transactions.filter(
-                ({ isLast, transferId }) =>
-                  !isLast &&
-                  (!transferId ||
-                    transferId !==
-                      cashFlowDashboard.transactions.find((item) => item.isLast)
-                        ?.transferId),
-              ),
-            },
-          }));
-          await refreshDashboard();
-          return true;
-        } catch {
-          set({ cashFlowError: "deleting" });
-          return false;
-        } finally {
-          set({ isCashFlowSubmitting: false });
-        }
+        return mutateCashFlow(
+          () => service.deleteLast(),
+          "deleting",
+          () => {
+            const last = cashFlowDashboard.transactions.find(
+              ({ isLast }) => isLast,
+            );
+            set((state) => ({
+              cashFlowDashboard: {
+                ...state.cashFlowDashboard,
+                transactions: state.cashFlowDashboard.transactions.filter(
+                  (item) =>
+                    !item.isLast &&
+                    (!last?.transferId || item.transferId !== last.transferId),
+                ),
+              },
+            }));
+          },
+        );
       },
-      async saveCashFlowTransfer(dto, replace) {
-        const { isCashFlowSubmitting } = get();
-        if (isCashFlowSubmitting) return false;
-        set({ isCashFlowSubmitting: true, cashFlowError: undefined });
-        try {
-          await service.saveTransfer(dto, replace);
-          await refreshDashboard();
-          return true;
-        } catch {
-          set({ cashFlowError: "saving" });
-          return false;
-        } finally {
-          set({ isCashFlowSubmitting: false });
-        }
+      saveCashFlowTransfer(dto, replace) {
+        return mutateCashFlow(
+          () => service.saveTransfer(dto, replace),
+          "saving",
+        );
       },
-      async deleteCashFlowTransfer(id) {
-        const { isCashFlowSubmitting } = get();
-        if (isCashFlowSubmitting) return false;
-        set({ isCashFlowSubmitting: true, cashFlowError: undefined });
-        try {
-          await service.deleteTransfer(id);
-          await refreshDashboard();
-          return true;
-        } catch {
-          set({ cashFlowError: "deleting" });
-          return false;
-        } finally {
-          set({ isCashFlowSubmitting: false });
-        }
+      deleteCashFlowTransfer(id) {
+        return mutateCashFlow(() => service.deleteTransfer(id), "deleting");
       },
       clearCashFlowError() {
         set({ cashFlowError: undefined });

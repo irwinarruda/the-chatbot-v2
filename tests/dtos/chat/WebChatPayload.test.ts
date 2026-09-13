@@ -1,8 +1,5 @@
 import { describe, expect, test } from "vitest";
-import {
-  parseChatMessage,
-  parseCurrentUser,
-} from "~/modules/chat/client/services/webChatService";
+import { parseChatMessage } from "~/modules/chat/client/services/webChatService";
 
 describe("webChatService", () => {
   test("parses message payloads into the shared message shape", () => {
@@ -10,10 +7,10 @@ describe("webChatService", () => {
       parseChatMessage({
         id: "00000000-0000-4000-8000-000000000001",
         type: "interactive",
-        user_type: "bot",
+        userType: "bot",
         text: "Pick an option",
-        button_reply_options: ["A", "B"],
-        created_at: "2025-01-02T03:04:05.000Z",
+        buttonReplyOptions: ["A", "B"],
+        createdAt: "2025-01-02T03:04:05.000Z",
       }),
     ];
 
@@ -29,28 +26,12 @@ describe("webChatService", () => {
     ]);
   });
 
-  test("parses current user payloads into the shared user shape", () => {
-    const user = parseCurrentUser({
-      id: "00000000-0000-4000-8000-000000000002",
-      name: "Irwin",
-      email: undefined,
-      phone_number: "5511999999999",
-    });
-
-    expect(user).toEqual({
-      id: "00000000-0000-4000-8000-000000000002",
-      name: "Irwin",
-      email: undefined,
-      phoneNumber: "5511999999999",
-    });
-  });
-
   test("maps nullable wire fields to undefined", () => {
     const message = parseChatMessage({
       id: "00000000-0000-4000-8000-000000000001",
       type: "text",
-      user_type: "user",
-      created_at: "2025-01-02T03:04:05.000Z",
+      userType: "user",
+      createdAt: "2025-01-02T03:04:05.000Z",
     });
 
     expect(message).toEqual({

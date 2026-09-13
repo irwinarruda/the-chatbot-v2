@@ -5,20 +5,7 @@ import {
   type CreateCashFlowTransactionRequestDTO,
   type SyncCashFlowBankAccountRequestDTO,
 } from "~/modules/cash-flow/entities/dtos/CashFlowWebDTO";
-import {
-  normalizeApiResponse,
-  parseApiResponse,
-} from "~/shared/client/utils/ApiResponseParser";
-import { ApiErrorResponseDTO } from "~/shared/entities/dtos/ApiErrorDTO";
-
-async function parseError(response: Response): Promise<Error> {
-  const body = ApiErrorResponseDTO.safeParse(
-    normalizeApiResponse(await response.json()),
-  );
-  return new Error(
-    body.success ? body.data.message : `Request failed with ${response.status}`,
-  );
-}
+import { apiClient } from "~/shared/client/services/ApiClient";
 
 export interface CashFlowClientService {
   load(): Promise<CashFlowDashboardResponseDTO>;
@@ -35,7 +22,7 @@ export interface CashFlowClientService {
 export function parseCashFlowDashboard(
   data: unknown,
 ): CashFlowDashboardResponseDTO {
-  return parseApiResponse(CashFlowDashboardResponseSchema, data);
+  return CashFlowDashboardResponseSchema.parse(data);
 }
 
 export const cashFlowService: CashFlowClientService = {
@@ -46,47 +33,41 @@ export const cashFlowService: CashFlowClientService = {
       url += `/${dto.id}`;
       method = "PATCH";
     }
-    const response = await fetch(url, {
+    await apiClient.request(url, {
       method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(dto),
     });
-    if (!response.ok) throw await parseError(response);
   },
   async deleteTransfer(id) {
-    const response = await fetch(`/api/v1/web/cash-flow/transfers/${id}`, {
+    await apiClient.request(`/api/v1/web/cash-flow/transfers/${id}`, {
       method: "DELETE",
     });
-    if (!response.ok) throw await parseError(response);
   },
   async load() {
-    const response = await fetch("/api/v1/web/cash-flow");
-    if (!response.ok) throw await parseError(response);
+    const response = await apiClient.request("/api/v1/web/cash-flow");
     return parseCashFlowDashboard(await response.json());
   },
 
   async create(dto) {
-    const response = await fetch("/api/v1/web/cash-flow/transactions", {
+    await apiClient.request("/api/v1/web/cash-flow/transactions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(dto),
     });
-    if (!response.ok) throw await parseError(response);
   },
 
   async sync(dto) {
-    const response = await fetch("/api/v1/web/cash-flow/sync", {
+    await apiClient.request("/api/v1/web/cash-flow/sync", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(dto),
     });
-    if (!response.ok) throw await parseError(response);
   },
 
   async deleteLast() {
-    const response = await fetch("/api/v1/web/cash-flow/transactions/last", {
+    await apiClient.request("/api/v1/web/cash-flow/transactions/last", {
       method: "DELETE",
     });
-    if (!response.ok) throw await parseError(response);
   },
 };

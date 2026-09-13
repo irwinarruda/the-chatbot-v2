@@ -62,9 +62,11 @@ describe("artifact management", () => {
 
     render(<UploadTokenCard />);
 
-    fireEvent.click(
-      await screen.findByRole("button", { name: "Create token" }),
-    );
+    const createButton = await screen.findByRole("button", {
+      name: "Create token",
+    });
+    await waitFor(() => expect(createButton).toBeEnabled());
+    fireEvent.click(createButton);
 
     const configElement = await screen.findByLabelText(
       "Skill configuration JSON",

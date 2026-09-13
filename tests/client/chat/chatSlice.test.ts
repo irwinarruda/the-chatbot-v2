@@ -2,7 +2,10 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { create } from "zustand";
 import { computed } from "zustand-computed-state";
 import type { SendWebMessageDTO } from "~/modules/chat/client/entities/dtos/SendWebMessageDTO";
-import type { WebChatClientService } from "~/modules/chat/client/services/webChatService";
+import type {
+  ChatProgressListener,
+  WebChatClientService,
+} from "~/modules/chat/client/services/webChatService";
 import {
   type ChatSlice,
   createChatSlice,
@@ -12,11 +15,14 @@ import type {
   WebChatDTO,
 } from "~/modules/chat/entities/dtos/ChatDTO";
 import { ReasoningEffort } from "~/modules/chat/entities/enums/ReasoningEffort";
+import type { sessionService } from "~/modules/identity/client/services/sessionService";
+import {
+  createSessionSlice,
+  type SessionSlice,
+} from "~/modules/identity/client/state/sessionSlice";
 import { createDeferred } from "~/tests/utils/createDeferred";
 
-type TestChatState = ChatSlice & {
-  stopRecording: (shouldSend: boolean) => void;
-};
+type TestChatState = ChatSlice & SessionSlice;
 
 function createMessage(patch: Partial<ChatMessageDTO> = {}): ChatMessageDTO {
   return {
@@ -52,11 +58,18 @@ function createChat(
   };
 }
 
-function createStore(service: WebChatClientService) {
+function createStore(
+  service: WebChatClientService &
+    Pick<typeof sessionService, "getCurrentUser" | "logout">,
+) {
   return create<TestChatState>()(
     computed((...args) => ({
       ...createChatSlice(service)(...args),
-      stopRecording() {},
+      ...createSessionSlice(() => args[1]().resetChat(), {
+        getCurrentUser: service.getCurrentUser,
+        logout: service.logout,
+        cancelPendingRequests() {},
+      })(...args),
     })),
   );
 }
@@ -70,7 +83,8 @@ describe("chatSlice", () => {
       resolveSend = resolve;
     });
     let sentMessage: SendWebMessageDTO | undefined;
-    const service: WebChatClientService = {
+    const service: WebChatClientService &
+      Pick<typeof sessionService, "getCurrentUser" | "logout"> = {
       async getCurrentUser() {
         return {
           id: crypto.randomUUID(),
@@ -121,7 +135,8 @@ describe("chatSlice", () => {
 
   test("refreshes a stale chat from the authoritative snapshot", async () => {
     let messages = [createMessage({ text: "before" })];
-    const service: WebChatClientService = {
+    const service: WebChatClientService &
+      Pick<typeof sessionService, "getCurrentUser" | "logout"> = {
       async getCurrentUser() {
         return {
           id: crypto.randomUUID(),
@@ -154,7 +169,8 @@ describe("chatSlice", () => {
     const sendResult = new Promise<WebChatDTO>((resolve) => {
       resolveSend = resolve;
     });
-    const service: WebChatClientService = {
+    const service: WebChatClientService &
+      Pick<typeof sessionService, "getCurrentUser" | "logout"> = {
       async getCurrentUser() {
         return {
           id: crypto.randomUUID(),
@@ -199,7 +215,8 @@ describe("chatSlice", () => {
     const sendResult = new Promise<WebChatDTO>((resolve) => {
       resolveSend = resolve;
     });
-    const service: WebChatClientService = {
+    const service: WebChatClientService &
+      Pick<typeof sessionService, "getCurrentUser" | "logout"> = {
       async getCurrentUser() {
         return {
           id: crypto.randomUUID(),
@@ -297,7 +314,8 @@ describe("chatSlice", () => {
       }),
       createMessage({ text: "Esforço de raciocínio definido como high." }),
     ];
-    const service: WebChatClientService = {
+    const service: WebChatClientService &
+      Pick<typeof sessionService, "getCurrentUser" | "logout"> = {
       async getCurrentUser() {
         return {
           id: crypto.randomUUID(),
@@ -333,7 +351,8 @@ describe("chatSlice", () => {
       provider: "zai-coding-cn",
       model: "glm-5.2",
     };
-    const service: WebChatClientService = {
+    const service: WebChatClientService &
+      Pick<typeof sessionService, "getCurrentUser" | "logout"> = {
       async getCurrentUser() {
         return {
           id: crypto.randomUUID(),
@@ -377,7 +396,8 @@ describe("chat refresh during sending", () => {
       const before = createChat([createMessage({ text: "Before" })]);
       const after = createChat([createMessage({ text: "After" })]);
       let chatReads = 0;
-      const service: WebChatClientService = {
+      const service: WebChatClientService &
+        Pick<typeof sessionService, "getCurrentUser" | "logout"> = {
         async getCurrentUser() {
           return { id: "user", name: "Irwin", phoneNumber: "5511999999999" };
         },
@@ -413,6 +433,64 @@ describe("chat refresh during sending", () => {
         await send;
       }
       expect(store.getState().chatMessages).toEqual(after.messages);
+    },
+  );
+  test.each(["text", "button", "audio"])(
+    "logout invalidates pending %s snapshots and progress",
+    async (kind) => {
+      vi.useFakeTimers();
+      const pending = createDeferred<WebChatDTO>();
+      let progress: ChatProgressListener | undefined;
+      const service = {
+        async getCurrentUser() {
+          return { id: "user", name: "User", phoneNumber: "5511999999999" };
+        },
+        async getChat() {
+          return createChat([]);
+        },
+        async sendMessage(
+          _dto: SendWebMessageDTO,
+          onProgress?: ChatProgressListener,
+        ) {
+          progress = onProgress;
+          return pending.promise;
+        },
+        async sendAudio(_dto: unknown, onProgress?: ChatProgressListener) {
+          progress = onProgress;
+          return pending.promise;
+        },
+        async logout() {},
+      };
+      const store = createStore(service);
+      await store.getState().bootstrapChat();
+      store.getState().setChatInput("Hello");
+      let sending: Promise<void>;
+      if (kind === "button") sending = store.getState().sendButtonReply("Yes");
+      else if (kind === "audio")
+        sending = store
+          .getState()
+          .sendChatAudio(new Blob(["audio"]), "blob:test");
+      else sending = store.getState().sendChatInput();
+      progress?.({
+        type: "reasoningDelta",
+        round: 1,
+        contentIndex: 0,
+        delta: "Old thought",
+      });
+      await store.getState().logout();
+      progress?.({
+        type: "reasoningDelta",
+        round: 1,
+        contentIndex: 0,
+        delta: "Late thought",
+      });
+      await vi.runAllTimersAsync();
+      pending.resolve(createChat([createMessage()]));
+      await sending;
+      expect(store.getState().currentUser).toBeUndefined();
+      expect(store.getState().chatMessages).toEqual([]);
+      expect(store.getState().chatResponseProgress).toBeUndefined();
+      expect(store.getState().isChatSubmitting).toBe(false);
     },
   );
 });

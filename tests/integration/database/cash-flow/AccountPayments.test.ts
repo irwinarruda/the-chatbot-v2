@@ -6,8 +6,8 @@ import { MonthlyExpensePaymentService } from "~/modules/cash-flow/services/Month
 import { User } from "~/modules/identity/entities/User";
 import { NotFoundException } from "~/shared/errors/ApplicationErrors";
 import { ValidationException } from "~/shared/errors/DomainErrors";
-import { createAppGoogleLoginState } from "~/tests/createAppGoogleLoginState";
-import { orquestrator } from "~/tests/orquestrator";
+import { createAppGoogleLoginState } from "~/tests/utils/builders/createAppGoogleLoginState";
+import { orquestrator } from "~/tests/utils/database/orquestrator";
 
 const phoneNumber = "5511999999999";
 const date = new Date("2026-09-04T12:00:00.000Z");

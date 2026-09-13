@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from "vitest";
 import { MonthlyExpenseService } from "~/modules/cash-flow/services/MonthlyExpenseService";
 import { NotFoundException } from "~/shared/errors/ApplicationErrors";
-import { orquestrator } from "~/tests/orquestrator";
+import { orquestrator } from "~/tests/utils/database/orquestrator";
 
 describe("MonthlyExpenseService", () => {
   beforeEach(async () => {
