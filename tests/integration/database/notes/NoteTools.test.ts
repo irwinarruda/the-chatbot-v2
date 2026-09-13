@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from "vitest";
 import { MessageContentType } from "~/modules/chat/entities/enums/MessageContentType";
 import { ToolResultStatus } from "~/modules/chat/entities/enums/ToolResultStatus";
-import { orquestrator } from "~/tests/orquestrator";
+import { orquestrator } from "~/tests/utils/database/orquestrator";
 
 describe("note AI tools", () => {
   beforeEach(async () => {

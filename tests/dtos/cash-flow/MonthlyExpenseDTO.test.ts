@@ -22,10 +22,10 @@ describe("Monthly expense contracts", () => {
     const wireResponse = JSON.parse(Printable.make(response));
 
     expect(wireResponse).toMatchObject({
-      expected_amount: 180.5,
-      due_day: 15,
-      is_paid: true,
-      paid_at: "2026-07-10T12:00:00.000Z",
+      expectedAmount: 180.5,
+      dueDay: 15,
+      isPaid: true,
+      paidAt: "2026-07-10T12:00:00.000Z",
     });
     expect(parseMonthlyExpense(wireResponse)).toEqual(response);
   });

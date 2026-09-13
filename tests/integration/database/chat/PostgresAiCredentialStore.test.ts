@@ -2,7 +2,7 @@ import { Database } from "~/infra/database";
 import type { AiProviderCredentialDTO } from "~/modules/chat/entities/dtos/AiProviderCredentialDTO";
 import { AiCredentialEncryption } from "~/modules/chat/gateway/AiCredentialStore/AiCredentialEncryption";
 import { PostgresAiCredentialStore } from "~/modules/chat/gateway/AiCredentialStore/PostgresAiCredentialStore";
-import { orquestrator } from "~/tests/orquestrator";
+import { orquestrator } from "~/tests/utils/database/orquestrator";
 
 describe("PostgresAiCredentialStore", () => {
   beforeEach(async () => {

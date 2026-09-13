@@ -3,7 +3,7 @@ import { MessageContentType } from "~/modules/chat/entities/enums/MessageContent
 import { TodoStatus } from "~/modules/todos/entities/enums/TodoStatus";
 import { NotFoundException } from "~/shared/errors/ApplicationErrors";
 import { ValidationException } from "~/shared/errors/DomainErrors";
-import { orquestrator } from "./orquestrator";
+import { orquestrator } from "~/tests/utils/database/orquestrator";
 
 describe("TodoService", () => {
   beforeEach(async () => {

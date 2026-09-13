@@ -3,7 +3,7 @@ import { Chat } from "~/modules/chat/entities/Chat";
 import { MessageContentType } from "~/modules/chat/entities/enums/MessageContentType";
 import { ToolResultStatus } from "~/modules/chat/entities/enums/ToolResultStatus";
 import { AiToolService } from "~/modules/tools/services/AiToolService";
-import { orquestrator } from "~/tests/orquestrator";
+import { orquestrator } from "~/tests/utils/database/orquestrator";
 
 describe("AiToolService", () => {
   test("returns the current date in the application time zone", async () => {

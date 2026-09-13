@@ -2,7 +2,7 @@ import { readdirSync } from "node:fs";
 import { runner } from "node-pg-migrate";
 import { Paths } from "~/infra/paths";
 import { UnauthorizedException } from "~/shared/errors/ApplicationErrors";
-import { orquestrator } from "./orquestrator";
+import { orquestrator } from "~/tests/utils/database/orquestrator";
 
 const noop = () => {};
 const noopLogger = { debug: noop, info: noop, warn: noop, error: noop };

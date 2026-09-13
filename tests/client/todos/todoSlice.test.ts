@@ -95,4 +95,93 @@ describe("todoSlice", () => {
     expect(await store.getState().deleteTodo(firstTodo.id)).toBe(true);
     expect(store.getState().selectedTodo).toEqual(secondTodo);
   });
+  test("reset rejects a pending delete and its error without affecting a new submission", async () => {
+    const deletion = createDeferred<void>();
+    const creation = createDeferred<TodoDTO>();
+    const service = createService();
+    service.deleteTodo.mockReturnValueOnce(deletion.promise);
+    service.createTodo.mockReturnValueOnce(creation.promise);
+    const store = create<TodoSlice>()(computed(createTodoSlice(service)));
+    store.setState({ todos: [firstTodo] });
+    const old = store.getState().deleteTodo(firstTodo.id);
+    store.getState().resetTodos();
+    const current = store
+      .getState()
+      .createTodo({ name: "Second", description: "", status: "Pending" });
+    deletion.reject(new Error("Old error"));
+    expect(await old).toBe(false);
+    expect(store.getState().todoError).toBeUndefined();
+    expect(store.getState().isTodoSubmitting).toBe(true);
+    creation.resolve(secondTodo);
+    await current;
+    expect(store.getState().todos).toEqual([secondTodo]);
+  });
+
+  test("a stale list cannot restore a deleted todo", async () => {
+    const list = createDeferred<TodoDTO[]>();
+    const service = createService();
+    service.listTodos.mockReturnValueOnce(list.promise);
+    const store = create<TodoSlice>()(computed(createTodoSlice(service)));
+    store.setState({ todos: [firstTodo] });
+    const loading = store.getState().bootstrapTodos();
+    await store.getState().deleteTodo(firstTodo.id);
+    list.resolve([firstTodo]);
+    await loading;
+    expect(store.getState().todos).toEqual([]);
+  });
+});
+
+describe("Todo list and write ordering", () => {
+  test.each(["list-first", "write-first", "write-failed"] as const)(
+    "retains existing records when the initial load overlaps a create: %s",
+    async (order) => {
+      const list = createDeferred<TodoDTO[]>();
+      const write = createDeferred<TodoDTO>();
+      const service = createService();
+      service.listTodos
+        .mockReturnValueOnce(list.promise)
+        .mockResolvedValue([firstTodo, secondTodo]);
+      service.createTodo.mockReturnValueOnce(write.promise);
+      const store = create<TodoSlice>()(computed(createTodoSlice(service)));
+      const loading = store.getState().bootstrapTodos();
+      const creating = store
+        .getState()
+        .createTodo({ name: "First", description: "", status: "Pending" });
+      expect(store.getState().isTodoBootstrapping).toBe(true);
+      if (order === "list-first") {
+        list.resolve([secondTodo]);
+        await loading;
+      }
+      if (order === "write-failed") write.reject(new Error("Write failed"));
+      else write.resolve(firstTodo);
+      await creating;
+      if (order !== "list-first") {
+        list.resolve([secondTodo]);
+        await loading;
+      }
+      if (order === "write-failed") {
+        expect(store.getState().todos).toEqual([secondTodo]);
+        expect(store.getState().todoError).toBe("saving");
+      } else expect(store.getState().todos).toEqual([firstTodo, secondTodo]);
+      expect(store.getState().isTodoBootstrapping).toBe(false);
+      expect(store.getState().isTodoSubmitting).toBe(false);
+    },
+  );
+
+  test("refreshes the current search after an earlier create without opening its detail", async () => {
+    const write = createDeferred<TodoDTO>();
+    const service = createService();
+    service.createTodo.mockReturnValueOnce(write.promise);
+    service.listTodos.mockResolvedValue([secondTodo]);
+    const store = create<TodoSlice>()(computed(createTodoSlice(service)));
+    const creating = store
+      .getState()
+      .createTodo({ name: "First", description: "", status: "Pending" });
+    await store.getState().bootstrapTodos({ q: "Second" });
+    write.resolve(firstTodo);
+    expect(await creating).toBeUndefined();
+    expect(store.getState().todos).toEqual([secondTodo]);
+    expect(service.listTodos).toHaveBeenLastCalledWith({ q: "Second" });
+    expect(store.getState().selectedTodo).toBeUndefined();
+  });
 });

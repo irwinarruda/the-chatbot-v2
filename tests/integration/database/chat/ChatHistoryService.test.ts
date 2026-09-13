@@ -3,7 +3,7 @@ import { ZodError } from "zod";
 import { ChatChannel } from "~/modules/chat/entities/enums/ChatChannel";
 import { Message } from "~/modules/chat/entities/Message";
 import { ChatHistoryService } from "~/modules/chat/services/ChatHistoryService";
-import { orquestrator } from "~/tests/orquestrator";
+import { orquestrator } from "~/tests/utils/database/orquestrator";
 
 async function createHistory() {
   const user = await orquestrator.createUser();

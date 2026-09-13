@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from "vitest";
 import { NotFoundException } from "~/shared/errors/ApplicationErrors";
 import { ValidationException } from "~/shared/errors/DomainErrors";
-import { orquestrator } from "~/tests/orquestrator";
+import { orquestrator } from "~/tests/utils/database/orquestrator";
 
 describe("NoteService", () => {
   beforeEach(async () => {

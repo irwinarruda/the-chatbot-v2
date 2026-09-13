@@ -39,13 +39,13 @@ describe("Cash flow web contracts", () => {
         position: 0,
         date: "2026-07-01",
         type: CashFlowTransactionType.Expense,
-        is_last: false,
+        isLast: false,
       }),
       expect.objectContaining({
         position: 1,
         date: "2026-07-02",
         type: CashFlowTransactionType.Earning,
-        is_last: true,
+        isLast: true,
       }),
     ]);
     expect(parseCashFlowDashboard(wireResponse)).toEqual(response);

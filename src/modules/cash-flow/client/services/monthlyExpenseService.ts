@@ -7,23 +7,10 @@ import {
   type SetMonthlyExpensePaidRequestDTO,
   type UpdateMonthlyExpenseRequestDTO,
 } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
-import {
-  normalizeApiResponse,
-  parseApiResponse,
-} from "~/shared/client/utils/ApiResponseParser";
-import { ApiErrorResponseDTO } from "~/shared/entities/dtos/ApiErrorDTO";
-
-async function parseError(response: Response): Promise<Error> {
-  const body = ApiErrorResponseDTO.safeParse(
-    normalizeApiResponse(await response.json()),
-  );
-  return new Error(
-    body.success ? body.data.message : `Request failed with ${response.status}`,
-  );
-}
+import { apiClient } from "~/shared/client/services/ApiClient";
 
 export function parseMonthlyExpense(data: unknown): MonthlyExpenseResponseDTO {
-  return parseApiResponse(MonthlyExpenseResponseDTO, data);
+  return MonthlyExpenseResponseDTO.parse(data);
 }
 
 export interface MonthlyExpenseClientService {
@@ -48,7 +35,7 @@ export interface MonthlyExpenseClientService {
 
 export const monthlyExpenseService: MonthlyExpenseClientService = {
   async payFromAccount(id, dto) {
-    const response = await fetch(
+    const response = await apiClient.request(
       `/api/v1/web/monthly-expenses/${id}/bank-payment`,
       {
         method: "POST",
@@ -56,64 +43,52 @@ export const monthlyExpenseService: MonthlyExpenseClientService = {
         body: JSON.stringify(dto),
       },
     );
-    if (!response.ok) throw await parseError(response);
-    return parseApiResponse(
-      MonthlyExpenseItemResponseDTO,
-      await response.json(),
-    ).expense;
+    return MonthlyExpenseItemResponseDTO.parse(await response.json()).expense;
   },
   async list(month) {
     const params = new URLSearchParams();
     if (month) params.set("month", month);
     const url = `/api/v1/web/monthly-expenses${params.size ? `?${params}` : ""}`;
-    const response = await fetch(url);
-    if (!response.ok) throw await parseError(response);
-    return parseApiResponse(MonthlyExpensesResponseDTO, await response.json());
+    const response = await apiClient.request(url);
+    return MonthlyExpensesResponseDTO.parse(await response.json());
   },
 
   async create(dto) {
-    const response = await fetch("/api/v1/web/monthly-expenses", {
+    const response = await apiClient.request("/api/v1/web/monthly-expenses", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(dto),
     });
-    if (!response.ok) throw await parseError(response);
-    return parseApiResponse(
-      MonthlyExpenseItemResponseDTO,
-      await response.json(),
-    ).expense;
+    return MonthlyExpenseItemResponseDTO.parse(await response.json()).expense;
   },
 
   async update(id, dto) {
-    const response = await fetch(`/api/v1/web/monthly-expenses/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(dto),
-    });
-    if (!response.ok) throw await parseError(response);
-    return parseApiResponse(
-      MonthlyExpenseItemResponseDTO,
-      await response.json(),
-    ).expense;
+    const response = await apiClient.request(
+      `/api/v1/web/monthly-expenses/${id}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dto),
+      },
+    );
+    return MonthlyExpenseItemResponseDTO.parse(await response.json()).expense;
   },
 
   async archive(id) {
-    const response = await fetch(`/api/v1/web/monthly-expenses/${id}`, {
+    await apiClient.request(`/api/v1/web/monthly-expenses/${id}`, {
       method: "DELETE",
     });
-    if (!response.ok) throw await parseError(response);
   },
 
   async setPaid(id, dto) {
-    const response = await fetch(`/api/v1/web/monthly-expenses/${id}/payment`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(dto),
-    });
-    if (!response.ok) throw await parseError(response);
-    return parseApiResponse(
-      MonthlyExpenseItemResponseDTO,
-      await response.json(),
-    ).expense;
+    const response = await apiClient.request(
+      `/api/v1/web/monthly-expenses/${id}/payment`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dto),
+      },
+    );
+    return MonthlyExpenseItemResponseDTO.parse(await response.json()).expense;
   },
 };

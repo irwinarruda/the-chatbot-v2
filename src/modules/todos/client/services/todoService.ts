@@ -6,23 +6,10 @@ import {
   TodoResponseDTO,
   TodosResponseDTO,
 } from "~/modules/todos/entities/dtos/TodoDTO";
-import {
-  normalizeApiResponse,
-  parseApiResponse,
-} from "~/shared/client/utils/ApiResponseParser";
-import { ApiErrorResponseDTO } from "~/shared/entities/dtos/ApiErrorDTO";
-
-async function parseError(response: Response): Promise<Error> {
-  const body = ApiErrorResponseDTO.safeParse(
-    normalizeApiResponse(await response.json()),
-  );
-  return new Error(
-    body.success ? body.data.message : `Request failed with ${response.status}`,
-  );
-}
+import { apiClient } from "~/shared/client/services/ApiClient";
 
 export function parseTodo(data: unknown): TodoResponseDTO {
-  return parseApiResponse(TodoResponseDTO, data);
+  return TodoResponseDTO.parse(data);
 }
 
 export function toTodoDueDateInputValue(dueDate?: string): string {
@@ -43,44 +30,39 @@ export const todoService = {
       params.set("status", filters.status);
     }
     const url = `/api/v1/web/todos${params.size ? `?${params}` : ""}`;
-    const response = await fetch(url);
-    if (!response.ok) throw await parseError(response);
-    return parseApiResponse(TodosResponseDTO, await response.json()).todos;
+    const response = await apiClient.request(url);
+    return TodosResponseDTO.parse(await response.json()).todos;
   },
 
   async getTodo(id: string): Promise<TodoResponseDTO> {
-    const response = await fetch(`/api/v1/web/todos/${id}`);
-    if (!response.ok) throw await parseError(response);
-    return parseApiResponse(TodoItemResponseDTO, await response.json()).todo;
+    const response = await apiClient.request(`/api/v1/web/todos/${id}`);
+    return TodoItemResponseDTO.parse(await response.json()).todo;
   },
 
   async createTodo(dto: CreateTodoRequestDTO): Promise<TodoResponseDTO> {
-    const response = await fetch("/api/v1/web/todos", {
+    const response = await apiClient.request("/api/v1/web/todos", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(dto),
     });
-    if (!response.ok) throw await parseError(response);
-    return parseApiResponse(TodoItemResponseDTO, await response.json()).todo;
+    return TodoItemResponseDTO.parse(await response.json()).todo;
   },
 
   async updateTodo(
     id: string,
     dto: SaveTodoRequestDTO,
   ): Promise<TodoResponseDTO> {
-    const response = await fetch(`/api/v1/web/todos/${id}`, {
+    const response = await apiClient.request(`/api/v1/web/todos/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(dto),
     });
-    if (!response.ok) throw await parseError(response);
-    return parseApiResponse(TodoItemResponseDTO, await response.json()).todo;
+    return TodoItemResponseDTO.parse(await response.json()).todo;
   },
 
   async deleteTodo(id: string): Promise<void> {
-    const response = await fetch(`/api/v1/web/todos/${id}`, {
+    await apiClient.request(`/api/v1/web/todos/${id}`, {
       method: "DELETE",
     });
-    if (!response.ok) throw await parseError(response);
   },
 };

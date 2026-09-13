@@ -4,10 +4,12 @@ import { type ReactNode, useState } from "react";
 import { MonetaryPrivacyControl } from "~/shared/client/components/terminal/MonetaryPrivacyControl";
 import { TerminalChromeButton } from "~/shared/client/components/terminal/TerminalChromeButton";
 import { TerminalResponsiveOverlay } from "~/shared/client/components/terminal/TerminalResponsiveOverlay";
+import { Alert, AlertDescription } from "~/shared/client/components/ui/alert";
 import { Button } from "~/shared/client/components/ui/button";
 import { cn } from "~/shared/client/components/ui/lib";
 import type { Dictionary } from "~/shared/client/i18n";
 import { usePrefs } from "~/shared/client/providers/usePrefs";
+import { clientErrorMessage } from "~/shared/client/services/ApiClient";
 import { useApp } from "~/shared/client/stores";
 
 type TerminalPath =
@@ -94,6 +96,10 @@ export function TerminalWindow({
   const prefs = usePrefs();
   const toggleTheme = useApp((state) => state.toggleTheme);
   const toggleLocale = useApp((state) => state.toggleLocale);
+  const sessionError = useApp((state) => state.sessionError);
+  const sessionErrorMessage = clientErrorMessage(sessionError, {
+    logout: dictionary?.common.errorLogout ?? "Could not log out. Try again.",
+  });
   const logout = useApp((state) => state.logout);
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
   const navLinks: TerminalNavLink[] = dictionary
@@ -148,8 +154,11 @@ export function TerminalWindow({
 
   async function onLogout() {
     setIsNavigationOpen(false);
-    await logout();
-    router.navigate({ to: "/login", search: { redirect: "/chat" } });
+    try {
+      await logout();
+    } catch {
+      // Identity retains the error for the remounted session UI.
+    }
   }
 
   const standardControls = (
@@ -370,6 +379,11 @@ export function TerminalWindow({
               </>
             )}
 
+            {sessionErrorMessage && (
+              <Alert variant="destructive">
+                <AlertDescription>{sessionErrorMessage}</AlertDescription>
+              </Alert>
+            )}
             {children}
           </div>
 

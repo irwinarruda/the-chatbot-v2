@@ -3,7 +3,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import type { SaveSpreadsheetTransferDTO } from "~/modules/cash-flow/entities/dtos/CashFlowTransferDTO";
 import { GoogleCashFlowSpreadsheetGateway } from "~/modules/cash-flow/gateway/CashFlowSpreadsheetGateway/GoogleCashFlowSpreadsheetGateway";
 import { ValidationException } from "~/shared/errors/DomainErrors";
-import { orquestrator } from "~/tests/orquestrator";
+import { orquestrator } from "~/tests/utils/database/orquestrator";
 
 const transfer: SaveSpreadsheetTransferDTO = {
   sheetId: "local-protocol-fixture",

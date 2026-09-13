@@ -57,6 +57,7 @@ import {
 } from "~/shared/client/components/ui/tooltip";
 import { getDictionary } from "~/shared/client/i18n";
 import { usePrefs } from "~/shared/client/providers/usePrefs";
+import { clientErrorMessage } from "~/shared/client/services/ApiClient";
 import { useApp } from "~/shared/client/stores";
 
 const loadingRows = ["first", "second", "third", "fourth"];
@@ -68,6 +69,7 @@ function balanceColorClassName(balance: number): string {
 
 export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
   const navigate = useNavigate();
+  const resetFeature = useApp((state) => state.resetCashFlow);
   const prefs = usePrefs();
   const dashboard = useApp((state) => state.cashFlowDashboard);
   const isBootstrapping = useApp((state) => state.isCashFlowBootstrapping);
@@ -123,7 +125,7 @@ export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
     syncing: t.errorSyncing,
     deleting: t.errorDeleting,
   };
-  const errorMessage = error ? errorMessages[error] : undefined;
+  const errorMessage = clientErrorMessage(error, errorMessages);
   const hasFilters = Object.values(filters).some(
     (value) => value && value !== "all",
   );
@@ -172,6 +174,8 @@ export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
     const synced = await syncBankAccount(value);
     if (synced) setIsSyncOpen(false);
   }
+
+  useEffect(() => resetFeature, [resetFeature]);
 
   useEffect(() => {
     void bootstrap();

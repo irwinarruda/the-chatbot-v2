@@ -25,13 +25,13 @@ describe("Todo contracts", () => {
     const wireResponse = JSON.parse(Printable.make(response));
 
     expect(wireResponse).toMatchObject({
-      due_date: response.dueDate,
-      created_at: response.createdAt,
-      updated_at: response.updatedAt,
+      dueDate: response.dueDate,
+      createdAt: response.createdAt,
+      updatedAt: response.updatedAt,
     });
     expect(parseTodo(wireResponse)).toEqual(response);
     expect(() =>
-      parseTodo({ ...wireResponse, due_date: "2026-07-14" }),
+      parseTodo({ ...wireResponse, dueDate: "2026-07-14" }),
     ).toThrow();
     expect(toTodoDueDateInputValue(response.dueDate)).toBe("2026-07-14");
   });

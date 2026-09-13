@@ -1,5 +1,5 @@
 import { AiModelPreferenceService } from "~/modules/chat/services/AiModelPreferenceService";
-import { orquestrator } from "~/tests/orquestrator";
+import { orquestrator } from "~/tests/utils/database/orquestrator";
 
 describe("AiModelPreferenceService", () => {
   beforeEach(async () => {

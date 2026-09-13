@@ -18,6 +18,11 @@ import { Card, CardContent } from "~/shared/client/components/ui/card";
 import { Skeleton } from "~/shared/client/components/ui/skeleton";
 import { getDictionary } from "~/shared/client/i18n";
 import { usePrefs } from "~/shared/client/providers/usePrefs";
+import {
+  type ApiError,
+  clientError,
+  clientErrorMessage,
+} from "~/shared/client/services/ApiClient";
 
 type ArtifactListError = "loading" | "saving" | "deleting" | "copy";
 
@@ -26,21 +31,22 @@ export function ArtifactList() {
   const [artifacts, setArtifacts] = useState<ArtifactDTO[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<ArtifactListError>();
+  const [error, setError] = useState<ArtifactListError | ApiError>();
   const t = getDictionary(prefs.locale).artifactsPage;
-  let errorMessage: string | undefined;
-  if (error === "loading") errorMessage = t.errorLoading;
-  if (error === "saving") errorMessage = t.errorSaving;
-  if (error === "deleting") errorMessage = t.errorDeleting;
-  if (error === "copy") errorMessage = t.errorCopy;
+  const errorMessage = clientErrorMessage(error, {
+    loading: t.errorLoading,
+    saving: t.errorSaving,
+    deleting: t.errorDeleting,
+    copy: t.errorCopy,
+  });
 
   async function onShareLinkCopy(artifactId: string) {
     try {
       await navigator.clipboard.writeText(
         new URL(`/a/${artifactId}`, window.location.origin).href,
       );
-    } catch {
-      setError("copy");
+    } catch (error) {
+      setError(clientError(error, "copy"));
     }
   }
 
@@ -63,8 +69,8 @@ export function ArtifactList() {
           return item;
         }),
       );
-    } catch {
-      setError("saving");
+    } catch (error) {
+      setError(clientError(error, "saving"));
     } finally {
       setIsSubmitting(false);
     }
@@ -79,8 +85,8 @@ export function ArtifactList() {
       setArtifacts((current) =>
         current.filter((item) => item.id !== artifact.id),
       );
-    } catch {
-      setError("deleting");
+    } catch (error) {
+      setError(clientError(error, "deleting"));
     } finally {
       setIsSubmitting(false);
     }
@@ -93,8 +99,8 @@ export function ArtifactList() {
       .then((nextArtifacts) => {
         if (isCurrent) setArtifacts(nextArtifacts);
       })
-      .catch(() => {
-        if (isCurrent) setError("loading");
+      .catch((error) => {
+        if (isCurrent) setError(clientError(error, "loading"));
       })
       .finally(() => {
         if (isCurrent) setIsLoading(false);

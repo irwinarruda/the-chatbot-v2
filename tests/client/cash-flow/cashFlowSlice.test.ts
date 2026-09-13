@@ -7,6 +7,7 @@ import {
 } from "~/modules/cash-flow/client/state/cashFlowSlice";
 import type { CashFlowDashboardResponseDTO } from "~/modules/cash-flow/entities/dtos/CashFlowWebDTO";
 import { CashFlowTransactionType } from "~/modules/cash-flow/entities/enums/CashFlowTransactionType";
+import { createDeferred } from "~/tests/utils/createDeferred";
 
 function createDashboard(position: number): CashFlowDashboardResponseDTO {
   return {
@@ -125,5 +126,49 @@ describe("cashFlowSlice", () => {
     expect(service.deleteLast).toHaveBeenCalledOnce();
     expect(store.getState().cashFlowDashboard.transactions).toEqual([]);
     expect(store.getState().cashFlowError).toBe("loading");
+  });
+  test("reset stops a pending mutation from refreshing or clearing new loading state", async () => {
+    const mutation = createDeferred<void>();
+    const dashboard = createDeferred<CashFlowDashboardResponseDTO>();
+    const service: CashFlowClientService = {
+      async create() {},
+      async sync() {},
+      async deleteLast() {},
+      async saveTransfer() {},
+      deleteTransfer: () => mutation.promise,
+      load: vi.fn(() => dashboard.promise),
+    };
+    const store = create<CashFlowSlice>()(createCashFlowSlice(service));
+    const old = store.getState().deleteCashFlowTransfer("transfer");
+    store.getState().resetCashFlow();
+    const loading = store.getState().bootstrapCashFlow();
+    mutation.resolve();
+    expect(await old).toBe(false);
+    expect(service.load).toHaveBeenCalledOnce();
+    expect(store.getState().isCashFlowBootstrapping).toBe(true);
+    dashboard.resolve(createDashboard(1));
+    await loading;
+    expect(store.getState().cashFlowDashboard.transactions[0].position).toBe(1);
+  });
+
+  test("a late bootstrap cannot overwrite the post-mutation dashboard", async () => {
+    const old = createDeferred<CashFlowDashboardResponseDTO>();
+    const service: CashFlowClientService = {
+      async create() {},
+      async sync() {},
+      async deleteLast() {},
+      async saveTransfer() {},
+      async deleteTransfer() {},
+      load: vi
+        .fn()
+        .mockReturnValueOnce(old.promise)
+        .mockResolvedValueOnce(createDashboard(2)),
+    };
+    const store = create<CashFlowSlice>()(createCashFlowSlice(service));
+    const loading = store.getState().bootstrapCashFlow();
+    await store.getState().deleteCashFlowTransfer("transfer");
+    old.resolve(createDashboard(1));
+    await loading;
+    expect(store.getState().cashFlowDashboard.transactions[0].position).toBe(2);
   });
 });

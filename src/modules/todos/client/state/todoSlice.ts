@@ -6,6 +6,7 @@ import type {
   TodoDTO,
   TodoStatusDTO,
 } from "~/modules/todos/entities/dtos/TodoDTO";
+import { type ApiError, clientError } from "~/shared/client/services/ApiClient";
 
 export type TodoErrorCode = "loading" | "saving" | "deleting";
 
@@ -21,7 +22,9 @@ export interface TodoSlice {
   selectedTodo?: TodoDTO;
   isTodoBootstrapping: boolean;
   isTodoSubmitting: boolean;
-  todoError?: TodoErrorCode;
+  todoError?: TodoErrorCode | ApiError;
+  resetTodos: () => void;
+  closeTodo: () => void;
   hasTodos: boolean;
   pendingTodoCount: number;
   completedTodoCount: number;
@@ -40,8 +43,27 @@ export function createTodoSlice(
   service: typeof todoService = todoService,
 ): StateCreator<TodoSlice> {
   return (set, get) => {
+    let generation = 0;
+    let view = 0;
     let listRequest = 0;
+    let currentFilters: TodoFiltersDTO | undefined;
     let detailRequest = 0;
+    let detailTarget: string | undefined;
+    async function reconcileTodos(
+      requestGeneration: number,
+      previousListRequest: number,
+    ) {
+      const { isTodoBootstrapping } = get();
+      if (!isTodoBootstrapping && listRequest === previousListRequest)
+        return false;
+      do {
+        const { bootstrapTodos } = get();
+        await bootstrapTodos(currentFilters);
+        const { isTodoBootstrapping } = get();
+        if (!isTodoBootstrapping) break;
+      } while (requestGeneration === generation);
+      return true;
+    }
     return {
       todos: [],
       selectedTodo: undefined,
@@ -57,7 +79,37 @@ export function createTodoSlice(
           (todo) => todo.status === "Completed",
         ).length,
       })),
+      resetTodos() {
+        detailTarget = undefined;
+        generation += 1;
+        listRequest += 1;
+        detailRequest += 1;
+        view += 1;
+
+        set({
+          todos: [],
+          selectedTodo: undefined,
+          isTodoBootstrapping: false,
+          isTodoSubmitting: false,
+          todoError: undefined,
+        });
+      },
+      closeTodo() {
+        detailTarget = undefined;
+        view += 1;
+        detailRequest += 1;
+
+        set({ selectedTodo: undefined });
+      },
       async bootstrapTodos(filters) {
+        if (
+          currentFilters?.q !== filters?.q ||
+          currentFilters?.dueDate !== filters?.dueDate ||
+          currentFilters?.due !== filters?.due ||
+          currentFilters?.status !== filters?.status
+        )
+          view += 1;
+        currentFilters = filters;
         const request = ++listRequest;
         set({
           isTodoBootstrapping: true,
@@ -66,8 +118,9 @@ export function createTodoSlice(
         try {
           const todos = await service.listTodos(filters);
           if (request === listRequest) set({ todos });
-        } catch {
-          if (request === listRequest) set({ todoError: "loading" });
+        } catch (error) {
+          if (request === listRequest)
+            set({ todoError: clientError(error, "loading") });
         } finally {
           if (request === listRequest) set({ isTodoBootstrapping: false });
         }
@@ -76,6 +129,9 @@ export function createTodoSlice(
         const { isTodoSubmitting } = get();
         const name = input.name.trim();
         if (!name || isTodoSubmitting) return undefined;
+        const requestGeneration = generation;
+        const previousListRequest = listRequest;
+        const requestView = view;
         set({ isTodoSubmitting: true, todoError: undefined });
         try {
           const todo = await service.createTodo({
@@ -84,18 +140,33 @@ export function createTodoSlice(
             dueDate: input.dueDate || undefined,
             status: input.status,
           });
-          set((state) => ({
-            todos: [todo, ...state.todos],
-          }));
+          if (requestGeneration !== generation) return undefined;
+          const refreshed = await reconcileTodos(
+            requestGeneration,
+            previousListRequest,
+          );
+          if (requestGeneration !== generation) return undefined;
+          if (!refreshed)
+            set((state) => ({
+              todos: [
+                todo,
+                ...state.todos.filter((item) => item.id !== todo.id),
+              ],
+            }));
+          if (requestView !== view) return undefined;
           return todo;
-        } catch {
-          set({ todoError: "saving" });
+        } catch (error) {
+          if (requestGeneration !== generation) return undefined;
+          set({ todoError: clientError(error, "saving") });
           return undefined;
         } finally {
-          set({ isTodoSubmitting: false });
+          if (requestGeneration === generation)
+            set({ isTodoSubmitting: false });
         }
       },
       async loadTodo(id) {
+        detailTarget = id;
+        view += 1;
         const request = ++detailRequest;
         const { todos } = get();
         const existing = todos.find((todo) => todo.id === id);
@@ -109,9 +180,12 @@ export function createTodoSlice(
           if (request !== detailRequest) return undefined;
           set({ selectedTodo: todo });
           return todo;
-        } catch {
+        } catch (error) {
           if (request === detailRequest) {
-            set({ todoError: "loading", selectedTodo: undefined });
+            set({
+              todoError: clientError(error, "loading"),
+              selectedTodo: undefined,
+            });
           }
           return undefined;
         }
@@ -119,6 +193,9 @@ export function createTodoSlice(
       async updateTodo(id, patch) {
         const { isTodoSubmitting } = get();
         if (isTodoSubmitting) return undefined;
+        const requestGeneration = generation;
+        const previousListRequest = listRequest;
+        const requestView = view;
         set({ isTodoSubmitting: true, todoError: undefined });
         try {
           const todo = await service.updateTodo(id, {
@@ -127,45 +204,75 @@ export function createTodoSlice(
             dueDate: patch.dueDate,
             status: patch.status,
           });
+          if (requestGeneration !== generation) return undefined;
+          const refreshed = await reconcileTodos(
+            requestGeneration,
+            previousListRequest,
+          );
+          if (requestGeneration !== generation) return undefined;
+          if (detailTarget === id) detailRequest += 1;
           set((state) => {
             let selectedTodo = state.selectedTodo;
-            if (selectedTodo?.id === id) selectedTodo = todo;
-            return {
-              todos: state.todos.map((item) => {
+            if (selectedTodo?.id === id || detailTarget === id)
+              selectedTodo = todo;
+            let todos = state.todos;
+            if (!refreshed)
+              todos = state.todos.map((item) => {
                 if (item.id === id) return todo;
                 return item;
-              }),
+              });
+            return {
+              todos,
               selectedTodo,
             };
           });
+          if (requestView !== view) return undefined;
           return todo;
-        } catch {
-          set({ todoError: "saving" });
+        } catch (error) {
+          if (requestGeneration !== generation) return undefined;
+          set({ todoError: clientError(error, "saving") });
           return undefined;
         } finally {
-          set({ isTodoSubmitting: false });
+          if (requestGeneration === generation)
+            set({ isTodoSubmitting: false });
         }
       },
       async deleteTodo(id) {
         const { isTodoSubmitting } = get();
         if (isTodoSubmitting) return false;
+        const requestGeneration = generation;
+        const previousListRequest = listRequest;
+        const requestView = view;
         set({ isTodoSubmitting: true, todoError: undefined });
         try {
           await service.deleteTodo(id);
+          if (requestGeneration !== generation) return false;
+          const refreshed = await reconcileTodos(
+            requestGeneration,
+            previousListRequest,
+          );
+          if (requestGeneration !== generation) return false;
+          if (detailTarget === id) detailRequest += 1;
           set((state) => {
             let selectedTodo = state.selectedTodo;
-            if (selectedTodo?.id === id) selectedTodo = undefined;
+            if (selectedTodo?.id === id || detailTarget === id)
+              selectedTodo = undefined;
+            let todos = state.todos;
+            if (!refreshed)
+              todos = state.todos.filter((todo) => todo.id !== id);
             return {
-              todos: state.todos.filter((todo) => todo.id !== id),
+              todos,
               selectedTodo,
             };
           });
-          return true;
-        } catch {
-          set({ todoError: "deleting" });
+          return requestView === view;
+        } catch (error) {
+          if (requestGeneration !== generation) return false;
+          set({ todoError: clientError(error, "deleting") });
           return false;
         } finally {
-          set({ isTodoSubmitting: false });
+          if (requestGeneration === generation)
+            set({ isTodoSubmitting: false });
         }
       },
       clearTodoError() {

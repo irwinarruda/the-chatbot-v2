@@ -21,8 +21,8 @@ describe("Note contracts", () => {
 
     expect(wire.markdown).toBe(markdown);
     expect(wire).toMatchObject({
-      created_at: response.createdAt,
-      updated_at: response.updatedAt,
+      createdAt: response.createdAt,
+      updatedAt: response.updatedAt,
     });
   });
 

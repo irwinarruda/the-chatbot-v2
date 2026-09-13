@@ -50,6 +50,7 @@ import {
 } from "~/shared/client/components/ui/tooltip";
 import { getDictionary } from "~/shared/client/i18n";
 import { usePrefs } from "~/shared/client/providers/usePrefs";
+import { clientErrorMessage } from "~/shared/client/services/ApiClient";
 import { useApp } from "~/shared/client/stores";
 
 export function ChatScreen() {
@@ -76,6 +77,8 @@ export function ChatScreen() {
   const canSelectAudioInput = useApp((s) => s.canSelectAudioInput);
   const setChatInput = useApp((s) => s.setChatInput);
   const clearChatError = useApp((s) => s.clearChatError);
+  const resetChat = useApp((state) => state.resetChat);
+  const resetRecording = useApp((state) => state.resetRecording);
   const bootstrapChat = useApp((s) => s.bootstrapChat);
   const refreshChat = useApp((s) => s.refreshChat);
   const syncAudioInputs = useApp((s) => s.syncAudioInputs);
@@ -138,8 +141,7 @@ export function ChatScreen() {
     sending: t.errorSending,
     loading: t.errorLoading,
   };
-  let chatErrorMessage: string | undefined;
-  if (chatError) chatErrorMessage = chatErrorMessages[chatError];
+  const chatErrorMessage = clientErrorMessage(chatError, chatErrorMessages);
   let windowTitle = t.windowTitle;
   if (currentUser) windowTitle = `${t.windowTitle} - ${currentUser.name}`;
   function onScroll() {
@@ -279,6 +281,8 @@ export function ChatScreen() {
     });
     return () => {
       cancelled = true;
+      resetRecording();
+      resetChat();
     };
   }, []);
 

@@ -14,6 +14,11 @@ import {
 import { Skeleton } from "~/shared/client/components/ui/skeleton";
 import { getDictionary } from "~/shared/client/i18n";
 import { usePrefs } from "~/shared/client/providers/usePrefs";
+import {
+  type ApiError,
+  clientError,
+  clientErrorMessage,
+} from "~/shared/client/services/ApiClient";
 
 const ARTIFACT_SKILL_CONFIG_PATH =
   "~/.agents/skills/the-chatbot-artifact/config.json";
@@ -47,12 +52,13 @@ export function UploadTokenCard() {
     useState<ArtifactUploadTokenStatusResponseDTO>();
   const [revealedConfig, setRevealedConfig] = useState<string>();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<TokenError>();
+  const [error, setError] = useState<TokenError | ApiError>();
   const t = getDictionary(prefs.locale).artifactsPage;
-  let errorMessage: string | undefined;
-  if (error === "loading") errorMessage = t.errorLoading;
-  if (error === "mutation") errorMessage = t.errorToken;
-  if (error === "copy") errorMessage = t.errorCopy;
+  const errorMessage = clientErrorMessage(error, {
+    loading: t.errorLoading,
+    mutation: t.errorToken,
+    copy: t.errorCopy,
+  });
 
   async function onUploadTokenRotate() {
     if (!tokenStatus || isSubmitting) return;
@@ -63,8 +69,8 @@ export function UploadTokenCard() {
       const created = await artifactService.rotateUploadToken();
       setTokenStatus(created);
       setRevealedConfig(createArtifactSkillConfig(created.token));
-    } catch {
-      setError("mutation");
+    } catch (error) {
+      setError(clientError(error, "mutation"));
     } finally {
       setIsSubmitting(false);
     }
@@ -79,8 +85,8 @@ export function UploadTokenCard() {
       await artifactService.revokeUploadToken();
       setTokenStatus({ configured: false });
       setRevealedConfig(undefined);
-    } catch {
-      setError("mutation");
+    } catch (error) {
+      setError(clientError(error, "mutation"));
     } finally {
       setIsSubmitting(false);
     }
@@ -90,8 +96,8 @@ export function UploadTokenCard() {
     if (!revealedConfig) return;
     try {
       await navigator.clipboard.writeText(revealedConfig);
-    } catch {
-      setError("copy");
+    } catch (error) {
+      setError(clientError(error, "copy"));
     }
   }
 
@@ -102,8 +108,8 @@ export function UploadTokenCard() {
       .then((status) => {
         if (isCurrent) setTokenStatus(status);
       })
-      .catch(() => {
-        if (isCurrent) setError("loading");
+      .catch((error) => {
+        if (isCurrent) setError(clientError(error, "loading"));
       });
     return () => {
       isCurrent = false;

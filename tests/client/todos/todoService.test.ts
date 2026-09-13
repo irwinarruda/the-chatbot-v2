@@ -11,8 +11,8 @@ const todoResponse = {
     name: "Ship it",
     description: "",
     status: "Pending",
-    created_at: "2026-07-14T12:00:00.000Z",
-    updated_at: "2026-07-14T12:00:00.000Z",
+    createdAt: "2026-07-14T12:00:00.000Z",
+    updatedAt: "2026-07-14T12:00:00.000Z",
   },
 };
 
