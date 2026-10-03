@@ -86,6 +86,7 @@ export class Orquestrator {
     this.database = createTestDatabase(
       this.config.database,
       import.meta.env.MODE,
+      process.env.TEST_DATABASE_ALLOWED_HOST,
     );
 
     this.databaseConfig = this.config.database;
@@ -134,6 +135,7 @@ export class Orquestrator {
       this.database,
       this.databaseConfig,
       import.meta.env.MODE,
+      process.env.TEST_DATABASE_ALLOWED_HOST,
     );
   }
 

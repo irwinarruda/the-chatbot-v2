@@ -1,34 +1,77 @@
 import { Database } from "~/infra/database";
 import type { DatabaseConfig } from "~/shared/config/Config";
-import type { DatabaseGateway } from "~/shared/gateway/DatabaseGateway";
+import type {
+  DatabaseGateway,
+  DatabaseGatewaySql,
+} from "~/shared/gateway/DatabaseGateway";
 
 const localHosts = new Set(["localhost", "127.0.0.1", "[::1]"]);
 const localDatabaseNames = new Set(["local_db", "test_db"]);
+const allowedUrlParameters = new Set([
+  "sslmode",
+  "sslrootcert",
+  "channel_binding",
+  "application_name",
+  "connect_timeout",
+]);
+const allowedStartupParameters = new Set([
+  "application_name",
+  "sslrootcert",
+  "channel_binding",
+]);
+
+export interface ResetDatabaseGateway extends DatabaseGateway {
+  readonly sql: DatabaseGatewaySql & {
+    readonly options: {
+      host: string[];
+      database: string;
+      user: string;
+      path?: string;
+      connection: Record<string, unknown>;
+    };
+  };
+}
+
+interface TestDatabaseTarget {
+  hostname: string;
+  databaseName: string;
+}
 
 export function createTestDatabase(
   config: DatabaseConfig,
   mode: string | undefined,
+  allowedHost?: string,
 ): Database {
-  assertTestDatabaseTarget(config, mode);
+  const target = assertTestDatabaseTarget(config, mode, allowedHost);
+  let database: Database;
   try {
-    return new Database(config.connectionString, { onnotice: () => {} });
+    database = new Database(config.connectionString, { onnotice: () => {} });
   } catch {
     throw new Error("Cannot initialize the allowed test database connection");
+  }
+  try {
+    assertDatabaseClientTarget(database, target);
+    return database;
+  } catch (error) {
+    void database.close();
+    throw error;
   }
 }
 
 export async function wipeTestDatabase(
-  database: DatabaseGateway,
+  database: ResetDatabaseGateway,
   config: DatabaseConfig,
   mode: string | undefined,
+  allowedHost?: string,
 ): Promise<void> {
-  const databaseName = assertTestDatabaseTarget(config, mode);
+  const target = assertTestDatabaseTarget(config, mode, allowedHost);
+  assertDatabaseClientTarget(database, target);
   // Check and reset on the same connection; pooled connections must not differ.
   await database.transaction(async (sql) => {
     const rows = await sql<{ database_name: string }[]>`
       SELECT current_database() AS database_name
     `;
-    if (rows.length !== 1 || rows[0].database_name !== databaseName) {
+    if (rows.length !== 1 || rows[0].database_name !== target.databaseName) {
       throw new Error(
         "Connected database does not match the allowed reset target",
       );
@@ -41,7 +84,8 @@ export async function wipeTestDatabase(
 function assertTestDatabaseTarget(
   config: DatabaseConfig,
   mode: string | undefined,
-): string {
+  allowedHost: string | undefined,
+): TestDatabaseTarget {
   if (mode !== "test" && mode !== "development" && mode !== "preview") {
     throw new Error(
       "Database reset requires test, development, or preview mode",
@@ -75,9 +119,32 @@ function assertTestDatabaseTarget(
   if (!databaseName || databaseName !== config.name) {
     throw new Error("Database reset target does not match DATABASE_NAME");
   }
+  if (
+    !databaseUrl.hostname ||
+    databaseUrl.hash ||
+    config.connectionString.includes("\0") ||
+    /%00/i.test(config.connectionString) ||
+    [...databaseUrl.searchParams.keys()].some(
+      (key) => !allowedUrlParameters.has(key),
+    )
+  ) {
+    throw new Error(
+      "Database reset URL contains unsupported connection options",
+    );
+  }
   if (mode === "preview") {
-    if (databaseName !== "preview") {
-      throw new Error("Preview database reset requires the preview database");
+    if (allowedHost !== undefined && allowedHost !== databaseUrl.hostname) {
+      throw new Error(
+        "Preview database host does not match TEST_DATABASE_ALLOWED_HOST",
+      );
+    }
+    if (
+      databaseName !== "preview" &&
+      (databaseName !== "neondb" || !allowedHost)
+    ) {
+      throw new Error(
+        "Preview reset requires preview, or neondb with TEST_DATABASE_ALLOWED_HOST",
+      );
     }
   } else if (
     !localHosts.has(databaseUrl.hostname) ||
@@ -88,5 +155,27 @@ function assertTestDatabaseTarget(
     );
   }
 
-  return databaseName;
+  return { hostname: databaseUrl.hostname, databaseName };
+}
+
+function assertDatabaseClientTarget(
+  database: ResetDatabaseGateway,
+  target: TestDatabaseTarget,
+): void {
+  const options = database.sql.options;
+  // Startup parameters can override the driver's parsed database or Neon route.
+  if (
+    options.host.length !== 1 ||
+    options.host[0] !== target.hostname ||
+    options.database !== target.databaseName ||
+    options.user.includes("\0") ||
+    options.path ||
+    Object.entries(options.connection).some(
+      ([key, value]) =>
+        !allowedStartupParameters.has(key) ||
+        (typeof value === "string" && value.includes("\0")),
+    )
+  ) {
+    throw new Error("Database client does not match the allowed reset target");
+  }
 }

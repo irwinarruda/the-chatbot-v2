@@ -1,26 +1,34 @@
-import { describe, expect, test } from "vitest";
-import type {
-  DatabaseGateway,
-  DatabaseGatewaySql,
-} from "~/shared/gateway/DatabaseGateway";
+import { afterEach, describe, expect, test, vi } from "vitest";
+import type { DatabaseGatewaySql } from "~/shared/gateway/DatabaseGateway";
 import {
   createTestDatabase,
+  type ResetDatabaseGateway,
   wipeTestDatabase,
 } from "~/tests/utils/database/wipeTestDatabase";
 
-class ResetDatabaseFake implements DatabaseGateway {
+class ResetDatabaseFake implements ResetDatabaseGateway {
   readonly statements: string[] = [];
-  readonly sql: DatabaseGatewaySql;
+  readonly sql: ResetDatabaseGateway["sql"];
   transactions = 0;
   identityError: Error | undefined;
   identityRows: { database_name: string }[];
   private transactionSql: DatabaseGatewaySql;
 
-  constructor(databaseName: string) {
+  constructor(databaseName: string, hostname = "localhost") {
     this.identityRows = [{ database_name: databaseName }];
-    this.sql = (() => {
-      throw new Error("Reset must use the transaction connection");
-    }) as unknown as DatabaseGatewaySql;
+    this.sql = Object.assign(
+      () => {
+        throw new Error("Reset must use the transaction connection");
+      },
+      {
+        options: {
+          host: [hostname],
+          database: databaseName,
+          user: "test_user",
+          connection: {},
+        },
+      },
+    ) as unknown as ResetDatabaseGateway["sql"];
     this.transactionSql = (async (strings: TemplateStringsArray) => {
       const statement = strings.join("?").trim();
       this.statements.push(statement);
@@ -51,6 +59,8 @@ class ResetDatabaseFake implements DatabaseGateway {
 }
 
 describe("test database reset safety", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
   test("initializes an allowed local client without opening a connection", async () => {
     const database = createTestDatabase(
       { name: "local_db", connectionString: "postgres://localhost/local_db" },
@@ -59,6 +69,174 @@ describe("test database reset safety", () => {
     expect(database.sql.options.host).toEqual(["localhost"]);
     expect(database.sql.options.database).toBe("local_db");
     await database.close();
+  });
+
+  test("initializes neondb only on an independently allowed preview host", async () => {
+    const hostname = "preview-pooler.example.invalid";
+    const database = createTestDatabase(
+      {
+        name: "neondb",
+        connectionString: `postgres://${hostname}/neondb?sslmode=require&channel_binding=require`,
+      },
+      "preview",
+      hostname,
+    );
+    expect(database.sql.options.host).toEqual([hostname]);
+    expect(database.sql.options.database).toBe("neondb");
+    await database.close();
+  });
+
+  test("uses the explicit target even when PostgreSQL environment defaults differ", async () => {
+    vi.stubEnv("PGHOST", "production.example.invalid");
+    vi.stubEnv("PGDATABASE", "production");
+    vi.stubEnv("PGOPTIONS", "-c database=production");
+    const database = createTestDatabase(
+      { name: "local_db", connectionString: "postgres://localhost/local_db" },
+      "test",
+    );
+    expect(database.sql.options.host).toEqual(["localhost"]);
+    expect(database.sql.options.database).toBe("local_db");
+    expect(database.sql.options.connection).not.toHaveProperty("options");
+    await database.close();
+  });
+
+  test.each([
+    undefined,
+    "",
+    "production.example.invalid",
+    "*.example.invalid",
+    "https://preview.example.invalid",
+    "preview.example.invalid:5432",
+    "preview.example.invalid,production.example.invalid",
+  ])(
+    "refuses neondb without an exact allowed host: %s",
+    async (allowedHost) => {
+      const config = {
+        name: "neondb",
+        connectionString: "postgres://preview.example.invalid/neondb",
+      };
+      expect(() =>
+        createTestDatabase(config, "preview", allowedHost),
+      ).toThrow();
+      const database = new ResetDatabaseFake(
+        "neondb",
+        "preview.example.invalid",
+      );
+      await expect(
+        wipeTestDatabase(database, config, "preview", allowedHost),
+      ).rejects.toThrow();
+      expect(database.transactions).toBe(0);
+    },
+  );
+
+  test("refuses the production host even when both databases are neondb", () => {
+    expect(() =>
+      createTestDatabase(
+        {
+          name: "neondb",
+          connectionString: "postgres://production.example.invalid/neondb",
+        },
+        "preview",
+        "preview.example.invalid",
+      ),
+    ).toThrow("host does not match TEST_DATABASE_ALLOWED_HOST");
+  });
+
+  test("does not fall back to the legacy preview name when the allowed host differs", () => {
+    expect(() =>
+      createTestDatabase(
+        {
+          name: "preview",
+          connectionString: "postgres://production.example.invalid/preview",
+        },
+        "preview",
+        "preview.example.invalid",
+      ),
+    ).toThrow("host does not match TEST_DATABASE_ALLOWED_HOST");
+  });
+
+  test.each([
+    "database=production",
+    "dbname=production",
+    "host=production.example.invalid",
+    "hostaddr=192.0.2.1",
+    "options=endpoint%3Dproduction",
+    "options=-c%20database%3Dproduction",
+    "user=production_owner",
+    "port=9999",
+    "application_name=tests%00options%00endpoint%3Dproduction",
+  ])(
+    "refuses URL connection overrides before constructing a client: %s",
+    async (query) => {
+      const config = {
+        name: "neondb",
+        connectionString: `postgres://preview.example.invalid/neondb?${query}`,
+      };
+      const hostname = "preview.example.invalid";
+      expect(() => createTestDatabase(config, "preview", hostname)).toThrow(
+        "unsupported connection options",
+      );
+      const database = new ResetDatabaseFake("neondb", hostname);
+      await expect(
+        wipeTestDatabase(database, config, "preview", hostname),
+      ).rejects.toThrow("unsupported connection options");
+      expect(database.transactions).toBe(0);
+    },
+  );
+
+  test.each([
+    { host: ["production.example.invalid"] },
+    { host: ["preview.example.invalid", "production.example.invalid"] },
+    { database: "production" },
+    { path: "/tmp/.s.PGSQL.5432" },
+    { connection: { database: "production" } },
+    { connection: { options: "endpoint=production" } },
+    { connection: { application_name: "tests\0options\0endpoint=production" } },
+    { user: "user\0options\0endpoint=production" },
+  ])(
+    "refuses an effective driver target that differs from the checked URL",
+    async (options) => {
+      const hostname = "preview.example.invalid";
+      const database = new ResetDatabaseFake("neondb", hostname);
+      Object.assign(database.sql.options, options);
+      await expect(
+        wipeTestDatabase(
+          database,
+          { name: "neondb", connectionString: `postgres://${hostname}/neondb` },
+          "preview",
+          hostname,
+        ),
+      ).rejects.toThrow(
+        "Database client does not match the allowed reset target",
+      );
+      expect(database.transactions).toBe(0);
+    },
+  );
+
+  test("rejects differing URL and driver database parsing without connecting", () => {
+    expect(() =>
+      createTestDatabase(
+        {
+          name: "local_db",
+          connectionString: "postgres://localhost/%6cocal_db",
+        },
+        "test",
+      ),
+    ).toThrow("Database client does not match the allowed reset target");
+  });
+
+  test("refuses startup parameter injection through encoded user information", () => {
+    expect(() =>
+      createTestDatabase(
+        {
+          name: "neondb",
+          connectionString:
+            "postgres://user%00options%00endpoint%3Dproduction:password@preview.example.invalid/neondb",
+        },
+        "preview",
+        "preview.example.invalid",
+      ),
+    ).toThrow("unsupported connection options");
   });
 
   test("rejects ambiguous credentials before postgres.js can parse a remote host", async () => {
@@ -102,24 +280,29 @@ describe("test database reset safety", () => {
   });
 
   test.each([
-    ["test", "localhost", "local_db"],
-    ["test", "127.0.0.1", "test_db"],
-    ["development", "[::1]", "local_db"],
-    ["preview", "preview.example.invalid", "preview"],
-  ])("resets %s on an allowed target", async (mode, hostname, name) => {
-    const database = new ResetDatabaseFake(name);
-    await wipeTestDatabase(
-      database,
-      { name, connectionString: `postgresql://${hostname}/${name}` },
-      mode,
-    );
-    expect(database.transactions).toBe(1);
-    expect(database.statements).toEqual([
-      "SELECT current_database() AS database_name",
-      "DROP SCHEMA public CASCADE",
-      "CREATE SCHEMA public",
-    ]);
-  });
+    ["test", "localhost", "local_db", undefined],
+    ["test", "127.0.0.1", "test_db", undefined],
+    ["development", "[::1]", "local_db", undefined],
+    ["preview", "preview.example.invalid", "preview", undefined],
+    ["preview", "preview.example.invalid", "neondb", "preview.example.invalid"],
+  ])(
+    "resets %s on an allowed target",
+    async (mode, hostname, name, allowedHost) => {
+      const database = new ResetDatabaseFake(name, hostname);
+      await wipeTestDatabase(
+        database,
+        { name, connectionString: `postgresql://${hostname}/${name}` },
+        mode,
+        allowedHost,
+      );
+      expect(database.transactions).toBe(1);
+      expect(database.statements).toEqual([
+        "SELECT current_database() AS database_name",
+        "DROP SCHEMA public CASCADE",
+        "CREATE SCHEMA public",
+      ]);
+    },
+  );
 
   test.each([undefined, "", "production", "staging"])(
     "rejects unsafe mode %s before querying",
@@ -167,7 +350,11 @@ describe("test database reset safety", () => {
   );
 
   test("refuses a production connection disguised as preview", async () => {
-    const database = new ResetDatabaseFake("production");
+    const database = new ResetDatabaseFake(
+      "preview",
+      "preview.example.invalid",
+    );
+    database.identityRows = [{ database_name: "production" }];
     await expect(
       wipeTestDatabase(
         database,
