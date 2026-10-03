@@ -14,6 +14,16 @@ function createGateway() {
 }
 
 describe("PiAiChatGateway", () => {
+  test.each([
+    { provider: "openai-codex", model: "gpt-5.4-mini" },
+    { provider: "zai-coding-cn", model: "glm-4.7" },
+  ])("preserves the public catalog fixture $provider/$model", (selection) => {
+    const gateway = new PiAiChatGateway({ ...selection, apiKey: "test" });
+
+    expect(gateway.getDefaultModel()).toEqual(selection);
+    expect(gateway.getContextWindowTokens(selection)).toBeGreaterThan(0);
+  });
+
   test("uses the selected model native output capacity", () => {
     const gateway = createGateway();
     const model = gateway.getDefaultModel();
