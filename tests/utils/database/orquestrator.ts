@@ -1,7 +1,9 @@
+/// <reference types="vite/client" />
+
 import { faker } from "@faker-js/faker";
 import { v4 as uuidv4 } from "uuid";
 import { createApplication } from "~/infra/bootstrap";
-import { Database } from "~/infra/database";
+import type { Database } from "~/infra/database";
 import type { ArtifactService } from "~/modules/artifacts/services/ArtifactService";
 import { TestCashFlowSpreadsheetGateway } from "~/modules/cash-flow/gateway/CashFlowSpreadsheetGateway/TestCashFlowSpreadsheetGateway";
 import type { CashFlowService } from "~/modules/cash-flow/services/CashFlowService";
@@ -38,6 +40,10 @@ import type {
 } from "~/shared/config/Config";
 import { loadConfig } from "~/shared/config/Config";
 import { ValidationException } from "~/shared/errors/DomainErrors";
+import {
+  createTestDatabase,
+  wipeTestDatabase,
+} from "~/tests/utils/database/wipeTestDatabase";
 
 export interface TranscriptDTO {
   id: string;
@@ -77,9 +83,10 @@ export class Orquestrator {
 
   constructor() {
     this.config = loadConfig();
-    this.database = new Database(this.config.database.connectionString, {
-      onnotice: () => {},
-    });
+    this.database = createTestDatabase(
+      this.config.database,
+      import.meta.env.MODE,
+    );
 
     this.databaseConfig = this.config.database;
     this.googleConfig = this.config.google;
@@ -123,8 +130,11 @@ export class Orquestrator {
   }
 
   async wipeDatabase(): Promise<void> {
-    await this.database.sql`DROP SCHEMA public CASCADE`;
-    await this.database.sql`CREATE SCHEMA public`;
+    await wipeTestDatabase(
+      this.database,
+      this.databaseConfig,
+      import.meta.env.MODE,
+    );
   }
 
   async clearDatabase(): Promise<void> {
@@ -256,5 +266,5 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await orquestrator.close();
+  await orquestrator?.close();
 });
