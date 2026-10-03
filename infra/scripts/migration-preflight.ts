@@ -1,3 +1,4 @@
+import { devNull } from "os";
 import { assertNonProductionDatabaseTarget } from "~/infra/non-production-database-target";
 
 const allowedMigrationFlags = new Set([
@@ -52,4 +53,29 @@ export function assertMigrationPreflight(
       );
     }
   }
+}
+
+export function prepareMigrationCommand(
+  mode: string,
+  env: NodeJS.ProcessEnv,
+  args: string[],
+  migrationsDir: string,
+) {
+  assertMigrationPreflight(mode, env, args);
+  if (args.some((argument) => /^--(?:no-)?env-?path(?:=|$)/i.test(argument))) {
+    throw new Error("Migration environment is already loaded by the wrapper");
+  }
+  const childEnv: NodeJS.ProcessEnv = {
+    ...env,
+    DATABASE_URL: env.DATABASE_CONNECTION_STRING,
+  };
+  for (const key of Object.keys(childEnv)) {
+    if (key.startsWith("DOTENV_")) delete childEnv[key];
+  }
+
+  // The CLI loads dotenv again; an empty file prevents changing the checked target.
+  return {
+    args: ["--migrations-dir", migrationsDir, ...args, "--envPath", devNull],
+    env: childEnv,
+  };
 }
