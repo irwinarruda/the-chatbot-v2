@@ -227,6 +227,97 @@ describe("PiMessageMapper", () => {
     });
   });
 
+  test("uses the same JSON representation for tool result text and details", () => {
+    const createdAt = new Date("2026-10-03T12:00:00.000Z");
+    const messages = PiMessageMapper.map(
+      contextMessages([
+        {
+          role: MessageRole.Assistant,
+          content: {
+            type: MessageContentType.ToolCall,
+            callId: "call-json",
+            name: "list_todos",
+            arguments: { after: createdAt, omitted: undefined },
+          },
+        },
+        {
+          role: MessageRole.Tool,
+          content: {
+            type: MessageContentType.ToolResult,
+            callId: "call-json",
+            outcome: {
+              status: ToolResultStatus.Succeeded,
+              data: { createdAt, omitted: undefined, values: [1, null, true] },
+            },
+          },
+        },
+      ]),
+      model,
+    );
+    expect(messages[0]).toMatchObject({
+      content: [{ arguments: { after: createdAt.toISOString() } }],
+    });
+    const result = messages[1];
+    expect(result.role).toBe("toolResult");
+    if (result.role !== "toolResult") throw new Error("Expected a tool result");
+    expect(result.details).toEqual({
+      status: ToolResultStatus.Succeeded,
+      data: { createdAt: createdAt.toISOString(), values: [1, null, true] },
+    });
+    expect(result.content).toEqual([
+      { type: "text", text: JSON.stringify(result.details) },
+    ]);
+  });
+
+  test.each([BigInt(1), { toJSON: () => BigInt(1) }])(
+    "rejects tool results that cannot be represented as JSON",
+    (data) => {
+      expect(() =>
+        PiMessageMapper.map(
+          contextMessages([
+            {
+              role: MessageRole.Assistant,
+              content: {
+                type: MessageContentType.ToolCall,
+                callId: "call-invalid",
+                name: "list_todos",
+                arguments: {},
+              },
+            },
+            {
+              role: MessageRole.Tool,
+              content: {
+                type: MessageContentType.ToolResult,
+                callId: "call-invalid",
+                outcome: { status: ToolResultStatus.Succeeded, data },
+              },
+            },
+          ]),
+          model,
+        ),
+      ).toThrow(ValidationException);
+    },
+  );
+
+  test("rejects arrays where the provider requires tool argument objects", () => {
+    expect(() =>
+      PiMessageMapper.map(
+        contextMessages([
+          {
+            role: MessageRole.Assistant,
+            content: {
+              type: MessageContentType.ToolCall,
+              callId: "call-array",
+              name: "list_todos",
+              arguments: [1, 2],
+            },
+          },
+        ]),
+        model,
+      ),
+    ).toThrow(ValidationException);
+  });
+
   test("rejects results without an earlier canonical tool call", () => {
     expect(() =>
       PiMessageMapper.map(
