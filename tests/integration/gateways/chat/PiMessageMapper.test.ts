@@ -139,6 +139,47 @@ describe("PiMessageMapper", () => {
     });
   });
 
+  test("sends JSON-compatible tool arguments and result details", () => {
+    const paidAt = new Date("2026-10-01T12:00:00.000Z");
+    const messages = PiMessageMapper.map(
+      contextMessages([
+        {
+          role: MessageRole.Assistant,
+          content: {
+            type: MessageContentType.ToolCall,
+            callId: "call-json",
+            name: "pay_bill",
+            arguments: { name: "Energy", optional: undefined },
+          },
+        },
+        {
+          role: MessageRole.Tool,
+          content: {
+            type: MessageContentType.ToolResult,
+            callId: "call-json",
+            outcome: {
+              status: ToolResultStatus.Succeeded,
+              data: { paidAt, optional: undefined, amount: 100 },
+            },
+          },
+        },
+      ]),
+      model,
+    );
+
+    expect(messages[0]).toMatchObject({
+      content: [{ arguments: { name: "Energy" } }],
+    });
+    const outcome = {
+      status: ToolResultStatus.Succeeded,
+      data: { paidAt: "2026-10-01T12:00:00.000Z", amount: 100 },
+    };
+    expect(messages[1]).toMatchObject({
+      content: [{ type: "text", text: JSON.stringify(outcome) }],
+      details: outcome,
+    });
+  });
+
   test("replays generation metadata and signed content without loss", () => {
     const generation = {
       id: crypto.randomUUID(),

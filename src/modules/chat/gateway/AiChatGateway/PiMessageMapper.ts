@@ -1,12 +1,14 @@
 import type {
   Api,
   AssistantMessage,
+  JsonObject,
   Model,
   Message as PiMessage,
   StopReason,
   TextContent,
   Usage,
 } from "@earendil-works/pi-ai";
+import { z } from "zod";
 import type {
   AiChatContextMessageDTO,
   AiGenerationContextDTO,
@@ -48,12 +50,13 @@ export class PiMessageMapper {
             "Tool results must follow their tool call in the model context",
           );
         }
+        const outcomeText = JSON.stringify(content.outcome);
         mapped.push({
           role: "toolResult",
           toolCallId: content.callId,
           toolName,
-          content: [{ type: "text", text: JSON.stringify(content.outcome) }],
-          details: content.outcome,
+          content: [{ type: "text", text: outcomeText }],
+          details: z.json().parse(JSON.parse(outcomeText)),
           isError: content.outcome.status !== ToolResultStatus.Succeeded,
           timestamp: message.timestamp,
         });
@@ -95,9 +98,11 @@ export class PiMessageMapper {
         }
         if (content.type === MessageContentType.ToolCall) {
           toolNames.set(content.callId, content.name);
-          let toolArguments: Record<string, unknown>;
+          let toolArguments: JsonObject;
           if (content.arguments && typeof content.arguments === "object") {
-            toolArguments = content.arguments as Record<string, unknown>;
+            toolArguments = z
+              .record(z.string(), z.json())
+              .parse(JSON.parse(JSON.stringify(content.arguments)));
           } else {
             toolArguments = { raw: String(content.arguments ?? "") };
           }
