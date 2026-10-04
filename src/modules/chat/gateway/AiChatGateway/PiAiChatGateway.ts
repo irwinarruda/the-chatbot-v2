@@ -1,12 +1,14 @@
 import {
   type Api,
   type CredentialStore,
+  createProvider,
   getSupportedThinkingLevels,
   type Model,
   type MutableModels,
   type SimpleStreamOptions,
   Type,
 } from "@earendil-works/pi-ai";
+import { openAICompletionsApi } from "@earendil-works/pi-ai/api/openai-completions.lazy";
 import { builtinModels } from "@earendil-works/pi-ai/providers/all";
 import { z } from "zod";
 import type { ConversationSummary } from "~/modules/chat/entities/ConversationSummary";
@@ -318,7 +320,7 @@ export class PiAiChatGateway implements AiChatGateway {
   private createModels(credentials?: AiCredentialStore): MutableModels {
     let providerCredentials: CredentialStore | undefined;
     if (credentials) providerCredentials = createPiCredentialStore(credentials);
-    return builtinModels({
+    const models = builtinModels({
       credentials: providerCredentials,
       authContext: {
         env: async (name) => {
@@ -328,6 +330,22 @@ export class PiAiChatGateway implements AiChatGateway {
         fileExists: async () => false,
       },
     });
+    const provider = models.getProvider("zai-coding-cn");
+    const model = models.getModel("zai", "glm-5.2");
+    // Pi 0.99.2 dropped this model from the China catalog; keep its plan endpoint.
+    if (provider?.baseUrl && model && !models.getModel(provider.id, model.id)) {
+      models.setProvider(
+        createProvider({
+          ...provider,
+          models: [
+            ...provider.getModels(),
+            { ...model, provider: provider.id, baseUrl: provider.baseUrl },
+          ],
+          api: openAICompletionsApi(),
+        }),
+      );
+    }
+    return models;
   }
 
   private getModel(

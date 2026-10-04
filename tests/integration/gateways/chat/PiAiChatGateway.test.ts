@@ -2,7 +2,10 @@ import { describe, expect, test, vi } from "vitest";
 import { MessageContentType } from "~/modules/chat/entities/enums/MessageContentType";
 import { MessageRole } from "~/modules/chat/entities/enums/MessageRole";
 import { ReasoningEffort } from "~/modules/chat/entities/enums/ReasoningEffort";
-import { PiAiChatGateway } from "~/modules/chat/gateway/AiChatGateway/PiAiChatGateway";
+import {
+  type AiCredentialStoreFactory,
+  PiAiChatGateway,
+} from "~/modules/chat/gateway/AiChatGateway/PiAiChatGateway";
 import type { AiCredentialStore } from "~/modules/chat/gateway/AiCredentialStore";
 
 function createGateway() {
@@ -14,6 +17,100 @@ function createGateway() {
 }
 
 describe("PiAiChatGateway", () => {
+  test("starts with GLM-5.2 on the China Coding Plan", async () => {
+    const gateway = new PiAiChatGateway({
+      provider: "zai-coding-cn",
+      apiKey: "test",
+      model: "glm-5.2",
+    });
+    const selection = gateway.getDefaultModel();
+
+    expect(selection).toEqual({ provider: "zai-coding-cn", model: "glm-5.2" });
+    expect(gateway.getContextWindowTokens(selection)).toBe(1_000_000);
+    expect(gateway.getMaxOutputTokens(selection)).toBe(131_072);
+    expect(gateway.getSupportedReasoningEfforts(selection)).toEqual([
+      ReasoningEffort.Off,
+      ReasoningEffort.High,
+      ReasoningEffort.Max,
+    ]);
+    await expect(gateway.getAvailableModels("test-user")).resolves.toEqual(
+      expect.arrayContaining([
+        { provider: "zai-coding-cn", model: "glm-5.2" },
+        { provider: "zai-coding-cn", model: "glm-5.3" },
+      ]),
+    );
+  });
+
+  test.each(["environment", "stored"])(
+    "routes GLM-5.2 through the China endpoint with %s credentials",
+    async (source) => {
+      const credentials: AiCredentialStore = {
+        read: async (providerId) => {
+          if (providerId !== "zai-coding-cn") return undefined;
+          return { type: "api_key", key: "stored-cn-key" };
+        },
+        list: async () => [{ providerId: "zai-coding-cn", type: "api_key" }],
+        modify: async (_providerId, update) => update(undefined),
+        delete: async () => {},
+      };
+      let credentialStores: AiCredentialStoreFactory | undefined;
+      let expectedKey = "environment-cn-key";
+      if (source === "stored") {
+        credentialStores = { create: () => credentials };
+        expectedKey = "stored-cn-key";
+      }
+      const gateway = new PiAiChatGateway(
+        {
+          provider: "zai-coding-cn",
+          apiKey: "environment-cn-key",
+          model: "glm-5.2",
+        },
+        credentialStores,
+      );
+      const chunk = {
+        id: "test-completion",
+        object: "chat.completion.chunk",
+        created: 1,
+        model: "glm-5.2",
+        choices: [
+          {
+            index: 0,
+            delta: { content: "China plan reply" },
+            finish_reason: "stop",
+          },
+        ],
+      };
+      const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+        new Response(`data: ${JSON.stringify(chunk)}\n\ndata: [DONE]\n\n`, {
+          headers: { "Content-Type": "text/event-stream" },
+        }),
+      );
+      try {
+        await expect(
+          gateway.generateText(
+            "test-user",
+            gateway.getDefaultModel(),
+            "system",
+            "hello",
+          ),
+        ).resolves.toBe("China plan reply");
+        expect(fetch).toHaveBeenCalledOnce();
+        const [url, options] = fetch.mock.calls[0];
+        expect(String(url)).toBe(
+          "https://open.bigmodel.cn/api/coding/paas/v4/chat/completions",
+        );
+        expect(new Headers(options?.headers).get("authorization")).toBe(
+          `Bearer ${expectedKey}`,
+        );
+        expect(JSON.parse(String(options?.body))).toMatchObject({
+          model: "glm-5.2",
+        });
+      } finally {
+        fetch.mockRestore();
+      }
+    },
+  );
+
   test("uses the selected model native output capacity", () => {
     const gateway = createGateway();
     const model = gateway.getDefaultModel();
