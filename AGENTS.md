@@ -40,6 +40,14 @@ Never add `Co-authored-by`, `Co-Authored-By`, or any other co-author trailer to
 commits when acting as an agent. Commit messages must not attribute the agent
 as a co-author.
 
+## Biome
+
+Keep `biome.json` independent of the Biome version: no nursery rules, because a
+release can rename one and an unknown key stops every Biome command. Keep the
+`$schema` local to `node_modules` and `files.includes` an allowlist of file
+types, so a release cannot start reformatting new ones. Markdown stays excluded
+because `templates/prompts/*.md` are sent to the models verbatim.
+
 ## Environment System
 
 Two-layer env loading is handled by the Vite/Vitest configs and infra scripts:
