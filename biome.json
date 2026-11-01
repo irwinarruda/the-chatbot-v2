@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -8,7 +8,7 @@
   },
   "files": {
     "includes": [
-      "**",
+      "**/*.{ts,tsx,js,mjs,json,css}",
       "!!**/dist",
       "!!**/.output",
       "!!**/.vinxi",
@@ -39,14 +39,6 @@
       },
       "complexity": {
         "noStaticOnlyClass": "off"
-      },
-      "nursery": {
-        "useSortedClasses": {
-          "level": "error",
-          "options": {
-            "functions": ["cn", "clsx", "cva", "tw", "tw.*"]
-          }
-        }
       },
       "style": {
         "useNodejsImportProtocol": "off",
