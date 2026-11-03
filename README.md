@@ -50,55 +50,54 @@ The first version was written in **C# / .NET 9** ([irwinarruda/the-chatbot](http
 
 ## Architecture
 
-The application is a **feature-oriented modular monolith**. Each capability owns its entities, Services, gateway contracts, DTOs, and client code. Shared HTTP and client infrastructure coordinate modules without taking ownership of their business rules.
+The application follows the layout of [favo-cli](https://github.com/irwinarruda/favo-cli): a pure core shared by both sides, a layered backend split into modules, and an MVVM web client. `tests/architecture.test.ts` enforces it, and the skills in `.agents/skills` explain it.
 
 ```text
 WhatsApp webhook        TanStack web app
         │                      │
-        └──────────┬───────────┘
-                   ▼
-          shared HTTP controllers
-                   ▼
-             module Services
-            ┌──────┼──────┐
-            ▼      ▼      ▼
-         entities  SQL   gateway contracts
-                    │      │
-                    ▼      ▼
-               PostgreSQL  Google / Meta / Pi / OpenAI / R2
+        ▼                      ▼
+   controllers / AI tools   screens → Zustand services → repositories
+        │                                              │
+        ▼                                              ▼
+     services ─── domain entities           HTTP, parsed by shared contracts
+        │
+   ┌────┴─────┐
+   ▼          ▼
+repositories  gateways
+   │          │
+   ▼          ▼
+PostgreSQL   Google / Meta / Pi / OpenAI / R2
 ```
 
-- **Services own workflows and persistence.** SQL stays close to the behavior that uses it. There is no ORM or repository layer.
-- **Entities own invariants and transitions.** Application code does not pass loosely shaped records around when the domain owns a stronger type.
-- **Gateways isolate external systems.** Real providers and deterministic test implementations share the same module-owned contracts.
-- **Zod DTOs protect boundaries.** HTTP, SSE, provider, and client mappings are parsed before they enter application behavior.
-- **Composition is explicit.** [`infra/bootstrap.ts`](./infra/bootstrap.ts) constructs the typed application graph and supports targeted dependency overrides in tests.
+- **The domain is pure.** Entities own invariants and transitions and import nothing but zod and uuid.
+- **Contracts are the shared language.** Zod schemas for every HTTP payload, SSE event and AI tool input, parsed on both sides.
+- **Services hold the rules; repositories hold the SQL.** A service never runs a query or reads the environment.
+- **Gateways isolate external systems.** Every provider has an interface, a real implementation and a test double side by side.
+- **Modules import downward.** `system` → `identity` → `chat` → `accounts`, `artifacts`, `cash-flow`, `notes`, `todos`. A flow that changes two modules lives in the higher one.
+- **Composition is explicit.** `src/server/server.ts` wires every service by hand from the gateways it receives; `src/server/production.ts` builds the real ones and is the only reader of the environment.
 - **Both interfaces share the same core.** WhatsApp and web chat enter the same messaging workflow; only their delivery gateways differ.
 
 ### Repository shape
 
 ```text
-infra/
-  bootstrap.ts          # Typed application composition root
-  database.ts           # postgres.js connection boundary
-  migrations/           # node-pg-migrate migrations
-  scripts/              # Local, credential, migration, and release utilities
-
 src/
-  modules/
-    chat/                # Conversations, AI tools, model selection, messaging
-    identity/            # Users, Google auth, credentials, access control
-    cash-flow/           # Transactions, balances, Sheets integration, bills
-    todos/               # Todo domain, Service, HTTP contracts, and UI
-    notes/               # Markdown notes, AI refinement, and UI
-    system/              # Status and migration capabilities
-  shared/
-    client/              # Routes, terminal UI, preferences, and i18n
-    http/                # Controllers, middleware, and web server composition
-    config/              # Runtime configuration schemas
+  domain/<area>/         # Entities, value objects, rules and shared vocabulary
+  contracts/
+    http/<area>/         # Request, response and event schemas, plus mappers
+    tools/<area>/        # AI tool input schemas
+  server/
+    server.ts            # Composition root
+    production.ts        # Real gateways and the environment
+    shared/              # Config, database, errors, HTTP middleware
+    modules/<module>/    # controllers/ services/ repositories/ gateways/ utils/
+  client/
+    routes/              # TanStack page routes
+    shared/              # Store, theme, shadcn primitives, terminal chrome, i18n
+    modules/<module>/    # app/ (services, repositories, gateways), parsers/, screens/, components/
+  routes.ts              # URL table for pages and controllers
 
-tests/
-  entities/ services/ dtos/ client/ integration/ http/ architecture/ ui/
+infra/                   # Migrations and operational scripts
+tests/                   # domain/ contracts/ server/ client/ integration/ and architecture.test.ts
 ```
 
 <p align="center">
@@ -117,7 +116,7 @@ tests/
 | AI runtime | **Pi AI** + **Pi Agent Core** | Provider/model normalization, reasoning configuration, streaming, and the tool loop. |
 | Speech and storage | **OpenAI speech-to-text**, **Cloudflare R2** | Audio transcription and durable media storage. |
 | Integrations | **WhatsApp Business Cloud API**, **Google OAuth**, **Google Sheets** | Messaging, authentication, and finance data. |
-| Interface | **Tailwind CSS v4**, **shadcn/ui** | Responsive terminal visual system and accessible primitives. |
+| Interface | **Tailwind CSS v4**, **shadcn/ui**, [Favo theme](https://github.com/irwinarruda/favo-theme) | Responsive terminal-flavored UI in Honey (dark) and Wax (light), on accessible primitives. |
 | Quality | **TypeScript**, **Biome**, **Vitest** | Static checking, formatting/linting, and layered tests. |
 
 ## Running locally

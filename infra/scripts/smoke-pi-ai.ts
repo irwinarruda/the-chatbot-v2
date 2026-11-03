@@ -1,9 +1,9 @@
 import { resolve } from "path";
-import { MessageContentType } from "~/modules/chat/entities/enums/MessageContentType";
-import { MessageRole } from "~/modules/chat/entities/enums/MessageRole";
-import { ReasoningEffort } from "~/modules/chat/entities/enums/ReasoningEffort";
-import { PiAiChatGateway } from "~/modules/chat/gateway/AiChatGateway/PiAiChatGateway";
-import { loadConfig } from "~/shared/config/Config";
+import { MessageContentType } from "~/domain/chat/message-content-type";
+import { MessageRole } from "~/domain/chat/message-role";
+import { ReasoningEffort } from "~/domain/chat/reasoning-effort";
+import { PiAiChatGateway } from "~/server/modules/chat/gateways/pi.ai-chat";
+import { loadConfig } from "~/server/shared/config/config";
 import { loadModeEnv, resolveMode } from "../../plugins/env";
 
 const root = resolve(import.meta.dirname, "..", "..");
@@ -11,7 +11,7 @@ const mode = resolveMode(process.env.MODE ?? "development");
 
 loadModeEnv(mode, root);
 
-const config = loadConfig();
+const config = loadConfig(process.env);
 const gateway = new PiAiChatGateway(config.ai);
 const response = await gateway.complete({
   idUser: "pi-smoke-test",

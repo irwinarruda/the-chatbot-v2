@@ -1,0 +1,29 @@
+import type { ReactNode } from "react";
+import { ThemeLogo } from "./ThemeLogo";
+
+export function TerminalPageHeader({
+  badge,
+  heading,
+  subtitle,
+  withLogo = true,
+}: {
+  badge?: ReactNode;
+  heading: string;
+  subtitle?: string;
+  withLogo?: boolean;
+}) {
+  return (
+    <header className="mb-6 text-center">
+      {withLogo && <ThemeLogo />}
+      <h1 className="m-0 mb-1.5 font-bold font-mono text-2xl text-primary tracking-tight sm:text-3xl">
+        {heading}
+      </h1>
+      {subtitle && (
+        <p className="mx-auto mt-1.5 max-w-lg text-balance text-muted-foreground text-sm leading-relaxed">
+          {subtitle}
+        </p>
+      )}
+      {badge}
+    </header>
+  );
+}

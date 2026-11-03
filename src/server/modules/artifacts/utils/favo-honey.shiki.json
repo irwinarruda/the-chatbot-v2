@@ -1,0 +1,483 @@
+{
+  "name": "favo-honey",
+  "type": "dark",
+  "colors": {
+    "editor.background": "#14110B",
+    "editor.foreground": "#F3E7CF"
+  },
+  "tokenColors": [
+    {
+      "name": "Comments and doc comments",
+      "scope": [
+        "comment",
+        "comment.block.documentation entity.name.type",
+        "comment.block.documentation variable",
+        "comment.block.javadoc variable.parameter",
+        "string.quoted.docstring"
+      ],
+      "settings": {
+        "foreground": "#A3937A"
+      }
+    },
+    {
+      "name": "Tags inside doc comments",
+      "scope": [
+        "comment keyword.codetag.notation",
+        "comment.block.documentation keyword",
+        "comment.block.documentation storage.type.class",
+        "punctuation.definition.block.tag.jsdoc"
+      ],
+      "settings": {
+        "foreground": "#FCAF41"
+      }
+    },
+    {
+      "name": "Keywords, storage, modifiers, control flow, imports",
+      "scope": [
+        "constant.language.import-export-all",
+        "keyword",
+        "storage",
+        "storage.type.function.arrow"
+      ],
+      "settings": {
+        "foreground": "#FCAF41"
+      }
+    },
+    {
+      "name": "Preprocessor directives",
+      "scope": ["punctuation.definition.directive"],
+      "settings": {
+        "foreground": "#FCAF41"
+      }
+    },
+    {
+      "name": "Constructor calls",
+      "scope": ["new.expr entity.name.function"],
+      "settings": {
+        "foreground": "#FCAF41"
+      }
+    },
+    {
+      "name": "String escapes and interpolation marks",
+      "scope": [
+        "constant.character.escape",
+        "constant.character.format.placeholder",
+        "constant.character.string.escape",
+        "constant.other.placeholder",
+        "punctuation.definition.interpolation",
+        "punctuation.definition.template-expression",
+        "punctuation.definition.variable.shell",
+        "punctuation.section.embedded"
+      ],
+      "settings": {
+        "foreground": "#FCAF41"
+      }
+    },
+    {
+      "name": "Functions, methods, calls, decorators",
+      "scope": [
+        "entity.name.function",
+        "meta.decorator variable.other",
+        "meta.function-call.generic",
+        "meta.function.decorator support.type",
+        "punctuation.decorator",
+        "punctuation.definition.annotation",
+        "punctuation.definition.decorator",
+        "source.lua support.function",
+        "storage.type.annotation",
+        "support.function.any-method",
+        "support.function.console",
+        "support.function.dom",
+        "support.function.json",
+        "support.function.math",
+        "support.function.promise",
+        "variable.function"
+      ],
+      "settings": {
+        "foreground": "#74C7FF"
+      }
+    },
+    {
+      "name": "Functions from the standard library",
+      "scope": ["entity.name.function.support.builtin", "support.function"],
+      "settings": {
+        "foreground": "#77EDD1"
+      }
+    },
+    {
+      "name": "Attributes in HTML, XML and JSX",
+      "scope": ["entity.other.attribute-name"],
+      "settings": {
+        "foreground": "#74C7FF",
+        "fontStyle": "italic"
+      }
+    },
+    {
+      "name": "Types, classes, interfaces, structs, enums, traits",
+      "scope": [
+        "entity.name.class",
+        "entity.name.type",
+        "entity.other.inherited-class",
+        "support.class",
+        "support.type"
+      ],
+      "settings": {
+        "foreground": "#77EDD1"
+      }
+    },
+    {
+      "name": "Built-in types",
+      "scope": [
+        "keyword.other.type",
+        "source.cs keyword.type",
+        "source.go storage.type",
+        "source.java storage.type",
+        "storage.class.std.rust",
+        "storage.type.built-in",
+        "storage.type.c",
+        "storage.type.core.rust",
+        "storage.type.cs",
+        "storage.type.primitive"
+      ],
+      "settings": {
+        "foreground": "#77EDD1"
+      }
+    },
+    {
+      "name": "Type parameters",
+      "scope": [
+        "entity.name.type.lifetime",
+        "entity.name.type.parameter",
+        "entity.name.type.type-parameter",
+        "punctuation.definition.lifetime",
+        "storage.modifier.lifetime"
+      ],
+      "settings": {
+        "foreground": "#77EDD1",
+        "fontStyle": "italic"
+      }
+    },
+    {
+      "name": "Tags in HTML, XML and JSX",
+      "scope": ["entity.name.tag"],
+      "settings": {
+        "foreground": "#FCAF41"
+      }
+    },
+    {
+      "name": "Components in JSX",
+      "scope": ["support.class.component"],
+      "settings": {
+        "foreground": "#77EDD1",
+        "fontStyle": "italic"
+      }
+    },
+    {
+      "name": "Keys in JSON, YAML and TOML",
+      "scope": [
+        "entity.name.section.toml",
+        "entity.name.tag.yaml",
+        "keyword.other.definition.ini",
+        "support.type.property-entry",
+        "support.type.property-name.json",
+        "variable.other.key.toml"
+      ],
+      "settings": {
+        "foreground": "#77EDD1"
+      }
+    },
+    {
+      "name": "Strings and characters",
+      "scope": ["string"],
+      "settings": {
+        "foreground": "#B8EC6D"
+      }
+    },
+    {
+      "name": "Regular expressions",
+      "scope": [
+        "constant.character.character-class.regexp",
+        "constant.character.control.regexp",
+        "constant.character.escape.backslash.regexp",
+        "constant.character.numeric.regexp",
+        "constant.other.character-class",
+        "keyword.control.anchor.regexp",
+        "keyword.operator.negation.regexp",
+        "keyword.operator.or.regexp",
+        "keyword.operator.quantifier.regexp",
+        "keyword.other.back-reference.regexp",
+        "punctuation.definition.character-class.regexp",
+        "punctuation.definition.group.regexp",
+        "string.regexp",
+        "string.regexp keyword.other"
+      ],
+      "settings": {
+        "foreground": "#F9786A"
+      }
+    },
+    {
+      "name": "Numbers, booleans, null, enum members, symbols",
+      "scope": ["constant", "variable.other.enummember"],
+      "settings": {
+        "foreground": "#BC9DFB"
+      }
+    },
+    {
+      "name": "Constants and read-only variables",
+      "scope": ["entity.name.constant", "variable.other.constant"],
+      "settings": {
+        "foreground": "#BC9DFB"
+      }
+    },
+    {
+      "name": "Globals from the standard library",
+      "scope": [
+        "support.class.console",
+        "support.constant",
+        "support.variable",
+        "variable.other.predefined"
+      ],
+      "settings": {
+        "foreground": "#BC9DFB"
+      }
+    },
+    {
+      "name": "this, self and super, and labels",
+      "scope": [
+        "entity.name.label",
+        "keyword.other.this",
+        "variable.language",
+        "variable.parameter.function.language.special"
+      ],
+      "settings": {
+        "foreground": "#BC9DFB",
+        "fontStyle": "italic"
+      }
+    },
+    {
+      "name": "Parameters",
+      "scope": ["entity.name.variable.parameter", "variable.parameter"],
+      "settings": {
+        "foreground": "#F898C3",
+        "fontStyle": "italic"
+      }
+    },
+    {
+      "name": "Variables, properties, fields, object keys",
+      "scope": [
+        "entity.name.variable",
+        "meta.object-literal.key",
+        "support.type.property-name",
+        "variable"
+      ],
+      "settings": {
+        "foreground": "#F3E7CF"
+      }
+    },
+    {
+      "name": "Modules and namespaces",
+      "scope": [
+        "entity.name.import",
+        "entity.name.namespace",
+        "entity.name.package",
+        "entity.name.scope-resolution",
+        "entity.name.type.module",
+        "entity.name.type.namespace",
+        "entity.name.type.package",
+        "storage.modifier.import",
+        "storage.modifier.package"
+      ],
+      "settings": {
+        "foreground": "#F3E7CF"
+      }
+    },
+    {
+      "name": "Brackets, commas, semicolons, tag brackets",
+      "scope": [
+        "keyword.operator.access.dot",
+        "keyword.operator.key-value",
+        "keyword.operator.namespace",
+        "keyword.operator.type.annotation",
+        "meta.brace",
+        "punctuation.accessor",
+        "punctuation.definition.tag",
+        "punctuation.section.embedded.begin.js.jsx",
+        "punctuation.section.embedded.begin.tsx",
+        "punctuation.section.embedded.end.js.jsx",
+        "punctuation.section.embedded.end.tsx",
+        "punctuation.separator",
+        "punctuation.terminator"
+      ],
+      "settings": {
+        "foreground": "#F3E7CF"
+      }
+    },
+    {
+      "name": "Plain text",
+      "scope": ["meta.embedded", "meta.template.expression"],
+      "settings": {
+        "foreground": "#F3E7CF"
+      }
+    },
+    {
+      "name": "Headings",
+      "scope": ["entity.name.section", "markup.heading"],
+      "settings": {
+        "foreground": "#FCAF41",
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "name": "Bold text",
+      "scope": ["markup.bold"],
+      "settings": {
+        "foreground": "#F898C3",
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "name": "Italic text",
+      "scope": ["markup.italic"],
+      "settings": {
+        "foreground": "#B8EC6D",
+        "fontStyle": "italic"
+      }
+    },
+    {
+      "name": "Inline code and code fences",
+      "scope": [
+        "fenced_code.block.language",
+        "markup.fenced_code",
+        "markup.inline.raw",
+        "markup.raw"
+      ],
+      "settings": {
+        "foreground": "#74C7FF"
+      }
+    },
+    {
+      "name": "Link text",
+      "scope": ["string.other.link.description", "string.other.link.title"],
+      "settings": {
+        "foreground": "#F3E7CF"
+      }
+    },
+    {
+      "name": "Link addresses",
+      "scope": ["markup.underline.link"],
+      "settings": {
+        "foreground": "#77EDD1"
+      }
+    },
+    {
+      "name": "List markers and rules",
+      "scope": [
+        "meta.separator.markdown",
+        "punctuation.definition.list.begin.markdown"
+      ],
+      "settings": {
+        "foreground": "#FCAF41"
+      }
+    },
+    {
+      "name": "Quotes",
+      "scope": ["markup.quote"],
+      "settings": {
+        "foreground": "#A3937A"
+      }
+    },
+    {
+      "name": "Struck text",
+      "scope": ["markup.strikethrough"],
+      "settings": {
+        "foreground": "#A3937A",
+        "fontStyle": "strikethrough"
+      }
+    },
+    {
+      "name": "CSS selectors and units",
+      "scope": [
+        "entity.other.attribute-name.class",
+        "entity.other.attribute-name.id",
+        "entity.other.attribute-name.parent-selector",
+        "entity.other.attribute-name.pseudo-class",
+        "entity.other.attribute-name.pseudo-element",
+        "keyword.other.unit",
+        "source.css entity.other.attribute-name",
+        "source.css support.function"
+      ],
+      "settings": {
+        "foreground": "#74C7FF",
+        "fontStyle": ""
+      }
+    },
+    {
+      "name": "CSS property names",
+      "scope": [
+        "support.type.vendored.property-name",
+        "variable.argument.css",
+        "variable.css"
+      ],
+      "settings": {
+        "foreground": "#F3E7CF"
+      }
+    },
+    {
+      "name": "CSS strings and color values",
+      "scope": [
+        "constant.other.color",
+        "source.css string",
+        "source.css variable.parameter.url",
+        "support.constant.color",
+        "support.constant.font-name",
+        "support.constant.property-value",
+        "support.constant.vendored.property-value"
+      ],
+      "settings": {
+        "foreground": "#FCAF41"
+      }
+    },
+    {
+      "name": "Added lines",
+      "scope": ["markup.inserted"],
+      "settings": {
+        "foreground": "#B8EC6D"
+      }
+    },
+    {
+      "name": "Removed lines",
+      "scope": ["markup.deleted"],
+      "settings": {
+        "foreground": "#F9786A"
+      }
+    },
+    {
+      "name": "Changed lines",
+      "scope": ["markup.changed"],
+      "settings": {
+        "foreground": "#74C7FF"
+      }
+    },
+    {
+      "name": "Errors",
+      "scope": ["invalid", "log.error"],
+      "settings": {
+        "foreground": "#F9786A"
+      }
+    },
+    {
+      "name": "Warnings",
+      "scope": ["log.warning"],
+      "settings": {
+        "foreground": "#FFC857"
+      }
+    },
+    {
+      "name": "Info",
+      "scope": ["log.info"],
+      "settings": {
+        "foreground": "#74C7FF"
+      }
+    }
+  ]
+}

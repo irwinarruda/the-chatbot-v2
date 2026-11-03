@@ -7,6 +7,6 @@ export default defineConfig({
     fileParallelism: false,
     globals: true,
     include: ["tests/client/**/*.test.tsx"],
-    setupFiles: ["tests/utils/setupUi.ts"],
+    setupFiles: ["tests/support/setup-ui.ts"],
   },
 });

@@ -1,190 +1,56 @@
 ---
 name: client-jsx-styleguide
-description: "Authoritative guide to The Chatbot client JSX/TSX and terminal UI implementation. Use whenever creating, editing, reviewing, or refactoring React screens, components, forms, tables, TSX/JSX layout, shadcn/Base UI primitives, Tailwind classes, theme tokens, chat or todo UI, prose, icons, focus states, responsive behavior, accessibility, or any user-facing interface code, even for a small UI tweak."
+description: Always load when creating or changing React views in src/client: routes, screens, components, dialogs, forms, layout, responsive behavior, accessibility, shadcn primitives, Tailwind classes, colors and the Favo theme. Also use when the request only says "make this look better", "add a button", "fix the mobile layout" or "change this color".
 ---
 
-# Client JSX Styleguide
+# Client JSX styleguide
 
-## Source of truth and precedence
+## Authority
 
-The implemented client UI, shared primitives, and terminal tokens in
-`src/shared/client/styles/tailwind.css` are the source of truth. This skill owns TSX/JSX
-implementation. Non-visual TypeScript belongs to `app-coding-styleguide`.
+This skill owns views and visuals. Placement comes from `client-architecture`; state and data from `client-service-styleguide`. `src/client/shared/styles/tailwind.css` is the source of truth for tokens; `references/favo-theme.md` explains them.
 
-Precedence:
+## Look
 
-1. The user's explicit request, scoped `AGENTS.md`, and an intentional nearby pattern.
-2. `src/shared/client/styles/tailwind.css`, terminal tokens, and shared UI primitives.
-3. This skill as the default client UI implementation guide.
+- The interface is a terminal window in the Favo theme: Honey (dark, default) and Wax (light), switched by `data-theme` on `<html>`. Keep the window frame, mono labels and prompts; it is text-forward and restrained, not a SaaS dashboard.
+- Colors come only from role tokens: `background`, `card`, `muted`, `popover`, `foreground`, `muted-foreground`, `faint`, `border`, `primary`, `brand`, `success`, `warning`, `info`, `hint`, `destructive`, `syntax-*`. Never a hex, `rgb()`, a Tailwind palette hue or a `dark:` branch; the default palette is switched off and the architecture test rejects color literals in TS.
+- Each color has one job. Honey (`primary`, `brand`) is brand, the active item and the primary action. `success` is a good outcome, `warning` needs attention, `destructive` is a problem or a destructive action, `info` is a link. Most text stays `foreground` or `muted-foreground`.
+- Tints are opacity on a signal (`bg-destructive/10`, `border-brand/25`), never a new color.
+- Borders and low layers over heavy shadows; overlays and shadows use `scrim`.
+- The logo keeps its shape; only its color follows the theme.
 
-Keep diffs focused. Do not restyle unrelated JSX or Tailwind classes.
+## Reuse before creating
 
-Read `references/terminal-design-system.md` when the task needs exact colors, token
-values, page shells, component recipes, chat/todo patterns, prose styling, animation,
-or icon semantics. Do not load it for a purely structural JSX edit.
+1. Look at the nearest analogous screen.
+2. Use `shared/components/ui` (shadcn on Base UI) and `shared/components/terminal` before writing markup. Never hand-roll a button, dialog, input, select, badge or panel.
+3. A component used by one screen sits beside it in `screens/<Name>/`; one used by several screens of a module goes in the module's `components/`; promote to `shared/components` only when it is domain-free and used across modules.
+4. Add a primitive with the shadcn CLI (`components.json` is configured), then make it use role tokens.
 
-## First decision: reuse before creating
+## Rules
 
-Before implementing UI:
-
-1. Inspect the nearest analogous screen/component.
-2. Search `src/shared/client/components/terminal` and
-   `src/shared/client/components/ui`.
-3. Check shadcn/Base UI exports and existing wrappers.
-4. Reuse the established primitive when it fits.
-5. Create a module component only for feature-owned reuse or independent behavior.
-6. Promote to shared UI only when it is genuinely app-wide.
-
-Do not hand-roll a button, dialog, input, popover, select, badge, or panel because the
-markup looks small. Small one-offs are how a design system becomes folklore.
-
-## Core visual rule
-
-The interface is a polished terminal emulator, not a generic SaaS dashboard:
-
-- monospace, compact, text-forward UI;
-- macOS terminal frame as the default shell;
-- semantic restrained color;
-- borders and low-opacity layers over heavy shadows;
-- subtle motion with reduced-motion support;
-- complete dark/light token remapping;
-- full-bleed mobile and framed desktop behavior.
-
-Use terminal tokens rather than ad hoc colors. Read the reference for the exact
-palette and component recipes.
-
-## File and component order
-
-For TSX files, prefer this top-level order:
-
-1. types;
-2. constants;
-3. pure helpers;
-4. components.
-
-Inside a component:
-
-1. props, hooks, selectors, refs, state, and direct values;
-2. derived values;
-3. event handlers and local helpers;
-4. effects/subscriptions;
-5. JSX return.
-
-Keep tightly coupled one-use helpers and small components in the consuming file.
-Split when the file becomes hard to scan, the component is reused, or it has an
-independent lifecycle/ownership.
-
-## JSX rules
-
-Write small, direct JSX:
-
-- use ternaries for real either/or UI;
-- use boolean-safe `&&` for show-or-nothing UI;
-- use early returns for large loading, missing, or unauthorized states;
-- avoid blank lines inside one prop group, expression tree, or child list;
-- use semantic HTML when a component primitive adds no value;
-- keep event handlers named `on{Name}{Event}`;
-- bind `error.handle()`/`handleSync()` at the callback prop when possible.
-
-```tsx
-{messages.length > 0 && <MessageList messages={messages} />}
-{isConnected ? <ConnectedStatus /> : <ReconnectStatus />}
-```
-
-Never use a number/string directly on the left of `&&`.
-
-## Styling
-
-Prefer, in order:
-
-1. existing component variants/props;
-2. semantic terminal or shadcn tokens;
-3. static Tailwind utilities and state variants;
-4. `cn()` for genuine computed composition;
-5. custom CSS only when tokens/utilities cannot express the need.
-
-Avoid hard-coded colors, arbitrary Tailwind values, new global selectors, CSS
-modules, new icon libraries, and one-off dark/light branches. Third-party imperative
-APIs may read raw token-equivalent colors when they cannot consume CSS variables.
-
-Represent interactive state with semantic `aria-*` attributes first and `data-*`
-attributes for visual state without an ARIA equivalent. Prefer static Tailwind
-variants over runtime class ternaries when practical.
-
-## Forms
-
-Forms own UI validation and conversion, not business rules.
-
-Prefer a module-local form seam with named pure operations when needed:
-
-- default values;
-- runtime schema;
-- edit/entity-to-field hydration;
-- field-data-to-request conversion.
-
-Use existing controlled primitives and React Hook Form wrappers before writing raw
-controls. Keep Service/entity validation authoritative for business invariants.
-
-## Tables and complex views
-
-Keep rendering configuration separate from business behavior:
-
-- map entities/contracts to a row/read model only when the view genuinely differs;
-- keep column definitions and display formatting pure;
-- pass user actions from the screen through typed callbacks/meta;
-- keep mutation/navigation decisions out of cell renderers;
-- derive filters/sort/pagination from canonical URL or feature state.
-
-Do not create a parallel row model that merely renames identical fields.
-
-## Hooks and effects
-
-Use effects only to synchronize with something outside React. Do not use an effect to
-derive state that can be computed during render or in a selector.
-
-Keep each effect close to the lifecycle it owns and clean up subscriptions, timers,
-media tracks, object URLs, and observers. Follow `client-state-management` for SSE,
-SSR, optimistic state, and browser-device ownership.
-
-Do not add `memo`, `useMemo`, or `useCallback` by reflex. React Compiler handles
-ordinary memoization; use manual memoization only for a measured or integration-
-specific reason.
+- Select narrowly: `useApp((state) => state.todos)`. Never the whole store, never `useApp.getState()` in a component.
+- Handlers are `on{Name}{Event}`: `onTodoCreate`, `onMessageSend`.
+- Component order: selectors and state, derived values, handlers, effects, then `return`. No blank lines inside JSX.
+- `{condition && <X />}` with a real boolean; a ternary only when both sides render.
+- Never put Zustand actions in dependency arrays.
+- Effects only synchronize with something outside React and always clean up.
+- React Compiler memoizes; add `useMemo` or `useCallback` only for a measured reason. A component that reads mutable third-party state during render, such as a TanStack Virtual virtualizer, opts out with `"use no memo"`.
+- Prefer component variants, then tokens, then static utilities, then `cn()`. No arbitrary values, CSS modules or new global selectors unless tokens cannot express it.
+- Interactive state goes in `aria-*` first, `data-*` when there is no ARIA equivalent.
 
 ## Accessibility
 
-- Use semantic elements and form labels.
-- Preserve visible terminal-green focus treatment.
-- Give icon-only controls an accessible name.
-- Mark active navigation with `aria-current="page"`.
-- Do not rely on color alone for status.
-- Preserve keyboard behavior, Escape handling, focus trapping, and reduced motion.
-- Keep native option/select contrast readable in both themes.
-- Add skip navigation for long content pages.
+- Semantic elements and labels; icon-only controls have an accessible name.
+- Focus stays visible (`ring` is Favo accent). Never rely on color alone for a status.
+- `aria-current="page"` on the active nav item; keyboard and Escape work; motion respects `prefers-reduced-motion`.
+- Body text meets WCAG AA in both variants; `faint` is only for text a reader can ignore.
 
-## Implementation workflow
+## Working references
 
-1. Inspect the local screen and shared primitives.
-2. Decide module-local versus shared ownership.
-3. Read the terminal reference only to the depth the task needs.
-4. Build structure and behavior before visual polish.
-5. Verify mobile, desktop, dark, light, keyboard, focus, and reduced motion.
-6. Run `bun run typecheck` and `bun run check`.
+- `src/client/shared/components/terminal/TerminalWindow.tsx`: the app frame.
+- `src/client/modules/cash-flow/screens/BillsScreen/index.tsx`: signals, tints and dense data.
+- `src/client/modules/chat/screens/ChatScreen/ChatMessage.tsx`: prose following the Favo markup rules.
 
-## What not to do
+## Checklist
 
-- Do not replace the terminal shell with generic dashboard styling.
-- Do not create bespoke primitives that duplicate existing ones.
-- Do not scatter business workflows through components.
-- Do not duplicate navigable/store state locally.
-- Do not hide inaccessible interactions behind icon/color only.
-- Do not edit generated files such as `src/routeTree.gen.ts`.
-- Do not copy a reference design's implementation architecture; translate its visual
-  intent through this app's primitives and tokens.
-
-## Related skills
-
-- `app-architecture` — feature ownership and UI placement.
-- `app-coding-styleguide` — non-visual TypeScript/JavaScript style.
-- `client-state-management` — URL/Zustand/local state, SSR, and realtime lifecycles.
-- `app-service-boundaries` — client HTTP/SSE/browser-service boundaries.
-- `app-tests` — slice, contract, accessibility, and approved UI test conventions.
+1. It works at 390px and 1440px wide, in Honey and Wax.
+2. `bun run check` and `bun run test:ui` pass; a view test covers new interaction or conditional rendering.

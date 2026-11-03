@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { calculateCashFlowNetBalance } from "~/modules/cash-flow/client/CashFlowBalances";
+import { calculateCashFlowNetBalance } from "~/client/modules/cash-flow/parsers/CashFlowBalances";
 
 describe("CashFlowBalances", () => {
   test("calculates net balance from current account balances", () => {

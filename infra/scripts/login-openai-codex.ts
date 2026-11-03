@@ -2,11 +2,11 @@ import { createInterface } from "node:readline/promises";
 import type { AuthInteraction, AuthPrompt } from "@earendil-works/pi-ai";
 import { builtinModels } from "@earendil-works/pi-ai/providers/all";
 import { z } from "zod";
-import { Database } from "~/infra/database";
-import { createPiCredentialStore } from "~/modules/chat/gateway/AiChatGateway/PiCredentialStore";
-import { AiCredentialEncryption } from "~/modules/chat/gateway/AiCredentialStore/AiCredentialEncryption";
-import { PostgresAiCredentialStore } from "~/modules/chat/gateway/AiCredentialStore/PostgresAiCredentialStore";
-import { loadConfig } from "~/shared/config/Config";
+import { createPiCredentialStore } from "~/server/modules/chat/gateways/pi.credential-store";
+import { PostgresAiCredentialStore } from "~/server/modules/chat/gateways/postgres.ai-credential-store";
+import { AiCredentialEncryption } from "~/server/modules/chat/utils/ai-credential-encryption";
+import { loadConfig } from "~/server/shared/config/config";
+import { Database } from "~/server/shared/database/postgres.database";
 import { loadModeEnv, resolveMode } from "../../plugins/env";
 
 function userIdArgument(): string | undefined {
@@ -50,7 +50,7 @@ function promptLabel(prompt: AuthPrompt): string {
 
 const mode = resolveMode(process.env.MODE ?? "development");
 loadModeEnv(mode);
-const config = loadConfig();
+const config = loadConfig(process.env);
 const database = new Database(config.database.connectionString);
 const terminal = createInterface({
   input: process.stdin,

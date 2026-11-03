@@ -3,7 +3,7 @@ import {
   normalizeBillsSearch,
   shiftBillsMonth,
   toBillsRouteSearch,
-} from "~/modules/cash-flow/client/BillsSearch";
+} from "~/client/modules/cash-flow/parsers/BillsSearch";
 
 describe("BillsSearch", () => {
   afterEach(() => {

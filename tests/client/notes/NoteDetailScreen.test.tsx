@@ -2,8 +2,8 @@ import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { forwardRef, useImperativeHandle, useState } from "react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { NoteDetailScreen } from "~/modules/notes/client/screens/NoteDetailScreen";
-import { createDeferred } from "~/tests/utils/createDeferred";
+import { NoteDetailScreen } from "~/client/modules/notes/screens/NoteDetailScreen";
+import { createDeferred } from "~/tests/support/create-deferred";
 
 const { appState, note, useBlocker } = vi.hoisted(() => {
   const note = {
@@ -39,37 +39,43 @@ vi.mock("@tanstack/react-router", () => ({
   useNavigate: () => vi.fn(),
 }));
 
-vi.mock("~/shared/client/providers/usePrefs", () => ({
+vi.mock("~/client/shared/hooks/usePrefs", () => ({
   usePrefs: () => ({ locale: "en", theme: "dark" }),
 }));
 
-vi.mock("~/shared/client/stores", () => ({
+vi.mock("~/client/shared/stores/app", () => ({
   useApp: (selector: (state: typeof appState) => unknown) => selector(appState),
 }));
 
-vi.mock("~/modules/notes/client/components/MarkdownNoteEditor.client", () => ({
-  MarkdownNoteEditor: forwardRef<
-    { setMarkdown: (markdown: string) => void },
-    {
-      initialMarkdown: string;
-      label: string;
-      onChange: (markdown: string) => void;
-    }
-  >(function MockMarkdownNoteEditor({ initialMarkdown, label, onChange }, ref) {
-    const [markdown, setMarkdown] = useState(initialMarkdown);
-    useImperativeHandle(ref, () => ({ setMarkdown }));
-    return (
-      <textarea
-        aria-label={label}
-        onChange={(event) => {
-          setMarkdown(event.target.value);
-          onChange(event.target.value);
-        }}
-        value={markdown}
-      />
-    );
+vi.mock(
+  "~/client/modules/notes/screens/NoteDetailScreen/MarkdownNoteEditor.client",
+  () => ({
+    MarkdownNoteEditor: forwardRef<
+      { setMarkdown: (markdown: string) => void },
+      {
+        initialMarkdown: string;
+        label: string;
+        onChange: (markdown: string) => void;
+      }
+    >(function MockMarkdownNoteEditor(
+      { initialMarkdown, label, onChange },
+      ref,
+    ) {
+      const [markdown, setMarkdown] = useState(initialMarkdown);
+      useImperativeHandle(ref, () => ({ setMarkdown }));
+      return (
+        <textarea
+          aria-label={label}
+          onChange={(event) => {
+            setMarkdown(event.target.value);
+            onChange(event.target.value);
+          }}
+          value={markdown}
+        />
+      );
+    }),
   }),
-}));
+);
 
 describe("NoteDetailScreen", () => {
   beforeEach(() => {

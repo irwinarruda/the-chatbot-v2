@@ -1,8 +1,8 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import type { TodoDetailDialog } from "~/modules/todos/client/components/TodoDetailDialog";
-import { TodoDetailScreen } from "~/modules/todos/client/screens/TodoDetailScreen";
+import type { TodoDetailDialog } from "~/client/modules/todos/components/TodoDetailDialog";
+import { TodoDetailScreen } from "~/client/modules/todos/screens/TodoDetailScreen";
 
 const { appState, navigate } = vi.hoisted(() => ({
   navigate: vi.fn(),
@@ -16,13 +16,13 @@ const { appState, navigate } = vi.hoisted(() => ({
 }));
 
 vi.mock("@tanstack/react-router", () => ({ useNavigate: () => navigate }));
-vi.mock("~/shared/client/providers/usePrefs", () => ({
+vi.mock("~/client/shared/hooks/usePrefs", () => ({
   usePrefs: () => ({ locale: "en", theme: "dark" }),
 }));
-vi.mock("~/shared/client/stores", () => ({
+vi.mock("~/client/shared/stores/app", () => ({
   useApp: (selector: (state: typeof appState) => unknown) => selector(appState),
 }));
-vi.mock("~/modules/todos/client/components/TodoDetailDialog", () => ({
+vi.mock("~/client/modules/todos/components/TodoDetailDialog", () => ({
   TodoDetailDialog: ({
     todo,
     onSave,

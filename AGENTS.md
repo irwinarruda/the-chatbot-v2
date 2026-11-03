@@ -1,44 +1,47 @@
 # AGENTS.md
 
-## Commands
+The Chatbot is a personal assistant that lives in WhatsApp and on the web. One TanStack Start app: `src/domain` and `src/contracts` are pure and shared by both sides, `src/server` is the backend, `src/client` is the React web app, and `src/routes.ts` maps every URL to a page route or a controller. The layout follows favo-cli; `.agents/plans/019-favo-architecture-and-theme.md` explains why.
 
-- `bun run dev` — start dev server (defaults to `--mode development`, port 3000)
-- `bun run test` — run tests (uses `.env.test` automatically)
-- `bun run test:coverage` — run tests with coverage (uses `.env.test` automatically)
-- `bun run typecheck` — `tsc --noEmit`
-- `bun run check` — biome lint + format check
-- `bun run format:fix` — auto-fix formatting with biome
-- `bun run lint:fix` — auto-fix lint issues with biome
-- `bun run migrate:create` — create a new migration (`bun run migrate:create -- <name>`)
-- `bun run migrate:up` / `bun run migrate:down` — run migrations
-- `bun run production:release <command>` — inspect, deploy, migrate, promote, or
-  roll back the exact current working-tree artifact
-- `bun run production:wait [commit]` — wait for that exact commit on Vercel
-- `bun run migrate:production:status` — list pending production migrations
-- `bun run migrate:production:up` — apply and verify production migrations
+## Commands
 
 Use `bun` as the package manager (not npm or yarn).
 
-Always create migration files with `bun run migrate:create -- <name>`, then
-edit the generated file. Never create a migration file manually or invent its
-timestamp/filename.
+- `bun run dev` starts the dev server (`--mode development`, port 3000).
+- `bun run test` runs every test against the local PostgreSQL (`.env.test`); `bun run test:unit` runs everything that needs no database; `bun run test:ui` runs the jsdom view tests.
+- `bun run test:coverage` runs the suite with coverage.
+- `bun run typecheck` generates routes and runs `tsc --noEmit`.
+- `bun run check` is Biome lint and format; `bun run check:fix` applies fixes.
+- `bun run migrate:create -- <name>` creates a migration; `bun run migrate:up` and `bun run migrate:down` run them.
+- `bun run production:release <command>` inspects, deploys, migrates, promotes or rolls back the exact current working-tree artifact.
+- `bun run production:wait [commit]` waits for that exact commit on Vercel.
+- `bun run migrate:production:status` lists pending production migrations; `bun run migrate:production:up` applies and verifies them.
 
-## Production Constraints
+Always create migration files with `bun run migrate:create -- <name>`, then edit the generated file. Never create a migration file manually or invent its timestamp or filename.
 
-This project is used in production by one person. Backward compatibility is not
-required, so prefer direct migrations and refactors over compatibility layers.
-Never lose important user-specific data. Disposable state is fine to drop —
-sessions, auth tokens/hashes, connection state, and similar. Use common sense.
+## Working agreements
+
+- `src/domain` is pure: no I/O, no framework, no environment.
+- Every external thing on the server goes through a gateway with a test double beside it. Only `src/server/production.ts` reads the environment and builds real gateways.
+- Services hold the rules; repositories hold the SQL; controllers and AI tools only parse, call one service and map.
+- A server module imports only lower levels; a flow that changes two modules lives in a higher one.
+- On the client, views call Zustand services, services call repositories and gateways. Everything under `app/` knows nothing about React.
+- Colors come from the Favo theme tokens in `src/client/shared/styles/tailwind.css`, never from a literal.
+- No comments in production code. No `../`. No barrels. No TS `enum`. `undefined`, never `null`, outside SQL and protocol boundaries.
+- `tests/architecture.test.ts` enforces the structural rules above. Change it together with the skill that owns the rule.
+
+## Completion gate
+
+`bun run check`, `bun run typecheck`, `bun run test` and `bun run test:ui` must pass before you say something works. CI runs the same commands. Running against production is a separate check and is reported separately.
+
+## Production constraints
+
+This project is used in production by one person. Backward compatibility is not required, so prefer direct migrations and refactors over compatibility layers. Never lose important user-specific data. Disposable state is fine to drop: sessions, auth tokens and hashes, connection state and similar. Use common sense.
 
 ## Git
 
-All commit messages MUST follow the Conventional Commits specification. Use
-`<type>(<scope>): <description>` when a scope is useful, or
-`<type>: <description>` otherwise. Never create a non-conventional commit.
+All commit messages MUST follow the Conventional Commits specification. Use `<type>(<scope>): <description>` when a scope is useful, or `<type>: <description>` otherwise. Never create a non-conventional commit.
 
-Never add `Co-authored-by`, `Co-Authored-By`, or any other co-author trailer to
-commits when acting as an agent. Commit messages must not attribute the agent
-as a co-author.
+Never add `Co-authored-by`, `Co-Authored-By`, or any other co-author trailer to commits when acting as an agent. Commit messages must not attribute the agent as a co-author.
 
 ## Biome
 
@@ -48,58 +51,32 @@ release can rename one and an unknown key stops every Biome command. Keep the
 types, so a release cannot start reformatting new ones. Markdown stays excluded
 because `templates/prompts/*.md` are sent to the models verbatim.
 
-## Environment System
+## Environment
 
-Two-layer env loading is handled by the Vite/Vitest configs and infra scripts:
+Env loading has two layers, applied by the Vite and Vitest configs and the infra scripts: `.env` is always loaded first, then `.env.${mode}` overrides it. Valid modes are `development`, `test`, `preview` and `production`. `bun run dev` defaults to `--mode development` and Vitest to `--mode test`.
 
-1. `.env` is always loaded first (base template with placeholders)
-2. `.env.${mode}` is loaded with override
+Production delivery scripts always load `.env` followed by `.env.production`. Keep `PRODUCTION_WEB_AUTH_TOKEN` and every other credential only in the ignored `.env.production` file. Never print, commit, or paste those values into a prompt.
 
-Valid modes: `development`, `test`, `preview`, `production`. `bun run dev` defaults to `--mode development` and Vitest defaults to `--mode test`.
+## Production delivery
 
-Production delivery scripts always load `.env` followed by `.env.production`.
-Keep `PRODUCTION_WEB_AUTH_TOKEN` and every other credential only in the ignored
-`.env.production` file. Never print, commit, or paste those values into a prompt.
+Load `production-release` whenever a task includes testing local or branch code with production configuration, deploying or promoting a Vercel production artifact, running production migrations, rolling production back, or verifying the deployed application in a browser. It deploys the exact current working tree as an isolated candidate before promotion and does not require a commit or push. Follow its database safety classification and exact-artifact workflow in order.
 
-## Production Delivery
+## Skills
 
-Load `production-release` whenever a task includes testing local or branch code
-with production configuration, deploying or promoting a Vercel production
-artifact, running production migrations, rolling production back, or verifying
-the deployed application in the Codex in-app browser. It deploys the exact current
-working tree as an isolated candidate before promotion and does not require a
-commit or push. Follow its database safety classification and exact-artifact
-workflow in order.
+Load the skills that govern the paths a task touches:
 
-## Testing
+| Path                                   | Skills                                                                                                                       |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Any TypeScript                         | `coding-styleguide`                                                                                                          |
+| `src/domain`                           | `domain-styleguide`                                                                                                          |
+| `src/contracts`                        | `contracts-styleguide`                                                                                                       |
+| `src/server`, `src/routes.ts`          | `server-architecture` always, plus `server-service-styleguide` for services, repositories, gateways, tools and server tests  |
+| `src/client`                           | `client-architecture` always, plus `client-service-styleguide` for services, repositories and the store, `client-jsx-styleguide` for views and styling, and `client-tests` for tests |
+| A new file in `.agents/plans`, `.agents/specs` or `.agents/promts` | `plan-creator-guide`                                                                             |
+| Deploying or verifying production      | `production-release`                                                                                                         |
 
-Tests run serially (`fileParallelism: false`) with a 30s timeout. Entity, Service, and DTO tests must stay deterministic and infrastructure-free. PostgreSQL integration tests own their schema reset/migration lifecycle and require a running test database.
+Skills that govern one side carry its prefix (`server-`, `client-`, `domain-`, `contracts-`). Skills that span sides have no prefix. A `-styleguide` skill says how one layer's code is written; an `-architecture` skill says where things live and which way dependencies point.
 
-Use the narrowest test level that proves the behavior:
-
-- Entity tests cover entity/value-object invariants and transitions without DI or PostgreSQL.
-- Service tests cover workflows with deterministic gateway/client-service fakes.
-- DTO tests cover owned HTTP/SSE schemas and HTTP/client mapping.
-- Integration tests cover PostgreSQL, migrations, transactions, hydration, optimistic concurrency, and concrete provider mapping where valuable.
-
-Do not add route implementation tests when a DTO or Service test proves the owned behavior more directly. Do not start PostgreSQL for entity, client-state, or provider-independent Service behavior.
-
-## Project Skills
-
-Load the project skill that owns the decision before changing code:
-
-- `app-architecture` — feature ownership, module placement, DDD/OOP, dependency direction, cross-module coordination, and overall application shape.
-- `app-service-boundaries` — HTTP/SSE contracts, Services, gateways, providers, AI tools, SQL, transactions, errors, and dependency composition.
-- `app-coding-styleguide` — non-visual TypeScript/JavaScript style, naming, DTOs, imports, whitespace, comments, and locality.
-- `client-state-management` — URL/Zustand/local state, async actions, optimistic state, realtime reduction, browser lifecycles, and SSR hydration.
-- `client-jsx-styleguide` — React/TSX, terminal visual system, shared UI primitives, layout, responsive behavior, accessibility, and interaction design.
-- `app-tests` — Vitest/PostgreSQL test levels, placement, harnesses, fakes, fixtures, assertions, and integration policy.
-- `production-release` — exact-working-tree Vercel candidate deployment,
-  production browser verification, migration safety gates, promotion, and
-  rollback without requiring a commit or push.
-
-Use multiple skills when a change crosses concerns. Local project skills take precedence over generic preferences.
-
-## Generated Files
+## Generated files
 
 `*.gen.ts` files (including `src/routeTree.gen.ts`) are auto-generated and gitignored. Do not edit them manually.

@@ -1,0 +1,75 @@
+import {
+  createAiContextCompactionPolicy,
+  selectCompactableTurns,
+} from "~/domain/chat/ai-context-compaction-policy";
+import { Message } from "~/domain/chat/message";
+import { MessageAudience } from "~/domain/chat/message-audience";
+import { MessageContentType } from "~/domain/chat/message-content-type";
+import { MessageRole } from "~/domain/chat/message-role";
+import { ValidationException } from "~/domain/shared/domain-errors";
+
+describe("AiContextCompactionPolicy", () => {
+  test("derives bounded trigger and target budgets from the model window", () => {
+    const policy = createAiContextCompactionPolicy(272_000, 128_000);
+
+    expect(policy).toEqual({
+      hardInputTokens: 127_616,
+      triggerTokens: 57_427,
+      targetTokens: 38_284,
+      protectedRecentTurns: 6,
+    });
+  });
+
+  test("scales down for models with smaller context windows", () => {
+    const policy = createAiContextCompactionPolicy(32_000, 8_192);
+
+    expect(policy).toEqual({
+      hardInputTokens: 20_608,
+      triggerTokens: 9_273,
+      targetTokens: 6_182,
+      protectedRecentTurns: 6,
+    });
+  });
+
+  test("rejects models without usable input context", () => {
+    expect(() => createAiContextCompactionPolicy(4_096, 4_096)).toThrow(
+      ValidationException,
+    );
+  });
+
+  test("stops compaction at the first incomplete turn", () => {
+    const first = createCompleteTurn("first");
+    const second = createCompleteTurn("second");
+    const incomplete = createUserTurn("incomplete");
+    const later = createCompleteTurn("later");
+
+    expect(
+      selectCompactableTurns([first, second, incomplete, later], 1),
+    ).toEqual([first]);
+  });
+});
+
+function createCompleteTurn(text: string): Message[] {
+  const user = createUserTurn(text)[0];
+  return [
+    user,
+    new Message({
+      idChat: "chat-id",
+      turnId: user.turnId,
+      role: MessageRole.Assistant,
+      audience: MessageAudience.Both,
+      content: { type: MessageContentType.Text, text: `${text} reply` },
+    }),
+  ];
+}
+
+function createUserTurn(text: string): Message[] {
+  return [
+    new Message({
+      idChat: "chat-id",
+      role: MessageRole.User,
+      audience: MessageAudience.Both,
+      content: { type: MessageContentType.Text, text },
+    }),
+  ];
+}

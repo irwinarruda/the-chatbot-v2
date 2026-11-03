@@ -2,11 +2,11 @@ import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { resolve } from "node:path";
 import { z } from "zod";
-import { Database } from "~/infra/database";
-import type { AiProviderCredentialDTO } from "~/modules/chat/entities/dtos/AiProviderCredentialDTO";
-import { AiCredentialEncryption } from "~/modules/chat/gateway/AiCredentialStore/AiCredentialEncryption";
-import { PostgresAiCredentialStore } from "~/modules/chat/gateway/AiCredentialStore/PostgresAiCredentialStore";
-import { loadConfig } from "~/shared/config/Config";
+import type { AiProviderCredentialDTO } from "~/domain/chat/ai-provider-credential";
+import { PostgresAiCredentialStore } from "~/server/modules/chat/gateways/postgres.ai-credential-store";
+import { AiCredentialEncryption } from "~/server/modules/chat/utils/ai-credential-encryption";
+import { loadConfig } from "~/server/shared/config/config";
+import { Database } from "~/server/shared/database/postgres.database";
 import { loadModeEnv, resolveMode } from "../../plugins/env";
 
 const piAuthSchema = z.object({
@@ -137,7 +137,7 @@ async function localCredentials(): Promise<
 const root = resolve(import.meta.dirname, "..", "..");
 const mode = resolveMode(process.env.MODE ?? "development");
 loadModeEnv(mode, root);
-const config = loadConfig();
+const config = loadConfig(process.env);
 const database = new Database(config.database.connectionString);
 
 try {

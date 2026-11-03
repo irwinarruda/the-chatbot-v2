@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
+import { StatusResponseDTO } from "~/contracts/http/system/status";
 import { loadModeEnv } from "../../plugins/env";
-import { StatusResponseDTO } from "../../src/modules/system/entities/dtos/StatusDTO";
 
 const root = resolve(import.meta.dirname, "..", "..");
 const defaultProductionUrl = "https://the-chatbot.irwinarruda.com";

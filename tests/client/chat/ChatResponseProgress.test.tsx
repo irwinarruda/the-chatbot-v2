@@ -1,8 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, test } from "vitest";
-import { ChatResponseProgress } from "~/modules/chat/client/components/ChatResponseProgress";
-import type { ChatResponseProgressDTO } from "~/modules/chat/client/entities/dtos/ChatResponseProgressDTO";
+import type { ChatResponseProgressDTO } from "~/client/modules/chat/app/dtos/ChatResponseProgressDTO";
+import { ChatResponseProgress } from "~/client/modules/chat/screens/ChatScreen/ChatResponseProgress";
 
 const labels = {
   traceShow: "Show trace",

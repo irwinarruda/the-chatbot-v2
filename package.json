@@ -14,7 +14,7 @@
     "start": "vite preview",
     "typecheck": "bun run routes:generate && tsc --noEmit",
     "test": "MODE=test bun run services:ready && vitest run",
-    "test:unit": "vitest run tests/architecture tests/entities tests/dtos tests/services tests/client tests/utils",
+    "test:unit": "vitest run tests/architecture.test.ts tests/domain tests/contracts tests/server tests/client tests/infra",
     "test:coverage": "MODE=test bun run services:ready && vitest run --coverage",
     "test:ui": "vitest run --config vitest.ui.config.ts",
     "test:watch": "vitest",

@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
-import { TodoRow } from "~/modules/todos/client/components/TodoRow";
-import type { TodoDTO } from "~/modules/todos/entities/dtos/TodoDTO";
+import { TodoRow } from "~/client/modules/todos/screens/TodoScreen/TodoRow";
+import type { TodoDTO } from "~/contracts/http/todos/todo";
 
 const todo: TodoDTO = {
   id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",

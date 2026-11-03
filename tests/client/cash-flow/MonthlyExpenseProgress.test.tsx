@@ -1,10 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, test } from "vitest";
-import { MonthlyExpenseProgress } from "~/modules/cash-flow/client/components/MonthlyExpenseProgress";
-import type { MonthlyExpenseDTO } from "~/modules/cash-flow/entities/dtos/MonthlyExpenseDTO";
-import { getDictionary } from "~/shared/client/i18n";
-import { useApp } from "~/shared/client/stores";
+import { MonthlyExpenseProgress } from "~/client/modules/cash-flow/screens/BillsScreen/MonthlyExpenseProgress";
+import { getDictionary } from "~/client/shared/i18n/dictionary";
+import { useApp } from "~/client/shared/stores/app";
+import type { MonthlyExpenseDTO } from "~/contracts/http/cash-flow/monthly-expense";
 
 function createExpense(
   expectedAmount: number,

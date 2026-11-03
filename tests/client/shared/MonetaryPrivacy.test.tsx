@@ -1,12 +1,12 @@
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
-import { MonetaryValue } from "~/shared/client/components/MonetaryValue";
-import { MonetaryPrivacyControl } from "~/shared/client/components/terminal/MonetaryPrivacyControl";
-import { Input } from "~/shared/client/components/ui/input";
-import { TooltipProvider } from "~/shared/client/components/ui/tooltip";
-import { monetaryPrivacyService } from "~/shared/client/services/monetaryPrivacyService";
-import { useApp } from "~/shared/client/stores";
+import { storageMonetaryPrivacyGateway } from "~/client/shared/app/gateways/StorageMonetaryPrivacyGateway";
+import { MonetaryValue } from "~/client/shared/components/MonetaryValue";
+import { MonetaryPrivacyControl } from "~/client/shared/components/terminal/MonetaryPrivacyControl";
+import { Input } from "~/client/shared/components/ui/input";
+import { TooltipProvider } from "~/client/shared/components/ui/tooltip";
+import { useApp } from "~/client/shared/stores/app";
 
 describe("Monetary privacy", () => {
   beforeEach(() => {
@@ -72,7 +72,7 @@ describe("Monetary privacy", () => {
       screen.getByRole("button", { name: "Hide monetary values" }),
     );
 
-    expect(monetaryPrivacyService.resolveIsMoneyHidden()).toBe(true);
+    expect(storageMonetaryPrivacyGateway.resolveIsMoneyHidden()).toBe(true);
 
     act(() => {
       useApp.setState({
