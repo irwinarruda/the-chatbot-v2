@@ -297,6 +297,14 @@ describe("client", () => {
     expect(bad).toEqual([]);
   });
 
+  test("keeps demo data and test adapters out of production code", () => {
+    const bad = offenders("src", (file, specifier) => {
+      if (file.startsWith("client/mock/")) return false;
+      return specifier.startsWith("~/client/mock/");
+    });
+    expect(bad).toEqual([]);
+  });
+
   test("never hardcodes a color, so every screen follows the theme", () => {
     const colored = readSources("src/client")
       .filter(({ source }) =>

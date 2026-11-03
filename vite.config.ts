@@ -24,6 +24,7 @@ export default defineConfig(({ mode }) => {
           find: /^css-tree$/,
           replacement: resolvePath("node_modules/css-tree/dist/csstree.esm.js"),
         },
+        ...mockAliases(mode),
       ],
       tsconfigPaths: true,
     },
@@ -56,3 +57,17 @@ export default defineConfig(({ mode }) => {
     },
   };
 });
+
+function mockAliases(mode: string) {
+  if (mode !== "mock") return [];
+  return [
+    {
+      find: /^~\/client\/shared\/stores\/adapters$/,
+      replacement: resolvePath("src/client/mock/adapters.ts"),
+    },
+    {
+      find: /^~\/server\/shared\/http\/functions\/require-web-access$/,
+      replacement: resolvePath("src/client/mock/requireWebAccess.ts"),
+    },
+  ];
+}

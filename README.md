@@ -19,7 +19,8 @@ $ One assistant for conversations, tasks, notes, and personal finances.
 ```
 
 <p align="center">
-  <img src="public/screenshot-home.png" alt="The Chatbot home page with its current personal workspaces" width="900" />
+  <img src="docs/assets/home-honey.png#gh-dark-mode-only" alt="The Chatbot home page in the Favo Honey theme, listing the chat, todos, notes, artifacts, cash flow and bills workspaces" width="900" />
+  <img src="docs/assets/home-wax.png#gh-light-mode-only" alt="The Chatbot home page in the Favo Wax theme, listing the chat, todos, notes, artifacts, cash flow and bills workspaces" width="900" />
 </p>
 
 ## What it is
@@ -101,10 +102,18 @@ tests/                   # domain/ contracts/ server/ client/ integration/ and a
 ```
 
 <p align="center">
-  <img src="public/screenshot-chat.png" alt="The Chatbot web chat with audio transcription and tool activity" width="720" />
+  <img src="docs/assets/chat.png" alt="The web chat: the assistant adds todos through a tool, answers a spending question, and offers buttons to mark a bill as paid" width="760" />
   <br />
-  <sub><em>Web chat and WhatsApp can reach the same application tools and persisted conversation state.</em></sub>
+  <sub><em>Web chat and WhatsApp reach the same application tools and persisted conversation state.</em></sub>
 </p>
+
+| Todos | Notes |
+| --- | --- |
+| <img src="docs/assets/todos.png" alt="Pending todos with due dates, filters and a new task button" width="380" /> | <img src="docs/assets/notes.png" alt="The notes index with three Markdown notes and their previews" width="380" /> |
+| **Cash flow** | **Monthly bills (Wax)** |
+| <img src="docs/assets/cash-flow.png" alt="Account balances, filters and the latest transactions from the finance spreadsheet" width="380" /> | <img src="docs/assets/bills.png" alt="November's bills checklist with progress, totals and paid and unpaid bills, in the light theme" width="380" /> |
+
+Every picture above comes from `bun run screenshots`, which runs the web app on demo data (`bun run dev:mock`) and retakes them in one go. See `.agents/skills/readme-screenshots`.
 
 ## Stack
 
@@ -122,6 +131,13 @@ tests/                   # domain/ contracts/ server/ client/ integration/ and a
 ## Running locally
 
 > This is a personal project. Local setup assumes access to its provider credentials and some familiarity with PostgreSQL, Google Cloud, and Meta webhooks.
+
+To look around without any of that, run the web app on demo data. It needs no database, no credentials and no sign-in:
+
+```bash
+bun install
+bun run dev:mock         # http://localhost:3300
+```
 
 ### Prerequisites
 

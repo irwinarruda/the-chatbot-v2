@@ -37,6 +37,7 @@ Do not add a second application class between a service and a repository. Everyt
 ```text
 src/client/
   routes/        TanStack page routes: guard access, validate search, render one screen
+  mock/          demo data, Test* repositories, adapters and scenes for mock mode and screenshots
   shared/
     app/         services, gateways, entities and dtos with no module owner (prefs, privacy, ApiClient)
     components/  ui/ (shadcn primitives), terminal/ (app chrome), domain-free shared views
@@ -65,7 +66,8 @@ service -> domain, contracts, parsers
 - Views never import a repository, gateway or `ApiClient`; they read and act through `useApp`. `tests/architecture.test.ts` enforces it.
 - The `app/` layer never imports React, TanStack, screens or components.
 - The client reaches the server only through HTTP and the server functions in `src/server/shared/http/functions/`.
-- `shared/stores/app.ts` is the composition root: it builds every adapter and passes it to its service creator. Tests call the same creators with fakes.
+- `shared/stores/app.ts` is the composition root: it passes each adapter from `shared/stores/adapters.ts` to its service creator. Tests call the same creators with fakes.
+- `src/client/mock` is the second composition: demo data and `Test*` repositories that mock mode swaps in for `shared/stores/adapters.ts` at build time. Production code never imports it; `readme-screenshots` owns it.
 
 ## Working references
 
