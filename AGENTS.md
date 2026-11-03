@@ -7,6 +7,8 @@ The Chatbot is a personal assistant that lives in WhatsApp and on the web. One T
 Use `bun` as the package manager (not npm or yarn).
 
 - `bun run dev` starts the dev server (`--mode development`, port 3000).
+- `bun run dev:mock` runs the web app on demo data at port 3300, with no database, credentials or sign-in.
+- `bun run screenshots [scene...]` retakes the README pictures into `docs/assets`.
 - `bun run test` runs every test against the local PostgreSQL (`.env.test`); `bun run test:unit` runs everything that needs no database; `bun run test:ui` runs the jsdom view tests.
 - `bun run test:coverage` runs the suite with coverage.
 - `bun run typecheck` generates routes and runs `tsc --noEmit`.
@@ -53,7 +55,7 @@ because `templates/prompts/*.md` are sent to the models verbatim.
 
 ## Environment
 
-Env loading has two layers, applied by the Vite and Vitest configs and the infra scripts: `.env` is always loaded first, then `.env.${mode}` overrides it. Valid modes are `development`, `test`, `preview` and `production`. `bun run dev` defaults to `--mode development` and Vitest to `--mode test`.
+Env loading has two layers, applied by the Vite and Vitest configs and the infra scripts: `.env` is always loaded first, then `.env.${mode}` overrides it. Valid modes are `development`, `mock`, `test`, `preview` and `production`; `.env.mock` and `.env.test` are tracked and hold no secrets. `bun run dev` defaults to `--mode development` and Vitest to `--mode test`.
 
 Production delivery scripts always load `.env` followed by `.env.production`. Keep `PRODUCTION_WEB_AUTH_TOKEN` and every other credential only in the ignored `.env.production` file. Never print, commit, or paste those values into a prompt.
 
@@ -73,6 +75,7 @@ Load the skills that govern the paths a task touches:
 | `src/server`, `src/routes.ts`          | `server-architecture` always, plus `server-service-styleguide` for services, repositories, gateways, tools and server tests  |
 | `src/client`                           | `client-architecture` always, plus `client-service-styleguide` for services, repositories and the store, `client-jsx-styleguide` for views and styling, and `client-tests` for tests |
 | A new file in `.agents/plans`, `.agents/specs` or `.agents/promts` | `plan-creator-guide`                                                                             |
+| `src/client/mock`, `docs/assets/*.png`, the README's pictures | `readme-screenshots`                                                              |
 | Deploying or verifying production      | `production-release`                                                                                                         |
 
 Skills that govern one side carry its prefix (`server-`, `client-`, `domain-`, `contracts-`). Skills that span sides have no prefix. A `-styleguide` skill says how one layer's code is written; an `-architecture` skill says where things live and which way dependencies point.

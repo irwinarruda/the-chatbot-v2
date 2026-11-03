@@ -26,7 +26,7 @@ favo-cli splits pure `domain` and `contracts` packages from `server` and `client
 - Controllers read `getServer()`: TanStack file routes cannot receive dependencies, so one lazy production accessor is the framework edge.
 - Repositories take an optional transaction handle and services decide the atomicity boundary. favo stores files and has no transactions.
 - Gateway and repository ports are TypeScript interfaces, not abstract classes; nothing needs them at runtime.
-- No client DI container or `mockDb`: there is one composition (`shared/stores/app.ts`), and tests pass fakes to service creators. Add a container when a mock mode is wanted.
+- No client DI container. `shared/stores/app.ts` takes its adapters from `shared/stores/adapters.ts`, and mock mode (`bun run dev:mock`, used by `bun run screenshots`) swaps that one module for `src/client/mock/adapters.ts` at build time, so production bundles never contain demo data. Tests pass fakes straight to service creators.
 - Entities still stamp their own timestamps and ids; new rules take time as an argument.
 
 ## Risks

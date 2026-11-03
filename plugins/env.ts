@@ -3,6 +3,7 @@ import path from "path";
 
 export const validModes = [
   "development",
+  "mock",
   "test",
   "preview",
   "production",
