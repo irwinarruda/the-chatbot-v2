@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
-import { MarkdownNoteViewer } from "~/modules/notes/client/components/MarkdownNoteViewer";
+import { MarkdownNoteViewer } from "~/client/modules/notes/screens/NoteDetailScreen/MarkdownNoteViewer";
 
 describe("MarkdownNoteViewer", () => {
   test("renders portable Markdown and ignores raw HTML", () => {

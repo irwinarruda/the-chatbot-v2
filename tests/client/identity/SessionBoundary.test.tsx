@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { SessionBoundary } from "~/modules/identity/client/components/SessionBoundary";
-import { useApp } from "~/shared/client/stores";
+import { SessionBoundary } from "~/client/modules/identity/components/SessionBoundary";
+import { useApp } from "~/client/shared/stores/app";
 
 const router = vi.hoisted(() => ({
   location: { pathname: "/notes/first", href: "/notes/first?q=work" },

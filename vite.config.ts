@@ -7,7 +7,7 @@ import { nitro } from "nitro/vite";
 import { defineConfig } from "vite";
 import { loadModeEnv } from "./plugins/env.ts";
 import { persist } from "./plugins/persist.ts";
-import { routes as virtualRoutes } from "./src/shared/http/index.ts";
+import { routes as virtualRoutes } from "./src/routes.ts";
 
 export default defineConfig(({ mode }) => {
   loadModeEnv(mode);

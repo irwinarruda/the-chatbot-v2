@@ -2,9 +2,9 @@ import { describe, expect, test } from "vitest";
 import {
   filterCashFlowTransactions,
   normalizeCashFlowSearch,
-} from "~/modules/cash-flow/client/CashFlowSearch";
-import type { CashFlowTransactionResponseDTO } from "~/modules/cash-flow/entities/dtos/CashFlowWebDTO";
-import { CashFlowTransactionType } from "~/modules/cash-flow/entities/enums/CashFlowTransactionType";
+} from "~/client/modules/cash-flow/parsers/CashFlowSearch";
+import type { CashFlowTransactionResponseDTO } from "~/contracts/http/cash-flow/cash-flow";
+import { CashFlowTransactionType } from "~/domain/cash-flow/cash-flow-transaction-type";
 
 const transactions: CashFlowTransactionResponseDTO[] = [
   {

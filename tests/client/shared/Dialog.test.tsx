@@ -10,14 +10,14 @@ import {
   AlertDialogFooter,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "~/shared/client/components/ui/alert-dialog";
+} from "~/client/shared/components/ui/alert-dialog";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogTitle,
   DialogTrigger,
-} from "~/shared/client/components/ui/dialog";
+} from "~/client/shared/components/ui/dialog";
 
 function DialogExample() {
   return (

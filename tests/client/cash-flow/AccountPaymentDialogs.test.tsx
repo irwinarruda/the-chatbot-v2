@@ -1,10 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { CashFlowTransferDialog } from "~/modules/cash-flow/client/components/CashFlowTransferDialog";
-import { MonthlyExpensePaymentDialog } from "~/modules/cash-flow/client/components/MonthlyExpensePaymentDialog";
-import { MonthlyExpenseRow } from "~/modules/cash-flow/client/components/MonthlyExpenseRow";
-import { getDictionary } from "~/shared/client/i18n";
+import { MonthlyExpensePaymentDialog } from "~/client/modules/cash-flow/screens/BillsScreen/MonthlyExpensePaymentDialog";
+import { MonthlyExpenseRow } from "~/client/modules/cash-flow/screens/BillsScreen/MonthlyExpenseRow";
+import { CashFlowTransferDialog } from "~/client/modules/cash-flow/screens/CashFlowScreen/CashFlowTransferDialog";
+import { getDictionary } from "~/client/shared/i18n/dictionary";
 
 const dictionary = getDictionary("en");
 const expense = {

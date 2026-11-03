@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest";
 import {
   normalizeTodoSearch,
   toTodoRouteSearch,
-} from "~/modules/todos/client/TodoSearch";
+} from "~/client/modules/todos/parsers/TodoSearch";
 
 describe("TodoSearch", () => {
   test("defaults to pending todos", () => {

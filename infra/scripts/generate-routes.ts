@@ -1,5 +1,5 @@
 import { Generator, getConfig } from "@tanstack/router-generator";
-import { routes } from "~/shared/http";
+import { routes } from "~/routes";
 
 const root = process.cwd();
 const config = getConfig(

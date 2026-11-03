@@ -1,0 +1,131 @@
+import { z } from "zod";
+import {
+  AiProviderCredentialDTO,
+  AiProviderCredentialInfoDTO,
+} from "~/domain/chat/ai-provider-credential";
+import type { AiCredentialEncryption } from "~/server/modules/chat/utils/ai-credential-encryption";
+import type {
+  DatabaseGateway,
+  DatabaseGatewaySql,
+} from "~/server/shared/database/database";
+import type { AiCredentialStore } from "./ai-credential-store";
+
+const providerIdSchema = z.string().trim().min(1).max(100);
+
+export class PostgresAiCredentialStore implements AiCredentialStore {
+  constructor(
+    private database: DatabaseGateway,
+    private encryption: AiCredentialEncryption,
+    private idUser: string,
+  ) {}
+
+  async read(providerId: string): Promise<AiProviderCredentialDTO | undefined> {
+    return this.readCredential(providerIdSchema.parse(providerId));
+  }
+
+  async list(): Promise<readonly AiProviderCredentialInfoDTO[]> {
+    const rows = await this.database.sql<DbAiProviderCredentialInfo[]>`
+      SELECT provider_id, credential_type
+      FROM ai_provider_credentials
+      WHERE id_user = ${this.idUser}
+      ORDER BY provider_id
+    `;
+    return rows.map((row) =>
+      AiProviderCredentialInfoDTO.parse({
+        providerId: row.provider_id,
+        type: row.credential_type,
+      }),
+    );
+  }
+
+  async modify(
+    providerId: string,
+    update: (
+      current: AiProviderCredentialDTO | undefined,
+    ) => Promise<AiProviderCredentialDTO | undefined>,
+  ): Promise<AiProviderCredentialDTO | undefined> {
+    const parsedProviderId = providerIdSchema.parse(providerId);
+    return this.database.transaction(async (sql) => {
+      await this.lockCredential(sql, parsedProviderId);
+      const current = await this.readCredential(parsedProviderId, sql);
+      const candidate = await update(current);
+      if (candidate === undefined) return current;
+      const credential = AiProviderCredentialDTO.parse(candidate);
+      const envelope = this.encryption.encrypt(
+        credential,
+        this.idUser,
+        parsedProviderId,
+      );
+      await sql`
+        INSERT INTO ai_provider_credentials (
+          id_user,
+          provider_id,
+          credential_type,
+          credential_envelope
+        )
+        VALUES (
+          ${this.idUser},
+          ${parsedProviderId},
+          ${credential.type},
+          ${sql.json(envelope)}
+        )
+        ON CONFLICT (id_user, provider_id)
+        DO UPDATE SET
+          credential_type = EXCLUDED.credential_type,
+          credential_envelope = EXCLUDED.credential_envelope,
+          updated_at = timezone('utc', now())
+      `;
+      return credential;
+    });
+  }
+
+  async delete(providerId: string): Promise<void> {
+    const parsedProviderId = providerIdSchema.parse(providerId);
+    await this.database.transaction(async (sql) => {
+      await this.lockCredential(sql, parsedProviderId);
+      await sql`
+        DELETE FROM ai_provider_credentials
+        WHERE id_user = ${this.idUser}
+          AND provider_id = ${parsedProviderId}
+      `;
+    });
+  }
+
+  private async readCredential(
+    providerId: string,
+    sql: DatabaseGatewaySql = this.database.sql,
+  ): Promise<AiProviderCredentialDTO | undefined> {
+    const rows = await sql<DbAiProviderCredential[]>`
+      SELECT credential_envelope
+      FROM ai_provider_credentials
+      WHERE id_user = ${this.idUser}
+        AND provider_id = ${providerId}
+    `;
+    const row = rows[0];
+    if (!row) return undefined;
+    return this.encryption.decrypt(
+      row.credential_envelope,
+      this.idUser,
+      providerId,
+    );
+  }
+
+  private async lockCredential(
+    sql: DatabaseGatewaySql,
+    providerId: string,
+  ): Promise<void> {
+    const lockKey = `ai-provider-credential:${this.idUser}:${providerId}`;
+    await sql`
+      SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0::bigint))
+    `;
+  }
+}
+
+interface DbAiProviderCredential {
+  credential_envelope: unknown;
+}
+
+interface DbAiProviderCredentialInfo {
+  provider_id: string;
+  credential_type: string;
+}

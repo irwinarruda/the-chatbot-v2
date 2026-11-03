@@ -1,10 +1,10 @@
 import { createStart } from "@tanstack/react-start";
-import { authMiddleware } from "~/shared/http/middleware/auth";
-import { bootstrapMiddleware } from "~/shared/http/middleware/bootstrap";
-import { errorMiddleware } from "~/shared/http/middleware/error";
-import { prefsMiddleware } from "~/shared/http/middleware/prefs";
-import { securityMiddleware } from "~/shared/http/middleware/security";
-import { webRequestSecurityMiddleware } from "~/shared/http/middleware/webRequestSecurity";
+import { authMiddleware } from "~/server/shared/http/middleware/auth";
+import { bootstrapMiddleware } from "~/server/shared/http/middleware/bootstrap";
+import { errorMiddleware } from "~/server/shared/http/middleware/error";
+import { prefsMiddleware } from "~/server/shared/http/middleware/prefs";
+import { securityMiddleware } from "~/server/shared/http/middleware/security";
+import { webRequestSecurityMiddleware } from "~/server/shared/http/middleware/web-request-security";
 
 export const startInstance = createStart(() => ({
   requestMiddleware: [

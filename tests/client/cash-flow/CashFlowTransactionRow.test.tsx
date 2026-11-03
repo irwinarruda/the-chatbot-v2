@@ -1,9 +1,9 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
-import { CashFlowTransactionRow } from "~/modules/cash-flow/client/components/CashFlowTransactionRow";
-import type { CashFlowTransactionResponseDTO } from "~/modules/cash-flow/entities/dtos/CashFlowWebDTO";
-import { CashFlowTransactionType } from "~/modules/cash-flow/entities/enums/CashFlowTransactionType";
-import { getDictionary } from "~/shared/client/i18n";
+import { CashFlowTransactionRow } from "~/client/modules/cash-flow/screens/CashFlowScreen/CashFlowTransactionRow";
+import { getDictionary } from "~/client/shared/i18n/dictionary";
+import type { CashFlowTransactionResponseDTO } from "~/contracts/http/cash-flow/cash-flow";
+import { CashFlowTransactionType } from "~/domain/cash-flow/cash-flow-transaction-type";
 
 function createTransaction(isLast: boolean): CashFlowTransactionResponseDTO {
   return {

@@ -1,0 +1,41 @@
+import type {
+  TodoDueFilterDTO,
+  TodoStatusDTO,
+} from "~/contracts/http/todos/todo";
+
+export type TodoSearch = {
+  q?: string;
+  dueDate?: string;
+  due?: TodoDueFilterDTO;
+  status?: "all" | TodoStatusDTO;
+};
+
+export const DEFAULT_TODO_STATUS: TodoStatusDTO = "Pending";
+
+export function normalizeTodoSearch(
+  search: Record<string, unknown>,
+): TodoSearch {
+  const due = search.due;
+  const status = search.status;
+  return {
+    q: typeof search.q === "string" ? search.q : undefined,
+    dueDate: typeof search.dueDate === "string" ? search.dueDate : undefined,
+    due:
+      due === "with_due_date" || due === "without_due_date" || due === "all"
+        ? due
+        : "all",
+    status:
+      status === "Pending" || status === "Completed" || status === "all"
+        ? status
+        : DEFAULT_TODO_STATUS,
+  };
+}
+
+export function toTodoRouteSearch(search: TodoSearch): TodoSearch {
+  return {
+    q: search.q || undefined,
+    dueDate: search.dueDate || undefined,
+    due: search.due === "all" ? undefined : search.due,
+    status: search.status === DEFAULT_TODO_STATUS ? undefined : search.status,
+  };
+}

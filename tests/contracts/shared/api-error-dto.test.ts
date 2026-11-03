@@ -1,0 +1,37 @@
+import { describe, expect, test } from "vitest";
+import { z } from "zod";
+import { ApiErrorResponseDTO } from "~/contracts/http/shared/api-error";
+import { ValidationException } from "~/domain/shared/domain-errors";
+import { createApiErrorResponse } from "~/server/shared/http/utils/api-error-response";
+
+describe("API error contract", () => {
+  test("serialized API errors preserve camelCase and map to the client contract", async () => {
+    const response = createApiErrorResponse(
+      new ValidationException("Invalid input"),
+    );
+    const wireResponse = await response.json();
+
+    expect(wireResponse).toMatchObject({ statusCode: 400 });
+    expect(ApiErrorResponseDTO.parse(wireResponse)).toMatchObject({
+      message: "Invalid input",
+      statusCode: 400,
+    });
+  });
+
+  test("Zod request failures serialize as client validation errors", async () => {
+    const error = z.object({ title: z.string() }).safeParse({ title: 1 }).error;
+    const response = createApiErrorResponse(error);
+    const wireResponse = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(ApiErrorResponseDTO.parse(wireResponse)).toMatchObject({
+      name: "ValidationException",
+      statusCode: 400,
+      details: {
+        issues: [
+          expect.objectContaining({ code: "invalid_type", path: ["title"] }),
+        ],
+      },
+    });
+  });
+});

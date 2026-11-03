@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { ChatScreen } from "~/modules/chat/client/screens/ChatScreen";
+import { ChatScreen } from "~/client/modules/chat/screens/ChatScreen";
 
 const virtualizerHarness = vi.hoisted(() => ({
   options: undefined as
@@ -59,6 +59,7 @@ const chatState = vi.hoisted(() => ({
   bootstrapChat: vi.fn(() => Promise.resolve("ready")),
   refreshChat: vi.fn(),
   syncAudioInputs: vi.fn(),
+  watchAudioInputs: vi.fn(() => vi.fn()),
   selectAudioInput: vi.fn(),
   sendChatInput: vi.fn(),
   setModel: vi.fn(),
@@ -104,23 +105,17 @@ vi.mock("@tanstack/react-virtual", () => ({
   }),
 }));
 
-vi.mock("~/modules/chat/client/services/audioInputService", () => ({
-  audioInputService: {
-    subscribeToDeviceChanges: () => vi.fn(),
-  },
-}));
-
-vi.mock("~/shared/client/components/terminal/TerminalWindow", () => ({
+vi.mock("~/client/shared/components/terminal/TerminalWindow", () => ({
   TerminalWindow: ({ children }: { children: ReactNode }) => (
     <div>{children}</div>
   ),
 }));
 
-vi.mock("~/shared/client/providers/usePrefs", () => ({
+vi.mock("~/client/shared/hooks/usePrefs", () => ({
   usePrefs: () => ({ locale: "en", theme: "dark" }),
 }));
 
-vi.mock("~/shared/client/stores", () => ({
+vi.mock("~/client/shared/stores/app", () => ({
   useApp: <Result,>(selector: (state: typeof chatState) => Result) =>
     selector(chatState),
 }));

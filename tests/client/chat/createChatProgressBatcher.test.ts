@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { createChatProgressBatcher } from "~/modules/chat/client/state/createChatProgressBatcher";
+import { createChatProgressBatcher } from "~/client/modules/chat/app/utils/createChatProgressBatcher";
 
 describe("createChatProgressBatcher", () => {
   afterEach(() => vi.useRealTimers());

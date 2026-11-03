@@ -1,8 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, test, vi } from "vitest";
-import { CashFlowSyncForm } from "~/modules/cash-flow/client/components/CashFlowSyncForm";
-import { getDictionary } from "~/shared/client/i18n";
+import { CashFlowSyncForm } from "~/client/modules/cash-flow/screens/CashFlowScreen/CashFlowSyncForm";
+import { getDictionary } from "~/client/shared/i18n/dictionary";
 
 describe("CashFlowSyncForm", () => {
   test("rejects an untouched balance while accepting an explicit zero", async () => {

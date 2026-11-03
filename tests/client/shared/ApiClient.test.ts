@@ -1,10 +1,7 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
-import {
-  ApiClient,
-  ApiError,
-  parseApiError,
-} from "~/shared/client/services/ApiClient";
-import { createDeferred } from "~/tests/utils/createDeferred";
+import { ApiClient } from "~/client/shared/app/gateways/ApiClient";
+import { ApiError, parseApiError } from "~/client/shared/error/ApiError";
+import { createDeferred } from "~/tests/support/create-deferred";
 
 afterEach(() => vi.unstubAllGlobals());
 

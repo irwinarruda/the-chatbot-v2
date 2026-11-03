@@ -6,20 +6,25 @@ import {
   waitFor,
 } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { afterEach, describe, expect, test, vi } from "vitest";
-import { ArtifactList } from "~/modules/artifacts/client/components/ArtifactList";
-import { UploadTokenCard } from "~/modules/artifacts/client/components/UploadTokenCard";
-import { artifactService } from "~/modules/artifacts/client/services/artifactService";
-import type { ArtifactDTO } from "~/modules/artifacts/entities/dtos/ArtifactDTO";
-import { ArtifactVisibility } from "~/modules/artifacts/entities/enums/ArtifactVisibility";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { apiArtifactRepository } from "~/client/modules/artifacts/app/repositories/ApiArtifactRepository";
+import { ArtifactList } from "~/client/modules/artifacts/screens/ArtifactsScreen/ArtifactList";
+import { UploadTokenCard } from "~/client/modules/artifacts/screens/ArtifactsScreen/UploadTokenCard";
+import { useApp } from "~/client/shared/stores/app";
+import type { ArtifactDTO } from "~/contracts/http/artifacts/artifact";
+import { ArtifactVisibility } from "~/domain/artifacts/artifact-visibility";
 
 vi.mock("@tanstack/react-router", () => ({
   Link: ({ children }: { children: ReactNode }) => <a href="/">{children}</a>,
 }));
 
-vi.mock("~/shared/client/providers/usePrefs", () => ({
+vi.mock("~/client/shared/hooks/usePrefs", () => ({
   usePrefs: () => ({ locale: "en", theme: "dark" }),
 }));
+
+beforeEach(() => {
+  useApp.getState().resetArtifacts();
+});
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -31,9 +36,11 @@ describe("artifact management", () => {
     const status = new Promise<{ configured: boolean }>((resolve) => {
       resolveStatus = resolve;
     });
-    vi.spyOn(artifactService, "getUploadTokenStatus").mockReturnValue(status);
+    vi.spyOn(apiArtifactRepository, "getUploadTokenStatus").mockReturnValue(
+      status,
+    );
     const rotate = vi
-      .spyOn(artifactService, "rotateUploadToken")
+      .spyOn(apiArtifactRepository, "rotateUploadToken")
       .mockResolvedValue({ configured: true, token: "secret" });
 
     render(<UploadTokenCard />);
@@ -52,10 +59,10 @@ describe("artifact management", () => {
   });
 
   test("shows the generated token as a ready-to-save skill configuration", async () => {
-    vi.spyOn(artifactService, "getUploadTokenStatus").mockResolvedValue({
+    vi.spyOn(apiArtifactRepository, "getUploadTokenStatus").mockResolvedValue({
       configured: false,
     });
-    vi.spyOn(artifactService, "rotateUploadToken").mockResolvedValue({
+    vi.spyOn(apiArtifactRepository, "rotateUploadToken").mockResolvedValue({
       configured: true,
       token: "tca_generated-upload-token",
     });
@@ -101,13 +108,15 @@ describe("artifact management", () => {
         updatedAt: "2026-08-16T12:00:00.000Z",
       },
     ];
-    vi.spyOn(artifactService, "listArtifacts").mockResolvedValue(artifacts);
+    vi.spyOn(apiArtifactRepository, "listArtifacts").mockResolvedValue(
+      artifacts,
+    );
     let resolveVisibility = (_artifact: (typeof artifacts)[number]) => {};
     const visibility = new Promise<(typeof artifacts)[number]>((resolve) => {
       resolveVisibility = resolve;
     });
     const changeVisibility = vi
-      .spyOn(artifactService, "changeVisibility")
+      .spyOn(apiArtifactRepository, "changeVisibility")
       .mockReturnValue(visibility);
 
     render(<ArtifactList />);

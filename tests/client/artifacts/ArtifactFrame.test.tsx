@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
-import { ArtifactFrame } from "~/modules/artifacts/client/components/ArtifactFrame";
+import { ArtifactFrame } from "~/client/modules/artifacts/screens/ArtifactViewerScreen/ArtifactFrame";
 
 describe("ArtifactFrame", () => {
   test("renders the document with all iframe sandbox restrictions enabled", () => {
