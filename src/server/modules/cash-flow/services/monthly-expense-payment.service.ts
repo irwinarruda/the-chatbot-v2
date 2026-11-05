@@ -38,6 +38,18 @@ export class MonthlyExpensePaymentService {
       },
       `${id}:${dto.month}`,
     );
+    const category =
+      dto.category === item.expense.category ? undefined : dto.category;
+    const bankAccount = item.expense.bankAccount ? undefined : dto.bankAccount;
+    if (category || bankAccount) {
+      await this.monthlyExpenses.updateMonthlyExpense({
+        idUser,
+        id,
+        category,
+        bankAccount,
+        month: dto.month,
+      });
+    }
     return this.monthlyExpenses.setMonthlyExpensePaid(
       idUser,
       id,

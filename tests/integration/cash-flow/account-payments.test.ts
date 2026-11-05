@@ -253,6 +253,67 @@ describe("Monthly bill bank payments", () => {
     );
   });
 
+  test("saves the first payment's category and account to the bill and keeps them for later months", async () => {
+    const { user, bill, dto } = await setupBill();
+    expect(bill.expense.category).toBeUndefined();
+    expect(bill.expense.bankAccount).toBeUndefined();
+
+    const paid = await payments.payFromAccount(
+      user.id,
+      phoneNumber,
+      bill.expense.id,
+      dto,
+    );
+
+    expect(paid.expense).toMatchObject({
+      category: "Telefone, internet e TV",
+      bankAccount: "NuConta",
+    });
+    const [october] = await bills.listMonthlyExpenses(user.id, "2026-10");
+    expect(october?.expense).toMatchObject({
+      category: "Telefone, internet e TV",
+      bankAccount: "NuConta",
+    });
+    expect((await cashFlow.getAllTransactions(phoneNumber))[0]).toMatchObject({
+      category: "Telefone, internet e TV",
+    });
+  });
+
+  test("keeps the default account when one payment uses another", async () => {
+    const { user, bill, dto } = await setupBill();
+    await bills.updateMonthlyExpense({
+      idUser: user.id,
+      id: bill.expense.id,
+      bankAccount: "NuConta",
+      month,
+    });
+
+    const paid = await payments.payFromAccount(
+      user.id,
+      phoneNumber,
+      bill.expense.id,
+      { ...dto, bankAccount: "Caju" },
+    );
+
+    expect(paid.expense.bankAccount).toBe("NuConta");
+    expect((await cashFlow.getAllTransactions(phoneNumber))[0]).toMatchObject({
+      bankAccount: "Caju",
+    });
+  });
+
+  test("never saves a category the spreadsheet rejects", async () => {
+    const { user, bill, dto } = await setupBill();
+    await expect(
+      payments.payFromAccount(user.id, phoneNumber, bill.expense.id, {
+        ...dto,
+        category: "Unknown",
+      }),
+    ).rejects.toThrow(ValidationException);
+    const [september] = await bills.listMonthlyExpenses(user.id, month);
+    expect(september?.expense.category).toBeUndefined();
+    expect(await cashFlow.getAllTransactions(phoneNumber)).toHaveLength(0);
+  });
+
   test("rejects another owner's bill, unknown accounts, and bills without an amount", async () => {
     const { user, bill, dto } = await setupBill();
     const other = await orquestrator.createUser();

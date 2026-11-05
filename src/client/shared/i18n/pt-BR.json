@@ -358,7 +358,11 @@
     "amountPlaceholder": "0,00",
     "dueDayLabel": "dia do vencimento",
     "dueDayPlaceholder": "1–31",
-    "optionalHint": "Valor e vencimento são opcionais. Útil para contas que gostam de surpresas.",
+    "categoryLabel": "categoria da despesa",
+    "noCategory": "Sem categoria",
+    "bankAccountLabel": "conta de pagamento padrão",
+    "noBankAccount": "Sem conta padrão",
+    "optionalHint": "Só o nome é obrigatório. O resto é para contas que gostam de surpresas.",
     "createAction": "Criar conta",
     "saveAction": "Salvar alterações",
     "cancelAction": "Cancelar",
@@ -387,7 +391,10 @@
     "paymentLoadError": "Não foi possível carregar as contas. Feche e tente novamente.",
     "paymentNoAccounts": "Adicione uma conta bancária e uma categoria de despesa à planilha de fluxo de caixa.",
     "paymentError": "Não foi possível concluir o pagamento. Você pode tentar novamente com segurança.",
-    "paymentSelectAccount": "Escolha uma conta"
+    "paymentSelectAccount": "Escolha uma conta",
+    "paymentSelectCategory": "Escolha uma categoria",
+    "paymentCategoryHint": "Fica salva nesta conta mensal para os próximos pagamentos.",
+    "paymentAccountHint": "Vira o padrão desta conta mensal."
   },
   "loginPage": {
     "windowTitle": "the-chatbot: ~/login",

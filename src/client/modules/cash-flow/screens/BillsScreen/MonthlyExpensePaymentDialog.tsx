@@ -4,8 +4,13 @@ import { MonetaryValue } from "~/client/shared/components/MonetaryValue";
 import { TerminalResponsiveOverlay } from "~/client/shared/components/terminal/TerminalResponsiveOverlay";
 import { Alert, AlertDescription } from "~/client/shared/components/ui/alert";
 import { Button } from "~/client/shared/components/ui/button";
-import { Field, FieldLabel } from "~/client/shared/components/ui/field";
+import {
+  Field,
+  FieldDescription,
+  FieldLabel,
+} from "~/client/shared/components/ui/field";
 import { Input } from "~/client/shared/components/ui/input";
+import { cn } from "~/client/shared/components/ui/lib/utils";
 import {
   NativeSelect,
   NativeSelectOption,
@@ -46,10 +51,19 @@ export function MonthlyExpensePaymentDialog({
   t: Dictionary["billsPage"];
 }) {
   const formId = useId();
-  const [bankAccount, setBankAccount] = useState("");
+  const [bankAccount, setBankAccount] = useState<string>();
   const [category, setCategory] = useState("");
   const [date, setDate] = useState(formatCashFlowDate(new Date()));
-  const selectedCategory = category || categories[0] || "";
+  const savedCategory =
+    expense.category && categories.includes(expense.category)
+      ? expense.category
+      : undefined;
+  const selectedCategory = savedCategory ?? category;
+  const savedBankAccount =
+    expense.bankAccount && bankAccounts.includes(expense.bankAccount)
+      ? expense.bankAccount
+      : undefined;
+  const selectedBankAccount = bankAccount ?? savedBankAccount ?? "";
   const unavailable = bankAccounts.length === 0 || categories.length === 0;
   const amount = new Intl.NumberFormat(locale, {
     style: "currency",
@@ -59,7 +73,7 @@ export function MonthlyExpensePaymentDialog({
   function onFormSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (
-      !bankAccount ||
+      !selectedBankAccount ||
       !selectedCategory ||
       isLoading ||
       loadError ||
@@ -67,7 +81,7 @@ export function MonthlyExpensePaymentDialog({
     )
       return;
     onSave({
-      bankAccount,
+      bankAccount: selectedBankAccount,
       category: selectedCategory,
       date,
       month: expense.month,
@@ -94,7 +108,8 @@ export function MonthlyExpensePaymentDialog({
               isLoading ||
               loadError ||
               unavailable ||
-              !bankAccount
+              !selectedBankAccount ||
+              !selectedCategory
             }
             form={formId}
             type="submit"
@@ -117,9 +132,18 @@ export function MonthlyExpensePaymentDialog({
         onSubmit={onFormSubmit}
       >
         <div className="flex items-center justify-between gap-4 rounded-lg border border-success/20 bg-success/5 p-3">
-          <span className="min-w-0 break-words font-medium text-foreground">
-            {expense.name}
-          </span>
+          <div className="min-w-0 space-y-0.5">
+            <span className="block break-words font-medium text-foreground">
+              {expense.name}
+            </span>
+            {savedCategory && (
+              <span className="flex items-center gap-1 font-mono text-2xs text-muted-foreground">
+                <Tags aria-hidden="true" className="size-3 shrink-0" />
+                <span className="sr-only">{t.paymentCategoryLabel}:</span>
+                {savedCategory}
+              </span>
+            )}
+          </div>
           <strong className="shrink-0 text-success tabular-nums">
             <MonetaryValue hiddenLabel={hiddenMonetaryValueLabel}>
               {amount}
@@ -153,11 +177,14 @@ export function MonthlyExpensePaymentDialog({
                 {t.paymentAccountLabel}
               </FieldLabel>
               <NativeSelect
+                aria-describedby={
+                  savedBankAccount ? undefined : `${formId}-account-hint`
+                }
                 className="w-full"
                 id={`${formId}-account`}
                 onChange={(event) => setBankAccount(event.target.value)}
                 required
-                value={bankAccount}
+                value={selectedBankAccount}
               >
                 <NativeSelectOption value="">
                   {t.paymentSelectAccount}
@@ -168,27 +195,43 @@ export function MonthlyExpensePaymentDialog({
                   </NativeSelectOption>
                 ))}
               </NativeSelect>
+              {!savedBankAccount && (
+                <FieldDescription id={`${formId}-account-hint`}>
+                  {t.paymentAccountHint}
+                </FieldDescription>
+              )}
             </Field>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field>
-                <FieldLabel htmlFor={`${formId}-category`}>
-                  <Tags className="size-3.5 text-muted-foreground" />
-                  {t.paymentCategoryLabel}
-                </FieldLabel>
-                <NativeSelect
-                  className="w-full"
-                  id={`${formId}-category`}
-                  onChange={(event) => setCategory(event.target.value)}
-                  required
-                  value={selectedCategory}
-                >
-                  {categories.map((item) => (
-                    <NativeSelectOption key={item} value={item}>
-                      {item}
+            <div
+              className={cn("grid gap-4", !savedCategory && "sm:grid-cols-2")}
+            >
+              {!savedCategory && (
+                <Field>
+                  <FieldLabel htmlFor={`${formId}-category`}>
+                    <Tags className="size-3.5 text-muted-foreground" />
+                    {t.paymentCategoryLabel}
+                  </FieldLabel>
+                  <NativeSelect
+                    aria-describedby={`${formId}-category-hint`}
+                    className="w-full"
+                    id={`${formId}-category`}
+                    onChange={(event) => setCategory(event.target.value)}
+                    required
+                    value={category}
+                  >
+                    <NativeSelectOption value="">
+                      {t.paymentSelectCategory}
                     </NativeSelectOption>
-                  ))}
-                </NativeSelect>
-              </Field>
+                    {categories.map((item) => (
+                      <NativeSelectOption key={item} value={item}>
+                        {item}
+                      </NativeSelectOption>
+                    ))}
+                  </NativeSelect>
+                  <FieldDescription id={`${formId}-category-hint`}>
+                    {t.paymentCategoryHint}
+                  </FieldDescription>
+                </Field>
+              )}
               <Field>
                 <FieldLabel htmlFor={`${formId}-date`}>
                   <CalendarDays className="size-3.5 text-muted-foreground" />

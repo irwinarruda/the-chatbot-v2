@@ -358,7 +358,11 @@
     "amountPlaceholder": "0.00",
     "dueDayLabel": "due day",
     "dueDayPlaceholder": "1–31",
-    "optionalHint": "Amount and due day are optional. Useful for bills that like surprises.",
+    "categoryLabel": "expense category",
+    "noCategory": "No category",
+    "bankAccountLabel": "default account",
+    "noBankAccount": "No default account",
+    "optionalHint": "Only the name is required. The rest is for bills that like surprises.",
     "createAction": "Create bill",
     "saveAction": "Save changes",
     "cancelAction": "Cancel",
@@ -387,7 +391,10 @@
     "paymentLoadError": "Could not load accounts. Close and try again.",
     "paymentNoAccounts": "Add an account and expense category to your Cash Flow spreadsheet first.",
     "paymentError": "Payment could not be completed. You can retry safely.",
-    "paymentSelectAccount": "Choose an account"
+    "paymentSelectAccount": "Choose an account",
+    "paymentSelectCategory": "Choose a category",
+    "paymentCategoryHint": "Saved to this bill for future payments.",
+    "paymentAccountHint": "Becomes this bill's default account."
   },
   "loginPage": {
     "windowTitle": "the-chatbot: ~/login",

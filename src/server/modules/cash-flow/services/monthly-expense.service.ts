@@ -61,6 +61,16 @@ export class MonthlyExpenseService {
     } else if (dto.dueDay !== undefined) {
       expense.changeDueDay(dto.dueDay);
     }
+    if (dto.clearCategory) {
+      expense.changeCategory(undefined);
+    } else if (dto.category !== undefined) {
+      expense.changeCategory(dto.category);
+    }
+    if (dto.clearBankAccount) {
+      expense.changeBankAccount(undefined);
+    } else if (dto.bankAccount !== undefined) {
+      expense.changeBankAccount(dto.bankAccount);
+    }
     expense.updatedAt = this.now();
     await this.expenses.saveVersion(expense, month);
     return this.getMonthlyExpense(dto.idUser, dto.id, month);

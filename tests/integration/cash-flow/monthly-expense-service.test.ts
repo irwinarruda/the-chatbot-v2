@@ -92,6 +92,40 @@ describe("MonthlyExpenseService", () => {
     expect(september[0]?.expense.expectedAmount).toBe(180);
   });
 
+  test("carries a bill category and default account forward and clears them from a later month", async () => {
+    const service = new MonthlyExpenseService(
+      new MonthlyExpenseRepository(orquestrator.database),
+      () => new Date("2026-09-20T12:00:00.000Z"),
+    );
+    const user = await orquestrator.createUser();
+    const rent = await service.createMonthlyExpense({
+      idUser: user.id,
+      name: "Rent",
+      category: "Housing",
+      bankAccount: "Nubank",
+      month: "2026-07",
+    });
+    await service.updateMonthlyExpense({
+      idUser: user.id,
+      id: rent.expense.id,
+      clearCategory: true,
+      clearBankAccount: true,
+      month: "2026-09",
+    });
+
+    const defaults = await Promise.all(
+      ["2026-07", "2026-08", "2026-09"].map(async (month) => {
+        const [item] = await service.listMonthlyExpenses(user.id, month);
+        return [item?.expense.category, item?.expense.bankAccount];
+      }),
+    );
+    expect(defaults).toEqual([
+      ["Housing", "Nubank"],
+      ["Housing", "Nubank"],
+      [undefined, undefined],
+    ]);
+  });
+
   test("updates optional details and archives without deleting payment history", async () => {
     const now = new Date("2026-07-20T12:00:00.000Z");
     const service = new MonthlyExpenseService(

@@ -1,4 +1,10 @@
-import { CalendarDays, Landmark, Pencil, ReceiptText } from "lucide-react";
+import {
+  CalendarDays,
+  Landmark,
+  Pencil,
+  ReceiptText,
+  Tags,
+} from "lucide-react";
 import { MonetaryValue } from "~/client/shared/components/MonetaryValue";
 import { Badge } from "~/client/shared/components/ui/badge";
 import { Button } from "~/client/shared/components/ui/button";
@@ -105,6 +111,15 @@ export function MonthlyExpenseRow({
                 ? `${t.dueDayPrefix} ${expense.dueDay}`
                 : t.noDueDay}
             </span>
+            {expense.category && (
+              <span className="inline-flex min-w-0 max-w-full items-center gap-1">
+                <Tags aria-hidden="true" className="size-3 shrink-0" />
+                <span className="sr-only">{t.categoryLabel}:</span>
+                <span className="truncate" title={expense.category}>
+                  {expense.category}
+                </span>
+              </span>
+            )}
             <Badge
               className={cn(
                 "shrink-0",

@@ -7,6 +7,8 @@ export interface MonthlyExpenseConfig {
   name: string;
   expectedAmount?: number;
   dueDay?: number;
+  category?: string;
+  bankAccount?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -17,6 +19,8 @@ export interface RestoredMonthlyExpenseConfig {
   name: string;
   expectedAmount?: number;
   dueDay?: number;
+  category?: string;
+  bankAccount?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,6 +31,8 @@ export class MonthlyExpense {
   name: string;
   expectedAmount?: number;
   dueDay?: number;
+  category?: string;
+  bankAccount?: string;
   createdAt: Date;
   updatedAt: Date;
 
@@ -39,6 +45,8 @@ export class MonthlyExpense {
     this.name = this.validateName(config.name);
     this.expectedAmount = this.validateExpectedAmount(config.expectedAmount);
     this.dueDay = this.validateDueDay(config.dueDay);
+    this.category = this.validateCategory(config.category);
+    this.bankAccount = this.validateBankAccount(config.bankAccount);
     this.createdAt = config.createdAt ?? new Date();
     this.updatedAt = config.updatedAt ?? new Date();
   }
@@ -59,6 +67,16 @@ export class MonthlyExpense {
 
   changeDueDay(dueDay?: number): void {
     this.dueDay = this.validateDueDay(dueDay);
+    this.updatedAt = new Date();
+  }
+
+  changeCategory(category?: string): void {
+    this.category = this.validateCategory(category);
+    this.updatedAt = new Date();
+  }
+
+  changeBankAccount(bankAccount?: string): void {
+    this.bankAccount = this.validateBankAccount(bankAccount);
     this.updatedAt = new Date();
   }
 
@@ -90,5 +108,27 @@ export class MonthlyExpense {
       );
     }
     return dueDay;
+  }
+
+  private validateCategory(category?: string): string | undefined {
+    if (category === undefined) return undefined;
+    const value = category.trim();
+    if (!value || value.length > 160) {
+      throw new ValidationException(
+        "Monthly expense category must be present and have at most 160 characters",
+      );
+    }
+    return value;
+  }
+
+  private validateBankAccount(bankAccount?: string): string | undefined {
+    if (bankAccount === undefined) return undefined;
+    const value = bankAccount.trim();
+    if (!value || value.length > 160) {
+      throw new ValidationException(
+        "Monthly expense bank account must be present and have at most 160 characters",
+      );
+    }
+    return value;
   }
 }

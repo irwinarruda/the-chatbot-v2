@@ -10,6 +10,8 @@ export const MonthlyExpenseResponseDTO = z.object({
   name: z.string(),
   expectedAmount: z.number().positive().optional(),
   dueDay: z.number().int().min(1).max(31).optional(),
+  category: z.string().optional(),
+  bankAccount: z.string().optional(),
   month: MonthlyExpenseMonthDTO,
   isPaid: z.boolean(),
   paidAt: z.iso.datetime().optional(),
@@ -41,6 +43,8 @@ export const CreateMonthlyExpenseRequestDTO = z.object({
   name: z.string().trim().min(1).max(160),
   expectedAmount: z.number().finite().positive().optional(),
   dueDay: z.number().int().min(1).max(31).optional(),
+  category: z.string().trim().min(1).max(160).optional(),
+  bankAccount: z.string().trim().min(1).max(160).optional(),
   month: MonthlyExpenseMonthDTO.optional(),
 });
 export type CreateMonthlyExpenseRequestDTO = z.infer<
@@ -51,6 +55,8 @@ export const UpdateMonthlyExpenseRequestDTO = z.object({
   name: z.string().trim().min(1).max(160).optional(),
   expectedAmount: z.number().finite().positive().nullable().optional(),
   dueDay: z.number().int().min(1).max(31).nullable().optional(),
+  category: z.string().trim().min(1).max(160).nullable().optional(),
+  bankAccount: z.string().trim().min(1).max(160).nullable().optional(),
   month: MonthlyExpenseMonthDTO.optional(),
 });
 export type UpdateMonthlyExpenseRequestDTO = z.infer<
