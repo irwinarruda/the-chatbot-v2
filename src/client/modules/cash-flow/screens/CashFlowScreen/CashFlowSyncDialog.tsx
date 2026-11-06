@@ -6,15 +6,21 @@ import type { SyncCashFlowBankAccountRequestDTO } from "~/contracts/http/cash-fl
 import { CashFlowSyncForm } from "./CashFlowSyncForm";
 
 export function CashFlowSyncDialog({
+  balances,
   bankAccounts,
+  currency,
   categories,
+  hiddenMonetaryValueLabel,
   isSubmitting,
   onClose,
   onSave,
   open,
   t,
 }: {
+  balances: Record<string, number>;
   bankAccounts: string[];
+  currency: Intl.NumberFormat;
+  hiddenMonetaryValueLabel: string;
   categories: string[];
   isSubmitting: boolean;
   onClose: () => void;
@@ -26,7 +32,7 @@ export function CashFlowSyncDialog({
 
   return (
     <TerminalResponsiveOverlay
-      closeLabel={t.cancelAction}
+      closeLabel={t.closeAction}
       description={t.syncHint}
       footer={
         <div className="grid w-full grid-cols-2 gap-2 sm:ml-auto sm:flex sm:w-auto">
@@ -45,7 +51,10 @@ export function CashFlowSyncDialog({
       title={t.syncTitle}
     >
       <CashFlowSyncForm
+        balances={balances}
         bankAccounts={bankAccounts}
+        currency={currency}
+        hiddenMonetaryValueLabel={hiddenMonetaryValueLabel}
         categories={categories}
         formId={formId}
         isSubmitting={isSubmitting}

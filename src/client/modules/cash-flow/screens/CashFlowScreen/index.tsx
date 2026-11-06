@@ -1,42 +1,37 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import {
   ArrowRightLeft,
   CircleAlert,
   Landmark,
-  ListFilter,
-  MessageSquare,
   Plus,
   RefreshCw,
+  SearchX,
   WalletCards,
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { CashFlowErrorCode } from "~/client/modules/cash-flow/app/services/CashFlowService";
-import { calculateCashFlowNetBalance } from "~/client/modules/cash-flow/parsers/CashFlowBalances";
+import { getCurrentBillsMonth } from "~/client/modules/cash-flow/parsers/BillsSearch";
+import {
+  calculateCashFlowNetBalance,
+  summarizeCashFlowMonth,
+} from "~/client/modules/cash-flow/parsers/CashFlowBalances";
 import {
   type CashFlowFilterValues,
   type CashFlowSearch,
   filterCashFlowTransactions,
   toCashFlowRouteSearch,
 } from "~/client/modules/cash-flow/parsers/CashFlowSearch";
+import { ListEmptyState } from "~/client/shared/components/ListEmptyState";
 import { MonetaryValue } from "~/client/shared/components/MonetaryValue";
+import { AppShell } from "~/client/shared/components/terminal/AppShell";
 import { TerminalPageHeader } from "~/client/shared/components/terminal/TerminalPageHeader";
-import { TerminalWindow } from "~/client/shared/components/terminal/TerminalWindow";
 import {
   Alert,
   AlertAction,
   AlertDescription,
 } from "~/client/shared/components/ui/alert";
-import { Badge } from "~/client/shared/components/ui/badge";
 import { Button } from "~/client/shared/components/ui/button";
-import { Card, CardContent } from "~/client/shared/components/ui/card";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "~/client/shared/components/ui/empty";
 import { cn } from "~/client/shared/components/ui/lib/utils";
 import { Skeleton } from "~/client/shared/components/ui/skeleton";
 import {
@@ -61,11 +56,6 @@ import { CashFlowTransactionList } from "./CashFlowTransactionList";
 import { CashFlowTransferDialog } from "./CashFlowTransferDialog";
 
 const loadingRows = ["first", "second", "third", "fourth"];
-
-function balanceColorClassName(balance: number): string {
-  if (balance < 0) return "text-destructive";
-  return "text-success";
-}
 
 export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
   const navigate = useNavigate();
@@ -181,40 +171,61 @@ export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
     void bootstrap();
   }, [bootstrap]);
 
+  const currentMonth = getCurrentBillsMonth();
+  const monthSummary = summarizeCashFlowMonth(
+    dashboard.transactions,
+    currentMonth,
+  );
+  const monthLabel = new Date(
+    `${currentMonth}-15T12:00:00Z`,
+  ).toLocaleDateString(prefs.locale, {
+    month: "long",
+    timeZone: "America/Sao_Paulo",
+  });
+
   return (
-    <TerminalWindow
+    <AppShell
       activePath="/cash-flow"
       dictionary={dictionary}
-      frameClassName="page-frame-min-height"
-      mainClassName="items-stretch sm:items-start"
       showLogout
       title={t.windowTitle}
       wide
-      windowClassName="relative overflow-hidden"
     >
       <TerminalPageHeader
-        badge={
-          <div className="mt-4 flex flex-wrap justify-center gap-2">
-            <Badge
-              className="gap-1.5 border-syntax-constant/40 bg-syntax-constant/10 text-syntax-constant"
+        actions={
+          <>
+            <Button
+              aria-label={t.transferAction}
+              disabled={isBootstrapping || isSubmitting}
+              onClick={() => onOpenTransfer()}
+              type="button"
               variant="outline"
             >
-              <WalletCards />
-              {dashboard.transactions.length} {t.transactions}
-            </Badge>
-            <Badge
-              className="gap-1.5 border-info/40 bg-info/10 text-info hover:border-info hover:bg-info/15 hover:text-info"
-              render={<Link to="/chat" />}
+              <ArrowRightLeft />
+              {t.transferShort}
+            </Button>
+            <Button
+              aria-label={t.syncAction}
+              disabled={isBootstrapping || dashboard.bankAccounts.length === 0}
+              onClick={() => setIsSyncOpen(true)}
+              type="button"
               variant="outline"
             >
-              <MessageSquare />
-              {t.chatAction}
-            </Badge>
-          </div>
+              <RefreshCw />
+              {t.syncShort}
+            </Button>
+            <Button
+              disabled={isBootstrapping || dashboard.bankAccounts.length === 0}
+              onClick={() => setIsCreateOpen(true)}
+              type="button"
+            >
+              <Plus />
+              {t.newTransaction}
+            </Button>
+          </>
         }
         heading={t.heading}
         subtitle={t.subtitle}
-        withLogo={false}
       />
       {errorMessage && (
         <Alert className="mb-4" variant="destructive">
@@ -240,117 +251,120 @@ export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
           </AlertAction>
         </Alert>
       )}
-      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
-        <Button
-          className="col-span-2 h-auto pointer-fine:h-auto min-h-11 pointer-fine:min-h-8 min-w-0 whitespace-normal pointer-fine:py-1 py-2 sm:col-span-1"
-          disabled={isBootstrapping || dashboard.bankAccounts.length === 0}
-          onClick={() => setIsCreateOpen(true)}
-          type="button"
-        >
-          <Plus />
-          {t.newTransaction}
-        </Button>
-        <Button
-          className="h-auto pointer-fine:h-auto min-h-11 pointer-fine:min-h-8 min-w-0 whitespace-normal pointer-fine:py-1 py-2"
-          disabled={isBootstrapping || isSubmitting}
-          onClick={() => onOpenTransfer()}
-          type="button"
-          variant="outline"
-        >
-          <ArrowRightLeft />
-          <span>{t.transferAction}</span>
-        </Button>
-        <Button
-          className="h-auto pointer-fine:h-auto min-h-11 pointer-fine:min-h-8 min-w-0 whitespace-normal pointer-fine:py-1 py-2"
-          disabled={isBootstrapping || dashboard.bankAccounts.length === 0}
-          onClick={() => setIsSyncOpen(true)}
-          type="button"
-          variant="outline"
-        >
-          <RefreshCw />
-          <span>{t.syncAction}</span>
-        </Button>
-      </div>
       {dashboard.bankAccountStatuses.length > 0 && (
-        <section aria-labelledby="cash-flow-balances" className="mb-4">
-          <div className="mb-2 flex items-center justify-between gap-3">
+        <section
+          aria-labelledby="cash-flow-balances"
+          className="mb-6 rounded-xl border border-border bg-card"
+        >
+          <div className="px-5 pt-4 pb-4">
             <h2
-              className="m-0 flex items-center gap-2 font-mono text-2xs text-muted-foreground uppercase tracking-wide"
+              className="m-0 font-medium text-muted-foreground text-sm"
               id="cash-flow-balances"
             >
-              <Landmark className="size-3.5 text-primary" />
-              {t.accountBalancesLabel}
+              {t.netBalanceLabel}
             </h2>
-            <p className="m-0 flex shrink-0 items-baseline gap-1.5 text-2xs text-muted-foreground">
-              <span>{t.netBalanceLabel}</span>
-              <strong
-                className={cn(
-                  "font-semibold tabular-nums",
-                  balanceColorClassName(netBalance),
-                )}
+            <p
+              className={cn(
+                "m-0 mt-1 font-semibold text-3xl tabular-nums tracking-tight",
+                netBalance < 0 ? "text-destructive" : "text-foreground",
+              )}
+            >
+              <MonetaryValue
+                hiddenLabel={dictionary.common.hiddenMonetaryValue}
               >
+                {currency.format(netBalance)}
+              </MonetaryValue>
+            </p>
+          </div>
+          <dl className="m-0 grid grid-cols-3 gap-3 border-border border-t px-5 py-3">
+            <div className="min-w-0">
+              <dt className="truncate text-muted-foreground text-xs">
+                {t.monthIncome.replace("{month}", monthLabel)}
+              </dt>
+              <dd className="m-0 font-medium text-sm text-success tabular-nums">
                 <MonetaryValue
                   hiddenLabel={dictionary.common.hiddenMonetaryValue}
                 >
-                  {currency.format(netBalance)}
+                  {currency.format(monthSummary.income)}
                 </MonetaryValue>
-              </strong>
-            </p>
-          </div>
-          <div className="-mx-6 flex gap-2 overflow-x-auto px-6 pb-1 sm:mx-0 sm:grid sm:grid-cols-2 sm:px-0 md:grid-cols-3">
+              </dd>
+            </div>
+            <div className="min-w-0">
+              <dt className="truncate text-muted-foreground text-xs">
+                {t.monthSpending}
+              </dt>
+              <dd className="m-0 font-medium text-foreground text-sm tabular-nums">
+                <MonetaryValue
+                  hiddenLabel={dictionary.common.hiddenMonetaryValue}
+                >
+                  {currency.format(monthSummary.spending)}
+                </MonetaryValue>
+              </dd>
+            </div>
+            <div className="min-w-0">
+              <dt className="truncate text-muted-foreground text-xs">
+                {t.monthNet}
+              </dt>
+              <dd className="m-0 font-medium text-foreground text-sm tabular-nums">
+                <MonetaryValue
+                  hiddenLabel={dictionary.common.hiddenMonetaryValue}
+                >
+                  {currency.format(monthSummary.income - monthSummary.spending)}
+                </MonetaryValue>
+              </dd>
+            </div>
+          </dl>
+          <ul
+            aria-label={t.accountBalancesLabel}
+            className="m-0 grid list-none grid-cols-1 divide-y divide-border border-border border-t p-0 sm:grid-cols-3 sm:divide-x sm:divide-y-0"
+          >
             {dashboard.bankAccountStatuses.map((account) => (
-              <Card
-                className="min-w-48 gap-1 border-border bg-background/55 py-3 shadow-none sm:min-w-0"
+              <li
+                className="flex items-baseline justify-between gap-3 px-5 py-3 sm:block"
                 key={account.bankAccount}
-                size="sm"
               >
-                <CardContent className="px-3">
-                  <p className="m-0 truncate text-2xs text-muted-foreground uppercase tracking-wide">
-                    {account.bankAccount}
-                  </p>
-                  <p
-                    className={cn(
-                      "m-0 mt-1 font-semibold text-sm tabular-nums",
-                      balanceColorClassName(account.balance),
-                    )}
+                <p className="m-0 flex items-center gap-1.5 truncate text-muted-foreground text-xs">
+                  <Landmark className="size-3.5 shrink-0" aria-hidden="true" />
+                  {account.bankAccount}
+                </p>
+                <p
+                  className={cn(
+                    "m-0 font-medium text-base tabular-nums sm:mt-1",
+                    account.balance < 0
+                      ? "text-destructive"
+                      : "text-foreground",
+                  )}
+                >
+                  <MonetaryValue
+                    hiddenLabel={dictionary.common.hiddenMonetaryValue}
                   >
-                    <MonetaryValue
-                      hiddenLabel={dictionary.common.hiddenMonetaryValue}
-                    >
-                      {currency.format(account.balance)}
-                    </MonetaryValue>
-                  </p>
-                </CardContent>
-              </Card>
+                    {currency.format(account.balance)}
+                  </MonetaryValue>
+                </p>
+              </li>
             ))}
-          </div>
+          </ul>
         </section>
       )}
-      <Card
-        className="mb-4 gap-0 border-border bg-muted/45 py-0 shadow-none"
-        size="sm"
-      >
-        <CardContent className="p-3">
-          <CashFlowFilters
-            bankAccounts={dashboard.bankAccounts}
-            categories={categories}
-            filters={filters}
-            onChange={onChangeFilters}
-            onClear={onClearFilters}
-            t={t}
-          />
-        </CardContent>
-      </Card>
+      <div className="mb-4">
+        <CashFlowFilters
+          bankAccounts={dashboard.bankAccounts}
+          categories={categories}
+          filters={filters}
+          onChange={onChangeFilters}
+          onClear={onClearFilters}
+          t={t}
+        />
+      </div>
       <section aria-labelledby="cash-flow-list" className="space-y-2">
         <div className="flex items-center justify-between gap-3">
           <h2
-            className="m-0 flex items-center gap-2 font-mono text-2xs text-muted-foreground uppercase tracking-wide"
+            className="m-0 font-medium text-foreground text-sm"
             id="cash-flow-list"
           >
-            <ListFilter className="size-3.5 text-primary" />
             {t.listLabel}
           </h2>
-          <span className="text-2xs text-muted-foreground tabular-nums">
+          <span className="text-muted-foreground text-xs tabular-nums">
             {filteredTransactions.length} {t.results}
           </span>
         </div>
@@ -378,19 +392,23 @@ export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
             transactions={filteredTransactions}
           />
         ) : (
-          <Empty className="rounded-lg border border-border bg-background/40 py-10">
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <WalletCards className="text-primary" />
-              </EmptyMedia>
-              <EmptyTitle className="text-muted-foreground">
-                {hasFilters ? t.noResults : t.emptyState}
-              </EmptyTitle>
-              <EmptyDescription>
-                {hasFilters ? t.noResultsHint : t.emptyHint}
-              </EmptyDescription>
-            </EmptyHeader>
-          </Empty>
+          <ListEmptyState
+            actions={
+              hasFilters && (
+                <Button
+                  onClick={onClearFilters}
+                  type="button"
+                  variant="outline"
+                >
+                  <X />
+                  {t.clearFilters}
+                </Button>
+              )
+            }
+            description={hasFilters ? t.noResultsHint : t.emptyHint}
+            icon={hasFilters ? SearchX : WalletCards}
+            title={hasFilters ? t.noResults : t.emptyState}
+          />
         )}
       </section>
       {transferDraft && (
@@ -417,7 +435,15 @@ export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
         t={t}
       />
       <CashFlowSyncDialog
+        balances={Object.fromEntries(
+          dashboard.bankAccountStatuses.map((account) => [
+            account.bankAccount,
+            account.balance,
+          ]),
+        )}
         bankAccounts={dashboard.bankAccounts}
+        currency={currency}
+        hiddenMonetaryValueLabel={dictionary.common.hiddenMonetaryValue}
         categories={categories}
         isSubmitting={isSubmitting}
         onClose={() => setIsSyncOpen(false)}
@@ -425,6 +451,6 @@ export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
         open={isSyncOpen}
         t={t}
       />
-    </TerminalWindow>
+    </AppShell>
   );
 }

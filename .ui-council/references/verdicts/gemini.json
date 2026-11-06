@@ -1,0 +1,105 @@
+{
+  "judge": "gemini",
+  "viewed_images": true,
+  "modules": [
+    {
+      "module": "t3-code",
+      "scores": {
+        "uiux": 8.8
+      },
+      "strengths": [
+        "Pure dark palette with subtle border delimiters instead of heavy solid cards, creating an immersive, focused workspace.",
+        "Rich contextual composer encapsulating file attachment chips, model selection, and branch/checkout status without clutter.",
+        "Segmented progress visualizations for quotas with clear countdown timers and multi-tenant attribution.",
+        "Clean split-pane settings layout with search, breadcrumb navigation, and concise explanatory subtext under each toggle."
+      ],
+      "issues": [
+        {
+          "severity": "low",
+          "screen": "new-thread.png",
+          "problem": "Cryptic colored status badges (such as MC and PC icons) in sidebar threads lack explicit textual meaning or onboarding tooltips.",
+          "fix": "Add descriptive tooltips on hover and consider standardizing status indicators with human-readable labels."
+        },
+        {
+          "severity": "low",
+          "screen": "settings.png",
+          "problem": "Setting subsections have long vertical lists of toggles with minimal visual rhythm, making scanning fatigue likely.",
+          "fix": "Use subtle card enclosures or alternating row backgrounds to group related controls into clear visual clusters."
+        }
+      ]
+    },
+    {
+      "module": "codex",
+      "scores": {
+        "uiux": 8.55
+      },
+      "strengths": [
+        "Right-side auxiliary rail for results and sources keeps the main conversational thread focused and uncluttered.",
+        "Collapsed thought/execution logs ('Trabalhou por 8s') preserve transparency while keeping reasoning unobtrusive.",
+        "Image gallery with bottom dark gradient scrims delivers consistent text legibility over diverse user-generated visual assets.",
+        "Persistent floating composer anchored to the bottom provides a predictable interaction model across chat and media views."
+      ],
+      "issues": [
+        {
+          "severity": "medium",
+          "screen": "images-gallery.png",
+          "problem": "The floating bottom prompt composer overlaps and obscures the bottommost row of content in the gallery grid.",
+          "fix": "Add dynamic bottom scroll padding or a safe-area footer spacer to ensure all content scrolls completely above the floating input."
+        },
+        {
+          "severity": "low",
+          "screen": "conversation.png",
+          "problem": "The right panel in its empty state presents plain cards with faint borders that look unpolished compared to the central thread.",
+          "fix": "Add subtle empty-state illustrations, clear descriptive placeholders, or collapse the panel when no artifact or source is selected."
+        }
+      ]
+    },
+    {
+      "module": "claude-code",
+      "scores": {
+        "uiux": 7.9
+      },
+      "strengths": [
+        "Dedicated runtime inspector showing active environments, context percentage meter, and connected tools in real time.",
+        "Collapsible tool execution summaries ('Usou Claude Docs', 'Executou 1 comando') prevent lengthy shell/tool outputs from overwhelming the stream.",
+        "In-line artifact linking seamlessly paired with a persistent side panel for viewing generated documents side-by-side with conversation.",
+        "Structured multi-project and environment hierarchy in the sidebar for complex multi-repo workspaces."
+      ],
+      "issues": [
+        {
+          "severity": "high",
+          "screen": "conversation-with-panel.png",
+          "problem": "Raw internal XML/JSON markup (<artifact-view-context ...>) leaks directly into the chat transcript, disrupting visual polish.",
+          "fix": "Filter or parse technical context payloads into formatted UI metadata cards or hidden debug traces."
+        },
+        {
+          "severity": "medium",
+          "screen": "conversation-with-panel.png",
+          "problem": "Deleted or unavailable artifact states in the right pane provide no recovery actions, re-run prompts, or contextual explanation.",
+          "fix": "Provide a clear 'Regenerate artifact' button and display a brief explanation linking back to the originating prompt."
+        }
+      ]
+    },
+    {
+      "module": "linear",
+      "scores": {
+        "uiux": 9.5
+      },
+      "strengths": [
+        "Agent actions (branch creation, PR generation, status transitions) are integrated natively into the issue activity timeline alongside human collaboration.",
+        "Docked agent assistant panel provides full autonomous task monitoring, diff stats (+22 -10), and review actions without leaving context.",
+        "Masterful typographic scale, subtle high-contrast accents, and micro-borders create an exceptionally clean and legible interface.",
+        "Tight coupling of git workflow primitives (Draft PR, Revert, branch names) directly within ticket state management."
+      ],
+      "issues": [
+        {
+          "severity": "low",
+          "screen": "issue-with-agent.png",
+          "problem": "The floating docked agent card overlays issue comments and activity timeline on medium or smaller desktop viewports.",
+          "fix": "Provide a quick toggle to dock the agent card into a collapsible side column or split-pane layout."
+        }
+      ]
+    }
+  ],
+  "overall": "These apps succeed by treating AI not as an isolated chat bubble, but as an integrated workspace participant. They pair dark, low-distraction canvases and disciplined typography with dedicated side panels or docked inspectors for artifacts, tools, and execution context, keeping long-form conversational feeds clean and actionable."
+}

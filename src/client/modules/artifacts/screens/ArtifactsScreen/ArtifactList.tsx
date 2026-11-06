@@ -1,17 +1,25 @@
 import { Link } from "@tanstack/react-router";
 import {
-  CodeXml,
-  Copy,
-  ExternalLink,
+  Check,
+  Ellipsis,
   Globe2,
+  Link2,
   LockKeyhole,
+  PanelsTopLeft,
   Trash2,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { ConfirmDialog } from "~/client/shared/components/ConfirmDialog";
+import { ListEmptyState } from "~/client/shared/components/ListEmptyState";
 import { Alert, AlertDescription } from "~/client/shared/components/ui/alert";
-import { Badge } from "~/client/shared/components/ui/badge";
 import { Button } from "~/client/shared/components/ui/button";
-import { Card, CardContent } from "~/client/shared/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "~/client/shared/components/ui/dropdown-menu";
 import { Skeleton } from "~/client/shared/components/ui/skeleton";
 import {
   type ApiError,
@@ -26,6 +34,8 @@ import { ArtifactVisibility } from "~/domain/artifacts/artifact-visibility";
 
 export function ArtifactList() {
   const prefs = usePrefs();
+  const [copiedId, setCopiedId] = useState<string>();
+  const [deletingArtifact, setDeletingArtifact] = useState<ArtifactDTO>();
   const artifacts = useApp((state) => state.artifacts);
   const isLoading = useApp((state) => state.isArtifactsLoading);
   const isSubmitting = useApp((state) => state.isArtifactSubmitting);
@@ -49,6 +59,8 @@ export function ArtifactList() {
       await navigator.clipboard.writeText(
         new URL(`/a/${artifactId}`, window.location.origin).href,
       );
+      setCopiedId(artifactId);
+      window.setTimeout(() => setCopiedId(undefined), 2000);
     } catch (error) {
       setCopyError(clientError(error, "copy"));
     }
@@ -60,7 +72,7 @@ export function ArtifactList() {
   }
 
   async function onArtifactDelete(artifact: ArtifactDTO) {
-    if (isSubmitting || !window.confirm(t.deleteConfirmation)) return;
+    if (isSubmitting) return;
     setCopyError(undefined);
     await deleteArtifact(artifact.id);
   }
@@ -76,118 +88,159 @@ export function ArtifactList() {
           <AlertDescription>{errorMessage}</AlertDescription>
         </Alert>
       )}
-      <div className="mb-2 flex items-center gap-2 font-mono text-2xs text-muted-foreground uppercase tracking-wide">
-        <CodeXml className="size-3.5 text-primary" />
+      <h2 className="mb-2 flex items-center gap-2 font-medium text-foreground text-sm">
         {t.listLabel}
-      </div>
+        {!isLoading && (
+          <span className="font-normal text-muted-foreground">
+            {artifacts.length}
+          </span>
+        )}
+      </h2>
       {isLoading ? (
         <div aria-busy="true" aria-live="polite" className="space-y-2">
           <span className="sr-only">{t.loading}</span>
-          <Skeleton className="h-24 w-full" />
-          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
         </div>
       ) : artifacts.length > 0 ? (
-        <ul aria-busy={isSubmitting} className="m-0 list-none space-y-2 p-0">
+        <ul
+          aria-busy={isSubmitting}
+          className="m-0 list-none divide-y divide-border overflow-hidden rounded-xl border border-border bg-card p-0"
+        >
           {artifacts.map((artifact) => {
             const isPublic = artifact.visibility === ArtifactVisibility.Public;
             return (
-              <li key={artifact.id}>
-                <Card
-                  className="gap-0 border-border border-l-2 bg-background/40 py-0 shadow-none hover:border-l-brand"
-                  size="sm"
-                >
-                  <CardContent className="grid gap-3 p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-                    <div className="min-w-0">
-                      <div className="flex min-w-0 items-center gap-2">
-                        {isPublic ? (
-                          <Globe2 className="size-4 shrink-0 text-info" />
-                        ) : (
-                          <LockKeyhole className="size-4 shrink-0 text-muted-foreground" />
-                        )}
-                        <Link
-                          className="truncate font-semibold text-foreground text-sm hover:text-primary"
-                          params={{ artifactId: artifact.id }}
-                          to="/a/$artifactId"
-                        >
-                          {artifact.title}
-                        </Link>
-                        <Badge
-                          className={
-                            isPublic
-                              ? "border-info/25 bg-info/10 text-info"
-                              : "border-border bg-muted text-muted-foreground"
-                          }
-                          variant="outline"
-                        >
-                          {isPublic ? t.publicLabel : t.privateLabel}
-                        </Badge>
-                      </div>
-                      <p className="mt-1 mb-0 text-2xs text-muted-foreground">
-                        v{artifact.version} ·{" "}
-                        {new Date(artifact.updatedAt).toLocaleString(
-                          prefs.locale,
-                        )}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5 sm:justify-end">
+              <li
+                key={artifact.id}
+                className="relative flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 transition-colors hover:bg-muted/60"
+              >
+                <PanelsTopLeft className="size-4 shrink-0 text-muted-foreground" />
+                <div className="min-w-0 flex-1">
+                  <Link
+                    className="block truncate font-medium text-foreground text-sm outline-none after:absolute after:inset-0 focus-visible:after:ring-2 focus-visible:after:ring-ring focus-visible:after:ring-inset"
+                    params={{ artifactId: artifact.id }}
+                    to="/a/$artifactId"
+                  >
+                    {artifact.title}
+                  </Link>
+                  <p className="m-0 flex items-center gap-1.5 text-muted-foreground text-xs">
+                    {isPublic ? (
+                      <Globe2 className="size-3" />
+                    ) : (
+                      <LockKeyhole className="size-3" />
+                    )}
+                    <span>{isPublic ? t.publicLabel : t.privateLabel}</span>
+                    <span aria-hidden="true">·</span>
+                    <span>v{artifact.version}</span>
+                    <span aria-hidden="true">·</span>
+                    <time dateTime={artifact.updatedAt}>
+                      {new Date(artifact.updatedAt).toLocaleDateString(
+                        prefs.locale,
+                        { month: "short", day: "numeric", year: "numeric" },
+                      )}
+                    </time>
+                  </p>
+                </div>
+                <div className="relative z-10 hidden shrink-0 items-center gap-1 sm:flex">
+                  {isPublic ? (
+                    <Button
+                      aria-label={t.copyLinkAction}
+                      onClick={() => onShareLinkCopy(artifact.id)}
+                      size="sm"
+                      type="button"
+                      variant="ghost"
+                      className="text-muted-foreground"
+                    >
+                      {copiedId === artifact.id ? (
+                        <Check className="text-success" />
+                      ) : (
+                        <Link2 />
+                      )}
+                      <span className="hidden sm:inline" aria-live="polite">
+                        {copiedId === artifact.id
+                          ? t.copiedAction
+                          : t.copyLinkAction}
+                      </span>
+                      <span className="sr-only sm:hidden">
+                        {t.copyLinkAction}
+                      </span>
+                    </Button>
+                  ) : (
+                    <Button
+                      disabled={isSubmitting}
+                      onClick={() => onArtifactVisibilityToggle(artifact)}
+                      size="sm"
+                      type="button"
+                      variant="ghost"
+                      className="text-muted-foreground"
+                    >
+                      <Globe2 />
+                      {t.makePublicAction}
+                    </Button>
+                  )}
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
                       <Button
-                        aria-label={t.openAction}
-                        nativeButton={false}
-                        render={
-                          <Link
-                            params={{ artifactId: artifact.id }}
-                            to="/a/$artifactId"
-                          />
-                        }
+                        aria-label={t.moreActions}
+                        className="relative z-10 text-muted-foreground"
                         size="icon-sm"
-                        title={t.openAction}
-                        variant="ghost"
-                      >
-                        <ExternalLink />
-                      </Button>
-                      <Button
-                        aria-label={t.copyLinkAction}
-                        onClick={() => onShareLinkCopy(artifact.id)}
-                        size="icon-sm"
-                        title={t.copyLinkAction}
                         type="button"
                         variant="ghost"
-                      >
-                        <Copy />
-                      </Button>
-                      <Button
-                        disabled={isSubmitting}
-                        onClick={() => onArtifactVisibilityToggle(artifact)}
-                        size="sm"
-                        type="button"
-                        variant="outline"
-                      >
-                        {isPublic ? <LockKeyhole /> : <Globe2 />}
-                        {isPublic ? t.makePrivateAction : t.makePublicAction}
-                      </Button>
-                      <Button
-                        aria-label={t.deleteAction}
-                        disabled={isSubmitting}
-                        onClick={() => onArtifactDelete(artifact)}
-                        size="icon-sm"
-                        title={t.deleteAction}
-                        type="button"
-                        variant="destructive"
-                      >
-                        <Trash2 />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                      />
+                    }
+                  >
+                    <Ellipsis />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-52">
+                    <DropdownMenuItem
+                      className="sm:hidden"
+                      onClick={() => onShareLinkCopy(artifact.id)}
+                    >
+                      <Link2 />
+                      {t.copyLinkAction}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      disabled={isSubmitting}
+                      onClick={() => onArtifactVisibilityToggle(artifact)}
+                    >
+                      {isPublic ? <LockKeyhole /> : <Globe2 />}
+                      {isPublic ? t.makePrivateAction : t.makePublicAction}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      disabled={isSubmitting}
+                      onClick={() => setDeletingArtifact(artifact)}
+                      variant="destructive"
+                    >
+                      <Trash2 />
+                      {t.deleteAction}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </li>
             );
           })}
         </ul>
       ) : (
-        <div className="rounded-lg border border-border border-dashed bg-background/40 p-8 text-center text-muted-foreground text-sm">
-          {t.emptyState}
-        </div>
+        <ListEmptyState icon={PanelsTopLeft} title={t.emptyState} />
       )}
+      <ConfirmDialog
+        cancelLabel={t.cancelAction}
+        confirmLabel={t.deleteAction}
+        description={t.deleteConfirmation}
+        isDisabled={isSubmitting}
+        onConfirm={() => {
+          if (deletingArtifact) void onArtifactDelete(deletingArtifact);
+          setDeletingArtifact(undefined);
+        }}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setDeletingArtifact(undefined);
+        }}
+        open={deletingArtifact !== undefined}
+        title={t.deleteTitle.replace("{name}", deletingArtifact?.title ?? "")}
+      />
     </>
   );
 }

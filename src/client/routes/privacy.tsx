@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type { Prefs } from "~/client/shared/app/entities/Prefs";
+import { AppShell } from "~/client/shared/components/terminal/AppShell";
 import { TerminalFooter } from "~/client/shared/components/terminal/TerminalFooter";
-import { TerminalWindow } from "~/client/shared/components/terminal/TerminalWindow";
 import { useDictionary } from "~/client/shared/hooks/useDictionary";
 import { getDictionary } from "~/client/shared/i18n/dictionary";
 import { loadPrivacyContent } from "~/server/shared/http/functions/load-privacy";
@@ -25,9 +25,8 @@ function PrivacyRoute() {
   const t = dictionary.privacyPage;
 
   return (
-    <TerminalWindow
+    <AppShell
       title={t.windowTitle}
-      wide
       activePath="/privacy"
       dictionary={dictionary}
     >
@@ -35,6 +34,6 @@ function PrivacyRoute() {
         <div dangerouslySetInnerHTML={{ __html: contentHtml }} />
       </article>
       <TerminalFooter className="mt-8">&copy; {t.copyright}</TerminalFooter>
-    </TerminalWindow>
+    </AppShell>
   );
 }

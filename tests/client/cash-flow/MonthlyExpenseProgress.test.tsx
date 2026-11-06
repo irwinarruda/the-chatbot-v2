@@ -1,5 +1,4 @@
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, test } from "vitest";
 import { MonthlyExpenseProgress } from "~/client/modules/cash-flow/screens/BillsScreen/MonthlyExpenseProgress";
 import { getDictionary } from "~/client/shared/i18n/dictionary";
@@ -32,8 +31,7 @@ describe("MonthlyExpenseProgress", () => {
     });
   });
 
-  test("switches progress from paid bill count to paid amount", async () => {
-    const user = userEvent.setup();
+  test("leads with the amount left to pay and tracks progress by amount", () => {
     const t = getDictionary("en").billsPage;
     const expenses = [
       createExpense(800, true),
@@ -50,34 +48,18 @@ describe("MonthlyExpenseProgress", () => {
       />,
     );
 
-    expect(screen.getByText("50%")).toBeInTheDocument();
-    expect(screen.getByText("2 of 4 paid this month")).toBeInTheDocument();
-    expect(screen.getByRole("progressbar")).toHaveAttribute(
-      "aria-valuenow",
-      "50",
-    );
-
-    await user.click(screen.getByRole("button", { name: t.progressByValue }));
-
     const currency = new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "BRL",
     });
-    expect(screen.getByText("90%")).toBeInTheDocument();
-    const valueDescription = `${currency.format(900)} ${t.of} ${currency.format(1000)} ${t.paidValueThisMonth}`;
+    expect(screen.getByText(t.leftToPay)).toBeInTheDocument();
+    expect(screen.getByText(currency.format(100))).toBeInTheDocument();
     expect(
-      screen.getByText(
-        (_, element) =>
-          element?.getAttribute("data-slot") === "card-description" &&
-          element.textContent === valueDescription,
-      ),
+      screen.getByText("2 of 4 bills paid · 90% of the amount"),
     ).toBeInTheDocument();
     expect(screen.getByRole("progressbar")).toHaveAttribute(
       "aria-valuenow",
       "90",
     );
-    expect(
-      screen.getByRole("button", { name: t.progressByValue }),
-    ).toHaveAttribute("aria-pressed", "true");
   });
 });

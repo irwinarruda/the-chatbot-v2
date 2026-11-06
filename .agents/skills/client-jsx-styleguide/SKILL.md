@@ -11,7 +11,10 @@ This skill owns views and visuals. Placement comes from `client-architecture`; s
 
 ## Look
 
-- The interface is a terminal window in the Favo theme: Honey (dark, default) and Wax (light), switched by `data-theme` on `<html>`. Keep the window frame, mono labels and prompts; it is text-forward and restrained, not a SaaS dashboard.
+- The interface is a calm app shell in the Favo theme, in the spirit of T3 Code, Codex, Claude Code and Linear: Honey (dark, default) and Wax (light), switched by `data-theme` on `<html>`. `AppShell` gives every signed-in page a sidebar on desktop and a top bar with a drawer on phones; signed-out pages get a centered card. It is text-forward and restrained, not a SaaS dashboard.
+- Hierarchy comes from size and weight in the sans font. Mono is for code, amounts in inputs and the locale chip, not for labels or headings.
+- Lists are one bordered `rounded-xl` card with divider rows: title first, one muted meta line, actions on the right. Page headers are left-aligned with the primary action on the right. The key number of a data screen (net balance, amount left to pay) leads in large type.
+- Empty and no-result states use `ListEmptyState` with a next action; destructive confirmations use `ConfirmDialog` and name the item, never `window.confirm`.
 - Colors come only from role tokens: `background`, `card`, `muted`, `popover`, `foreground`, `muted-foreground`, `faint`, `border`, `primary`, `brand`, `success`, `warning`, `info`, `hint`, `destructive`, `syntax-*`. Never a hex, `rgb()`, a Tailwind palette hue or a `dark:` branch; the default palette is switched off and the architecture test rejects color literals in TS.
 - Each color has one job. Honey (`primary`, `brand`) is brand, the active item and the primary action. `success` is a good outcome, `warning` needs attention, `destructive` is a problem or a destructive action, `info` is a link. Most text stays `foreground` or `muted-foreground`.
 - Tints are opacity on a signal (`bg-destructive/10`, `border-brand/25`), never a new color.
@@ -46,9 +49,9 @@ This skill owns views and visuals. Placement comes from `client-architecture`; s
 
 ## Working references
 
-- `src/client/shared/components/terminal/TerminalWindow.tsx`: the app frame.
+- `src/client/shared/components/terminal/AppShell.tsx`: the app frame.
 - `src/client/modules/cash-flow/screens/BillsScreen/index.tsx`: signals, tints and dense data.
-- `src/client/modules/chat/screens/ChatScreen/ChatMessage.tsx`: prose following the Favo markup rules.
+- `src/client/modules/chat/screens/ChatScreen/ChatMessage.tsx`: calm prose, emphasis in `foreground`, per-message actions.
 
 ## Checklist
 

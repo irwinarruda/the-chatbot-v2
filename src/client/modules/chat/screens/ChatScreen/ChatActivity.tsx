@@ -3,6 +3,7 @@ import {
   ChevronRight,
   CircleAlert,
   CircleHelp,
+  Lightbulb,
   LoaderCircle,
   Wrench,
 } from "lucide-react";
@@ -75,7 +76,7 @@ export function GenerationTrace({
   const toolCountLabel = toolCount === 1 ? labels.traceTool : labels.traceTools;
 
   return (
-    <div className="mb-2 border-border border-b pb-2">
+    <div className="mb-2">
       <Button
         type="button"
         variant="ghost"
@@ -83,7 +84,7 @@ export function GenerationTrace({
         aria-expanded={isExpanded}
         aria-label={isExpanded ? labels.traceHide : labels.traceShow}
         onClick={() => setIsExpanded((current) => !current)}
-        className="h-auto min-h-11 pointer-fine:min-h-8 max-w-full flex-wrap justify-start gap-1.5 rounded px-1.5 py-1.5 text-left font-mono text-muted-foreground text-xs leading-normal"
+        className="-ml-1.5 h-auto min-h-11 pointer-fine:min-h-7 max-w-full flex-wrap justify-start gap-1.5 rounded-md px-1.5 py-1 text-left font-normal text-muted-foreground text-xs leading-normal aria-expanded:bg-transparent aria-expanded:text-foreground"
       >
         <ChevronRight
           aria-hidden="true"
@@ -103,7 +104,7 @@ export function GenerationTrace({
         )}
       </Button>
       {isExpanded && (
-        <div className="mt-1.5 flex flex-col gap-1.5">
+        <div className="mt-1.5 flex flex-col gap-1.5 rounded-lg border border-border bg-muted/30 px-3 py-2">
           {trace.map((generation) => (
             <GenerationActivity
               key={generation.id}
@@ -126,8 +127,11 @@ export function ReasoningActivity({
 }: ReasoningActivityProps) {
   return (
     <div className="relative pl-5">
-      <span aria-hidden="true" className="absolute top-0.5 left-0 text-hint">
-        ∴
+      <span
+        aria-hidden="true"
+        className="absolute top-0.5 left-0 text-muted-foreground"
+      >
+        <Lightbulb className="size-3.5" />
       </span>
       <span className="sr-only">{label}: </span>
       <CompactReasoningMarkdown
@@ -157,7 +161,7 @@ function GenerationActivity({
   );
 
   return (
-    <section className="flex flex-col gap-1.5 border-border border-l pl-3 [&>[data-slot=chat-tool-activity]+[data-slot=chat-tool-activity]]:-mt-1.5">
+    <section className="flex flex-col gap-1.5 [&>[data-slot=chat-tool-activity]+[data-slot=chat-tool-activity]]:-mt-1.5">
       {generation.items.map((item, index) => {
         const itemKey = `${generation.id}:${item.type}:${index}`;
         if (item.type === "reasoning") {
@@ -212,10 +216,8 @@ function GenerationActivity({
           />
         );
       })}
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pl-5 font-mono text-2xs text-muted-foreground">
-        <span className="text-foreground">
-          {generation.model ?? generation.provider ?? "unknown"}
-        </span>
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pl-5 text-muted-foreground text-xs">
+        <span>{generation.model ?? generation.provider ?? "unknown"}</span>
         <span>{generation.reasoningEffort}</span>
         {generation.usage && (
           <span>
@@ -247,7 +249,6 @@ export function ToolActivity({
     unknownLabel,
   );
   const hasDetails = argumentsValue !== undefined || outcome !== undefined;
-  const preview = getToolPreview(outcome ?? argumentsValue);
 
   return (
     <div data-slot="chat-tool-activity">
@@ -259,18 +260,15 @@ export function ToolActivity({
         onClick={() => {
           if (hasDetails) setIsExpanded((current) => !current);
         }}
-        className="h-auto pointer-fine:h-auto min-h-11 pointer-fine:min-h-6 w-full justify-start gap-1.5 rounded px-1.5 py-0 text-left font-mono text-muted-foreground text-xs"
+        className="h-auto pointer-fine:h-auto min-h-11 pointer-fine:min-h-6 w-full justify-start gap-1.5 rounded px-1.5 py-0 text-left font-normal text-muted-foreground text-xs aria-expanded:bg-transparent"
       >
         <Wrench
           aria-hidden="true"
-          className="size-3.5 shrink-0 text-syntax-function"
+          className="size-3.5 shrink-0 text-muted-foreground"
         />
-        <span className="shrink-0 text-foreground">{name}</span>
-        {preview && (
-          <span className="min-w-0 flex-1 truncate text-muted-foreground">
-            {preview}
-          </span>
-        )}
+        <span className="min-w-0 flex-1 truncate text-foreground">
+          {formatToolName(name)}
+        </span>
         <span
           className={`ml-auto inline-flex shrink-0 items-center gap-1 ${status.className}`}
         >
@@ -305,9 +303,7 @@ export function ToolActivity({
 function ToolDetail({ label, value }: { label: string; value: unknown }) {
   return (
     <div>
-      <div className="mb-1 font-mono text-2xs text-muted-foreground uppercase tracking-wide">
-        {label}
-      </div>
+      <div className="mb-1 text-muted-foreground text-xs">{label}</div>
       <pre className="m-0 max-h-72 overflow-auto whitespace-pre-wrap break-words font-mono text-foreground text-xs leading-relaxed">
         {stringifyToolValue(value)}
       </pre>
@@ -323,7 +319,7 @@ function CompactReasoningMarkdown({
   isLive?: boolean;
 }) {
   return (
-    <div className="wrap-break-word min-w-0 text-[0.8125rem] text-muted-foreground leading-[1.5] [&_a]:text-foreground [&_a]:underline [&_a]:decoration-syntax-type [&_a]:underline-offset-2 [&_blockquote]:my-1.5 [&_blockquote]:border-syntax-keyword/60 [&_blockquote]:border-l-2 [&_blockquote]:pl-2.5 [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[0.8em] [&_code]:text-syntax-function [&_em]:italic [&_h1]:my-1.5 [&_h1]:font-semibold [&_h1]:text-sm [&_h1]:text-syntax-keyword [&_h2]:my-1.5 [&_h2]:font-semibold [&_h2]:text-[0.8125rem] [&_h2]:text-syntax-keyword [&_h3]:my-1.5 [&_h3]:font-semibold [&_h3]:text-[0.8125rem] [&_h3]:text-syntax-keyword [&_hr]:my-1.5 [&_hr]:border-border [&_li+li]:mt-1 [&_li]:my-0 [&_ol]:my-1.5 [&_ol]:pl-5 [&_p+p]:mt-1.5 [&_p]:my-0 [&_pre]:my-1.5 [&_pre]:max-h-72 [&_pre]:overflow-auto [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_pre]:border [&_pre]:border-border [&_pre]:bg-code [&_pre]:p-2 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_strong]:font-semibold [&_strong]:text-syntax-param [&_table]:my-1.5 [&_table]:w-full [&_table]:text-left [&_td]:border [&_td]:border-border [&_td]:px-1.5 [&_td]:py-1 [&_th]:border [&_th]:border-border [&_th]:px-1.5 [&_th]:py-1 [&_th]:text-foreground [&_ul]:my-1.5 [&_ul]:list-['>__'] [&_ul]:pl-5 [&_ul]:marker:text-syntax-keyword">
+    <div className="wrap-break-word min-w-0 text-[0.8125rem] text-muted-foreground leading-[1.5] [&_a]:text-foreground [&_a]:underline [&_a]:decoration-syntax-type [&_a]:underline-offset-2 [&_blockquote]:my-1.5 [&_blockquote]:border-border [&_blockquote]:border-l-2 [&_blockquote]:pl-2.5 [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[0.8em] [&_code]:text-syntax-function [&_em]:italic [&_h1]:my-1.5 [&_h1]:font-semibold [&_h1]:text-sm [&_h1]:text-foreground [&_h2]:my-1.5 [&_h2]:font-semibold [&_h2]:text-[0.8125rem] [&_h2]:text-foreground [&_h3]:my-1.5 [&_h3]:font-semibold [&_h3]:text-[0.8125rem] [&_h3]:text-foreground [&_hr]:my-1.5 [&_hr]:border-border [&_li+li]:mt-1 [&_li]:my-0 [&_ol]:my-1.5 [&_ol]:pl-5 [&_p+p]:mt-1.5 [&_p]:my-0 [&_pre]:my-1.5 [&_pre]:max-h-72 [&_pre]:overflow-auto [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_pre]:border [&_pre]:border-border [&_pre]:bg-code [&_pre]:p-2 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_strong]:font-semibold [&_strong]:text-foreground [&_table]:my-1.5 [&_table]:w-full [&_table]:text-left [&_td]:border [&_td]:border-border [&_td]:px-1.5 [&_td]:py-1 [&_th]:border [&_th]:border-border [&_th]:px-1.5 [&_th]:py-1 [&_th]:text-foreground [&_ul]:my-1.5 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:marker:text-muted-foreground">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         skipHtml
@@ -393,14 +389,12 @@ function getOutcomeStatus(outcome: unknown): string | undefined {
   return outcome.status;
 }
 
-function getToolPreview(value: unknown): string | undefined {
-  if (value === undefined) return undefined;
-  const compact = stringifyToolValue(value).replace(/\s+/g, " ").trim();
-  if (compact.length <= 96) return compact;
-  return `${compact.slice(0, 95)}…`;
-}
-
 function stringifyToolValue(value: unknown): string {
   if (typeof value === "string") return value;
   return JSON.stringify(value, null, 2) ?? String(value);
+}
+
+function formatToolName(name: string): string {
+  const words = name.replace(/[_-]+/g, " ").trim();
+  return words.charAt(0).toUpperCase() + words.slice(1);
 }

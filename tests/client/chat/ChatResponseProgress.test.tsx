@@ -68,9 +68,9 @@ describe("ChatResponseProgress", () => {
     expect(screen.queryByText("### Inspecting todos")).not.toBeInTheDocument();
     expect(screen.getAllByText("running")).toHaveLength(2);
     expect(screen.queryByText("input")).not.toBeInTheDocument();
-    const firstTool = screen.getByRole("button", { name: /list_todos/ });
+    const firstTool = screen.getByRole("button", { name: /List todos/ });
     const secondTool = screen.getByRole("button", {
-      name: /get_bank_accounts/,
+      name: /Get bank accounts/,
     });
     expect(
       firstTool.compareDocumentPosition(secondTool) &
@@ -80,7 +80,7 @@ describe("ChatResponseProgress", () => {
     await user.click(firstTool);
 
     expect(screen.getByText("input")).toBeInTheDocument();
-    expect(screen.getAllByText(/"status": "Pending"/)).toHaveLength(2);
+    expect(screen.getAllByText(/"status": "Pending"/)).toHaveLength(1);
 
     const completed: ChatResponseProgressDTO = {
       rounds: [
@@ -114,6 +114,6 @@ describe("ChatResponseProgress", () => {
 
     expect(screen.getAllByText("done")).toHaveLength(2);
     expect(screen.getByText("output")).toBeInTheDocument();
-    expect(screen.getAllByText(/"count": 2/)).toHaveLength(2);
+    expect(screen.getAllByText(/"count": 2/)).toHaveLength(1);
   });
 });

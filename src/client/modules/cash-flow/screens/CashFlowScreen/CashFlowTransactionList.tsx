@@ -58,7 +58,7 @@ export function CashFlowTransactionList({
 
   return (
     <>
-      <ul className="m-0 list-none space-y-2 p-0">
+      <ul className="m-0 list-none divide-y divide-border overflow-hidden rounded-xl border border-border bg-card p-0">
         {visibleTransactions.map((transaction) => (
           <li key={transaction.position}>
             <CashFlowTransactionRow

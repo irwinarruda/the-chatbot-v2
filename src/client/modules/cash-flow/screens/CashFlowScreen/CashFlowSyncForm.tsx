@@ -1,5 +1,7 @@
-import { CalendarDays, CircleDollarSign, Landmark, Tags } from "lucide-react";
+import { CalendarDays, Landmark, Tags } from "lucide-react";
 import { type SubmitEvent, useEffect, useId, useRef, useState } from "react";
+import { MonetaryValue } from "~/client/shared/components/MonetaryValue";
+import { MoneyInput } from "~/client/shared/components/MoneyInput";
 import {
   Field,
   FieldError,
@@ -28,7 +30,10 @@ const todayFormatter = new Intl.DateTimeFormat("en-CA", {
 });
 
 export function CashFlowSyncForm({
+  balances,
   bankAccounts,
+  currency,
+  hiddenMonetaryValueLabel,
   categories,
   formId,
   isSubmitting,
@@ -36,7 +41,10 @@ export function CashFlowSyncForm({
   open,
   t,
 }: {
+  balances: Record<string, number>;
   bankAccounts: string[];
+  currency: Intl.NumberFormat;
+  hiddenMonetaryValueLabel: string;
   categories: string[];
   formId: string;
   isSubmitting: boolean;
@@ -51,6 +59,18 @@ export function CashFlowSyncForm({
   const [date, setDate] = useState(todayFormatter.format(new Date()));
   const [errors, setErrors] = useState<SyncFormErrors>({});
   const fieldId = useId();
+  const enteredBalance = Number(currentBalance);
+  const adjustment =
+    currentBalance.trim() &&
+    Number.isFinite(enteredBalance) &&
+    balances[bankAccount] !== undefined
+      ? enteredBalance - balances[bankAccount]
+      : undefined;
+  let adjustmentLabel: string | undefined;
+  if (adjustment !== undefined) {
+    const sign = adjustment > 0 ? "+" : "";
+    adjustmentLabel = `${sign}${currency.format(adjustment)}`;
+  }
   const balanceRef = useRef<HTMLInputElement>(null);
   const descriptionRef = useRef<HTMLInputElement>(null);
 
@@ -88,7 +108,7 @@ export function CashFlowSyncForm({
     if (!open) return;
     setBankAccount(bankAccounts[0] ?? "");
     setCurrentBalance("");
-    setCategory(categories[0] ?? "");
+    setCategory(categories.find((item) => /adjust|ajuste/i.test(item)) ?? "");
     setDescription(t.syncDescriptionDefault);
     setDate(todayFormatter.format(new Date()));
     setErrors({});
@@ -131,10 +151,9 @@ export function CashFlowSyncForm({
         </Field>
         <Field data-invalid={Boolean(errors.currentBalance)}>
           <FieldLabel htmlFor={`${fieldId}-balance`}>
-            <CircleDollarSign className="size-3.5 text-muted-foreground" />
             {t.currentBalanceLabel}
           </FieldLabel>
-          <Input
+          <MoneyInput
             aria-invalid={Boolean(errors.currentBalance)}
             id={`${fieldId}-balance`}
             inputMode="decimal"
@@ -155,6 +174,30 @@ export function CashFlowSyncForm({
           <FieldError>{errors.currentBalance}</FieldError>
         </Field>
       </div>
+      {bankAccount && balances[bankAccount] !== undefined && (
+        <p className="m-0 flex flex-wrap justify-between gap-x-4 gap-y-1 rounded-lg border border-border bg-muted/60 px-3 py-2 text-muted-foreground text-xs tabular-nums">
+          <span>
+            {t.trackedBalanceLabel}{" "}
+            <strong className="font-medium text-foreground">
+              <MonetaryValue hiddenLabel={hiddenMonetaryValueLabel}>
+                {currency.format(balances[bankAccount])}
+              </MonetaryValue>
+            </strong>
+          </span>
+          <span>
+            {t.adjustmentPreviewLabel}{" "}
+            <strong className="font-medium text-foreground">
+              {adjustmentLabel === undefined ? (
+                "—"
+              ) : (
+                <MonetaryValue hiddenLabel={hiddenMonetaryValueLabel}>
+                  {adjustmentLabel}
+                </MonetaryValue>
+              )}
+            </strong>
+          </span>
+        </p>
+      )}
       <div className="grid gap-4 sm:grid-cols-2">
         <Field data-invalid={Boolean(errors.category)}>
           <FieldLabel htmlFor={`${fieldId}-category`}>
@@ -171,6 +214,7 @@ export function CashFlowSyncForm({
             }}
             value={category}
           >
+            <NativeSelectOption value="">{t.chooseCategory}</NativeSelectOption>
             {categories.map((item) => (
               <NativeSelectOption key={item} value={item}>
                 {item}

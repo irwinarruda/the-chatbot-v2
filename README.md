@@ -13,14 +13,11 @@
 
 ---
 
-```text
-the-chatbot: ~/welcome
-$ One assistant for conversations, tasks, notes, and personal finances.
-```
+> One assistant for conversations, tasks, notes, and personal finances.
 
 <p align="center">
-  <img src="docs/assets/home-honey.png#gh-dark-mode-only" alt="The Chatbot home page in the Favo Honey theme, listing the chat, todos, notes, artifacts, cash flow and bills workspaces" width="900" />
-  <img src="docs/assets/home-wax.png#gh-light-mode-only" alt="The Chatbot home page in the Favo Wax theme, listing the chat, todos, notes, artifacts, cash flow and bills workspaces" width="900" />
+  <img src="docs/assets/home-honey.png#gh-dark-mode-only" alt="The Chatbot home page in the Favo Honey theme: a sidebar with every workspace and a Today row with pending tasks, money left to pay, net balance and notes" width="900" />
+  <img src="docs/assets/home-wax.png#gh-light-mode-only" alt="The Chatbot home page in the Favo Wax theme: a sidebar with every workspace and a Today row with pending tasks, money left to pay, net balance and notes" width="900" />
 </p>
 
 ## What it is
@@ -35,7 +32,7 @@ The Chatbot is a **personal-use assistant**, not a SaaS. It started as a small b
 | **Cash Flow** | Review balances and transactions, add entries, transfer between accounts, and synchronize real bank balances with Google Sheets. |
 | **Monthly Bills** | Maintain a recurring checklist, follow monthly progress by count and value, mark payments from chat or the web, and preserve history. |
 
-Google sign-in protects the private web workspaces and returns the user to the exact page they originally requested. The interface is responsive, terminal-flavored, and available in Portuguese and English.
+Google sign-in protects the private web workspaces and returns the user to the exact page they originally requested. The interface is responsive, uses one sidebar app shell for every workspace, and is available in Portuguese and English.
 
 ## Why it exists
 
@@ -93,7 +90,7 @@ src/
     modules/<module>/    # controllers/ services/ repositories/ gateways/ utils/
   client/
     routes/              # TanStack page routes
-    shared/              # Store, theme, shadcn primitives, terminal chrome, i18n
+    shared/              # Store, theme, shadcn primitives, app shell, i18n
     modules/<module>/    # app/ (services, repositories, gateways), parsers/, screens/, components/
   routes.ts              # URL table for pages and controllers
 
@@ -109,9 +106,9 @@ tests/                   # domain/ contracts/ server/ client/ integration/ and a
 
 | Todos | Notes |
 | --- | --- |
-| <img src="docs/assets/todos.png" alt="Pending todos with due dates, filters and a new task button" width="380" /> | <img src="docs/assets/notes.png" alt="The notes index with three Markdown notes and their previews" width="380" /> |
+| <img src="docs/assets/todos.png" alt="Pending todos sorted by urgency, with overdue and due-today labels, filters and a new task button" width="380" /> | <img src="docs/assets/notes.png" alt="The notes index with three Markdown notes and their previews" width="380" /> |
 | **Cash flow** | **Monthly bills (Wax)** |
-| <img src="docs/assets/cash-flow.png" alt="Account balances, filters and the latest transactions from the finance spreadsheet" width="380" /> | <img src="docs/assets/bills.png" alt="November's bills checklist with progress, totals and paid and unpaid bills, in the light theme" width="380" /> |
+| <img src="docs/assets/cash-flow.png" alt="Net balance with this month's in and out, account balances, search and the latest transactions from the finance spreadsheet" width="380" /> | <img src="docs/assets/bills.png" alt="November's bills: money left to pay, progress, totals and the checklist with due-in labels and Pay buttons, in the light theme" width="380" /> |
 
 Every picture above comes from `bun run screenshots`, which runs the web app on demo data (`bun run dev:mock`) and retakes them in one go. See `.agents/skills/readme-screenshots`.
 
@@ -125,7 +122,7 @@ Every picture above comes from `bun run screenshots`, which runs the web app on 
 | AI runtime | **Pi AI** + **Pi Agent Core** | Provider/model normalization, reasoning configuration, streaming, and the tool loop. |
 | Speech and storage | **OpenAI speech-to-text**, **Cloudflare R2** | Audio transcription and durable media storage. |
 | Integrations | **WhatsApp Business Cloud API**, **Google OAuth**, **Google Sheets** | Messaging, authentication, and finance data. |
-| Interface | **Tailwind CSS v4**, **shadcn/ui**, [Favo theme](https://github.com/irwinarruda/favo-theme) | Responsive terminal-flavored UI in Honey (dark) and Wax (light), on accessible primitives. |
+| Interface | **Tailwind CSS v4**, **shadcn/ui**, [Favo theme](https://github.com/irwinarruda/favo-theme) | Responsive sidebar UI in Honey (dark) and Wax (light), on accessible primitives. |
 | Quality | **TypeScript**, **Biome**, **Vitest** | Static checking, formatting/linting, and layered tests. |
 
 ## Running locally
@@ -213,7 +210,7 @@ Provider credential setup, smoke tests, and Pi upgrade validation are maintainer
 - [x] Todos with due dates, filters, chat tools, and source transcripts
 - [x] Portable Markdown notes with explicit AI-assisted refinement
 - [x] Google-authenticated private web workspaces
-- [x] Responsive Portuguese and English terminal UI
+- [x] Responsive Portuguese and English web UI
 
 ### Next
 

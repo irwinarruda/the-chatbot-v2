@@ -17,13 +17,13 @@ export const Scenes: Record<string, Scene> = {
     path: "/",
     theme: "dark",
     viewport: "desktop",
-    waitFor: "Markdown Notes",
+    waitFor: "Pending tasks",
   },
   "home-wax": {
     path: "/",
     theme: "light",
     viewport: "desktop",
-    waitFor: "Markdown Notes",
+    waitFor: "Pending tasks",
   },
   chat: {
     path: "/chat",

@@ -12,7 +12,8 @@
       "!!**/dist",
       "!!**/.output",
       "!!**/.vinxi",
-      "!!**/.tanstack"
+      "!!**/.tanstack",
+      "!!**/.ui-council"
     ]
   },
   "formatter": {
