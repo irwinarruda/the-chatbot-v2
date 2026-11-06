@@ -30,11 +30,10 @@ export function TerminalChromeButton({
             aria-label={title}
             aria-pressed={pressed}
             variant="ghost"
-            size="xs"
+            size="icon-sm"
             className={cn(
-              "min-h-6 gap-1 rounded-md border border-transparent px-2 py-0.5",
-              "font-mono text-[0.6875rem] text-muted-foreground leading-none",
-              "hover:border-border",
+              "font-medium font-mono text-muted-foreground text-xs",
+              "hover:bg-sidebar-accent hover:text-foreground",
               className,
             )}
           />

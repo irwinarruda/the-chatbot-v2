@@ -1,114 +1,96 @@
-import { Calendar, CheckCircle2, Circle } from "lucide-react";
-import { Badge } from "~/client/shared/components/ui/badge";
-import { Button } from "~/client/shared/components/ui/button";
-import { Card, CardContent } from "~/client/shared/components/ui/card";
+import { Calendar } from "lucide-react";
+import {
+  getTodoDueUrgency,
+  TodoDueUrgency,
+} from "~/client/modules/todos/parsers/TodoDueDate";
 import { Checkbox } from "~/client/shared/components/ui/checkbox";
 import { cn } from "~/client/shared/components/ui/lib/utils";
-import type { Locale } from "~/client/shared/i18n/dictionary";
+import type { Dictionary, Locale } from "~/client/shared/i18n/dictionary";
 import type { TodoDTO } from "~/contracts/http/todos/todo";
 
+const dueClassNames = {
+  [TodoDueUrgency.Overdue]: "text-destructive",
+  [TodoDueUrgency.Today]: "text-warning",
+  [TodoDueUrgency.Upcoming]: "text-muted-foreground",
+};
+
 export function TodoRow({
-  completedLabel,
   locale,
-  noDueDateLabel,
   onOpen,
   onToggleStatus,
-  pendingLabel,
+  t,
   todo,
 }: {
-  completedLabel: string;
   locale: Locale;
-  noDueDateLabel: string;
   onOpen: () => void;
   onToggleStatus: () => void;
-  pendingLabel: string;
+  t: Dictionary["todoPage"];
   todo: TodoDTO;
 }) {
   const isCompleted = todo.status === "Completed";
-  const statusLabel = isCompleted ? completedLabel : pendingLabel;
+  const statusLabel = isCompleted ? t.statusCompleted : t.statusPending;
   const dateLocale = locale === "pt-BR" ? "pt-BR" : "en-US";
-  const dueDate = todo.dueDate
-    ? new Intl.DateTimeFormat(dateLocale, {
-        month: "short",
-        day: "2-digit",
-        year: "numeric",
-        timeZone: "UTC",
-      }).format(new Date(todo.dueDate))
-    : noDueDateLabel;
+  const dueDate =
+    todo.dueDate &&
+    new Intl.DateTimeFormat(dateLocale, {
+      month: "short",
+      day: "numeric",
+      timeZone: "UTC",
+    }).format(new Date(todo.dueDate));
+  const urgency =
+    todo.dueDate && !isCompleted
+      ? getTodoDueUrgency(todo.dueDate, new Date())
+      : TodoDueUrgency.Upcoming;
+  const dueLabels = {
+    [TodoDueUrgency.Overdue]: `${t.dueOverdue} · ${dueDate}`,
+    [TodoDueUrgency.Today]: t.dueToday,
+    [TodoDueUrgency.Upcoming]: `${t.duePrefix} ${dueDate}`,
+  };
 
   return (
-    <Card
-      className={cn(
-        "relative gap-0 border-border border-l-2 bg-background/45 py-0 shadow-none",
-        "transition-colors hover:border-l-brand hover:bg-muted/65",
-      )}
-      size="sm"
-    >
-      <CardContent className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2.5 px-2.5 py-2">
-        <Button
-          aria-label={todo.name}
-          className="absolute inset-0 h-auto rounded-lg hover:bg-transparent"
-          onClick={onOpen}
-          type="button"
-          variant="ghost"
-        />
-        <Checkbox
-          aria-label={`${todo.name}: ${statusLabel}`}
-          checked={isCompleted}
-          className="pointer-events-auto relative z-10 size-4 after:-inset-3"
-          onCheckedChange={onToggleStatus}
-        />
-        <div className="pointer-events-none relative min-w-0 space-y-1">
-          <div className="flex min-w-0 items-center gap-2">
-            <span
-              aria-hidden="true"
-              className="shrink-0 font-bold font-mono text-primary text-xs"
-            >
-              &gt;_
-            </span>
-            <span
-              className={cn(
-                "min-w-0 flex-1 truncate font-medium text-sm",
-                isCompleted
-                  ? "text-muted-foreground line-through"
-                  : "text-foreground",
-              )}
-            >
-              {todo.name}
-            </span>
-          </div>
-          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-0.5 font-mono text-2xs text-muted-foreground">
-            <span
-              className={cn(
-                "inline-flex items-center gap-1",
-                todo.dueDate ? "text-syntax-constant" : "text-muted-foreground",
-              )}
-            >
-              <Calendar className="size-3" />
-              {todo.dueDate ? (
-                <time dateTime={todo.dueDate}>{dueDate}</time>
-              ) : (
-                dueDate
-              )}
-            </span>
-            <time className="truncate" dateTime={todo.createdAt}>
-              {new Date(todo.createdAt).toLocaleString(dateLocale)}
-            </time>
-          </div>
-        </div>
-        <Badge
+    <div className="relative grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/60">
+      <Checkbox
+        aria-label={`${todo.name}: ${statusLabel}`}
+        checked={isCompleted}
+        className="relative z-10 size-5 after:-inset-3"
+        onCheckedChange={onToggleStatus}
+      />
+      <button
+        className="min-w-0 text-left outline-none after:absolute after:inset-0 after:rounded-sm focus-visible:after:ring-2 focus-visible:after:ring-ring focus-visible:after:ring-inset"
+        onClick={onOpen}
+        type="button"
+      >
+        <span
           className={cn(
-            "pointer-events-none relative z-10 shrink-0 gap-1",
+            "block truncate font-medium text-sm",
             isCompleted
-              ? "border-success/35 bg-success/10 text-success"
-              : "border-warning/35 bg-warning/10 text-warning",
+              ? "text-muted-foreground line-through"
+              : "text-foreground",
           )}
-          variant="outline"
         >
-          {isCompleted ? <CheckCircle2 /> : <Circle />}
-          {statusLabel}
-        </Badge>
-      </CardContent>
-    </Card>
+          {todo.name}
+        </span>
+        {(todo.dueDate || todo.description) && (
+          <span className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
+            {todo.dueDate && (
+              <span
+                className={cn(
+                  "inline-flex shrink-0 items-center gap-1",
+                  dueClassNames[urgency],
+                )}
+              >
+                <Calendar className="size-3" aria-hidden="true" />
+                <time dateTime={todo.dueDate}>{dueLabels[urgency]}</time>
+              </span>
+            )}
+            {todo.description && (
+              <span className="line-clamp-2 min-w-0 text-muted-foreground sm:line-clamp-1">
+                {todo.description}
+              </span>
+            )}
+          </span>
+        )}
+      </button>
+    </div>
   );
 }

@@ -387,64 +387,22 @@
   min-height: 100vh;
 }
 
-.page-frame-min-height {
-  min-height: 100vh;
-}
-
-.chat-frame-height {
-  height: 100vh;
-}
-
-@media (min-width: 40rem) {
-  .page-frame-min-height {
-    min-height: calc(100vh - 3rem);
-  }
-
-  .chat-frame-height {
-    height: calc(100vh - 3rem);
-  }
-}
-
-@media (min-width: 48rem) {
-  .page-frame-min-height {
-    min-height: calc(100vh - 5rem);
-  }
-
-  .chat-frame-height {
-    height: calc(100vh - 5rem);
-  }
+.chat-scroll-fade {
+  mask-image: linear-gradient(
+    to bottom,
+    black calc(100% - 1.5rem),
+    transparent
+  );
 }
 
 @supports (height: 100dvh) {
   body,
-  .min-viewport-height,
-  .page-frame-min-height {
+  .min-viewport-height {
     min-height: 100dvh;
   }
 
-  .viewport-height,
-  .chat-frame-height {
+  .viewport-height {
     height: 100dvh;
-  }
-
-  @media (min-width: 40rem) {
-    .page-frame-min-height {
-      min-height: calc(100dvh - 3rem);
-    }
-
-    .chat-frame-height {
-      height: calc(100dvh - 3rem);
-    }
-  }
-
-  @media (min-width: 48rem) {
-    .page-frame-min-height {
-      min-height: calc(100dvh - 5rem);
-    }
-
-    .chat-frame-height {
-      height: calc(100dvh - 5rem);
-    }
   }
 }
 
@@ -457,14 +415,6 @@
     /* biome-ignore lint/complexity/noImportantStyles: reduced-motion must override generated animation utilities */
     animation: none !important;
   }
-}
-
-/* --- Terminal logo glow — honey drop shadow --- */
-
-.terminal-logo-glow {
-  filter: drop-shadow(
-    0 0 12px color-mix(in srgb, var(--brand) 25%, transparent)
-  );
 }
 
 /* --- Terminal prose (markdown content), per SPEC "Prose and markup" --- */
@@ -480,10 +430,10 @@
 
 .terminal-prose h1 {
   margin: 0 0 0.375rem;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--favo-keyword);
+  font-weight: 600;
+  color: var(--foreground);
   letter-spacing: -0.025em;
 }
 
@@ -491,20 +441,20 @@
   margin: 2rem 0 0.75rem;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--border);
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 1.125rem;
-  font-weight: 700;
-  color: var(--favo-keyword);
+  font-weight: 600;
+  color: var(--foreground);
   letter-spacing: -0.01em;
 }
 
 .terminal-prose h3,
 .terminal-prose h4 {
   margin: 1.5rem 0 0.5rem;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 1rem;
-  font-weight: 700;
-  color: var(--favo-keyword);
+  font-weight: 600;
+  color: var(--foreground);
 }
 
 .terminal-prose p {
@@ -516,12 +466,12 @@
 }
 
 .terminal-prose strong {
-  color: var(--favo-param);
-  font-weight: 700;
+  color: var(--foreground);
+  font-weight: 600;
 }
 
 .terminal-prose em {
-  color: var(--favo-string);
+  color: inherit;
   font-style: italic;
 }
 
@@ -546,12 +496,10 @@
 }
 
 .terminal-prose ul li::before {
-  content: ">";
+  content: "•";
   position: absolute;
-  left: 0;
-  color: var(--favo-keyword);
-  font-weight: 600;
-  font-family: var(--font-mono);
+  left: 0.25rem;
+  color: var(--muted-foreground);
 }
 
 .terminal-prose ol li {
@@ -561,9 +509,8 @@
   content: counter(ol-counter) ".";
   position: absolute;
   left: 0;
-  color: var(--favo-keyword);
-  font-weight: 600;
-  font-family: var(--font-mono);
+  color: var(--muted-foreground);
+  font-variant-numeric: tabular-nums;
 }
 
 .terminal-prose a {
@@ -582,7 +529,7 @@
   padding: 1rem 1.25rem;
   border-radius: 0.5rem;
   background: var(--muted);
-  border-left: 2px solid var(--favo-keyword);
+  border-left: 2px solid var(--border);
   font-family: var(--font-sans);
   font-size: 1rem;
   font-style: italic;
@@ -608,7 +555,7 @@
 .terminal-prose hr {
   border: none;
   height: 1px;
-  background: var(--favo-keyword);
+  background: var(--border);
   margin: 2em 0;
 }
 
@@ -647,7 +594,7 @@
 .terminal-prose th {
   background: var(--muted);
   color: var(--foreground);
-  font-family: var(--font-mono);
+  font-weight: 600;
 }
 
 .terminal-prose del {
@@ -725,6 +672,25 @@
   scrollbar-width: thin;
 }
 
+.notes-editor.mdxeditor {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.mdxeditor .notes-editor-toolbar {
+  min-width: 0;
+  max-width: 100%;
+  height: auto;
+  flex-wrap: wrap;
+  row-gap: 0.25rem;
+  overflow: visible;
+}
+
+.notes-editor-content {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .notes-editor-content {
   min-height: 32rem;
   padding: 1.5rem;
@@ -743,9 +709,21 @@
 .notes-editor-content h6 {
   margin-top: 1.5em;
   margin-bottom: 0.6em;
-  color: var(--favo-keyword);
-  font-family: var(--font-mono);
-  font-weight: 700;
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-weight: 600;
+}
+
+.notes-editor-content h1 {
+  font-size: 1.375rem;
+}
+
+.notes-editor-content h2 {
+  font-size: 1.125rem;
+}
+
+.notes-editor-content h3 {
+  font-size: 1rem;
 }
 
 .notes-editor-content p {
@@ -753,11 +731,12 @@
 }
 
 .notes-editor-content strong {
-  color: var(--favo-param);
+  color: var(--foreground);
+  font-weight: 600;
 }
 
 .notes-editor-content em {
-  color: var(--favo-string);
+  color: inherit;
 }
 
 .notes-editor-content ul,
@@ -787,9 +766,22 @@
   padding-left: 0.25rem;
 }
 
+.notes-editor-content li[aria-checked] {
+  margin-inline-start: -1.25rem;
+  padding-left: 1.75rem;
+}
+
+.notes-editor-content li[aria-checked]::before,
+.notes-editor-content li[aria-checked]::after {
+  margin-top: 0.375rem;
+}
+
+.notes-editor-content li[aria-checked="true"] {
+  color: var(--muted-foreground);
+}
+
 .notes-editor-content li::marker {
-  color: var(--favo-keyword);
-  font-family: var(--font-mono);
+  color: var(--muted-foreground);
 }
 
 .notes-editor-content a {
@@ -800,7 +792,8 @@
 }
 
 .notes-editor-content blockquote {
-  border-left-color: var(--favo-keyword);
+  margin-inline: 0;
+  border-left-color: var(--border);
   background: var(--muted);
   color: var(--muted-foreground);
 }

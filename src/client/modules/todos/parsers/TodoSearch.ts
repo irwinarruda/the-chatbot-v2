@@ -17,13 +17,15 @@ export function normalizeTodoSearch(
 ): TodoSearch {
   const due = search.due;
   const status = search.status;
+  const dueDate =
+    typeof search.dueDate === "string" ? search.dueDate : undefined;
+  let dueFilter: TodoSearch["due"] = "all";
+  if (due === "with_due_date" || due === "without_due_date") dueFilter = due;
+  if (dueDate) dueFilter = "with_due_date";
   return {
     q: typeof search.q === "string" ? search.q : undefined,
-    dueDate: typeof search.dueDate === "string" ? search.dueDate : undefined,
-    due:
-      due === "with_due_date" || due === "without_due_date" || due === "all"
-        ? due
-        : "all",
+    dueDate,
+    due: dueFilter,
     status:
       status === "Pending" || status === "Completed" || status === "all"
         ? status

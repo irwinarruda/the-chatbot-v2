@@ -25,11 +25,7 @@ export function MonetaryPrivacyControl({
       pressed={isMoneyMasked}
       title={title}
     >
-      {isMoneyMasked ? (
-        <EyeOff className="size-3" />
-      ) : (
-        <Eye className="size-3" />
-      )}
+      {isMoneyMasked ? <EyeOff /> : <Eye />}
     </TerminalChromeButton>
   );
 }

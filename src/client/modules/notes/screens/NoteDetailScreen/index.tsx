@@ -5,9 +5,10 @@ import {
   useBlocker,
   useNavigate,
 } from "@tanstack/react-router";
-import { ArrowLeft, Eye, Pencil, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, Eye, Pencil, Save, Sparkles, Trash2 } from "lucide-react";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import type { NotesSearchDTO } from "~/client/modules/notes/app/dtos/NotesSearchDTO";
+import { ConfirmDialog } from "~/client/shared/components/ConfirmDialog";
 import { Button } from "~/client/shared/components/ui/button";
 import { Input } from "~/client/shared/components/ui/input";
 import { Skeleton } from "~/client/shared/components/ui/skeleton";
@@ -44,6 +45,7 @@ export function NoteDetailScreen({
   const editorRef = useRef<MarkdownNoteEditorMethods>(null);
   const [name, setName] = useState("");
   const [markdown, setMarkdown] = useState("");
+  const [isAiOpen, setIsAiOpen] = useState(false);
   const [isPreviewing, setIsPreviewing] = useState(false);
   const dictionary = getDictionary(prefs.locale);
   const t = dictionary.notesPage;
@@ -60,7 +62,7 @@ export function NoteDetailScreen({
   }
 
   async function onDeleteNote() {
-    if (!note || !window.confirm(t.deleteConfirmation)) return;
+    if (!note) return;
     const deleted = await deleteNote(note.id);
     if (deleted) navigate({ to: "/notes", search });
   }
@@ -104,10 +106,10 @@ export function NoteDetailScreen({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="sticky top-0 z-20 flex items-center gap-1.5 border-border border-b bg-muted/95 px-3 py-2 backdrop-blur-sm sm:gap-2 sm:px-5">
+      <div className="sticky top-14 z-20 -mx-4 flex items-center gap-1.5 border-border border-b bg-background/95 px-4 py-2 backdrop-blur-sm sm:-mx-8 sm:gap-2 sm:px-6 lg:top-0">
         <Button
           aria-label={t.backAction}
-          className="w-11 px-0 sm:w-auto pointer-fine:sm:px-2.5 sm:px-3"
+          className="px-2.5"
           nativeButton={false}
           render={<Link search={search} to="/notes" />}
           size="sm"
@@ -115,74 +117,76 @@ export function NoteDetailScreen({
           variant="ghost"
         >
           <ArrowLeft />
-          <span className="hidden sm:inline">{t.backAction}</span>
+          <span className="sr-only">{t.backAction}</span>
         </Button>
         <span
           aria-live="polite"
           className={
             isDirty
-              ? "min-w-0 flex-1 truncate text-2xs text-warning uppercase"
-              : "min-w-0 flex-1 truncate text-2xs text-success uppercase"
+              ? "min-w-0 flex-1 truncate text-warning text-xs"
+              : "min-w-0 flex-1 truncate text-muted-foreground text-xs"
           }
         >
           {isDirty ? t.unsavedStatus : t.savedStatus}
         </span>
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-          <Button
-            aria-label={t.editAction}
-            aria-pressed={!isPreviewing}
-            className="w-11 px-0 sm:w-auto pointer-fine:sm:px-2.5 sm:px-3"
-            onClick={() => setIsPreviewing(false)}
-            size="sm"
-            title={t.editAction}
-            type="button"
-            variant={isPreviewing ? "ghost" : "outline"}
-          >
-            <Pencil />
-            <span className="hidden sm:inline">{t.editAction}</span>
-          </Button>
-          <Button
-            aria-label={t.previewAction}
-            aria-pressed={isPreviewing}
-            className="w-11 px-0 sm:w-auto pointer-fine:sm:px-2.5 sm:px-3"
-            onClick={() => setIsPreviewing(true)}
-            size="sm"
-            title={t.previewAction}
-            type="button"
-            variant={isPreviewing ? "outline" : "ghost"}
-          >
-            <Eye />
-            <span className="hidden sm:inline">{t.previewAction}</span>
-          </Button>
-          <Button
-            aria-label={t.saveAction}
-            className="w-11 px-0 sm:w-auto pointer-fine:sm:px-2.5 sm:px-3"
-            disabled={!isDirty || isNoteSubmitting || !name.trim()}
-            onClick={onSaveNote}
-            size="sm"
-            title={t.saveAction}
-            type="button"
-          >
-            <Save />
-            <span className="hidden sm:inline">{t.saveAction}</span>
-          </Button>
+          <div className="flex rounded-lg bg-muted p-0.5">
+            <Button
+              aria-label={t.editAction}
+              aria-pressed={!isPreviewing}
+              className="px-2.5 text-muted-foreground aria-pressed:bg-card aria-pressed:text-foreground aria-pressed:shadow-sm"
+              onClick={() => setIsPreviewing(false)}
+              size="sm"
+              title={t.editAction}
+              type="button"
+              variant="ghost"
+            >
+              <Pencil />
+              {t.editAction}
+            </Button>
+            <Button
+              aria-label={t.previewAction}
+              aria-pressed={isPreviewing}
+              className="px-2.5 text-muted-foreground aria-pressed:bg-card aria-pressed:text-foreground aria-pressed:shadow-sm"
+              onClick={() => setIsPreviewing(true)}
+              size="sm"
+              title={t.previewAction}
+              type="button"
+              variant="ghost"
+            >
+              <Eye />
+              {t.previewAction}
+            </Button>
+          </div>
+          {isDirty && (
+            <Button
+              aria-label={t.saveAction}
+              className="px-2.5"
+              disabled={!isDirty || isNoteSubmitting || !name.trim()}
+              onClick={onSaveNote}
+              size="sm"
+              title={t.saveAction}
+              type="button"
+            >
+              <Save />
+              {t.saveAction}
+            </Button>
+          )}
         </div>
       </div>
-      <div className="mx-auto w-full max-w-4xl space-y-5 p-4 sm:px-0 sm:py-6 md:py-8">
-        <div className="border-border border-b pb-2">
+      <div className="w-full space-y-5 py-5 sm:py-6">
+        <div className="border-border border-b pb-2 transition-colors focus-within:border-ring">
           <label className="sr-only" htmlFor="note-name">
             {t.nameLabel}
           </label>
           <Input
             id="note-name"
-            className="h-auto rounded-none border-0 bg-transparent px-0 py-2 font-mono font-semibold text-2xl text-foreground shadow-none focus-visible:border-transparent focus-visible:ring-0 sm:text-3xl"
+            className="h-auto rounded-none border-0 bg-transparent px-0 py-1 font-semibold pointer-fine:text-2xl text-2xl text-foreground tracking-tight shadow-none focus-visible:border-transparent focus-visible:ring-0"
             maxLength={160}
             onChange={(event) => setName(event.target.value)}
             value={name}
           />
-          <p className="m-0 font-mono text-2xs text-muted-foreground">
-            {t.markdownHint}
-          </p>
+          <p className="m-0 text-muted-foreground text-xs">{t.markdownHint}</p>
         </div>
         <div hidden={isPreviewing}>
           <ClientOnly
@@ -210,23 +214,44 @@ export function NoteDetailScreen({
             <MarkdownNoteViewer emptyLabel={t.emptyNote} markdown={markdown} />
           </div>
         </div>
-        <NoteAiComposer
-          disabled={!name.trim()}
-          isRefining={isNoteRefining}
-          onRefine={onRefineNote}
-          t={t}
-        />
-        <div className="flex justify-end border-border border-t pt-3">
+        {isAiOpen ? (
+          <NoteAiComposer
+            disabled={!name.trim()}
+            isRefining={isNoteRefining}
+            onRefine={onRefineNote}
+            t={t}
+          />
+        ) : (
           <Button
-            className="min-h-11 md:min-h-8"
-            disabled={isNoteSubmitting}
-            onClick={onDeleteNote}
+            className="text-muted-foreground"
+            onClick={() => setIsAiOpen(true)}
             type="button"
-            variant="destructive"
+            variant="ghost"
           >
-            <Trash2 />
-            {t.deleteAction}
+            <Sparkles className="text-primary" />
+            {t.aiOpenAction}
           </Button>
+        )}
+        <div className="flex justify-end border-border border-t pt-3">
+          <ConfirmDialog
+            cancelLabel={t.cancelAction}
+            confirmLabel={t.deleteAction}
+            description={t.deleteConfirmation}
+            isDisabled={isNoteSubmitting}
+            onConfirm={onDeleteNote}
+            title={t.deleteTitle.replace("{name}", note.name)}
+            trigger={
+              <Button
+                className="min-h-11 md:min-h-8"
+                disabled={isNoteSubmitting}
+                type="button"
+                variant="ghost"
+              >
+                <Trash2 />
+                {t.deleteAction}
+              </Button>
+            }
+          />
         </div>
       </div>
     </div>

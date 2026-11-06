@@ -2,7 +2,7 @@
 
 *Last updated: November 2025*
 
-Welcome to **TheChatbot**. We value your privacy and are committed to protecting your personal data. This Privacy Policy explains how we collect, use, and share information about you when you use our services via WhatsApp.
+Welcome to **The Chatbot**. We value your privacy and are committed to protecting your personal data. This Privacy Policy explains how we collect, use, and share information about you when you use our services via WhatsApp.
 
 ## 1. Information We Collect
 
@@ -10,7 +10,7 @@ When interacting with our service, we collect the following types of information
 
 - **Identity Data**: Your name and phone number, as provided by WhatsApp.
 - **Authentication Data**: Google access tokens (Access and Refresh Tokens) to authenticate you and access Google services on your behalf.
-- **Communication Data**: The history of your messages sent to TheChatbot.
+- **Communication Data**: The history of your messages sent to The Chatbot.
 - **Usage Data**: IDs of Google Sheets spreadsheets you configure for expense tracking.
 
 ## 2. How We Use Your Information

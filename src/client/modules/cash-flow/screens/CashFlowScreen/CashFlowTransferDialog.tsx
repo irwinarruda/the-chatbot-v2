@@ -5,6 +5,7 @@ import {
   Landmark,
 } from "lucide-react";
 import { type SubmitEvent, useId, useState } from "react";
+import { MoneyInput } from "~/client/shared/components/MoneyInput";
 import { TerminalResponsiveOverlay } from "~/client/shared/components/terminal/TerminalResponsiveOverlay";
 import { Alert, AlertDescription } from "~/client/shared/components/ui/alert";
 import { Button } from "~/client/shared/components/ui/button";
@@ -67,7 +68,7 @@ export function CashFlowTransferDialog({
 
   return (
     <TerminalResponsiveOverlay
-      closeLabel={t.cancelAction}
+      closeLabel={t.closeAction}
       description={t.transferHint}
       footer={
         <div className="grid w-full grid-cols-2 gap-2 sm:ml-auto sm:flex sm:w-auto">
@@ -173,7 +174,7 @@ export function CashFlowTransferDialog({
               <FieldLabel htmlFor={`${formId}-amount`}>
                 {t.amountLabel}
               </FieldLabel>
-              <Input
+              <MoneyInput
                 id={`${formId}-amount`}
                 inputMode="decimal"
                 min="0.01"

@@ -6,6 +6,7 @@ import {
   Tags,
 } from "lucide-react";
 import { type SubmitEvent, useEffect, useId, useRef, useState } from "react";
+import { MoneyInput } from "~/client/shared/components/MoneyInput";
 import { Button } from "~/client/shared/components/ui/button";
 import {
   Field,
@@ -79,7 +80,7 @@ export function MonthlyExpenseForm({
 
   useEffect(() => {
     setName(expense?.name ?? "");
-    setExpectedAmount(expense?.expectedAmount?.toString() ?? "");
+    setExpectedAmount(expense?.expectedAmount?.toFixed(2) ?? "");
     setDueDay(expense?.dueDay?.toString() ?? "");
     setCategory(expense?.category ?? "");
     setDefaultBankAccount(expense?.defaultBankAccount ?? "");
@@ -140,7 +141,7 @@ export function MonthlyExpenseForm({
       <div className="grid gap-4">
         <Field data-invalid={Boolean(errors.name)}>
           <FieldLabel
-            className="font-sans text-muted-foreground text-xs uppercase tracking-wide"
+            className="font-medium text-foreground text-sm"
             htmlFor={nameId}
           >
             <ReceiptText
@@ -169,7 +170,7 @@ export function MonthlyExpenseForm({
         </Field>
         <Field data-invalid={Boolean(errors.expectedAmount)}>
           <FieldLabel
-            className="font-sans text-muted-foreground text-xs uppercase tracking-wide"
+            className="font-medium text-foreground text-sm"
             htmlFor={amountId}
           >
             <CircleDollarSign
@@ -178,7 +179,7 @@ export function MonthlyExpenseForm({
             />
             {t.amountLabel}
           </FieldLabel>
-          <Input
+          <MoneyInput
             aria-describedby={
               [
                 !hideActions ? optionalHintId : undefined,
@@ -210,7 +211,7 @@ export function MonthlyExpenseForm({
         </Field>
         <Field data-invalid={Boolean(errors.dueDay)}>
           <FieldLabel
-            className="font-sans text-muted-foreground text-xs uppercase tracking-wide"
+            className="font-medium text-foreground text-sm"
             htmlFor={dueDayId}
           >
             <CalendarDays
@@ -249,7 +250,7 @@ export function MonthlyExpenseForm({
         </Field>
         <Field>
           <FieldLabel
-            className="font-sans text-muted-foreground text-xs uppercase tracking-wide"
+            className="font-medium text-foreground text-sm"
             htmlFor={categoryId}
           >
             <Tags
@@ -275,7 +276,7 @@ export function MonthlyExpenseForm({
         </Field>
         <Field>
           <FieldLabel
-            className="font-sans text-muted-foreground text-xs uppercase tracking-wide"
+            className="font-medium text-foreground text-sm"
             htmlFor={defaultBankAccountId}
           >
             <Landmark

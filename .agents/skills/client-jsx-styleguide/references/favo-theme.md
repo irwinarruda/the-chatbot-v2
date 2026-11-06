@@ -36,7 +36,7 @@ In Wax, `warning` and `primary` share a hex, so never place a warning badge next
 
 ## Prose
 
-`.terminal-prose` and chat messages follow SPEC's "Prose and markup" table: headings keyword and bold, bold text param, italic text string, inline code function, links foreground with a type underline, list markers keyword, quotes comment.
+`.terminal-prose`, the note editor and chat messages keep prose calm: headings in the sans font at weight 600 in `foreground`, bold text semibold `foreground`, italic text inheriting its color, inline code `function`, links `foreground` with a `type` underline, list markers and quote borders in `muted-foreground` and `border`. Syntax colors stay for code, not for emphasis.
 
 ## Artifacts
 

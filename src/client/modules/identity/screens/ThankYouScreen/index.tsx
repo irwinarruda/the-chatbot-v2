@@ -1,9 +1,8 @@
-import { TerminalFooter } from "~/client/shared/components/terminal/TerminalFooter";
-import { TerminalPageHeader } from "~/client/shared/components/terminal/TerminalPageHeader";
-import { TerminalPanel } from "~/client/shared/components/terminal/TerminalPanel";
-import { TerminalPanelText } from "~/client/shared/components/terminal/TerminalPanelText";
-import { TerminalPrompt } from "~/client/shared/components/terminal/TerminalPrompt";
-import { TerminalWindow } from "~/client/shared/components/terminal/TerminalWindow";
+import { Link } from "@tanstack/react-router";
+import { CircleCheck } from "lucide-react";
+import { AuthCard } from "~/client/modules/identity/components/AuthCard";
+import { AppShell } from "~/client/shared/components/terminal/AppShell";
+import { Button } from "~/client/shared/components/ui/button";
 import { useDictionary } from "~/client/shared/hooks/useDictionary";
 
 export function ThankYouScreen() {
@@ -11,17 +10,29 @@ export function ThankYouScreen() {
   const t = dictionary.thankYouPage;
 
   return (
-    <TerminalWindow title={t.windowTitle} dictionary={dictionary}>
-      <TerminalPageHeader heading={t.heading} subtitle={t.subtitle} />
-      <TerminalPanel centered>
-        <TerminalPanelText>
-          {t.greeting} <strong>TheChatbot</strong>!
-        </TerminalPanelText>
-        <TerminalPanelText>{t.body}</TerminalPanelText>
-      </TerminalPanel>
-      <TerminalFooter className="mt-auto pt-6">
-        <TerminalPrompt text={t.footerPrompt} />
-      </TerminalFooter>
-    </TerminalWindow>
+    <AppShell
+      dictionary={dictionary}
+      showNavigation={false}
+      title={t.windowTitle}
+    >
+      <AuthCard
+        actions={
+          <Button
+            className="h-11 w-full"
+            nativeButton={false}
+            render={<Link to="/chat" />}
+          >
+            {t.openAction}
+          </Button>
+        }
+        footnote={t.footerPrompt}
+        heading={t.heading}
+        icon={CircleCheck}
+        iconClassName="bg-success/10 text-success"
+        subtitle={t.subtitle}
+      >
+        {t.body}
+      </AuthCard>
+    </AppShell>
   );
 }

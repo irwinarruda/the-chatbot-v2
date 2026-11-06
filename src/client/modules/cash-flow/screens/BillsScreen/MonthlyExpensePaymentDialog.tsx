@@ -90,7 +90,7 @@ export function MonthlyExpensePaymentDialog({
 
   return (
     <TerminalResponsiveOverlay
-      closeLabel={t.cancelAction}
+      closeLabel={t.closeAction}
       description={t.paymentHint}
       footer={
         <div className="grid w-full grid-cols-2 gap-2 sm:ml-auto sm:flex sm:w-auto">
@@ -120,7 +120,7 @@ export function MonthlyExpensePaymentDialog({
         id={formId}
         onSubmit={onFormSubmit}
       >
-        <div className="flex items-center justify-between gap-4 rounded-lg border border-success/20 bg-success/5 p-3">
+        <div className="flex items-center justify-between gap-4 rounded-lg border border-border bg-muted/50 p-3">
           <div className="min-w-0 space-y-0.5">
             <span className="block break-words font-medium text-foreground">
               {expense.name}
@@ -133,7 +133,7 @@ export function MonthlyExpensePaymentDialog({
               </span>
             )}
           </div>
-          <strong className="shrink-0 text-success tabular-nums">
+          <strong className="shrink-0 text-foreground tabular-nums">
             <MonetaryValue hiddenLabel={hiddenMonetaryValueLabel}>
               {amount}
             </MonetaryValue>

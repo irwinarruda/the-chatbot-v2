@@ -2,11 +2,11 @@ import {
   BanknoteArrowDown,
   BanknoteArrowUp,
   CalendarDays,
-  CircleDollarSign,
   Landmark,
   Tags,
 } from "lucide-react";
 import { type SubmitEvent, useEffect, useId, useRef, useState } from "react";
+import { MoneyInput } from "~/client/shared/components/MoneyInput";
 import { Button } from "~/client/shared/components/ui/button";
 import {
   Field,
@@ -133,10 +133,10 @@ export function CashFlowTransactionForm({
     >
       <Field>
         <FieldLabel>{t.transactionTypeLabel}</FieldLabel>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1">
           <Button
             aria-pressed={type === CashFlowTransactionType.Expense}
-            className="aria-pressed:border-destructive/35 aria-pressed:bg-destructive/10 aria-pressed:text-destructive"
+            className="border-transparent bg-transparent text-muted-foreground shadow-none aria-pressed:border-border aria-pressed:bg-card aria-pressed:text-foreground aria-pressed:shadow-sm [&[aria-pressed=true]_svg]:text-destructive"
             onClick={() => onTypeSelect(CashFlowTransactionType.Expense)}
             type="button"
             variant="outline"
@@ -146,7 +146,7 @@ export function CashFlowTransactionForm({
           </Button>
           <Button
             aria-pressed={type === CashFlowTransactionType.Earning}
-            className="aria-pressed:border-success/35 aria-pressed:bg-success/10 aria-pressed:text-success"
+            className="border-transparent bg-transparent text-muted-foreground shadow-none aria-pressed:border-border aria-pressed:bg-card aria-pressed:text-foreground aria-pressed:shadow-sm [&[aria-pressed=true]_svg]:text-success"
             onClick={() => onTypeSelect(CashFlowTransactionType.Earning)}
             type="button"
             variant="outline"
@@ -158,11 +158,8 @@ export function CashFlowTransactionForm({
       </Field>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field data-invalid={Boolean(errors.value)}>
-          <FieldLabel htmlFor={`${fieldId}-value`}>
-            <CircleDollarSign className="size-3.5 text-muted-foreground" />
-            {t.amountLabel}
-          </FieldLabel>
-          <Input
+          <FieldLabel htmlFor={`${fieldId}-value`}>{t.amountLabel}</FieldLabel>
+          <MoneyInput
             aria-invalid={Boolean(errors.value)}
             id={`${fieldId}-value`}
             inputMode="decimal"

@@ -20,7 +20,7 @@ Each scene reports `changed` or `unchanged`, and only a changed picture is writt
 
 `bun run dev:mock` is `vite dev --mode mock`, the web app alone, the way favo-cli's `dev:mock` runs its TUI with no backend. `vite.config.ts` gives TanStack Start two mock entry points:
 
-- `src/client/mock/router.tsx` calls `bootstrapMockContainer()`, so every client service resolves the `Test*` repositories in `src/client/mock/repositories/` instead of the API, and `TestSessionRepository` signs every page in.
+- `src/client/mock/router.tsx` calls `bootstrapMockContainer()`, so every client service resolves the `Test*` repositories in `src/client/mock/repositories/` instead of the API, and `TestSessionRepository` signs every page in except `/login` and `/not-registered`, so those two screens can be shown.
 - `src/client/mock/start.ts` replaces the server middleware with the prefs cookie and a 501 for every server route (`/api/`, `/g/`), so the backend is never built and a stray API call fails loudly.
 
 `.env.mock` only sets the port. Nothing else knows mock mode exists, and a production build never contains it; the architecture test fails if production code imports `src/client/mock`.

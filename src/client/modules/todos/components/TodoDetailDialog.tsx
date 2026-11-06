@@ -5,19 +5,8 @@ import {
   toTodoDueDateRequestValue,
 } from "~/client/modules/todos/parsers/TodoDueDate";
 import { AudioWaveform } from "~/client/shared/components/AudioWaveform";
+import { ConfirmDialog } from "~/client/shared/components/ConfirmDialog";
 import { TerminalResponsiveOverlay } from "~/client/shared/components/terminal/TerminalResponsiveOverlay";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogMedia,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "~/client/shared/components/ui/alert-dialog";
 import { Button } from "~/client/shared/components/ui/button";
 import {
   Card,
@@ -40,10 +29,12 @@ import {
 } from "~/client/shared/components/ui/select";
 import { Skeleton } from "~/client/shared/components/ui/skeleton";
 import { Textarea } from "~/client/shared/components/ui/textarea";
+import { usePrefs } from "~/client/shared/hooks/usePrefs";
 import type { Dictionary } from "~/client/shared/i18n/dictionary";
 import type { TodoDTO } from "~/contracts/http/todos/todo";
 
 export function TodoDetailDialog({
+  initialName = "",
   isSubmitting,
   mode = "edit",
   onClose,
@@ -54,6 +45,7 @@ export function TodoDetailDialog({
   theme,
   todo,
 }: {
+  initialName?: string;
   isSubmitting: boolean;
   mode?: "create" | "edit";
   onClose: () => void;
@@ -69,6 +61,7 @@ export function TodoDetailDialog({
   theme: "dark" | "light";
   todo?: TodoDTO;
 }) {
+  const prefs = usePrefs();
   const isCreate = mode === "create";
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -98,7 +91,7 @@ export function TodoDetailDialog({
   useEffect(() => {
     if (!open) return;
     if (isCreate) {
-      setName("");
+      setName(initialName);
       setDescription("");
       setDueDate("");
       setStatus("Pending");
@@ -109,56 +102,46 @@ export function TodoDetailDialog({
     setDescription(todo.description);
     setDueDate(toTodoDueDateInputValue(todo.dueDate));
     setStatus(todo.status);
-  }, [isCreate, open, todo]);
+  }, [initialName, isCreate, open, todo]);
 
   return (
     <TerminalResponsiveOverlay
       bodyClassName="space-y-4"
-      closeLabel={t.cancelAction}
-      description={t.subtitle}
+      closeLabel={t.closeAction}
+      description={
+        isCreate || !todo
+          ? t.createDescription
+          : t.createdOn.replace(
+              "{date}",
+              new Date(todo.createdAt).toLocaleDateString(prefs.locale, {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              }),
+            )
+      }
       footer={
         showForm ? (
           <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
             {!isCreate && onDelete ? (
-              <AlertDialog>
-                <AlertDialogTrigger
-                  render={
-                    <Button
-                      disabled={isSubmitting}
-                      type="button"
-                      variant="destructive"
-                    />
-                  }
-                >
-                  <Trash2 />
-                  {t.deleteAction}
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogMedia className="bg-destructive/10 text-destructive">
-                      <Trash2 />
-                    </AlertDialogMedia>
-                    <AlertDialogTitle>
-                      {t.deleteAction}: {modalTitle}
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                      {t.deleteConfirmation}
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>{t.cancelAction}</AlertDialogCancel>
-                    <AlertDialogAction
-                      disabled={isSubmitting}
-                      onClick={onDelete}
-                      type="button"
-                      variant="destructive"
-                    >
-                      <Trash2 />
-                      {t.deleteAction}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <ConfirmDialog
+                cancelLabel={t.cancelAction}
+                confirmLabel={t.deleteAction}
+                description={t.deleteConfirmation}
+                isDisabled={isSubmitting}
+                onConfirm={onDelete}
+                title={t.deleteTitle.replace("{name}", modalTitle)}
+                trigger={
+                  <Button
+                    disabled={isSubmitting}
+                    type="button"
+                    variant="destructive"
+                  >
+                    <Trash2 />
+                    {t.deleteAction}
+                  </Button>
+                }
+              />
             ) : (
               <span className="hidden sm:block" />
             )}
@@ -208,11 +191,6 @@ export function TodoDetailDialog({
               </Field>
               <Field>
                 <FieldLabel htmlFor="todo-detail-status">
-                  {status === "Completed" ? (
-                    <CheckCircle2 className="size-3.5 text-success" />
-                  ) : (
-                    <Circle className="size-3.5 text-warning" />
-                  )}
                   {t.statusLabel}
                 </FieldLabel>
                 <Select
@@ -223,7 +201,14 @@ export function TodoDetailDialog({
                   value={status}
                 >
                   <SelectTrigger id="todo-detail-status" className="w-full">
-                    <SelectValue>{statusLabel}</SelectValue>
+                    <SelectValue>
+                      {status === "Completed" ? (
+                        <CheckCircle2 className="text-success" />
+                      ) : (
+                        <Circle className="text-warning" />
+                      )}
+                      {statusLabel}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent align="start">
                     <SelectItem value="Pending">

@@ -25,14 +25,17 @@ export function NoteAiComposer({
   }
 
   return (
-    <Card className="gap-0 border-info/20 bg-info/5 py-0 shadow-none" size="sm">
+    <Card
+      className="gap-0 rounded-xl border-border bg-card py-0 shadow-none"
+      size="sm"
+    >
       <CardContent className="p-3">
         <form onSubmit={onSubmit}>
           <label
-            className="mb-2 flex items-center gap-2 font-mono text-2xs text-info uppercase tracking-wide"
+            className="mb-2 flex items-center gap-2 font-medium text-foreground text-sm"
             htmlFor="note-ai-instruction"
           >
-            <Sparkles className="size-3.5" />
+            <Sparkles className="size-4 text-primary" />
             {t.aiLabel}
           </label>
           <div className="flex flex-col gap-2 md:flex-row md:items-end">

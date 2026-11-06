@@ -1,3 +1,4 @@
+import { Check, Copy } from "lucide-react";
 import { memo, useState } from "react";
 import {
   type WhatsAppBlockNode,
@@ -10,6 +11,7 @@ import type { ChatMessageDTO as ChatMessageEntity } from "~/contracts/http/chat/
 import { type ChatActivityLabels, GenerationTrace } from "./ChatActivity";
 
 interface ChatMessageProps {
+  dayLabel?: string;
   message: ChatMessageEntity;
   theme: "dark" | "light";
   locale: string;
@@ -19,10 +21,30 @@ interface ChatMessageProps {
   showMoreLabel: string;
   showLessLabel: string;
   activityLabels: ChatActivityLabels;
+  copiedLabel: string;
+  copyLabel: string;
   onButtonReply: (text: string) => void;
 }
 
 export const ChatMessage = memo(function ChatMessage({
+  dayLabel,
+  ...props
+}: ChatMessageProps) {
+  return (
+    <>
+      {dayLabel && (
+        <div className="flex items-center gap-3 py-3 text-muted-foreground text-xs">
+          <span aria-hidden="true" className="h-px flex-1 bg-border" />
+          <span className="first-letter:uppercase">{dayLabel}</span>
+          <span aria-hidden="true" className="h-px flex-1 bg-border" />
+        </div>
+      )}
+      <ChatMessageBody {...props} />
+    </>
+  );
+});
+
+function ChatMessageBody({
   message,
   theme,
   locale,
@@ -33,7 +55,21 @@ export const ChatMessage = memo(function ChatMessage({
   showLessLabel,
   activityLabels,
   onButtonReply,
-}: ChatMessageProps) {
+  copiedLabel,
+  copyLabel,
+}: Omit<ChatMessageProps, "dayLabel">) {
+  const [isCopied, setIsCopied] = useState(false);
+
+  async function onCopy(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setIsCopied(true);
+      window.setTimeout(() => setIsCopied(false), 2000);
+    } catch {
+      setIsCopied(false);
+    }
+  }
+
   const isUser = message.userType === "user";
   const isAudio = message.type === "audio" && Boolean(message.mediaUrl);
   const timestamp = new Date(message.createdAt).toLocaleTimeString(locale, {
@@ -44,16 +80,13 @@ export const ChatMessage = memo(function ChatMessage({
   if (!isUser) {
     return (
       <article className="w-full py-2">
-        <div className="mb-1.5 flex items-center gap-2 font-mono text-2xs uppercase tracking-wider">
-          <span aria-hidden="true" className="font-bold text-primary">
-            {">"}
-          </span>
-          <span className="font-semibold text-primary">{botLabel}</span>
-          <time dateTime={message.createdAt} className="text-muted-foreground">
+        <div className="mb-1 flex items-center gap-2 text-xs">
+          <span className="font-medium text-muted-foreground">{botLabel}</span>
+          <time dateTime={message.createdAt} className="text-faint">
             {timestamp}
           </time>
         </div>
-        <div className="pl-4">
+        <div>
           {message.trace && (
             <GenerationTrace trace={message.trace} labels={activityLabels} />
           )}
@@ -66,6 +99,21 @@ export const ChatMessage = memo(function ChatMessage({
             showLessLabel={showLessLabel}
             onButtonReply={onButtonReply}
           />
+          {message.text && (
+            <div className="mt-1.5 flex items-center">
+              <Button
+                aria-label={isCopied ? copiedLabel : copyLabel}
+                className="-ml-1.5 text-muted-foreground"
+                onClick={() => void onCopy(message.text ?? "")}
+                size="icon-sm"
+                title={isCopied ? copiedLabel : copyLabel}
+                type="button"
+                variant="ghost"
+              >
+                {isCopied ? <Check className="text-success" /> : <Copy />}
+              </Button>
+            </div>
+          )}
         </div>
       </article>
     );
@@ -77,13 +125,13 @@ export const ChatMessage = memo(function ChatMessage({
         isAudio ? "max-w-[88%] sm:max-w-80" : "max-w-[88%] sm:max-w-[75%]"
       }`}
     >
-      <div className="mb-1 flex items-center justify-end gap-2 px-0.5 font-mono text-2xs uppercase tracking-wider">
-        <span className="font-semibold text-foreground">{youLabel}</span>
-        <time dateTime={message.createdAt} className="text-muted-foreground">
+      <div className="mb-1 flex items-center justify-end gap-2 px-1 text-xs">
+        <span className="sr-only">{youLabel}</span>
+        <time dateTime={message.createdAt} className="text-faint">
           {timestamp}
         </time>
       </div>
-      <div className="rounded-lg border border-border bg-muted px-3.5 py-2.5">
+      <div className="rounded-2xl rounded-tr-md border border-border/60 bg-muted px-4 py-2.5">
         <MessageContent
           message={message}
           theme={theme}
@@ -96,7 +144,7 @@ export const ChatMessage = memo(function ChatMessage({
       </div>
     </article>
   );
-});
+}
 
 function MessageContent({
   message,
@@ -138,7 +186,7 @@ function MessageContent({
       <div className="flex flex-col gap-3">
         <FormattedChatText text={message.text ?? ""} />
         <div className="flex flex-wrap gap-1.5">
-          {message.buttonReplyOptions.map((option) => (
+          {message.buttonReplyOptions.map((option, index) => (
             <Button
               key={option}
               type="button"
@@ -146,8 +194,8 @@ function MessageContent({
                 void onButtonReply(option);
               }}
               disabled={isSending}
-              variant="outline"
-              className="rounded-lg font-mono text-sm shadow-none"
+              variant={index === 0 ? "default" : "outline"}
+              className="rounded-lg text-sm shadow-none"
             >
               {option}
             </Button>
@@ -311,13 +359,13 @@ function InlineNode({ node }: { node: WhatsAppInlineNode }) {
       return <LinkedText value={node.value} />;
     case "bold":
       return (
-        <strong className="font-semibold text-syntax-param">
+        <strong className="font-semibold text-foreground">
           <InlineNodes nodes={node.children} />
         </strong>
       );
     case "italic":
       return (
-        <em className="text-syntax-string italic">
+        <em className="text-foreground italic">
           <InlineNodes nodes={node.children} />
         </em>
       );

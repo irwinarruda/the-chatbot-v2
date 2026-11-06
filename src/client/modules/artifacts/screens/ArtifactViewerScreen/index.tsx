@@ -1,13 +1,14 @@
 import { Link, useRouter } from "@tanstack/react-router";
 import {
   ArrowLeft,
-  CodeXml,
+  Check,
+  Globe2,
+  Link2,
   LockKeyhole,
   Moon,
-  Radio,
   Sun,
 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { TerminalChromeButton } from "~/client/shared/components/terminal/TerminalChromeButton";
 import { Alert, AlertDescription } from "~/client/shared/components/ui/alert";
 import { Badge } from "~/client/shared/components/ui/badge";
@@ -30,6 +31,7 @@ export function ArtifactViewerScreen({ artifactId }: { artifactId: string }) {
   const closeArtifact = useApp((state) => state.closeArtifact);
   const dictionary = getDictionary(prefs.locale);
   const t = dictionary.artifactsPage;
+  const [isCopied, setIsCopied] = useState(false);
   const themeLabel =
     prefs.theme === "light"
       ? dictionary.common.switchToDarkTheme
@@ -40,6 +42,16 @@ export function ArtifactViewerScreen({ artifactId }: { artifactId: string }) {
     router.invalidate();
   }
 
+  async function onShareLinkCopy() {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setIsCopied(true);
+      window.setTimeout(() => setIsCopied(false), 2000);
+    } catch {
+      setIsCopied(false);
+    }
+  }
+
   useEffect(() => {
     void viewArtifact(artifactId);
     return closeArtifact;
@@ -48,14 +60,27 @@ export function ArtifactViewerScreen({ artifactId }: { artifactId: string }) {
   return (
     <main className="flex h-dvh min-h-dvh w-full flex-col overflow-hidden bg-background">
       <a
-        className="fixed top-3 left-3 z-60 -translate-y-24 rounded-md border border-brand/35 bg-card px-3 py-2 font-mono text-primary text-xs shadow-lg transition-transform focus:translate-y-0 motion-reduce:transition-none"
+        className="fixed top-3 left-3 z-60 -translate-y-24 rounded-md border border-brand/35 bg-card px-3 py-2 text-primary text-xs shadow-lg transition-transform focus:translate-y-0 motion-reduce:transition-none"
         href="#artifact-content"
       >
-        <span aria-hidden="true">$ </span>
         {dictionary.common.skipToContent}
       </a>
-      <header className="sticky top-0 z-50 flex min-h-12 shrink-0 items-center gap-2 border-border border-b bg-muted/95 px-[max(0.75rem,env(safe-area-inset-left))] pt-[env(safe-area-inset-top)] pr-[max(0.75rem,env(safe-area-inset-right))] backdrop-blur-sm sm:px-4">
-        <CodeXml className="size-4 shrink-0 text-primary" aria-hidden="true" />
+      <header className="sticky top-0 z-50 flex min-h-14 shrink-0 items-center gap-2 border-border border-b bg-background/95 px-[max(0.5rem,env(safe-area-inset-left))] pt-[env(safe-area-inset-top)] pr-[max(0.5rem,env(safe-area-inset-right))] backdrop-blur-sm sm:px-4">
+        <Button
+          className="shrink-0 text-muted-foreground"
+          nativeButton={false}
+          render={<Link to="/artifacts" />}
+          size="sm"
+          variant="ghost"
+        >
+          <ArrowLeft />
+          <span className="hidden sm:inline">{t.backAction}</span>
+          <span className="sr-only sm:hidden">{t.backAction}</span>
+        </Button>
+        <span
+          aria-hidden="true"
+          className="hidden h-5 w-px bg-border sm:block"
+        />
         <span
           className="min-w-0 flex-1 truncate font-semibold text-foreground text-sm"
           title={artifact?.title ?? t.viewerWindowTitle}
@@ -64,51 +89,46 @@ export function ArtifactViewerScreen({ artifactId }: { artifactId: string }) {
         </span>
         {artifact && (
           <>
-            <span className="hidden shrink-0 text-2xs text-muted-foreground sm:inline">
+            <span className="hidden shrink-0 text-muted-foreground text-xs sm:inline">
               v{artifact.version}
             </span>
             <Badge
-              className={
-                artifact.visibility === ArtifactVisibility.Public
-                  ? "shrink-0 border-info/25 bg-info/10 text-info"
-                  : "shrink-0 border-border bg-muted text-muted-foreground"
-              }
+              className="shrink-0 border-border bg-muted text-muted-foreground"
               variant="outline"
             >
               {artifact.visibility === ArtifactVisibility.Public ? (
-                <Radio aria-hidden="true" />
+                <Globe2 aria-hidden="true" />
               ) : (
                 <LockKeyhole aria-hidden="true" />
               )}
-              <span className="hidden sm:inline">
+              <span>
                 {artifact.visibility === ArtifactVisibility.Public
                   ? t.publicLabel
                   : t.privateLabel}
               </span>
             </Badge>
-            <Button
-              aria-label={t.manageAction}
-              className="shrink-0"
-              nativeButton={false}
-              render={<Link to="/artifacts" />}
-              size="xs"
-              title={t.manageAction}
-              variant="ghost"
-            >
-              <ArrowLeft />
-              <span className="hidden sm:inline">{t.manageAction}</span>
-            </Button>
           </>
+        )}
+        {artifact && (
+          <Button
+            className="shrink-0 text-muted-foreground"
+            aria-label={t.copyLinkAction}
+            onClick={onShareLinkCopy}
+            size="sm"
+            type="button"
+            variant="ghost"
+          >
+            {isCopied ? <Check className="text-success" /> : <Link2 />}
+            <span className="hidden sm:inline" aria-live="polite">
+              {isCopied ? t.copiedAction : t.copyLinkAction}
+            </span>
+          </Button>
         )}
         <TerminalChromeButton onClick={onToggleLocale} title={prefs.locale}>
           {prefs.locale === "pt-BR" ? "PT" : "EN"}
         </TerminalChromeButton>
         <TerminalChromeButton onClick={toggleTheme} title={themeLabel}>
-          {prefs.theme === "light" ? (
-            <Sun className="size-3" />
-          ) : (
-            <Moon className="size-3" />
-          )}
+          {prefs.theme === "light" ? <Sun /> : <Moon />}
         </TerminalChromeButton>
       </header>
       <section

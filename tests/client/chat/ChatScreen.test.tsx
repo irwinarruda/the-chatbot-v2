@@ -105,10 +105,8 @@ vi.mock("@tanstack/react-virtual", () => ({
   }),
 }));
 
-vi.mock("~/client/shared/components/terminal/TerminalWindow", () => ({
-  TerminalWindow: ({ children }: { children: ReactNode }) => (
-    <div>{children}</div>
-  ),
+vi.mock("~/client/shared/components/terminal/AppShell", () => ({
+  AppShell: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }));
 
 vi.mock("~/client/shared/hooks/usePrefs", () => ({

@@ -4,24 +4,20 @@ import {
   useNavigate,
   useRouterState,
 } from "@tanstack/react-router";
-import { ChevronRight, FileText, Plus, Search, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { FileText, Plus, Search, SearchX, X } from "lucide-react";
+import { useEffect } from "react";
 import type { NotesSearchDTO } from "~/client/modules/notes/app/dtos/NotesSearchDTO";
 import type { NoteErrorCode } from "~/client/modules/notes/app/services/NoteService";
+import { getAvailableNoteName } from "~/client/modules/notes/parsers/NoteName";
+import { ListEmptyState } from "~/client/shared/components/ListEmptyState";
+import { AppShell } from "~/client/shared/components/terminal/AppShell";
 import { TerminalPageHeader } from "~/client/shared/components/terminal/TerminalPageHeader";
-import { TerminalWindow } from "~/client/shared/components/terminal/TerminalWindow";
 import {
   Alert,
   AlertAction,
   AlertDescription,
 } from "~/client/shared/components/ui/alert";
 import { Button } from "~/client/shared/components/ui/button";
-import { Card, CardContent } from "~/client/shared/components/ui/card";
-import {
-  Empty,
-  EmptyHeader,
-  EmptyTitle,
-} from "~/client/shared/components/ui/empty";
 import { Input } from "~/client/shared/components/ui/input";
 import { Skeleton } from "~/client/shared/components/ui/skeleton";
 import { clientErrorMessage } from "~/client/shared/error/ApiError";
@@ -31,9 +27,15 @@ import { useApp } from "~/client/shared/stores/app";
 
 const loadingRows = ["first", "second", "third", "fourth"];
 
-function getNoteExcerpt(markdown: string, emptyLabel: string) {
+function getNoteExcerpt(markdown: string, name: string, emptyLabel: string) {
   const excerpt = markdown
+    .split("\n")
+    .filter((line) => line.replace(/^#+\s*/, "").trim() !== name.trim())
+    .join(" · ")
+    .replace(/\[[ xX]\]/g, " ")
     .replace(/[`#>*_[\]()~-]/g, " ")
+    .replace(/(\s*·\s*)+/g, " · ")
+    .replace(/^\s*·\s*|\s*·\s*$/g, "")
     .replace(/\s+/g, " ")
     .trim();
   if (!excerpt) return emptyLabel;
@@ -54,7 +56,6 @@ export function NotesScreen({ search }: { search: NotesSearchDTO }) {
   const bootstrapNotes = useApp((state) => state.bootstrapNotes);
   const createNote = useApp((state) => state.createNote);
   const clearNoteError = useApp((state) => state.clearNoteError);
-  const [newName, setNewName] = useState("");
   const dictionary = getDictionary(prefs.locale);
   const t = dictionary.notesPage;
   const hasSelectedNote = pathname.startsWith("/notes/");
@@ -70,11 +71,14 @@ export function NotesScreen({ search }: { search: NotesSearchDTO }) {
     navigate({ to: "/notes", search: value.trim() ? { q: value } : {} });
   }
 
-  async function onCreateNote(event: React.FormEvent) {
-    event.preventDefault();
-    const note = await createNote(newName);
+  async function onCreateNote() {
+    const note = await createNote(
+      getAvailableNoteName(
+        t.untitledNote,
+        notes.map((item) => item.name),
+      ),
+    );
     if (!note) return;
-    setNewName("");
     navigate({
       to: "/notes/$noteId",
       params: { noteId: note.id },
@@ -89,26 +93,27 @@ export function NotesScreen({ search }: { search: NotesSearchDTO }) {
   }, [search.q]);
 
   return (
-    <TerminalWindow
+    <AppShell
       title={t.windowTitle}
       wide
       activePath="/notes"
       dictionary={dictionary}
       showLogout
-      mainClassName="items-stretch sm:items-start"
-      frameClassName="page-frame-min-height"
-      navigationClassName={hasSelectedNote ? "mb-3" : undefined}
-      windowClassName={
-        hasSelectedNote
-          ? "relative overflow-hidden p-0 sm:pt-3 sm:pb-0 md:pb-0"
-          : "relative overflow-hidden"
-      }
     >
       {!hasSelectedNote && (
         <TerminalPageHeader
+          actions={
+            <Button
+              disabled={isNoteSubmitting}
+              onClick={onCreateNote}
+              type="button"
+            >
+              <Plus />
+              {t.createAction}
+            </Button>
+          }
           heading={t.heading}
           subtitle={t.subtitle}
-          withLogo={false}
         />
       )}
       {errorMessage && (
@@ -134,106 +139,80 @@ export function NotesScreen({ search }: { search: NotesSearchDTO }) {
         <Outlet />
       ) : (
         <section aria-label={t.listLabel} className="min-h-0 flex-1">
-          <Card
-            className="mb-4 gap-0 border-border bg-muted/45 py-0 shadow-none"
-            size="sm"
-          >
-            <CardContent className="grid gap-3 p-3 sm:grid-cols-2">
-              <div className="relative">
-                <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  aria-label={t.searchPlaceholder}
-                  className="min-h-11 pl-8 text-base md:min-h-8 md:text-sm"
-                  onChange={(event) => onSearchChange(event.target.value)}
-                  placeholder={t.searchPlaceholder}
-                  type="search"
-                  value={search.q ?? ""}
-                />
-              </div>
-              <form className="flex gap-2" onSubmit={onCreateNote}>
-                <Input
-                  aria-label={t.newNamePlaceholder}
-                  className="min-h-11 min-w-0 text-base md:min-h-8 md:text-sm"
-                  maxLength={160}
-                  onChange={(event) => setNewName(event.target.value)}
-                  placeholder={t.newNamePlaceholder}
-                  value={newName}
-                />
-                <Button
-                  className="min-h-11 shrink-0 md:min-h-8"
-                  disabled={isNoteSubmitting || !newName.trim()}
-                  type="submit"
-                >
-                  <Plus />
-                  {t.createAction}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-          <div className="mb-2 flex items-center gap-2 font-mono text-2xs text-muted-foreground uppercase tracking-wide">
-            <FileText className="size-3.5 text-primary" />
-            {t.listLabel}
+          <div className="mb-4">
+            <div className="relative">
+              <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                aria-label={t.searchPlaceholder}
+                className="min-h-11 pl-8 text-base md:min-h-9 md:text-sm"
+                onChange={(event) => onSearchChange(event.target.value)}
+                placeholder={t.searchPlaceholder}
+                type="search"
+                value={search.q ?? ""}
+              />
+            </div>
           </div>
           {isNoteBootstrapping ? (
             <div aria-busy="true" aria-live="polite" className="space-y-2">
               <span className="sr-only">{t.loading}</span>
               {loadingRows.map((row) => (
-                <Skeleton
-                  key={row}
-                  className="h-16 rounded-lg border border-border bg-muted/50"
-                />
+                <Skeleton key={row} className="h-16 rounded-lg bg-muted/60" />
               ))}
             </div>
           ) : notes.length > 0 ? (
-            <ul className="m-0 list-none space-y-2 p-0">
+            <ul className="m-0 list-none divide-y divide-border overflow-hidden rounded-xl border border-border bg-card p-0">
               {notes.map((note) => (
                 <li key={note.id}>
-                  <Card
-                    className="gap-0 border-border border-l-2 bg-background/35 py-0 shadow-none transition-colors hover:border-l-brand hover:bg-muted/70"
-                    size="sm"
+                  <Link
+                    className="group flex items-start gap-3 px-4 py-3 outline-none transition-colors hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                    params={{ noteId: note.id }}
+                    search={search}
+                    to="/notes/$noteId"
                   >
-                    <Link
-                      className="group grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-2.5 rounded-lg px-2.5 py-2"
-                      params={{ noteId: note.id }}
-                      search={search}
-                      to="/notes/$noteId"
-                    >
-                      <FileText className="mt-0.5 size-4 text-primary" />
-                      <span className="min-w-0">
-                        <span className="block truncate font-semibold text-foreground text-sm transition-colors group-hover:text-primary">
+                    <FileText className="mt-0.5 size-4 shrink-0 text-muted-foreground group-hover:text-primary" />
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-baseline justify-between gap-3">
+                        <span className="truncate font-medium text-foreground text-sm">
                           {note.name}
                         </span>
-                        <span className="mt-1 line-clamp-2 block font-sans text-muted-foreground text-sm leading-relaxed">
-                          {getNoteExcerpt(note.markdown, t.emptyNote)}
-                        </span>
-                      </span>
-                      <span className="flex items-center gap-2 text-muted-foreground">
                         <time
-                          className="hidden text-2xs sm:block"
+                          className="shrink-0 text-muted-foreground text-xs"
                           dateTime={note.updatedAt}
                         >
                           {new Date(note.updatedAt).toLocaleDateString(
                             prefs.locale,
+                            { month: "short", day: "numeric" },
                           )}
                         </time>
-                        <ChevronRight className="mt-0.5 size-4 transition-transform group-hover:translate-x-0.5 group-hover:text-primary motion-reduce:transition-none" />
                       </span>
-                    </Link>
-                  </Card>
+                      <span className="mt-0.5 line-clamp-2 block text-muted-foreground text-sm leading-relaxed">
+                        {getNoteExcerpt(note.markdown, note.name, t.emptyNote)}
+                      </span>
+                    </span>
+                  </Link>
                 </li>
               ))}
             </ul>
           ) : (
-            <Empty className="rounded-lg border border-border bg-background/40 py-14">
-              <EmptyHeader>
-                <EmptyTitle className="text-muted-foreground text-xs">
-                  {t.emptyState}
-                </EmptyTitle>
-              </EmptyHeader>
-            </Empty>
+            <ListEmptyState
+              icon={search.q ? SearchX : FileText}
+              title={search.q ? t.emptyState : t.selectState}
+              actions={
+                search.q && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => onSearchChange("")}
+                  >
+                    <X />
+                    {t.clearSearch}
+                  </Button>
+                )
+              }
+            />
           )}
         </section>
       )}
-    </TerminalWindow>
+    </AppShell>
   );
 }

@@ -2,7 +2,7 @@
 
 *Última atualização: Novembro 2025*
 
-Bem-vindo ao **TheChatbot**. Valorizamos sua privacidade e estamos comprometidos em proteger seus dados pessoais. Esta Política de Privacidade explica como coletamos, usamos e compartilhamos informações sobre você quando utiliza nossos serviços via WhatsApp.
+Bem-vindo ao **The Chatbot**. Valorizamos sua privacidade e estamos comprometidos em proteger seus dados pessoais. Esta Política de Privacidade explica como coletamos, usamos e compartilhamos informações sobre você quando utiliza nossos serviços via WhatsApp.
 
 ## 1. Informações que Coletamos
 
@@ -10,7 +10,7 @@ Ao interagir com nosso serviço, coletamos os seguintes tipos de informações:
 
 - **Dados de Identidade**: Seu nome e número de telefone, conforme fornecido pelo WhatsApp.
 - **Dados de Autenticação**: Tokens de acesso do Google (Access e Refresh Tokens) para autenticar você e acessar serviços do Google em seu nome.
-- **Dados de Comunicação**: O histórico de suas mensagens enviadas ao TheChatbot.
+- **Dados de Comunicação**: O histórico de suas mensagens enviadas ao The Chatbot.
 - **Dados de Uso**: IDs das planilhas do Google Sheets que você configura para controle de despesas.
 
 ## 2. Como Usamos Suas Informações

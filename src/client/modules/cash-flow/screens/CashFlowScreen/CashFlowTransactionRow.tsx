@@ -1,24 +1,12 @@
 import {
-  AlertTriangle,
   ArrowDownLeft,
   ArrowRightLeft,
   ArrowUpRight,
   Pencil,
   Trash2,
 } from "lucide-react";
+import { ConfirmDialog } from "~/client/shared/components/ConfirmDialog";
 import { MonetaryValue } from "~/client/shared/components/MonetaryValue";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogMedia,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "~/client/shared/components/ui/alert-dialog";
 import { Badge } from "~/client/shared/components/ui/badge";
 import { Button } from "~/client/shared/components/ui/button";
 import type { Dictionary, Locale } from "~/client/shared/i18n/dictionary";
@@ -53,13 +41,13 @@ export function CashFlowTransactionRow({
   }).format(new Date(transaction.date));
 
   return (
-    <article className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 rounded-lg border border-border border-l-2 bg-background/45 px-3 py-3 transition-colors hover:border-l-brand hover:bg-muted/70">
+    <article className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/60">
       <span
         aria-hidden="true"
         className={
           isExpense
-            ? "mt-0.5 rounded-md border border-destructive/20 bg-destructive/10 p-1.5 text-destructive"
-            : "mt-0.5 rounded-md border border-success/20 bg-success/10 p-1.5 text-success"
+            ? "rounded-full bg-muted p-2 text-muted-foreground"
+            : "rounded-full bg-success/10 p-2 text-success"
         }
       >
         {isExpense ? (
@@ -85,14 +73,15 @@ export function CashFlowTransactionRow({
           )}
           {transaction.isLast && (
             <Badge
-              className="border-info/25 bg-info/10 text-info"
+              className="border-border bg-muted text-muted-foreground"
+              title={t.latestHint}
               variant="outline"
             >
               {t.latestBadge}
             </Badge>
           )}
         </div>
-        <p className="m-0 flex flex-wrap gap-x-2 gap-y-0.5 text-2xs text-muted-foreground">
+        <p className="m-0 flex min-w-0 gap-x-1.5 truncate text-muted-foreground text-xs">
           <span>{date}</span>
           <span aria-hidden="true">·</span>
           <span>{transaction.bankAccount}</span>
@@ -100,35 +89,49 @@ export function CashFlowTransactionRow({
           <span>{transaction.category}</span>
         </p>
       </div>
-      <div className="flex flex-wrap items-center justify-end gap-1.5">
+      <div className="flex items-center justify-end gap-1.5">
         <span
           className={
             isExpense
-              ? "whitespace-nowrap font-semibold text-destructive text-sm tabular-nums"
-              : "whitespace-nowrap font-semibold text-sm text-success tabular-nums"
+              ? "whitespace-nowrap font-medium text-foreground text-sm tabular-nums"
+              : "whitespace-nowrap font-medium text-sm text-success tabular-nums"
           }
         >
           <MonetaryValue hiddenLabel={hiddenMonetaryValueLabel}>
             {currency.format(transaction.value)}
           </MonetaryValue>
         </span>
-        {transaction.transferId && (
-          <Button
-            aria-label={t.transferEditAction}
-            disabled={isSubmitting}
-            onClick={onEditTransfer}
-            size="icon-sm"
-            type="button"
-            variant="ghost"
-          >
-            <Pencil />
-          </Button>
-        )}
-        {(Boolean(transaction.transferId) ||
-          (transaction.isLast && !transaction.paymentId)) && (
-          <AlertDialog>
-            <AlertDialogTrigger
-              render={
+        <div className="flex shrink-0 justify-end gap-1 empty:hidden sm:min-w-8 sm:empty:flex">
+          {transaction.transferId && (
+            <Button
+              aria-label={t.transferEditAction}
+              disabled={isSubmitting}
+              onClick={onEditTransfer}
+              size="icon-sm"
+              type="button"
+              variant="ghost"
+            >
+              <Pencil />
+            </Button>
+          )}
+          {(Boolean(transaction.transferId) ||
+            (transaction.isLast && !transaction.paymentId)) && (
+            <ConfirmDialog
+              cancelLabel={t.cancelAction}
+              confirmLabel={t.deleteAction}
+              description={
+                transaction.transferId
+                  ? t.transferDeleteHint
+                  : t.deleteLastConfirmation
+              }
+              isDisabled={isSubmitting}
+              onConfirm={onDelete}
+              title={
+                transaction.transferId
+                  ? t.transferDeleteTitle
+                  : t.deleteLastTitle
+              }
+              trigger={
                 <Button
                   aria-label={
                     transaction.transferId
@@ -139,42 +142,26 @@ export function CashFlowTransactionRow({
                   size="icon-sm"
                   type="button"
                   variant="ghost"
-                />
+                >
+                  <Trash2 className="text-destructive" />
+                </Button>
               }
             >
-              <Trash2 className="text-destructive" />
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogMedia className="bg-destructive/10 text-destructive">
-                  <AlertTriangle />
-                </AlertDialogMedia>
-                <AlertDialogTitle>
-                  {transaction.transferId
-                    ? t.transferDeleteTitle
-                    : t.deleteLastTitle}
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                  {transaction.transferId
-                    ? t.transferDeleteHint
-                    : t.deleteLastConfirmation}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel disabled={isSubmitting}>
-                  {t.cancelAction}
-                </AlertDialogCancel>
-                <AlertDialogAction
-                  disabled={isSubmitting}
-                  onClick={onDelete}
-                  variant="destructive"
-                >
-                  {t.deleteAction}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )}
+              <p className="m-0 rounded-lg border border-border bg-muted/50 px-3 py-2 text-left text-foreground text-sm">
+                <span className="font-medium">
+                  {transaction.description ||
+                    (transaction.transferId ? t.transferLabel : "")}
+                </span>
+                <span className="block text-muted-foreground text-xs tabular-nums">
+                  <MonetaryValue hiddenLabel={hiddenMonetaryValueLabel}>
+                    {currency.format(transaction.value)}
+                  </MonetaryValue>{" "}
+                  · {date} · {transaction.bankAccount}
+                </span>
+              </p>
+            </ConfirmDialog>
+          )}
+        </div>
       </div>
     </article>
   );
