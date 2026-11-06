@@ -9,18 +9,18 @@ import { apiNoteRepository } from "~/client/modules/notes/app/repositories/ApiNo
 import { apiTodoRepository } from "~/client/modules/todos/app/repositories/ApiTodoRepository";
 import { cookiePrefsGateway } from "~/client/shared/app/gateways/CookiePrefsGateway";
 import { storageMonetaryPrivacyGateway } from "~/client/shared/app/gateways/StorageMonetaryPrivacyGateway";
-import type { AppAdapters } from "~/client/shared/stores/AppAdapters";
+import { container } from "~/client/shared/container";
 
-export const adapters: AppAdapters = {
-  session: apiSessionRepository,
-  prefs: cookiePrefsGateway,
-  privacy: storageMonetaryPrivacyGateway,
-  cashFlow: apiCashFlowRepository,
-  monthlyExpenses: apiMonthlyExpenseRepository,
-  chat: apiChatRepository,
-  audioInputs: browserAudioInputGateway,
-  audioRecording: browserAudioRecordingGateway,
-  notes: apiNoteRepository,
-  todos: apiTodoRepository,
-  artifacts: apiArtifactRepository,
-};
+export function bootstrapAppContainer() {
+  container.register("SessionRepository", apiSessionRepository);
+  container.register("PrefsGateway", cookiePrefsGateway);
+  container.register("MonetaryPrivacyGateway", storageMonetaryPrivacyGateway);
+  container.register("CashFlowRepository", apiCashFlowRepository);
+  container.register("MonthlyExpenseRepository", apiMonthlyExpenseRepository);
+  container.register("ChatRepository", apiChatRepository);
+  container.register("AudioInputGateway", browserAudioInputGateway);
+  container.register("AudioRecordingGateway", browserAudioRecordingGateway);
+  container.register("NoteRepository", apiNoteRepository);
+  container.register("TodoRepository", apiTodoRepository);
+  container.register("ArtifactRepository", apiArtifactRepository);
+}

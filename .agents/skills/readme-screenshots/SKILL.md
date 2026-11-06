@@ -18,12 +18,12 @@ Each scene reports `changed` or `unchanged`, and only a changed picture is writt
 
 ## How it works
 
-`bun run dev:mock` is `vite dev --mode mock`. Mock mode loads `.env.mock`, whose values are fakes that only satisfy the config schema, and `vite.config.ts` swaps two modules at build time:
+`bun run dev:mock` is `vite dev --mode mock`, the web app alone, the way favo-cli's `dev:mock` runs its TUI with no backend. `vite.config.ts` gives TanStack Start two mock entry points:
 
-- `~/client/shared/stores/adapters` becomes `src/client/mock/adapters.ts`, so every client service runs on the `Test*` repositories in `src/client/mock/repositories/` instead of the API.
-- `~/server/shared/http/functions/require-web-access` becomes `src/client/mock/requireWebAccess.ts`, so every page is signed in.
+- `src/client/mock/router.tsx` calls `bootstrapMockContainer()`, so every client service resolves the `Test*` repositories in `src/client/mock/repositories/` instead of the API, and `TestSessionRepository` signs every page in.
+- `src/client/mock/start.ts` replaces the server middleware with the prefs cookie and a 501 for every server route (`/api/`, `/g/`), so the backend is never built and a stray API call fails loudly.
 
-Nothing else knows mock mode exists, and a production build never contains it; the architecture test fails if production code imports `src/client/mock`.
+`.env.mock` only sets the port. Nothing else knows mock mode exists, and a production build never contains it; the architecture test fails if production code imports `src/client/mock`.
 
 `src/client/mock/db.ts` is the demo data: one fictional person, Ada Hale, with a chat, todos, notes, transactions, bills and artifacts, all dated around `DemoNow` (November 3, 2026). The `Test*` repositories read and change it, so the app is usable by hand. Keep it fictional, in English, and typed by the contracts; `tests/client/shared/MockDb.test.ts` parses it through them, so a contract change that the demo data misses fails a test.
 

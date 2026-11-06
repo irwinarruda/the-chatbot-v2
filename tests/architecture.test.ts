@@ -60,7 +60,11 @@ const ClientForbiddenInApp = [
   /\/components\//,
   /^~\/client\/routes\//,
 ];
-const ClientForbiddenInViews = [/\/app\/repositories\//, /\/app\/gateways\//];
+const ClientForbiddenInViews = [
+  /\/app\/repositories\//,
+  /\/app\/gateways\//,
+  /^~\/client\/(shared|libs)\/container/,
+];
 const ServerFunctions = /^~\/server\/shared\/http\/functions\/[a-z-]+$/;
 const TestDouble = /\/gateways\/test\./;
 const AllowedComment = /^\s*(?:\/\/\/ <reference|\/\/ biome-ignore)/;
@@ -281,7 +285,7 @@ describe("client", () => {
     expect(bad).toEqual([]);
   });
 
-  test("never lets a view reach a repository or gateway", () => {
+  test("never lets a view reach a repository, gateway or the container", () => {
     const bad = offenders("src/client", (file, specifier) => {
       if (!ClientView.test(file)) return false;
       return ClientForbiddenInViews.some((pattern) => pattern.test(specifier));

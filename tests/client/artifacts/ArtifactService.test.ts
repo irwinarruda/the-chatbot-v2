@@ -5,6 +5,7 @@ import {
   type ArtifactService,
   createArtifactService,
 } from "~/client/modules/artifacts/app/services/ArtifactService";
+import { container } from "~/client/shared/container";
 import { ApiError } from "~/client/shared/error/ApiError";
 import type {
   ArtifactDTO,
@@ -46,7 +47,8 @@ function createRepository(): ArtifactRepository {
 }
 
 function createStore(repository: ArtifactRepository) {
-  return create<ArtifactService>()(createArtifactService(repository));
+  container.register("ArtifactRepository", repository);
+  return create<ArtifactService>()(createArtifactService);
 }
 
 describe("ArtifactService", () => {

@@ -1,13 +1,13 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { normalizeTodoSearch } from "~/client/modules/todos/parsers/TodoSearch";
 import { TodoScreen } from "~/client/modules/todos/screens/TodoScreen";
+import { useApp } from "~/client/shared/stores/app";
 import { normalizeWebLoginRedirect } from "~/contracts/http/identity/web-login-navigation";
-import { requireWebAccess } from "~/server/shared/http/functions/require-web-access";
 
 export const Route = createFileRoute("/todo")({
   beforeLoad: async ({ location }) => {
-    const authResult = await requireWebAccess();
-    if (!authResult.ok) {
+    const { hasWebAccess } = useApp.getState();
+    if (!(await hasWebAccess())) {
       throw redirect({
         to: "/login",
         search: { redirect: normalizeWebLoginRedirect(location.href) },

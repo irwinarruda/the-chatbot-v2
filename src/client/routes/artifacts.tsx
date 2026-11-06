@@ -1,12 +1,12 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { ArtifactsScreen } from "~/client/modules/artifacts/screens/ArtifactsScreen";
+import { useApp } from "~/client/shared/stores/app";
 import { normalizeWebLoginRedirect } from "~/contracts/http/identity/web-login-navigation";
-import { requireWebAccess } from "~/server/shared/http/functions/require-web-access";
 
 export const Route = createFileRoute("/artifacts")({
   beforeLoad: async ({ location }) => {
-    const authResult = await requireWebAccess();
-    if (!authResult.ok) {
+    const { hasWebAccess } = useApp.getState();
+    if (!(await hasWebAccess())) {
       throw redirect({
         to: "/login",
         search: { redirect: normalizeWebLoginRedirect(location.href) },

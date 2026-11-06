@@ -15,6 +15,7 @@ import {
   createSessionService,
   type SessionService,
 } from "~/client/modules/identity/app/services/SessionService";
+import { container } from "~/client/shared/container";
 import type { ChatMessageDTO, WebChatDTO } from "~/contracts/http/chat/chat";
 import { ReasoningEffort } from "~/domain/chat/reasoning-effort";
 import { createDeferred } from "~/tests/support/create-deferred";
@@ -59,14 +60,17 @@ function createStore(
   service: ChatRepository &
     Pick<typeof apiSessionRepository, "getCurrentUser" | "logout">,
 ) {
+  container.register("ChatRepository", service);
+  container.register("SessionRepository", {
+    hasWebAccess: async () => true,
+    getCurrentUser: service.getCurrentUser,
+    logout: service.logout,
+    cancelPendingRequests() {},
+  });
   return create<TestChatState>()(
     computed((...args) => ({
-      ...createChatService(service)(...args),
-      ...createSessionService(() => args[1]().resetChat(), {
-        getCurrentUser: service.getCurrentUser,
-        logout: service.logout,
-        cancelPendingRequests() {},
-      })(...args),
+      ...createChatService(...args),
+      ...createSessionService(() => args[1]().resetChat())(...args),
     })),
   );
 }

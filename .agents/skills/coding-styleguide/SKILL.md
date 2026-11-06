@@ -16,7 +16,7 @@ This skill owns how code reads. Where code lives comes from `server-architecture
 - Let TypeScript infer variables and return types. Annotate public contracts: gateway and repository interfaces, service inputs and exported creators.
 - `undefined` in application types. `null` only where SQL or an external protocol forces it, converted at that boundary.
 - `??` instead of `||` for defaults.
-- Function declarations for named functions; arrows for callbacks. No nested ternaries; use an explicit branch or a lookup.
+- Function declarations for named functions; arrows for callbacks. The one exception is a client service creator with no arguments, which is a typed `StateCreator` constant, `export const createTodoService: StateCreator<TodoService> = (set, get) => ...`, as in favo-cli. No nested ternaries; use an explicit branch or a lookup.
 - A class for identity, lifecycle or constructor-injected dependencies; a named function for a pure transformation. No static-only classes for new helpers.
 - When a function needs `try`, open it at the top so the whole body lives inside. Catch only to translate, recover or clean up.
 - Keep logic inline. Extract for reuse, a real concept or an isolated hard transformation, never to shorten a file.

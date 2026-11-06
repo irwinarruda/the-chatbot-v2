@@ -10,16 +10,35 @@ import type { TodoRepository } from "~/client/modules/todos/app/repositories/Tod
 import type { MonetaryPrivacyGateway } from "~/client/shared/app/gateways/MonetaryPrivacyGateway";
 import type { PrefsGateway } from "~/client/shared/app/gateways/PrefsGateway";
 
-export interface AppAdapters {
-  session: SessionRepository;
-  prefs: PrefsGateway;
-  privacy: MonetaryPrivacyGateway;
-  cashFlow: CashFlowRepository;
-  monthlyExpenses: MonthlyExpenseRepository;
-  chat: ChatRepository;
-  audioInputs: AudioInputGateway;
-  audioRecording: AudioRecordingGateway;
-  notes: NoteRepository;
-  todos: TodoRepository;
-  artifacts: ArtifactRepository;
+export interface InjectableItems {
+  SessionRepository: SessionRepository;
+  PrefsGateway: PrefsGateway;
+  MonetaryPrivacyGateway: MonetaryPrivacyGateway;
+  CashFlowRepository: CashFlowRepository;
+  MonthlyExpenseRepository: MonthlyExpenseRepository;
+  ChatRepository: ChatRepository;
+  AudioInputGateway: AudioInputGateway;
+  AudioRecordingGateway: AudioRecordingGateway;
+  NoteRepository: NoteRepository;
+  TodoRepository: TodoRepository;
+  ArtifactRepository: ArtifactRepository;
+}
+
+export function createContainer() {
+  const items = new Map<keyof InjectableItems, unknown>();
+  return {
+    register<K extends keyof InjectableItems>(
+      key: K,
+      value: InjectableItems[K],
+    ) {
+      items.set(key, value);
+    },
+    get<K extends keyof InjectableItems>(key: K) {
+      const item = items.get(key);
+      if (item === undefined) {
+        throw new Error(`No registration found for "${String(key)}".`);
+      }
+      return item as InjectableItems[K];
+    },
+  };
 }

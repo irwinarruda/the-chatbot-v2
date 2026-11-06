@@ -5,6 +5,7 @@ import {
   createNoteService,
   type NoteService,
 } from "~/client/modules/notes/app/services/NoteService";
+import { container } from "~/client/shared/container";
 import type { NoteDTO } from "~/contracts/http/notes/note";
 import { createDeferred } from "~/tests/support/create-deferred";
 
@@ -41,7 +42,8 @@ describe("noteSlice", () => {
     service.listNotes
       .mockReturnValueOnce(pending.promise)
       .mockResolvedValueOnce([secondNote]);
-    const store = create<NoteService>()(createNoteService(service));
+    container.register("NoteRepository", service);
+    const store = create<NoteService>()(createNoteService);
     const first = store.getState().bootstrapNotes("first");
     await store.getState().bootstrapNotes("second");
     pending.reject(new Error("Old request failed"));
@@ -58,7 +60,8 @@ describe("noteSlice", () => {
     service.listNotes
       .mockReturnValueOnce(first.promise)
       .mockReturnValueOnce(second.promise);
-    const store = create<NoteService>()(createNoteService(service));
+    container.register("NoteRepository", service);
+    const store = create<NoteService>()(createNoteService);
     const firstLoad = store.getState().bootstrapNotes("first");
     const secondLoad = store.getState().bootstrapNotes("second");
     first.resolve([firstNote]);
@@ -74,7 +77,8 @@ describe("noteSlice", () => {
     const pending = createDeferred<NoteDTO>();
     const service = createService();
     service.getNote.mockReturnValueOnce(pending.promise);
-    const store = create<NoteService>()(createNoteService(service));
+    container.register("NoteRepository", service);
+    const store = create<NoteService>()(createNoteService);
     store.setState({ notes: [secondNote], selectedNote: firstNote });
     const firstLoad = store.getState().loadNote(firstNote.id);
     expect(store.getState().selectedNote).toBeUndefined();
@@ -88,7 +92,8 @@ describe("noteSlice", () => {
     const pending = createDeferred<NoteDTO>();
     const service = createService();
     service.updateNote.mockReturnValueOnce(pending.promise);
-    const store = create<NoteService>()(createNoteService(service));
+    container.register("NoteRepository", service);
+    const store = create<NoteService>()(createNoteService);
     store.setState({ notes: [firstNote, secondNote], selectedNote: firstNote });
     const saving = store
       .getState()
@@ -110,7 +115,8 @@ describe("noteSlice", () => {
       .mockReturnValueOnce(duringList.promise)
       .mockResolvedValueOnce([firstNote]);
     service.createNote.mockReturnValueOnce(mutation.promise);
-    const store = create<NoteService>()(createNoteService(service));
+    container.register("NoteRepository", service);
+    const store = create<NoteService>()(createNoteService);
     const first = store.getState().bootstrapNotes();
     const creating = store.getState().createNote("First");
     const second = store.getState().bootstrapNotes();
@@ -130,7 +136,8 @@ describe("noteSlice", () => {
     service.createNote
       .mockReturnValueOnce(oldMutation.promise)
       .mockReturnValueOnce(newMutation.promise);
-    const store = create<NoteService>()(createNoteService(service));
+    container.register("NoteRepository", service);
+    const store = create<NoteService>()(createNoteService);
     const old = store.getState().createNote("First");
     store.getState().resetNotes();
     const current = store.getState().createNote("Second");
@@ -149,7 +156,8 @@ describe("noteSlice", () => {
     const service = createService();
     service.getNote.mockReturnValueOnce(detail.promise);
     service.refineNote.mockReturnValueOnce(draft.promise);
-    const store = create<NoteService>()(createNoteService(service));
+    container.register("NoteRepository", service);
+    const store = create<NoteService>()(createNoteService);
     const loading = store.getState().loadNote("first");
     const refining = store.getState().refineNote("Draft", "Revise");
     store.getState().closeNote();
@@ -173,7 +181,8 @@ describe("Note list and write ordering", () => {
         .mockReturnValueOnce(list.promise)
         .mockResolvedValue([firstNote, secondNote]);
       service.createNote.mockReturnValueOnce(write.promise);
-      const store = create<NoteService>()(createNoteService(service));
+      container.register("NoteRepository", service);
+      const store = create<NoteService>()(createNoteService);
       const loading = store.getState().bootstrapNotes();
       const creating = store.getState().createNote("First");
       expect(store.getState().isNoteBootstrapping).toBe(true);
@@ -202,7 +211,8 @@ describe("Note list and write ordering", () => {
     const service = createService();
     service.createNote.mockReturnValueOnce(write.promise);
     service.listNotes.mockResolvedValue([secondNote]);
-    const store = create<NoteService>()(createNoteService(service));
+    container.register("NoteRepository", service);
+    const store = create<NoteService>()(createNoteService);
     const creating = store.getState().createNote("First");
     await store.getState().bootstrapNotes("Second");
     write.resolve(firstNote);

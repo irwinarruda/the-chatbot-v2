@@ -1,5 +1,5 @@
 import type { StateCreator } from "zustand";
-import type { SessionRepository } from "~/client/modules/identity/app/repositories/SessionRepository";
+import { container } from "~/client/shared/container";
 import { ApiError, clientError } from "~/client/shared/error/ApiError";
 import type { CurrentUserDTO } from "~/contracts/http/identity/identity";
 
@@ -8,6 +8,7 @@ export interface SessionService {
   sessionError?: ApiError | "logout";
   isLoggingOut: boolean;
   isSessionExpired: boolean;
+  hasWebAccess: () => Promise<boolean>;
   bootstrapSession: () => Promise<"ok" | "unauthorized" | "not_registered">;
   expireSession: () => void;
   logout: () => Promise<void>;
@@ -15,7 +16,6 @@ export interface SessionService {
 
 export function createSessionService(
   resetFeatures: () => void,
-  service: SessionRepository,
 ): StateCreator<SessionService> {
   return (set, get) => {
     let generation = 0;
@@ -24,12 +24,17 @@ export function createSessionService(
       sessionError: undefined,
       isLoggingOut: false,
       isSessionExpired: false,
+      hasWebAccess() {
+        return container.get("SessionRepository").hasWebAccess();
+      },
       async bootstrapSession() {
         const { isLoggingOut } = get();
         if (isLoggingOut) return "unauthorized";
         const request = ++generation;
         try {
-          const user = await service.getCurrentUser();
+          const user = await container
+            .get("SessionRepository")
+            .getCurrentUser();
           if (request !== generation) return "unauthorized";
           const { currentUser } = get();
           if (currentUser && currentUser.id !== user.id) resetFeatures();
@@ -53,7 +58,7 @@ export function createSessionService(
       },
       expireSession() {
         generation += 1;
-        service.cancelPendingRequests();
+        container.get("SessionRepository").cancelPendingRequests();
         resetFeatures();
         set({
           currentUser: undefined,
@@ -65,7 +70,8 @@ export function createSessionService(
         const { isLoggingOut } = get();
         if (isLoggingOut) return;
         generation += 1;
-        service.cancelPendingRequests();
+        const sessionRepository = container.get("SessionRepository");
+        sessionRepository.cancelPendingRequests();
         resetFeatures();
         set({
           currentUser: undefined,
@@ -73,7 +79,7 @@ export function createSessionService(
           sessionError: undefined,
         });
         try {
-          await service.logout();
+          await sessionRepository.logout();
           set({ isSessionExpired: true });
         } catch (error) {
           set({ sessionError: clientError(error, "logout") });

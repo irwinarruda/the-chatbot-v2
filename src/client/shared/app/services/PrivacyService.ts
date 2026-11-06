@@ -1,5 +1,5 @@
 import type { StateCreator } from "zustand";
-import type { MonetaryPrivacyGateway } from "~/client/shared/app/gateways/MonetaryPrivacyGateway";
+import { container } from "~/client/shared/container";
 
 export type PrivacyService = {
   isMoneyHidden: boolean;
@@ -8,29 +8,31 @@ export type PrivacyService = {
   toggleMoneyVisibility: () => void;
 };
 
-export function createPrivacyService(
-  privacy: MonetaryPrivacyGateway,
-): StateCreator<PrivacyService> {
-  return (set, get) => ({
-    isMoneyHidden: false,
-    isMoneyPrivacyHydrated: false,
-    hydrateMoneyPrivacy() {
-      const { isMoneyPrivacyHydrated } = get();
-      if (isMoneyPrivacyHydrated) return;
-      set({
-        isMoneyHidden: privacy.resolveIsMoneyHidden(),
-        isMoneyPrivacyHydrated: true,
-      });
-    },
-    toggleMoneyVisibility() {
-      const { isMoneyHidden, isMoneyPrivacyHydrated } = get();
-      let currentValue = isMoneyHidden;
-      if (!isMoneyPrivacyHydrated) {
-        currentValue = privacy.resolveIsMoneyHidden();
-      }
-      const nextValue = !currentValue;
-      privacy.persistIsMoneyHidden(nextValue);
-      set({ isMoneyHidden: nextValue, isMoneyPrivacyHydrated: true });
-    },
-  });
-}
+export const createPrivacyService: StateCreator<PrivacyService> = (
+  set,
+  get,
+) => ({
+  isMoneyHidden: false,
+  isMoneyPrivacyHydrated: false,
+  hydrateMoneyPrivacy() {
+    const { isMoneyPrivacyHydrated } = get();
+    if (isMoneyPrivacyHydrated) return;
+    set({
+      isMoneyHidden: container
+        .get("MonetaryPrivacyGateway")
+        .resolveIsMoneyHidden(),
+      isMoneyPrivacyHydrated: true,
+    });
+  },
+  toggleMoneyVisibility() {
+    const { isMoneyHidden, isMoneyPrivacyHydrated } = get();
+    const privacyGateway = container.get("MonetaryPrivacyGateway");
+    let currentValue = isMoneyHidden;
+    if (!isMoneyPrivacyHydrated) {
+      currentValue = privacyGateway.resolveIsMoneyHidden();
+    }
+    const nextValue = !currentValue;
+    privacyGateway.persistIsMoneyHidden(nextValue);
+    set({ isMoneyHidden: nextValue, isMoneyPrivacyHydrated: true });
+  },
+});

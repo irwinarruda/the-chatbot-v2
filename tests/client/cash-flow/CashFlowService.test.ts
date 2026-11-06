@@ -5,6 +5,7 @@ import {
   type CashFlowService,
   createCashFlowService,
 } from "~/client/modules/cash-flow/app/services/CashFlowService";
+import { container } from "~/client/shared/container";
 import type { CashFlowDashboardResponseDTO } from "~/contracts/http/cash-flow/cash-flow";
 import { CashFlowTransactionType } from "~/domain/cash-flow/cash-flow-transaction-type";
 import { createDeferred } from "~/tests/support/create-deferred";
@@ -41,7 +42,8 @@ describe("cashFlowSlice", () => {
       sync: vi.fn(async () => {}),
       deleteLast: vi.fn(async () => {}),
     };
-    const store = create<CashFlowService>()(createCashFlowService(service));
+    container.register("CashFlowRepository", service);
+    const store = create<CashFlowService>()(createCashFlowService);
 
     await store.getState().bootstrapCashFlow();
     await store.getState().createCashFlowTransaction({
@@ -85,7 +87,8 @@ describe("cashFlowSlice", () => {
       async sync() {},
       async deleteLast() {},
     };
-    const store = create<CashFlowService>()(createCashFlowService(service));
+    container.register("CashFlowRepository", service);
+    const store = create<CashFlowService>()(createCashFlowService);
     await store.getState().bootstrapCashFlow();
 
     const created = await store.getState().createCashFlowTransaction({
@@ -115,7 +118,8 @@ describe("cashFlowSlice", () => {
       async sync() {},
       deleteLast: vi.fn(async () => {}),
     };
-    const store = create<CashFlowService>()(createCashFlowService(service));
+    container.register("CashFlowRepository", service);
+    const store = create<CashFlowService>()(createCashFlowService);
     await store.getState().bootstrapCashFlow();
 
     const deleted = await store.getState().deleteLastCashFlowTransaction();
@@ -138,7 +142,8 @@ describe("cashFlowSlice", () => {
       deleteTransfer: () => mutation.promise,
       load: vi.fn(() => dashboard.promise),
     };
-    const store = create<CashFlowService>()(createCashFlowService(service));
+    container.register("CashFlowRepository", service);
+    const store = create<CashFlowService>()(createCashFlowService);
     const old = store.getState().deleteCashFlowTransfer("transfer");
     store.getState().resetCashFlow();
     const loading = store.getState().bootstrapCashFlow();
@@ -164,7 +169,8 @@ describe("cashFlowSlice", () => {
         .mockReturnValueOnce(old.promise)
         .mockResolvedValueOnce(createDashboard(2)),
     };
-    const store = create<CashFlowService>()(createCashFlowService(service));
+    container.register("CashFlowRepository", service);
+    const store = create<CashFlowService>()(createCashFlowService);
     const loading = store.getState().bootstrapCashFlow();
     await store.getState().deleteCashFlowTransfer("transfer");
     old.resolve(createDashboard(1));
