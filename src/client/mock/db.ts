@@ -338,22 +338,29 @@ function createCashFlow(): CashFlowDashboardResponseDTO {
 
 function createMonthlyExpenses(): MonthlyExpenseResponseDTO[] {
   return [
-    ["Rent", 2400, 5, true],
-    ["Electricity", 186.4, 15, true],
-    ["Internet", 119.9, 12, false],
-    ["Phone", 59.9, 20, false],
-    ["Gym", 99, 28, false],
-  ].map(([name, expectedAmount, dueDay, isPaid], index) => ({
-    id: demoId(501 + index),
-    name: name as string,
-    expectedAmount: expectedAmount as number,
-    dueDay: dueDay as number,
-    month: DemoMonth,
-    isPaid: isPaid as boolean,
-    paidAt: isPaid ? at(2) : undefined,
-    createdAt: at(1),
-    updatedAt: at(2),
-  }));
+    ["Rent", 2400, 5, true, "Housing", "Itaú"],
+    ["Electricity", 186.4, 15, true, "Utilities", "Nubank"],
+    ["Internet", 119.9, 12, false, "Utilities", "Nubank"],
+    ["Phone", 59.9, 20, false, "Utilities", undefined],
+    ["Gym", 99, 28, false, undefined, undefined],
+  ].map(
+    (
+      [name, expectedAmount, dueDay, isPaid, category, defaultBankAccount],
+      index,
+    ) => ({
+      id: demoId(501 + index),
+      name: name as string,
+      expectedAmount: expectedAmount as number,
+      dueDay: dueDay as number,
+      category: category as string | undefined,
+      defaultBankAccount: defaultBankAccount as string | undefined,
+      month: DemoMonth,
+      isPaid: isPaid as boolean,
+      paidAt: isPaid ? at(2) : undefined,
+      createdAt: at(1),
+      updatedAt: at(2),
+    }),
+  );
 }
 
 function createArtifacts(): ArtifactViewerDTO[] {

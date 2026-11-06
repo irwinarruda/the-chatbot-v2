@@ -26,6 +26,8 @@ export class TestMonthlyExpenseRepository implements MonthlyExpenseRepository {
       name: dto.name,
       expectedAmount: dto.expectedAmount,
       dueDay: dto.dueDay,
+      category: dto.category,
+      defaultBankAccount: dto.defaultBankAccount,
       month: dto.month ?? DemoMonth,
       isPaid: false,
       createdAt: DemoNow,
@@ -42,6 +44,12 @@ export class TestMonthlyExpenseRepository implements MonthlyExpenseRepository {
       expense.expectedAmount = dto.expectedAmount ?? undefined;
     }
     if (dto.dueDay !== undefined) expense.dueDay = dto.dueDay ?? undefined;
+    if (dto.category !== undefined) {
+      expense.category = dto.category ?? undefined;
+    }
+    if (dto.defaultBankAccount !== undefined) {
+      expense.defaultBankAccount = dto.defaultBankAccount ?? undefined;
+    }
     expense.updatedAt = DemoNow;
     return expense;
   }
@@ -52,7 +60,10 @@ export class TestMonthlyExpenseRepository implements MonthlyExpenseRepository {
     );
   }
 
-  async payFromAccount(id: string, _dto: PayMonthlyExpenseRequestDTO) {
+  async payFromAccount(id: string, dto: PayMonthlyExpenseRequestDTO) {
+    const expense = findExpense(id);
+    expense.category = dto.category;
+    expense.defaultBankAccount ??= dto.bankAccount;
     return this.setPaid(id, { isPaid: true });
   }
 

@@ -22,7 +22,9 @@ import {
 } from "./MonthlyExpenseForm";
 
 export function MonthlyExpenseDialog({
+  bankAccounts,
   canArchive,
+  categories,
   expense,
   isSubmitting,
   onClose,
@@ -31,7 +33,9 @@ export function MonthlyExpenseDialog({
   open,
   t,
 }: {
+  bankAccounts: string[];
   canArchive: boolean;
+  categories: string[];
   expense?: MonthlyExpenseDTO;
   isSubmitting: boolean;
   onClose: () => void;
@@ -127,6 +131,8 @@ export function MonthlyExpenseDialog({
       title={title}
     >
       <MonthlyExpenseForm
+        bankAccounts={bankAccounts}
+        categories={categories}
         expense={expense}
         formId={formId}
         hideActions

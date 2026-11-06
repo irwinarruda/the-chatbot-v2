@@ -1,4 +1,10 @@
-import { CalendarDays, CircleDollarSign, ReceiptText } from "lucide-react";
+import {
+  CalendarDays,
+  CircleDollarSign,
+  Landmark,
+  ReceiptText,
+  Tags,
+} from "lucide-react";
 import { type SubmitEvent, useEffect, useId, useRef, useState } from "react";
 import { Button } from "~/client/shared/components/ui/button";
 import {
@@ -7,6 +13,10 @@ import {
   FieldLabel,
 } from "~/client/shared/components/ui/field";
 import { Input } from "~/client/shared/components/ui/input";
+import {
+  NativeSelect,
+  NativeSelectOption,
+} from "~/client/shared/components/ui/native-select";
 import type { Dictionary } from "~/client/shared/i18n/dictionary";
 import type { MonthlyExpenseDTO } from "~/contracts/http/cash-flow/monthly-expense";
 
@@ -14,6 +24,8 @@ export interface MonthlyExpenseFormValue {
   name: string;
   expectedAmount?: number;
   dueDay?: number;
+  category?: string;
+  defaultBankAccount?: string;
 }
 
 type MonthlyExpenseFormErrors = {
@@ -23,6 +35,8 @@ type MonthlyExpenseFormErrors = {
 };
 
 export function MonthlyExpenseForm({
+  bankAccounts,
+  categories,
   expense,
   formId,
   hideActions = false,
@@ -31,6 +45,8 @@ export function MonthlyExpenseForm({
   onSubmit,
   t,
 }: {
+  bankAccounts: string[];
+  categories: string[];
   expense?: MonthlyExpenseDTO;
   formId?: string;
   hideActions?: boolean;
@@ -42,6 +58,8 @@ export function MonthlyExpenseForm({
   const [name, setName] = useState("");
   const [expectedAmount, setExpectedAmount] = useState("");
   const [dueDay, setDueDay] = useState("");
+  const [category, setCategory] = useState("");
+  const [defaultBankAccount, setDefaultBankAccount] = useState("");
   const [errors, setErrors] = useState<MonthlyExpenseFormErrors>({});
   const fieldId = useId();
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -50,12 +68,21 @@ export function MonthlyExpenseForm({
   const nameId = `${fieldId}-name`;
   const amountId = `${fieldId}-amount`;
   const dueDayId = `${fieldId}-due-day`;
+  const categoryId = `${fieldId}-category`;
+  const defaultBankAccountId = `${fieldId}-default-bank-account`;
+  const categoryOptions = withSavedOption(categories, expense?.category);
+  const bankAccountOptions = withSavedOption(
+    bankAccounts,
+    expense?.defaultBankAccount,
+  );
   const optionalHintId = `${fieldId}-optional-hint`;
 
   useEffect(() => {
     setName(expense?.name ?? "");
     setExpectedAmount(expense?.expectedAmount?.toString() ?? "");
     setDueDay(expense?.dueDay?.toString() ?? "");
+    setCategory(expense?.category ?? "");
+    setDefaultBankAccount(expense?.defaultBankAccount ?? "");
     setErrors({});
   }, [expense]);
 
@@ -93,7 +120,13 @@ export function MonthlyExpenseForm({
       return;
     }
 
-    onSubmit({ name: name.trim(), expectedAmount: amount, dueDay: day });
+    onSubmit({
+      name: name.trim(),
+      expectedAmount: amount,
+      dueDay: day,
+      category: category || undefined,
+      defaultBankAccount: defaultBankAccount || undefined,
+    });
   }
 
   return (
@@ -214,6 +247,60 @@ export function MonthlyExpenseForm({
             {errors.dueDay}
           </FieldError>
         </Field>
+        <Field>
+          <FieldLabel
+            className="font-sans text-muted-foreground text-xs uppercase tracking-wide"
+            htmlFor={categoryId}
+          >
+            <Tags
+              aria-hidden="true"
+              className="size-3.5 text-muted-foreground"
+            />
+            {t.categoryLabel}
+          </FieldLabel>
+          <NativeSelect
+            aria-describedby={!hideActions ? optionalHintId : undefined}
+            className="w-full"
+            id={categoryId}
+            onChange={(event) => setCategory(event.target.value)}
+            value={category}
+          >
+            <NativeSelectOption value="">{t.noCategory}</NativeSelectOption>
+            {categoryOptions.map((item) => (
+              <NativeSelectOption key={item} value={item}>
+                {item}
+              </NativeSelectOption>
+            ))}
+          </NativeSelect>
+        </Field>
+        <Field>
+          <FieldLabel
+            className="font-sans text-muted-foreground text-xs uppercase tracking-wide"
+            htmlFor={defaultBankAccountId}
+          >
+            <Landmark
+              aria-hidden="true"
+              className="size-3.5 text-muted-foreground"
+            />
+            {t.defaultBankAccountLabel}
+          </FieldLabel>
+          <NativeSelect
+            aria-describedby={!hideActions ? optionalHintId : undefined}
+            className="w-full"
+            id={defaultBankAccountId}
+            onChange={(event) => setDefaultBankAccount(event.target.value)}
+            value={defaultBankAccount}
+          >
+            <NativeSelectOption value="">
+              {t.noDefaultBankAccount}
+            </NativeSelectOption>
+            {bankAccountOptions.map((item) => (
+              <NativeSelectOption key={item} value={item}>
+                {item}
+              </NativeSelectOption>
+            ))}
+          </NativeSelect>
+        </Field>
       </div>
       {!hideActions && (
         <p
@@ -240,4 +327,9 @@ export function MonthlyExpenseForm({
       )}
     </form>
   );
+}
+
+function withSavedOption(options: string[], saved?: string): string[] {
+  if (!saved || options.includes(saved)) return options;
+  return [saved, ...options];
 }

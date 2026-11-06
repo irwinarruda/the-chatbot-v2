@@ -7,6 +7,8 @@ export interface MonthlyExpenseConfig {
   name: string;
   expectedAmount?: number;
   dueDay?: number;
+  category?: string;
+  defaultBankAccount?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -17,6 +19,8 @@ export interface RestoredMonthlyExpenseConfig {
   name: string;
   expectedAmount?: number;
   dueDay?: number;
+  category?: string;
+  defaultBankAccount?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,6 +31,8 @@ export class MonthlyExpense {
   name: string;
   expectedAmount?: number;
   dueDay?: number;
+  category?: string;
+  defaultBankAccount?: string;
   createdAt: Date;
   updatedAt: Date;
 
@@ -36,9 +42,14 @@ export class MonthlyExpense {
     }
     this.id = config.id ?? uuidv4();
     this.idUser = config.idUser;
-    this.name = this.validateName(config.name);
+    this.name = this.validateText("name", config.name);
     this.expectedAmount = this.validateExpectedAmount(config.expectedAmount);
     this.dueDay = this.validateDueDay(config.dueDay);
+    this.category = this.validateOptionalText("category", config.category);
+    this.defaultBankAccount = this.validateOptionalText(
+      "default bank account",
+      config.defaultBankAccount,
+    );
     this.createdAt = config.createdAt ?? new Date();
     this.updatedAt = config.updatedAt ?? new Date();
   }
@@ -48,7 +59,7 @@ export class MonthlyExpense {
   }
 
   rename(name: string): void {
-    this.name = this.validateName(name);
+    this.name = this.validateText("name", name);
     this.updatedAt = new Date();
   }
 
@@ -62,14 +73,35 @@ export class MonthlyExpense {
     this.updatedAt = new Date();
   }
 
-  private validateName(name: string): string {
-    const value = name.trim();
+  changeCategory(category?: string): void {
+    this.category = this.validateOptionalText("category", category);
+    this.updatedAt = new Date();
+  }
+
+  changeDefaultBankAccount(defaultBankAccount?: string): void {
+    this.defaultBankAccount = this.validateOptionalText(
+      "default bank account",
+      defaultBankAccount,
+    );
+    this.updatedAt = new Date();
+  }
+
+  private validateText(field: string, text: string): string {
+    const value = text.trim();
     if (!value || value.length > 160) {
       throw new ValidationException(
-        "Monthly expense name must be present and have at most 160 characters",
+        `Monthly expense ${field} must be present and have at most 160 characters`,
       );
     }
     return value;
+  }
+
+  private validateOptionalText(
+    field: string,
+    text?: string,
+  ): string | undefined {
+    if (text === undefined) return undefined;
+    return this.validateText(field, text);
   }
 
   private validateExpectedAmount(expectedAmount?: number): number | undefined {

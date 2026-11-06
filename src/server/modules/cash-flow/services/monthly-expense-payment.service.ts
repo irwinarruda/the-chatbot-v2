@@ -38,6 +38,25 @@ export class MonthlyExpensePaymentService {
       },
       `${id}:${dto.month}`,
     );
+    const recordedCategory = transaction.category.trim();
+    const recordedAccount = transaction.bankAccount.trim();
+    const category =
+      recordedCategory && recordedCategory !== item.expense.category
+        ? recordedCategory
+        : undefined;
+    const defaultBankAccount =
+      recordedAccount && !item.expense.defaultBankAccount
+        ? recordedAccount
+        : undefined;
+    if (category || defaultBankAccount) {
+      await this.monthlyExpenses.saveMonthlyExpensePaymentDetails({
+        idUser,
+        id,
+        month: dto.month,
+        category,
+        defaultBankAccount,
+      });
+    }
     return this.monthlyExpenses.setMonthlyExpensePaid(
       idUser,
       id,

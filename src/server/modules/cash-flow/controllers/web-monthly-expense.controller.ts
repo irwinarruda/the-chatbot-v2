@@ -22,6 +22,10 @@ export const Route = createFileRoute("/api/v1/web/monthly-expenses/$expenseId")(
             clearExpectedAmount: body.expectedAmount === null,
             dueDay: body.dueDay ?? undefined,
             clearDueDay: body.dueDay === null,
+            category: body.category ?? undefined,
+            clearCategory: body.category === null,
+            defaultBankAccount: body.defaultBankAccount ?? undefined,
+            clearDefaultBankAccount: body.defaultBankAccount === null,
             month: body.month,
           });
           return Http.json({ expense: toMonthlyExpenseResponse(expense) });

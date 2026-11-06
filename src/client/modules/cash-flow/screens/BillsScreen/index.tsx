@@ -139,6 +139,8 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
         name: value.name,
         expectedAmount: value.expectedAmount ?? null,
         dueDay: value.dueDay ?? null,
+        category: value.category ?? null,
+        defaultBankAccount: value.defaultBankAccount ?? null,
       });
       if (!expense) return;
       onCloseDialog();
@@ -398,7 +400,9 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
         />
       )}
       <MonthlyExpenseDialog
+        bankAccounts={dashboard.bankAccounts}
         canArchive={selectedMonth === currentMonth}
+        categories={dashboard.expenseCategories}
         expense={editingExpense}
         isSubmitting={isSubmitting}
         onClose={onCloseDialog}

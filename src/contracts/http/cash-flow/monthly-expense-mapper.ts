@@ -12,6 +12,8 @@ export function toMonthlyExpenseResponse(
     name: item.expense.name,
     expectedAmount: item.expense.expectedAmount,
     dueDay: item.expense.dueDay,
+    category: item.expense.category,
+    defaultBankAccount: item.expense.defaultBankAccount,
     month: item.month,
     isPaid: item.isPaid,
     paidAt: item.paidAt?.toISOString(),
