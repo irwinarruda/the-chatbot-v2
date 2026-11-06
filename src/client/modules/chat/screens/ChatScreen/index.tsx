@@ -316,7 +316,6 @@ export function ChatScreen() {
   return (
     <AppShell
       title={windowTitle}
-      wide
       activePath="/chat"
       layout="fill"
       dictionary={dictionary}

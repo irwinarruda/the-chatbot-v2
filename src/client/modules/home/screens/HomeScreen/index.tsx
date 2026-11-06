@@ -55,7 +55,6 @@ export function HomeScreen() {
       dictionary={dictionary}
       showLogout={isSignedIn}
       title={t.windowTitle}
-      wide
     >
       <TerminalPageHeader
         actions={

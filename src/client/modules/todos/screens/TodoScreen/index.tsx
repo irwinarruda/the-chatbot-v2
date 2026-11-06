@@ -118,7 +118,6 @@ export function TodoScreen({ search }: { search: TodoSearch }) {
   return (
     <AppShell
       title={t.windowTitle}
-      wide
       activePath="/todo"
       dictionary={dictionary}
       showLogout

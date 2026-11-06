@@ -16,7 +16,6 @@ export function ArtifactsScreen() {
       dictionary={dictionary}
       showLogout
       title={t.windowTitle}
-      wide
     >
       <TerminalPageHeader heading={t.heading} subtitle={t.subtitle} />
       <ArtifactList />

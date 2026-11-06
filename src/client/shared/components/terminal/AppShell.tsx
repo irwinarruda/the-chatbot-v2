@@ -1,5 +1,6 @@
 import { Link, useRouter } from "@tanstack/react-router";
 import {
+  Ellipsis,
   House,
   ListTodo,
   LogOut,
@@ -17,7 +18,19 @@ import {
 import { type ReactNode, useState } from "react";
 import { Alert, AlertDescription } from "~/client/shared/components/ui/alert";
 import { Button } from "~/client/shared/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "~/client/shared/components/ui/dropdown-menu";
 import { cn } from "~/client/shared/components/ui/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "~/client/shared/components/ui/tooltip";
 import { clientErrorMessage } from "~/client/shared/error/ApiError";
 import { usePrefs } from "~/client/shared/hooks/usePrefs";
 import type { Dictionary } from "~/client/shared/i18n/dictionary";
@@ -56,10 +69,32 @@ function AppBrand() {
   return (
     <Link
       to="/"
-      className="flex items-center gap-2 rounded-md px-2 py-1.5 font-semibold text-foreground text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+      className="flex shrink-0 items-center gap-2 rounded-md px-2 py-1.5 font-semibold text-foreground text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
     >
       <img className="size-6" src={src} alt="" />
       <span>The Chatbot</span>
+    </Link>
+  );
+}
+
+function AppNavTab({
+  isActive,
+  link,
+}: {
+  isActive: boolean;
+  link: AppNavLink;
+}) {
+  return (
+    <Link
+      to={link.href}
+      aria-current={isActive ? "page" : undefined}
+      className={cn(
+        "flex h-8 shrink-0 items-center rounded-md px-3 text-muted-foreground text-sm outline-none transition-colors",
+        "hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50",
+        "aria-[current=page]:bg-brand/12 aria-[current=page]:font-medium aria-[current=page]:text-primary",
+      )}
+    >
+      {link.label}
     </Link>
   );
 }
@@ -71,7 +106,7 @@ function AppNavItem({
 }: {
   isActive: boolean;
   link: AppNavLink;
-  onSelect?: () => void;
+  onSelect: () => void;
 }) {
   const Icon = link.icon;
 
@@ -81,13 +116,16 @@ function AppNavItem({
       onClick={onSelect}
       aria-current={isActive ? "page" : undefined}
       className={cn(
-        "flex min-h-11 items-center gap-2.5 rounded-md px-2.5 text-muted-foreground text-sm outline-none transition-colors pointer-fine:min-h-8",
-        "hover:bg-sidebar-accent hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50",
-        "aria-[current=page]:bg-sidebar-accent aria-[current=page]:font-medium aria-[current=page]:text-foreground",
+        "flex min-h-11 items-center gap-3 rounded-lg px-3 text-foreground text-sm outline-none transition-colors",
+        "hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50",
+        "aria-[current=page]:bg-brand/12 aria-[current=page]:font-medium aria-[current=page]:text-primary",
       )}
     >
       <Icon
-        className={cn("size-4 shrink-0", isActive && "text-primary")}
+        className={cn(
+          "size-4 shrink-0",
+          isActive ? "text-primary" : "text-muted-foreground",
+        )}
         aria-hidden="true"
       />
       <span className="truncate">{link.label}</span>
@@ -103,7 +141,6 @@ export function AppShell({
   showLogout = false,
   showNavigation,
   title,
-  wide = false,
 }: {
   activePath?: AppPath;
   children: ReactNode;
@@ -112,7 +149,6 @@ export function AppShell({
   showLogout?: boolean;
   showNavigation?: boolean;
   title: string;
-  wide?: boolean;
 }) {
   const router = useRouter();
   const prefs = usePrefs();
@@ -143,6 +179,7 @@ export function AppShell({
   const activeLabel =
     navLinks.find((link) => link.href === activePath)?.label ?? title;
   const closeLabel = dictionary?.common.close ?? title;
+  const moreLabel = dictionary?.common.more ?? "More";
   const skipToContentLabel = dictionary?.common.skipToContent ?? title;
   const logoutLabel = dictionary?.common.logout ?? "Log out";
   const openNavigationLabel = dictionary?.common.openNavigation ?? activeLabel;
@@ -175,48 +212,27 @@ export function AppShell({
     await logout().catch(keepErrorInSession);
   }
 
-  const preferenceControls = (
-    <>
-      <MonetaryPrivacyControl
-        hideLabel={
-          dictionary?.common.hideMonetaryValues ?? "Hide monetary values"
-        }
-        showLabel={
-          dictionary?.common.showMonetaryValues ?? "Show monetary values"
-        }
-      />
-      <TerminalChromeButton onClick={onLocaleToggle} title={prefs.locale}>
-        {prefs.locale === "pt-BR" ? "PT" : "EN"}
-      </TerminalChromeButton>
-      <TerminalChromeButton onClick={toggleTheme} title={themeLabel}>
-        {prefs.theme === "light" ? <Sun /> : <Moon />}
-      </TerminalChromeButton>
-    </>
+  const privacyControl = (
+    <MonetaryPrivacyControl
+      hideLabel={
+        dictionary?.common.hideMonetaryValues ?? "Hide monetary values"
+      }
+      showLabel={
+        dictionary?.common.showMonetaryValues ?? "Show monetary values"
+      }
+    />
   );
 
-  const logoutControl = showLogout && (
-    <Button
-      type="button"
-      onClick={onLogout}
-      variant="ghost"
-      size="sm"
-      className="w-full justify-start gap-2.5 px-2.5 font-normal text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-    >
-      <LogOut className="size-4" />
-      {logoutLabel}
-    </Button>
+  const localeControl = (
+    <TerminalChromeButton onClick={onLocaleToggle} title={prefs.locale}>
+      {prefs.locale === "pt-BR" ? "PT" : "EN"}
+    </TerminalChromeButton>
   );
 
-  const privacyLink = (
-    <Link
-      to="/privacy"
-      onClick={onNavigationSelect}
-      aria-current={activePath === "/privacy" ? "page" : undefined}
-      className="flex min-h-11 items-center gap-2.5 rounded-md px-2.5 text-muted-foreground text-sm outline-none hover:bg-sidebar-accent hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 aria-[current=page]:text-foreground pointer-fine:min-h-8"
-    >
-      <Shield className="size-4" aria-hidden="true" />
-      {privacyLabel}
-    </Link>
+  const themeControl = (
+    <TerminalChromeButton onClick={toggleTheme} title={themeLabel}>
+      {prefs.theme === "light" ? <Sun /> : <Moon />}
+    </TerminalChromeButton>
   );
 
   const skipLink = (
@@ -241,14 +257,16 @@ export function AppShell({
         <div className="min-viewport-height flex flex-col bg-background">
           <header className="flex h-14 items-center justify-between gap-2 px-4 sm:px-6">
             <AppBrand />
-            <div className="flex items-center gap-1">{preferenceControls}</div>
+            <div className="flex items-center gap-1">
+              {privacyControl}
+              {localeControl}
+              {themeControl}
+            </div>
           </header>
           <main
             id="main-content"
             tabIndex={-1}
-            className={cn(
-              "flex flex-1 flex-col items-center justify-center px-4 pb-16 sm:px-6",
-            )}
+            className="flex flex-1 flex-col items-center justify-center px-4 pb-16 sm:px-6"
           >
             <div className="w-full max-w-md">
               {sessionAlert}
@@ -265,57 +283,131 @@ export function AppShell({
       {skipLink}
       <div
         className={cn(
-          "flex flex-col bg-background lg:flex-row",
+          "flex flex-col bg-desk lg:px-8 lg:py-6",
           isFill ? "viewport-height overflow-hidden" : "min-viewport-height",
         )}
       >
-        <aside className="viewport-height sticky top-0 hidden w-60 shrink-0 flex-col gap-4 overflow-y-auto border-sidebar-border border-r bg-sidebar px-3 py-3 lg:flex">
-          <AppBrand />
-          <nav aria-label={title} className="flex flex-col gap-0.5">
-            {navLinks.map((link) => (
-              <AppNavItem
-                key={link.href}
-                link={link}
-                isActive={link.href === activePath}
-              />
-            ))}
-          </nav>
-          <div className="mt-auto flex flex-col gap-0.5">
-            {privacyLink}
-            {logoutControl}
-            <div className="mt-2 flex items-center gap-1 border-sidebar-border border-t px-1 pt-3">
-              {preferenceControls}
-            </div>
-          </div>
-        </aside>
-        <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-border border-b bg-background/95 px-2 backdrop-blur-sm lg:hidden">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={onNavigationOpen}
-            aria-expanded={isNavigationOpen}
-            aria-haspopup="dialog"
-            aria-label={openNavigationLabel}
+        {!isFill && (
+          <div
+            aria-hidden="true"
+            className="fixed inset-x-0 top-0 z-30 hidden h-6 bg-desk lg:block"
+          />
+        )}
+        <div
+          className={cn(
+            "mx-auto flex w-full max-w-5xl flex-1 flex-col lg:rounded-xl lg:shadow-scrim/10 lg:shadow-xl",
+            isFill && "min-h-0",
+          )}
+        >
+          <header
+            className={cn(
+              "z-30 shrink-0 bg-desk",
+              !isFill && "sticky top-0 lg:top-6",
+            )}
           >
-            <Menu className="size-5" />
-          </Button>
-          <span className="min-w-0 flex-1 truncate font-semibold text-foreground text-sm">
-            {activeLabel}
-          </span>
-          <div className="flex shrink-0 items-center gap-1">
-            <TerminalChromeButton onClick={toggleTheme} title={themeLabel}>
-              {prefs.theme === "light" ? <Sun /> : <Moon />}
-            </TerminalChromeButton>
-          </div>
-        </header>
+            <div className="flex h-14 items-center gap-1 border-border border-b bg-card px-2 lg:h-12 lg:rounded-t-xl lg:border lg:px-2.5">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={onNavigationOpen}
+                aria-expanded={isNavigationOpen}
+                aria-haspopup="dialog"
+                aria-label={openNavigationLabel}
+                className="min-h-11 min-w-0 justify-start gap-2.5 px-2.5 font-semibold text-foreground text-sm lg:hidden"
+              >
+                <Menu className="size-5 text-muted-foreground" />
+                <span className="truncate">{activeLabel}</span>
+              </Button>
+              <div className="hidden lg:flex">
+                <AppBrand />
+              </div>
+              <nav
+                aria-label={title}
+                className="ml-3 hidden min-w-0 items-center gap-0.5 lg:flex"
+              >
+                {navLinks.map((link) => (
+                  <AppNavTab
+                    key={link.href}
+                    link={link}
+                    isActive={link.href === activePath}
+                  />
+                ))}
+              </nav>
+              <div className="ml-auto flex shrink-0 items-center gap-0.5">
+                {privacyControl}
+                <div className="hidden lg:flex">{localeControl}</div>
+                {themeControl}
+                <DropdownMenu>
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <DropdownMenuTrigger
+                          render={
+                            <Button
+                              aria-label={moreLabel}
+                              className="hidden text-muted-foreground hover:bg-muted hover:text-foreground lg:inline-flex"
+                              size="icon-sm"
+                              type="button"
+                              variant="ghost"
+                            />
+                          }
+                        />
+                      }
+                    >
+                      <Ellipsis />
+                    </TooltipTrigger>
+                    <TooltipContent>{moreLabel}</TooltipContent>
+                  </Tooltip>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem render={<Link to="/privacy" />}>
+                      <Shield />
+                      {privacyLabel}
+                    </DropdownMenuItem>
+                    {showLogout && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={onLogout}
+                          variant="destructive"
+                        >
+                          <LogOut />
+                          {logoutLabel}
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+          </header>
+          <main
+            id="main-content"
+            tabIndex={-1}
+            className={cn(
+              "flex min-w-0 flex-1 flex-col bg-background outline-none lg:rounded-b-xl lg:border-border lg:border-x lg:border-b",
+              isFill && "min-h-0 overflow-hidden",
+            )}
+          >
+            {isFill ? (
+              <div className="flex min-h-0 flex-1 flex-col">
+                {sessionAlert}
+                {children}
+              </div>
+            ) : (
+              <div className="flex w-full flex-1 flex-col px-4 pt-6 pb-12 sm:px-8 lg:pt-8">
+                {sessionAlert}
+                {children}
+              </div>
+            )}
+          </main>
+        </div>
         <TerminalResponsiveOverlay
           open={isNavigationOpen}
           onOpenChange={onNavigationChange}
           closeLabel={closeLabel}
           title={<AppBrand />}
           description={openNavigationLabel}
-          contentClassName="border-border bg-sidebar"
+          contentClassName="border-border bg-card"
           bodyClassName="pt-2"
           descriptionClassName="sr-only"
           headerClassName="items-center"
@@ -331,38 +423,33 @@ export function AppShell({
             ))}
           </nav>
           <div className="mt-3 flex flex-col gap-0.5 border-border border-t pt-3">
-            {privacyLink}
-            {logoutControl}
+            <Link
+              to="/privacy"
+              onClick={onNavigationSelect}
+              aria-current={activePath === "/privacy" ? "page" : undefined}
+              className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-muted-foreground text-sm outline-none hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 aria-[current=page]:text-foreground"
+            >
+              <Shield className="size-4" aria-hidden="true" />
+              {privacyLabel}
+            </Link>
+            {showLogout && (
+              <Button
+                type="button"
+                onClick={onLogout}
+                variant="ghost"
+                className="min-h-11 w-full justify-start gap-3 rounded-lg px-3 font-normal text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+              >
+                <LogOut className="size-4" />
+                {logoutLabel}
+              </Button>
+            )}
             <div className="mt-2 flex items-center gap-1 px-1">
-              {preferenceControls}
+              {privacyControl}
+              {localeControl}
+              {themeControl}
             </div>
           </div>
         </TerminalResponsiveOverlay>
-        <main
-          id="main-content"
-          tabIndex={-1}
-          className={cn(
-            "flex min-w-0 flex-1 flex-col outline-none",
-            isFill && "min-h-0",
-          )}
-        >
-          {isFill ? (
-            <div className="flex min-h-0 flex-1 flex-col">
-              {sessionAlert}
-              {children}
-            </div>
-          ) : (
-            <div
-              className={cn(
-                "mx-auto flex w-full flex-1 flex-col px-4 pt-6 pb-12 sm:px-8 lg:pt-10",
-                wide ? "max-w-4xl" : "max-w-2xl",
-              )}
-            >
-              {sessionAlert}
-              {children}
-            </div>
-          )}
-        </main>
       </div>
     </>
   );

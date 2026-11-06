@@ -33,7 +33,7 @@ export function TerminalChromeButton({
             size="icon-sm"
             className={cn(
               "font-medium font-mono text-muted-foreground text-xs",
-              "hover:bg-sidebar-accent hover:text-foreground",
+              "hover:bg-muted hover:text-foreground",
               className,
             )}
           />

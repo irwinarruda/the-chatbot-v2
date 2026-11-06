@@ -12,6 +12,7 @@
     "dismiss": "Dismiss",
     "hideMonetaryValues": "Hide monetary values",
     "hiddenMonetaryValue": "Hidden monetary value",
+    "more": "More",
     "logout": "Log out",
     "openNavigation": "Open navigation",
     "pauseAudio": "Pause audio",
@@ -109,7 +110,7 @@
     "windowTitle": "Not found",
     "heading": "404",
     "subtitle": "Page not found",
-    "body": "This page does not exist. Use the sidebar to get back to your workspace.",
+    "body": "This page does not exist. Use the menu above to get back to your workspace.",
     "homeAction": "Back to home"
   },
   "chatPage": {

@@ -12,6 +12,7 @@
     "dismiss": "Dispensar",
     "hideMonetaryValues": "Ocultar valores monetários",
     "hiddenMonetaryValue": "Valor monetário oculto",
+    "more": "Mais",
     "logout": "Sair",
     "openNavigation": "Abrir navegação",
     "pauseAudio": "Pausar áudio",
@@ -109,7 +110,7 @@
     "windowTitle": "Não encontrado",
     "heading": "404",
     "subtitle": "Página não encontrada",
-    "body": "Esta página não existe. Use a barra lateral para voltar ao seu espaço.",
+    "body": "Esta página não existe. Use o menu acima para voltar ao seu espaço.",
     "homeAction": "Voltar ao início"
   },
   "chatPage": {

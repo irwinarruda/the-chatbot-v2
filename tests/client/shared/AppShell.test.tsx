@@ -32,7 +32,7 @@ beforeEach(() => {
 });
 
 describe("AppShell", () => {
-  test("marks the active module in the sidebar", () => {
+  test("marks the active module among the top-level tabs", () => {
     render(
       <AppShell activePath="/todo" dictionary={dictionary} title="Todos">
         <p>content</p>
@@ -59,6 +59,31 @@ describe("AppShell", () => {
     );
 
     expect(await screen.findByRole("dialog")).toBeInTheDocument();
+  });
+
+  test("keeps privacy and log out in the more menu", async () => {
+    const user = userEvent.setup();
+    render(
+      <AppShell
+        activePath="/todo"
+        dictionary={dictionary}
+        showLogout
+        title="Todos"
+      >
+        <p>content</p>
+      </AppShell>,
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: dictionary.common.more }),
+    );
+
+    expect(
+      await screen.findByRole("menuitem", { name: dictionary.nav.privacy }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("menuitem", { name: dictionary.common.logout }),
+    ).toBeInTheDocument();
   });
 
   test("renders signed-out pages without the module navigation", () => {
