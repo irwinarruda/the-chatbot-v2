@@ -1,0 +1,389 @@
+{
+  "dev": {
+    "command": "bun run dev:mock",
+    "url": "http://localhost:3300",
+    "readyTimeoutSeconds": 120
+  },
+  "viewports": [
+    {
+      "name": "desktop-dark",
+      "width": 1440,
+      "height": 900,
+      "colorScheme": "dark",
+      "cookies": [
+        {
+          "name": "the-chatbot-prefs",
+          "value": "%7B%22locale%22%3A%22en%22%2C%22theme%22%3A%22dark%22%7D"
+        }
+      ]
+    },
+    {
+      "name": "desktop-light",
+      "width": 1440,
+      "height": 900,
+      "colorScheme": "light",
+      "cookies": [
+        {
+          "name": "the-chatbot-prefs",
+          "value": "%7B%22locale%22%3A%22en%22%2C%22theme%22%3A%22light%22%7D"
+        }
+      ],
+      "pages": "key"
+    },
+    {
+      "name": "mobile-dark",
+      "width": 390,
+      "height": 844,
+      "colorScheme": "dark",
+      "cookies": [
+        {
+          "name": "the-chatbot-prefs",
+          "value": "%7B%22locale%22%3A%22en%22%2C%22theme%22%3A%22dark%22%7D"
+        }
+      ],
+      "pages": "key"
+    },
+    {
+      "name": "mobile-light",
+      "width": 390,
+      "height": 844,
+      "colorScheme": "light",
+      "cookies": [
+        {
+          "name": "the-chatbot-prefs",
+          "value": "%7B%22locale%22%3A%22en%22%2C%22theme%22%3A%22light%22%7D"
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "module": "home",
+      "name": "welcome",
+      "path": "/",
+      "key": true
+    },
+    {
+      "module": "home",
+      "name": "privacy",
+      "path": "/privacy"
+    },
+    {
+      "module": "chat",
+      "name": "conversation",
+      "path": "/chat",
+      "key": true
+    },
+    {
+      "module": "chat",
+      "name": "activity-expanded",
+      "path": "/chat",
+      "steps": [
+        {
+          "action": "click",
+          "selector": "text=Worked"
+        },
+        {
+          "action": "wait",
+          "value": 500
+        }
+      ]
+    },
+    {
+      "module": "todos",
+      "name": "list",
+      "path": "/todo",
+      "key": true
+    },
+    {
+      "module": "todos",
+      "name": "detail",
+      "path": "/todo/00000000-0000-4000-8000-000000000301"
+    },
+    {
+      "module": "todos",
+      "name": "new-task-dialog",
+      "path": "/todo",
+      "fullPage": false,
+      "steps": [
+        {
+          "action": "click",
+          "selector": "text=new task"
+        },
+        {
+          "action": "waitFor",
+          "selector": "[role=dialog], [role=alertdialog]"
+        },
+        {
+          "action": "wait",
+          "value": 600
+        }
+      ]
+    },
+    {
+      "module": "todos",
+      "name": "no-results",
+      "path": "/todo",
+      "steps": [
+        {
+          "action": "fill",
+          "selector": "input[placeholder='search tasks...']",
+          "value": "zzzz"
+        },
+        {
+          "action": "wait",
+          "value": 800
+        }
+      ]
+    },
+    {
+      "module": "notes",
+      "name": "list",
+      "path": "/notes",
+      "key": true
+    },
+    {
+      "module": "notes",
+      "name": "detail",
+      "path": "/notes/00000000-0000-4000-8000-000000000401"
+    },
+    {
+      "module": "notes",
+      "name": "no-results",
+      "path": "/notes",
+      "steps": [
+        {
+          "action": "fill",
+          "selector": "input[placeholder='search notes...']",
+          "value": "zzzz"
+        },
+        {
+          "action": "wait",
+          "value": 800
+        }
+      ]
+    },
+    {
+      "module": "artifacts",
+      "name": "list",
+      "path": "/artifacts",
+      "key": true
+    },
+    {
+      "module": "artifacts",
+      "name": "viewer",
+      "path": "/a/00000000-0000-4000-8000-000000000601"
+    },
+    {
+      "module": "cash-flow",
+      "name": "dashboard",
+      "path": "/cash-flow",
+      "key": true
+    },
+    {
+      "module": "cash-flow",
+      "name": "new-transaction-dialog",
+      "path": "/cash-flow",
+      "fullPage": false,
+      "steps": [
+        {
+          "action": "click",
+          "selector": "text=new transaction"
+        },
+        {
+          "action": "waitFor",
+          "selector": "[role=dialog], [role=alertdialog]"
+        },
+        {
+          "action": "wait",
+          "value": 600
+        }
+      ]
+    },
+    {
+      "module": "cash-flow",
+      "name": "transfer-dialog",
+      "path": "/cash-flow",
+      "fullPage": false,
+      "steps": [
+        {
+          "action": "click",
+          "selector": "text=Transfer between accounts"
+        },
+        {
+          "action": "waitFor",
+          "selector": "[role=dialog], [role=alertdialog]"
+        },
+        {
+          "action": "wait",
+          "value": 600
+        }
+      ]
+    },
+    {
+      "module": "cash-flow",
+      "name": "sync-dialog",
+      "path": "/cash-flow",
+      "fullPage": false,
+      "steps": [
+        {
+          "action": "click",
+          "selector": "text=sync balance"
+        },
+        {
+          "action": "waitFor",
+          "selector": "[role=dialog], [role=alertdialog]"
+        },
+        {
+          "action": "wait",
+          "value": 600
+        }
+      ]
+    },
+    {
+      "module": "cash-flow",
+      "name": "delete-latest-confirm",
+      "path": "/cash-flow",
+      "fullPage": false,
+      "steps": [
+        {
+          "action": "click",
+          "selector": "[aria-label='Delete latest transaction']"
+        },
+        {
+          "action": "waitFor",
+          "selector": "[role=dialog], [role=alertdialog]"
+        },
+        {
+          "action": "wait",
+          "value": 600
+        }
+      ]
+    },
+    {
+      "module": "cash-flow",
+      "name": "no-results",
+      "path": "/cash-flow",
+      "steps": [
+        {
+          "action": "fill",
+          "selector": "input[placeholder='description, category, or account...']",
+          "value": "zzzz"
+        },
+        {
+          "action": "wait",
+          "value": 800
+        }
+      ]
+    },
+    {
+      "module": "bills",
+      "name": "checklist",
+      "path": "/bills",
+      "key": true
+    },
+    {
+      "module": "bills",
+      "name": "new-bill-dialog",
+      "path": "/bills",
+      "fullPage": false,
+      "steps": [
+        {
+          "action": "click",
+          "selector": "text=new monthly bill"
+        },
+        {
+          "action": "waitFor",
+          "selector": "[role=dialog], [role=alertdialog]"
+        },
+        {
+          "action": "wait",
+          "value": 600
+        }
+      ]
+    },
+    {
+      "module": "bills",
+      "name": "edit-bill-dialog",
+      "path": "/bills",
+      "fullPage": false,
+      "steps": [
+        {
+          "action": "click",
+          "selector": "[aria-label='Edit bill']"
+        },
+        {
+          "action": "waitFor",
+          "selector": "[role=dialog], [role=alertdialog]"
+        },
+        {
+          "action": "wait",
+          "value": 600
+        }
+      ]
+    },
+    {
+      "module": "bills",
+      "name": "pay-from-account-dialog",
+      "path": "/bills",
+      "fullPage": false,
+      "steps": [
+        {
+          "action": "click",
+          "selector": "[aria-label='Pay from account'] >> nth=2"
+        },
+        {
+          "action": "waitFor",
+          "selector": "[role=dialog], [role=alertdialog]"
+        },
+        {
+          "action": "wait",
+          "value": 600
+        }
+      ]
+    },
+    {
+      "module": "account",
+      "name": "login",
+      "path": "/login",
+      "key": true
+    },
+    {
+      "module": "account",
+      "name": "not-registered",
+      "path": "/not-registered"
+    },
+    {
+      "module": "account",
+      "name": "google-thank-you",
+      "path": "/google/thank-you"
+    },
+    {
+      "module": "account",
+      "name": "google-already-signed-in",
+      "path": "/google/already-signed-in"
+    }
+  ],
+  "references": [
+    {
+      "name": "t3-code",
+      "notes": "Main inspiration (user's own words: inspirations are apps like T3 Code, Codex and Claude Code). Screens: new thread, usage limits, settings. The Chatbot is more than a chat app (chat, todos, notes, artifacts, cash flow, monthly bills), so take the base from these apps: their beauty, how easy the screens are to read, and how coherent they are with each other, not just the chat idea. Must work in both dark and light mode."
+    },
+    {
+      "name": "codex",
+      "notes": "Main inspiration (Codex desktop app). Screens: a conversation and an images gallery. The Chatbot is more than a chat app (chat, todos, notes, artifacts, cash flow, monthly bills), so take the base from these apps: their beauty, how easy the screens are to read, and how coherent they are with each other, not just the chat idea. Must work in both dark and light mode."
+    },
+    {
+      "name": "claude-code",
+      "notes": "Main inspiration (Claude Code desktop app): a conversation with a side panel. The Chatbot is more than a chat app (chat, todos, notes, artifacts, cash flow, monthly bills), so take the base from these apps: their beauty, how easy the screens are to read, and how coherent they are with each other, not just the chat idea. Must work in both dark and light mode."
+    },
+    {
+      "name": "linear",
+      "notes": "User: 'Linear is a good reference too.' Screen: an issue with an agent panel. The Chatbot is more than a chat app (chat, todos, notes, artifacts, cash flow, monthly bills), so take the base from these apps: their beauty, how easy the screens are to read, and how coherent they are with each other, not just the chat idea. Must work in both dark and light mode."
+    }
+  ],
+  "goal": {
+    "threshold": 9,
+    "maxRounds": 8
+  }
+}

@@ -12,7 +12,7 @@
     "dismiss": "Dismiss",
     "hideMonetaryValues": "Hide monetary values",
     "hiddenMonetaryValue": "Hidden monetary value",
-    "logout": "logout",
+    "logout": "Log out",
     "openNavigation": "Open navigation",
     "pauseAudio": "Pause audio",
     "playAudio": "Play audio",
@@ -22,20 +22,20 @@
     "switchToLightTheme": "Use light theme"
   },
   "nav": {
-    "home": "home",
-    "privacy": "privacy",
-    "chat": "chat",
-    "todo": "todo",
-    "notes": "notes",
-    "artifacts": "artifacts",
-    "cashFlow": "cash flow",
-    "bills": "bills"
+    "home": "Home",
+    "privacy": "Privacy",
+    "chat": "Chat",
+    "todo": "Todos",
+    "notes": "Notes",
+    "artifacts": "Artifacts",
+    "cashFlow": "Cash flow",
+    "bills": "Bills"
   },
   "welcomePage": {
     "windowTitle": "the-chatbot: ~/welcome",
     "heading": "The Chatbot",
-    "subtitle": "Web · WhatsApp · Google Sheets · AI",
-    "description": "is your personal workspace for conversations, tasks, notes, cash flow, and monthly bills — available in the browser and through WhatsApp.",
+    "subtitle": "Your personal assistant on the web and WhatsApp.",
+    "description": "A personal workspace for conversations, tasks, notes, cash flow and monthly bills. Pick an area below, or just ask in chat.",
     "features": {
       "chat": {
         "title": "AI Chat",
@@ -68,7 +68,8 @@
         "tags": ["#recurring", "#checklist"]
       }
     },
-    "footerPrompt": "Choose a workspace to get started"
+    "footerPrompt": "Choose a workspace to get started",
+    "primaryAction": "Open chat"
   },
   "privacyPage": {
     "windowTitle": "the-chatbot: ~/privacy",
@@ -76,20 +77,22 @@
   },
   "thankYouPage": {
     "windowTitle": "the-chatbot: ~/auth/success",
-    "heading": "Thank you!",
-    "subtitle": "Account connected successfully",
+    "heading": "Google account connected",
+    "subtitle": "You are all set",
     "greeting": "Welcome to",
-    "body": "Thank you for trusting us. Your Google account has been successfully authenticated and you are ready to explore all features.",
-    "footerPrompt": "You can now safely close this window"
+    "body": "The assistant can now use your Google account with your spreadsheets. Head back to WhatsApp or open the web app.",
+    "footerPrompt": "You can also close this window and return to WhatsApp.",
+    "openAction": "Open The Chatbot"
   },
   "alreadySignedInPage": {
     "windowTitle": "the-chatbot: ~/auth/status",
-    "heading": "Already connected!",
+    "heading": "Already connected",
     "subtitle": "Your Google session is active",
     "badge": "Connected",
     "greeting": "Welcome back to",
-    "body": "We detected an existing authentication for your Google account. Your session has been automatically updated and you are ready to continue.",
-    "footerPrompt": "You can now safely close this window"
+    "body": "This Google account was already connected, so we refreshed the session. Nothing else to do.",
+    "footerPrompt": "You can also close this window and return to WhatsApp.",
+    "openAction": "Open The Chatbot"
   },
   "notFoundPage": {
     "windowTitle": "the-chatbot: ~/404",
@@ -106,8 +109,8 @@
     "errorMicrophone": "Could not access microphone. Check permissions.",
     "logout": "logout",
     "emptyState": "Send a message to start chatting",
-    "you": "you",
-    "bot": "bot",
+    "you": "You",
+    "bot": "The Chatbot",
     "responding": "Thinking...",
     "respondingElapsed": "Thinking for {seconds}s",
     "showMoreTranscript": "Show transcription",
@@ -146,10 +149,10 @@
   },
   "todoPage": {
     "windowTitle": "the-chatbot: ~/todo",
-    "heading": "Terminal Todos",
+    "heading": "Todos",
     "subtitle": "Review tasks captured from chat and keep your queue moving.",
     "loading": "Loading...",
-    "listLabel": "task buffer",
+    "listLabel": "Tasks",
     "detailTitle": "Todo detail",
     "chatAction": "chat",
     "searchPlaceholder": "search tasks...",
@@ -171,22 +174,31 @@
     "deleteAction": "Delete",
     "deleteConfirmation": "Delete this todo? This action cannot be undone.",
     "cancelAction": "Cancel",
-    "emptyState": "No todos match this terminal query.",
+    "emptyState": "No tasks match these filters.",
     "audioLabel": "source audio",
     "transcriptLabel": "transcript",
     "errorLoading": "Failed to load todos. Please try again.",
     "errorSaving": "Failed to save todo. Please try again.",
-    "errorDeleting": "Failed to delete todo. Please try again."
+    "errorDeleting": "Failed to delete todo. Please try again.",
+    "dueOverdue": "Overdue",
+    "dueToday": "Due today",
+    "duePrefix": "Due",
+    "statusFilterLabel": "Status",
+    "dueFilterLabel": "Due date filter",
+    "dueDateFilterLabel": "Due on",
+    "statusAllShort": "All statuses",
+    "emptyAllDone": "Nothing left to do",
+    "emptyAllDoneHint": "New tasks from chat or this page show up here."
   },
   "notesPage": {
     "windowTitle": "the-chatbot: ~/notes",
-    "heading": "Terminal Notes",
+    "heading": "Notes",
     "subtitle": "Capture ideas, links, and lasting context as portable Markdown.",
-    "listLabel": "note index",
+    "listLabel": "All notes",
     "searchPlaceholder": "search notes...",
     "newNamePlaceholder": "New note name",
     "createAction": "Create note",
-    "emptyState": "No notes match this terminal query.",
+    "emptyState": "No notes match this search.",
     "emptyNote": "Nothing here yet.",
     "selectState": "Select a note or create one to start writing.",
     "loading": "Loading notes...",
@@ -211,14 +223,17 @@
     "errorLoading": "Failed to load notes. Please try again.",
     "errorSaving": "Failed to save the note. The draft is still here.",
     "errorDeleting": "Failed to delete the note. Please try again.",
-    "errorRefining": "The AI could not refactor this draft. Please try again."
+    "errorRefining": "The AI could not refactor this draft. Please try again.",
+    "clearSearch": "Clear search",
+    "cancelAction": "Cancel",
+    "deleteTitle": "Delete “{name}”?"
   },
   "artifactsPage": {
     "windowTitle": "the-chatbot: ~/artifacts",
     "viewerWindowTitle": "the-chatbot: ~/artifact",
     "heading": "HTML Artifacts",
     "subtitle": "Publish structured pages from your coding agents and share them without giving their code access to the application.",
-    "listLabel": "artifact index",
+    "listLabel": "Published artifacts",
     "loading": "Loading artifacts...",
     "emptyState": "No artifacts have been published yet. Use the global publishing skill to create the first one.",
     "tokenTitle": "Agent upload token",
@@ -248,7 +263,10 @@
     "errorSaving": "Failed to update artifact visibility. Please try again.",
     "errorDeleting": "Failed to delete the artifact. Please try again.",
     "errorToken": "Failed to update the upload token. Please try again.",
-    "errorCopy": "Could not copy the skill configuration. Copy it manually before leaving this page."
+    "errorCopy": "Could not copy the skill configuration. Copy it manually before leaving this page.",
+    "cancelAction": "Cancel",
+    "deleteTitle": "Delete “{name}”?",
+    "backAction": "Artifacts"
   },
   "cashFlowPage": {
     "windowTitle": "the-chatbot: ~/cash-flow",
@@ -264,7 +282,7 @@
     "syncHint": "Enter the real balance. The difference becomes an adjustment transaction, just like in chat.",
     "netBalanceLabel": "net balance",
     "accountBalancesLabel": "account balances",
-    "listLabel": "transaction ledger",
+    "listLabel": "Transactions",
     "results": "results",
     "loadMoreAction": "Load more transactions",
     "loading": "Loading cash flow...",
@@ -321,7 +339,8 @@
     "transferDeleteHint": "This removes both the debit and credit. Both account balances will be updated.",
     "transferDeleteAction": "Delete transfer",
     "transferAccountsHint": "Add at least two accounts to your spreadsheet to transfer money.",
-    "transferValidationError": "Choose different accounts, a valid date, and a positive amount with up to two decimal places."
+    "transferValidationError": "Choose different accounts, a valid date, and a positive amount with up to two decimal places.",
+    "filtersAction": "Filters"
   },
   "billsPage": {
     "windowTitle": "the-chatbot: ~/bills",
@@ -394,7 +413,10 @@
     "paymentSelectAccount": "Choose an account",
     "paymentSelectCategory": "Choose a category",
     "paymentCategoryHint": "Saved to this bill for future payments.",
-    "paymentAccountHint": "Becomes this bill's default account."
+    "paymentAccountHint": "Becomes this bill's default account.",
+    "payAction": "Pay",
+    "leftToPay": "Left to pay",
+    "paidSummary": "{paid} of {total} bills paid · {percent}% of the amount"
   },
   "loginPage": {
     "windowTitle": "the-chatbot: ~/login",
@@ -402,13 +424,14 @@
     "subtitle": "Use your Google account to continue",
     "body": "Sign in with the same Google account already registered in The Chatbot. After authentication, you will return to the workspace you requested.",
     "loginButton": "Log in with Google",
-    "footerPrompt": "Authenticate with Google to open your workspace"
+    "footerPrompt": "You return to the page you asked for after signing in."
   },
   "notRegisteredPage": {
     "windowTitle": "the-chatbot: ~/not-registered",
-    "heading": "Not Registered",
-    "subtitle": "Account not found",
-    "body": "You need to register via WhatsApp before using The Chatbot on the web. Send a message to the WhatsApp bot to get started.",
-    "backLink": "Back to home"
+    "heading": "No account found",
+    "subtitle": "This Google account is not registered yet",
+    "body": "The Chatbot starts on WhatsApp. Send any message to the bot to create your account, then sign in here with the same Google account.",
+    "backLink": "Back to home",
+    "retryAction": "Try another Google account"
   }
 }

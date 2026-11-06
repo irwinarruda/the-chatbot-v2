@@ -6,7 +6,7 @@ export function ThemeLogo() {
 
   return (
     <img
-      className="terminal-logo-glow mx-auto mb-4 block size-12 sm:size-14"
+      className="terminal-logo-glow mb-4 block size-12"
       src={src}
       alt="The Chatbot"
     />

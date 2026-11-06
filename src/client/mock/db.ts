@@ -373,8 +373,34 @@ function createArtifacts(): ArtifactViewerDTO[] {
     title: title as string,
     visibility: visibility as ArtifactVisibility,
     version: version as number,
-    renderedHtml: `<!doctype html><html><body><h1>${title}</h1><p>A published artifact in demo mode.</p></body></html>`,
+    renderedHtml: createArtifactHtml(title as string),
     createdAt: at(1),
     updatedAt: at(day as number),
   }));
+}
+
+function createArtifactHtml(title: string): string {
+  const rows = [
+    ["Housing", "R$ 2,400.00", "R$ 2,400.00", "on track"],
+    ["Groceries", "R$ 900.00", "R$ 842.30", "on track"],
+    ["Utilities", "R$ 450.00", "R$ 366.20", "on track"],
+    ["Transport", "R$ 300.00", "R$ 338.90", "over"],
+  ]
+    .map(
+      ([category, budget, spent, status]) =>
+        `<tr><td>${category}</td><td>${budget}</td><td>${spent}</td><td><span class="pill ${status === "over" ? "over" : ""}">${status}</span></td></tr>`,
+    )
+    .join("");
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title}</title><style>
+:root{color-scheme:light dark;--bg:#ffffff;--fg:#1f2328;--muted:#656d76;--line:#d0d7de;--card:#f6f8fa;--accent:#0969da;--warn:#bc4c00}
+@media (prefers-color-scheme: dark){:root{--bg:#0d1117;--fg:#e6edf3;--muted:#8d96a0;--line:#30363d;--card:#161b22;--accent:#4493f8;--warn:#f0883e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:760px;margin:0 auto;padding:40px 24px}h1{font-size:28px;margin:0 0 4px}p.lead{color:var(--muted);margin:0 0 28px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:28px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}.stat b{display:block;font-size:22px}.stat span{color:var(--muted);font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line)}th{color:var(--muted);font-weight:600}
+.pill{font-size:12px;padding:2px 8px;border-radius:99px;background:var(--card);border:1px solid var(--line)}.pill.over{color:var(--warn)}
+</style></head><body><main><h1>${title}</h1><p class="lead">November 2026 · prepared for Marco</p>
+<section class="stats"><div class="stat"><span>Planned</span><b>R$ 4,050</b></div><div class="stat"><span>Spent so far</span><b>R$ 3,947</b></div><div class="stat"><span>Left this month</span><b>R$ 103</b></div></section>
+<table><thead><tr><th>Category</th><th>Budget</th><th>Spent</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></main></body></html>`;
 }

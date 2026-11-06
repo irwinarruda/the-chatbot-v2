@@ -8,6 +8,7 @@ import {
 import { ArrowLeft, Eye, Pencil, Save, Trash2 } from "lucide-react";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import type { NotesSearchDTO } from "~/client/modules/notes/app/dtos/NotesSearchDTO";
+import { ConfirmDialog } from "~/client/shared/components/ConfirmDialog";
 import { Button } from "~/client/shared/components/ui/button";
 import { Input } from "~/client/shared/components/ui/input";
 import { Skeleton } from "~/client/shared/components/ui/skeleton";
@@ -60,7 +61,7 @@ export function NoteDetailScreen({
   }
 
   async function onDeleteNote() {
-    if (!note || !window.confirm(t.deleteConfirmation)) return;
+    if (!note) return;
     const deleted = await deleteNote(note.id);
     if (deleted) navigate({ to: "/notes", search });
   }
@@ -104,7 +105,7 @@ export function NoteDetailScreen({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="sticky top-0 z-20 flex items-center gap-1.5 border-border border-b bg-muted/95 px-3 py-2 backdrop-blur-sm sm:gap-2 sm:px-5">
+      <div className="sticky top-14 z-20 -mx-4 flex items-center gap-1.5 border-border border-b bg-background/95 px-2 py-2 backdrop-blur-sm sm:-mx-8 sm:gap-2 sm:px-6 lg:top-0">
         <Button
           aria-label={t.backAction}
           className="w-11 px-0 sm:w-auto pointer-fine:sm:px-2.5 sm:px-3"
@@ -121,8 +122,8 @@ export function NoteDetailScreen({
           aria-live="polite"
           className={
             isDirty
-              ? "min-w-0 flex-1 truncate text-2xs text-warning uppercase"
-              : "min-w-0 flex-1 truncate text-2xs text-success uppercase"
+              ? "min-w-0 flex-1 truncate text-warning text-xs"
+              : "min-w-0 flex-1 truncate text-muted-foreground text-xs"
           }
         >
           {isDirty ? t.unsavedStatus : t.savedStatus}
@@ -168,21 +169,19 @@ export function NoteDetailScreen({
           </Button>
         </div>
       </div>
-      <div className="mx-auto w-full max-w-4xl space-y-5 p-4 sm:px-0 sm:py-6 md:py-8">
+      <div className="w-full space-y-5 py-5 sm:py-6">
         <div className="border-border border-b pb-2">
           <label className="sr-only" htmlFor="note-name">
             {t.nameLabel}
           </label>
           <Input
             id="note-name"
-            className="h-auto rounded-none border-0 bg-transparent px-0 py-2 font-mono font-semibold text-2xl text-foreground shadow-none focus-visible:border-transparent focus-visible:ring-0 sm:text-3xl"
+            className="h-auto rounded-none border-0 bg-transparent px-0 py-1 font-semibold text-2xl text-foreground tracking-tight shadow-none focus-visible:border-transparent focus-visible:ring-0 sm:text-3xl"
             maxLength={160}
             onChange={(event) => setName(event.target.value)}
             value={name}
           />
-          <p className="m-0 font-mono text-2xs text-muted-foreground">
-            {t.markdownHint}
-          </p>
+          <p className="m-0 text-muted-foreground text-xs">{t.markdownHint}</p>
         </div>
         <div hidden={isPreviewing}>
           <ClientOnly
@@ -217,16 +216,25 @@ export function NoteDetailScreen({
           t={t}
         />
         <div className="flex justify-end border-border border-t pt-3">
-          <Button
-            className="min-h-11 md:min-h-8"
-            disabled={isNoteSubmitting}
-            onClick={onDeleteNote}
-            type="button"
-            variant="destructive"
-          >
-            <Trash2 />
-            {t.deleteAction}
-          </Button>
+          <ConfirmDialog
+            cancelLabel={t.cancelAction}
+            confirmLabel={t.deleteAction}
+            description={t.deleteConfirmation}
+            isDisabled={isNoteSubmitting}
+            onConfirm={onDeleteNote}
+            title={t.deleteTitle.replace("{name}", note.name)}
+            trigger={
+              <Button
+                className="min-h-11 md:min-h-8"
+                disabled={isNoteSubmitting}
+                type="button"
+                variant="ghost"
+              >
+                <Trash2 />
+                {t.deleteAction}
+              </Button>
+            }
+          />
         </div>
       </div>
     </div>

@@ -2,12 +2,12 @@ import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { type ReactNode, useEffect } from "react";
 import { SessionBoundary } from "~/client/modules/identity/components/SessionBoundary";
 import type { Prefs } from "~/client/shared/app/entities/Prefs";
+import { AppShell } from "~/client/shared/components/terminal/AppShell";
 import { TerminalFooter } from "~/client/shared/components/terminal/TerminalFooter";
 import { TerminalPageHeader } from "~/client/shared/components/terminal/TerminalPageHeader";
 import { TerminalPanel } from "~/client/shared/components/terminal/TerminalPanel";
 import { TerminalPanelText } from "~/client/shared/components/terminal/TerminalPanelText";
 import { TerminalPrompt } from "~/client/shared/components/terminal/TerminalPrompt";
-import { TerminalWindow } from "~/client/shared/components/terminal/TerminalWindow";
 import { TooltipProvider } from "~/client/shared/components/ui/tooltip";
 import { getDictionary } from "~/client/shared/i18n/dictionary";
 import { useApp } from "~/client/shared/stores/app";
@@ -96,7 +96,7 @@ function NotFoundRoute() {
   const dictionary = getDictionary(locale);
   const t = dictionary.notFoundPage;
   return (
-    <TerminalWindow title={t.windowTitle} dictionary={dictionary}>
+    <AppShell title={t.windowTitle} dictionary={dictionary}>
       <TerminalPageHeader heading={t.heading} subtitle={t.subtitle} />
       <TerminalPanel centered>
         <TerminalPanelText>{t.body}</TerminalPanelText>
@@ -104,6 +104,6 @@ function NotFoundRoute() {
       <TerminalFooter className="mt-auto pt-6">
         <TerminalPrompt text={t.footerPrompt} />
       </TerminalFooter>
-    </TerminalWindow>
+    </AppShell>
   );
 }

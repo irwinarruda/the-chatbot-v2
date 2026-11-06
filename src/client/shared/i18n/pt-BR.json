@@ -12,7 +12,7 @@
     "dismiss": "Dispensar",
     "hideMonetaryValues": "Ocultar valores monetários",
     "hiddenMonetaryValue": "Valor monetário oculto",
-    "logout": "sair",
+    "logout": "Sair",
     "openNavigation": "Abrir navegação",
     "pauseAudio": "Pausar áudio",
     "playAudio": "Reproduzir áudio",
@@ -22,20 +22,20 @@
     "switchToLightTheme": "Usar tema claro"
   },
   "nav": {
-    "home": "home",
-    "privacy": "privacy",
-    "chat": "chat",
-    "todo": "tarefas",
-    "notes": "notas",
-    "artifacts": "artefatos",
-    "cashFlow": "fluxo de caixa",
-    "bills": "contas"
+    "home": "Início",
+    "privacy": "Privacidade",
+    "chat": "Chat",
+    "todo": "Tarefas",
+    "notes": "Notas",
+    "artifacts": "Artefatos",
+    "cashFlow": "Fluxo de caixa",
+    "bills": "Contas"
   },
   "welcomePage": {
     "windowTitle": "the-chatbot: ~/welcome",
     "heading": "The Chatbot",
-    "subtitle": "Web · WhatsApp · Google Sheets · IA",
-    "description": "é seu espaço pessoal para conversas, tarefas, notas, fluxo de caixa e contas mensais — disponível no navegador e pelo WhatsApp.",
+    "subtitle": "Seu assistente pessoal na web e no WhatsApp.",
+    "description": "Um espaço pessoal para conversas, tarefas, notas, fluxo de caixa e contas do mês. Escolha uma área abaixo ou peça direto no chat.",
     "features": {
       "chat": {
         "title": "Chat com IA",
@@ -68,7 +68,8 @@
         "tags": ["#recorrentes", "#checklist"]
       }
     },
-    "footerPrompt": "Escolha um espaço para começar"
+    "footerPrompt": "Escolha um espaço para começar",
+    "primaryAction": "Abrir chat"
   },
   "privacyPage": {
     "windowTitle": "the-chatbot: ~/privacy",
@@ -76,20 +77,22 @@
   },
   "thankYouPage": {
     "windowTitle": "the-chatbot: ~/auth/success",
-    "heading": "Obrigado!",
-    "subtitle": "Conta conectada com sucesso",
+    "heading": "Conta Google conectada",
+    "subtitle": "Tudo pronto",
     "greeting": "Bem-vindo ao",
-    "body": "Obrigado pela confiança. Sua conta Google foi autenticada com sucesso e você já está pronto para explorar todos os recursos.",
-    "footerPrompt": "Você já pode fechar esta janela com segurança"
+    "body": "O assistente já pode usar sua conta Google com suas planilhas. Volte ao WhatsApp ou abra o app web.",
+    "footerPrompt": "Você também pode fechar esta janela e voltar ao WhatsApp.",
+    "openAction": "Abrir o The Chatbot"
   },
   "alreadySignedInPage": {
     "windowTitle": "the-chatbot: ~/auth/status",
-    "heading": "Já está conectado!",
-    "subtitle": "Sua sessão do Google está ativa",
+    "heading": "Já conectado",
+    "subtitle": "Sua sessão Google está ativa",
     "badge": "Conectado",
     "greeting": "Bem-vindo de volta ao",
-    "body": "Detectamos uma autenticação existente para sua conta Google. Sua sessão foi atualizada automaticamente e você está pronto para continuar.",
-    "footerPrompt": "Você já pode fechar esta janela com segurança"
+    "body": "Esta conta Google já estava conectada, então renovamos a sessão. Não há mais nada a fazer.",
+    "footerPrompt": "Você também pode fechar esta janela e voltar ao WhatsApp.",
+    "openAction": "Abrir o The Chatbot"
   },
   "notFoundPage": {
     "windowTitle": "the-chatbot: ~/404",
@@ -106,8 +109,8 @@
     "errorMicrophone": "Não foi possível acessar o microfone. Verifique as permissões.",
     "logout": "sair",
     "emptyState": "Envie uma mensagem para começar a conversar",
-    "you": "você",
-    "bot": "bot",
+    "you": "Você",
+    "bot": "The Chatbot",
     "responding": "Pensando...",
     "respondingElapsed": "Pensando há {seconds}s",
     "showMoreTranscript": "Mostrar transcrição",
@@ -146,10 +149,10 @@
   },
   "todoPage": {
     "windowTitle": "the-chatbot: ~/todo",
-    "heading": "Terminal Todos",
+    "heading": "Tarefas",
     "subtitle": "Revise tarefas capturadas no chat e mantenha sua fila em movimento.",
     "loading": "Carregando...",
-    "listLabel": "buffer de tarefas",
+    "listLabel": "Tarefas",
     "detailTitle": "Detalhe da tarefa",
     "chatAction": "chat",
     "searchPlaceholder": "buscar tarefas...",
@@ -171,18 +174,27 @@
     "deleteAction": "Excluir",
     "deleteConfirmation": "Excluir esta tarefa? Esta ação não pode ser desfeita.",
     "cancelAction": "Cancelar",
-    "emptyState": "Nenhuma tarefa combina com esta consulta.",
+    "emptyState": "Nenhuma tarefa combina com estes filtros.",
     "audioLabel": "audio de origem",
     "transcriptLabel": "transcrição",
     "errorLoading": "Falha ao carregar tarefas. Tente novamente.",
     "errorSaving": "Falha ao salvar tarefa. Tente novamente.",
-    "errorDeleting": "Falha ao excluir tarefa. Tente novamente."
+    "errorDeleting": "Falha ao excluir tarefa. Tente novamente.",
+    "dueOverdue": "Atrasada",
+    "dueToday": "Vence hoje",
+    "duePrefix": "Vence",
+    "statusFilterLabel": "Status",
+    "dueFilterLabel": "Filtro de vencimento",
+    "dueDateFilterLabel": "Vence em",
+    "statusAllShort": "Todos os status",
+    "emptyAllDone": "Nada pendente",
+    "emptyAllDoneHint": "Novas tarefas do chat ou desta página aparecem aqui."
   },
   "notesPage": {
     "windowTitle": "the-chatbot: ~/notas",
-    "heading": "Notas do Terminal",
+    "heading": "Notas",
     "subtitle": "Capture ideias, links e contexto duradouro em Markdown portátil.",
-    "listLabel": "índice de notas",
+    "listLabel": "Todas as notas",
     "searchPlaceholder": "buscar notas...",
     "newNamePlaceholder": "Nome da nova nota",
     "createAction": "Criar nota",
@@ -211,14 +223,17 @@
     "errorLoading": "Falha ao carregar notas. Tente novamente.",
     "errorSaving": "Falha ao salvar a nota. O rascunho continua aqui.",
     "errorDeleting": "Falha ao excluir a nota. Tente novamente.",
-    "errorRefining": "A IA não conseguiu refatorar este rascunho. Tente novamente."
+    "errorRefining": "A IA não conseguiu refatorar este rascunho. Tente novamente.",
+    "clearSearch": "Limpar busca",
+    "cancelAction": "Cancelar",
+    "deleteTitle": "Excluir “{name}”?"
   },
   "artifactsPage": {
     "windowTitle": "the-chatbot: ~/artefatos",
     "viewerWindowTitle": "the-chatbot: ~/artefato",
     "heading": "Artefatos HTML",
     "subtitle": "Publique páginas estruturadas pelos seus agentes de código e compartilhe sem dar acesso da página à aplicação.",
-    "listLabel": "índice de artefatos",
+    "listLabel": "Artefatos publicados",
     "loading": "Carregando artefatos...",
     "emptyState": "Nenhum artefato foi publicado. Use a skill global de publicação para criar o primeiro.",
     "tokenTitle": "Token de upload para agentes",
@@ -248,7 +263,10 @@
     "errorSaving": "Falha ao atualizar a visibilidade. Tente novamente.",
     "errorDeleting": "Falha ao excluir o artefato. Tente novamente.",
     "errorToken": "Falha ao atualizar o token de upload. Tente novamente.",
-    "errorCopy": "Não foi possível copiar a configuração da skill. Copie-a manualmente antes de sair desta página."
+    "errorCopy": "Não foi possível copiar a configuração da skill. Copie-a manualmente antes de sair desta página.",
+    "cancelAction": "Cancelar",
+    "deleteTitle": "Excluir “{name}”?",
+    "backAction": "Artefatos"
   },
   "cashFlowPage": {
     "windowTitle": "the-chatbot: ~/fluxo-de-caixa",
@@ -264,7 +282,7 @@
     "syncHint": "Informe o saldo real. A diferença vira uma transação de ajuste, como no chat.",
     "netBalanceLabel": "saldo líquido",
     "accountBalancesLabel": "saldos das contas",
-    "listLabel": "livro de transações",
+    "listLabel": "Transações",
     "results": "resultados",
     "loadMoreAction": "Carregar mais transações",
     "loading": "Carregando fluxo de caixa...",
@@ -321,7 +339,8 @@
     "transferDeleteHint": "Isso remove o débito e o crédito. Os saldos das duas contas serão atualizados.",
     "transferDeleteAction": "Excluir transferência",
     "transferAccountsHint": "Adicione pelo menos duas contas à planilha para transferir dinheiro.",
-    "transferValidationError": "Escolha contas diferentes, uma data válida e um valor positivo com até duas casas decimais."
+    "transferValidationError": "Escolha contas diferentes, uma data válida e um valor positivo com até duas casas decimais.",
+    "filtersAction": "Filtros"
   },
   "billsPage": {
     "windowTitle": "the-chatbot: ~/contas",
@@ -394,7 +413,10 @@
     "paymentSelectAccount": "Escolha uma conta",
     "paymentSelectCategory": "Escolha uma categoria",
     "paymentCategoryHint": "Fica salva nesta conta mensal para os próximos pagamentos.",
-    "paymentAccountHint": "Vira o padrão desta conta mensal."
+    "paymentAccountHint": "Vira o padrão desta conta mensal.",
+    "payAction": "Pagar",
+    "leftToPay": "Falta pagar",
+    "paidSummary": "{paid} de {total} contas pagas · {percent}% do valor"
   },
   "loginPage": {
     "windowTitle": "the-chatbot: ~/login",
@@ -402,13 +424,14 @@
     "subtitle": "Use sua conta Google para continuar",
     "body": "Entre com a mesma conta Google já registrada no The Chatbot. Após a autenticação, você voltará ao espaço solicitado.",
     "loginButton": "Entrar com Google",
-    "footerPrompt": "Autentique com Google para abrir seu espaço"
+    "footerPrompt": "Depois de entrar, você volta para a página que pediu."
   },
   "notRegisteredPage": {
     "windowTitle": "the-chatbot: ~/not-registered",
-    "heading": "Não Registrado",
-    "subtitle": "Conta não encontrada",
-    "body": "Você precisa se registrar pelo WhatsApp antes de usar o The Chatbot na web. Envie uma mensagem para o bot no WhatsApp para começar.",
-    "backLink": "Voltar para o início"
+    "heading": "Conta não encontrada",
+    "subtitle": "Esta conta Google ainda não está cadastrada",
+    "body": "O The Chatbot começa pelo WhatsApp. Envie qualquer mensagem ao bot para criar sua conta e depois entre aqui com a mesma conta Google.",
+    "backLink": "Voltar ao início",
+    "retryAction": "Usar outra conta Google"
   }
 }

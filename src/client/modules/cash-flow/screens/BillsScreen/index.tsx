@@ -1,12 +1,5 @@
-import { Link, useNavigate } from "@tanstack/react-router";
-import {
-  CalendarRange,
-  CircleAlert,
-  MessageSquare,
-  Plus,
-  ReceiptText,
-  X,
-} from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import { CircleAlert, Plus, ReceiptText, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { MonthlyExpenseErrorCode } from "~/client/modules/cash-flow/app/services/MonthlyExpenseService";
 import {
@@ -14,23 +7,16 @@ import {
   getCurrentBillsMonth,
   toBillsRouteSearch,
 } from "~/client/modules/cash-flow/parsers/BillsSearch";
+import { ListEmptyState } from "~/client/shared/components/ListEmptyState";
+import { AppShell } from "~/client/shared/components/terminal/AppShell";
 import { TerminalPageHeader } from "~/client/shared/components/terminal/TerminalPageHeader";
-import { TerminalWindow } from "~/client/shared/components/terminal/TerminalWindow";
 import {
   Alert,
   AlertAction,
   AlertDescription,
 } from "~/client/shared/components/ui/alert";
-import { Badge } from "~/client/shared/components/ui/badge";
 import { Button } from "~/client/shared/components/ui/button";
 import { Card, CardContent } from "~/client/shared/components/ui/card";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "~/client/shared/components/ui/empty";
 import { Field, FieldLabel } from "~/client/shared/components/ui/field";
 import { Skeleton } from "~/client/shared/components/ui/skeleton";
 import {
@@ -86,10 +72,10 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
   const t = dictionary.billsPage;
   const currentMonth = getCurrentBillsMonth();
   const selectedMonth = search.month ?? currentMonth;
-  const unpaidCount = monthlyExpenses.filter(
+  const _unpaidCount = monthlyExpenses.filter(
     (expense) => !expense.isPaid,
   ).length;
-  const monthLabel = new Intl.DateTimeFormat(
+  const _monthLabel = new Intl.DateTimeFormat(
     prefs.locale === "pt-BR" ? "pt-BR" : "en-US",
     {
       month: "long",
@@ -192,44 +178,22 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
   }, [bootstrap, month, search.month]);
 
   return (
-    <TerminalWindow
+    <AppShell
       activePath="/bills"
       dictionary={dictionary}
-      frameClassName="page-frame-min-height"
-      mainClassName="items-stretch sm:items-start"
       showLogout
       title={t.windowTitle}
       wide
-      windowClassName="relative overflow-hidden"
     >
       <TerminalPageHeader
-        badge={
-          <div className="mt-4 flex flex-wrap justify-center gap-2">
-            <Badge
-              className="hidden gap-1.5 border-border bg-muted/50 text-foreground capitalize sm:inline-flex"
-              variant="outline"
-            >
-              {monthLabel}
-            </Badge>
-            <Badge
-              className="gap-1.5 border-warning/40 bg-warning/10 text-warning"
-              variant="outline"
-            >
-              {unpaidCount} {t.remaining}
-            </Badge>
-            <Badge
-              className="gap-1.5 border-info/40 bg-info/10 text-info hover:border-info hover:bg-info/15 hover:text-info"
-              render={<Link to="/chat" />}
-              variant="outline"
-            >
-              <MessageSquare />
-              {t.chatAction}
-            </Badge>
-          </div>
+        actions={
+          <Button onClick={onOpenCreate} type="button">
+            <Plus />
+            {t.createPrompt}
+          </Button>
         }
         heading={t.heading}
         subtitle={t.subtitle}
-        withLogo={false}
       />
       {errorMessage ? (
         <Alert className="mb-4" variant="destructive">
@@ -255,75 +219,40 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
           </AlertAction>
         </Alert>
       ) : null}
-      <Card
-        aria-label={t.monthNavigationLabel}
-        className="mb-4 gap-0 border-border bg-muted/45 py-0 shadow-none"
-        size="sm"
-      >
-        <CardContent className="space-y-3 p-3">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <Field className="w-full min-w-0 flex-1 gap-1.5 sm:w-auto sm:max-w-sm">
-              <FieldLabel
-                className="flex items-center gap-1.5 font-mono text-2xs text-muted-foreground uppercase tracking-wide"
-                htmlFor="bills-month"
-              >
-                <CalendarRange
-                  aria-hidden="true"
-                  className="size-3.5 text-primary"
-                />
-                {t.monthLabel}
-              </FieldLabel>
-              <BillsMonthSelect
-                describedBy="bills-month-description"
-                id="bills-month"
-                locale={prefs.locale}
-                maxMonth={currentMonth}
-                nextMonthLabel={t.nextMonth}
-                onMonthChange={onMonthSelect}
-                previousMonthLabel={t.previousMonth}
-                value={selectedMonth}
-              />
-            </Field>
-            <div className="flex w-full flex-col gap-2 sm:ml-auto sm:w-auto sm:flex-row sm:items-center">
-              {search.month !== undefined && (
-                <Button
-                  className="hidden sm:inline-flex"
-                  onClick={() => onMonthSelect(currentMonth)}
-                  type="button"
-                  variant="outline"
-                >
-                  {t.currentMonthAction}
-                </Button>
-              )}
-              <Button
-                className="w-full sm:w-auto"
-                onClick={onOpenCreate}
-                type="button"
-              >
-                <Plus />
-                {t.createPrompt}
-              </Button>
-            </div>
-          </div>
-          <p
-            className="mb-0 font-mono text-2xs text-muted-foreground"
-            id="bills-month-description"
-          >
-            {t.monthHistoryHint}
-          </p>
+      <section aria-label={t.monthNavigationLabel} className="mb-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <Field className="w-full min-w-0 gap-1.5 sm:w-auto sm:min-w-72">
+            <FieldLabel className="sr-only" htmlFor="bills-month">
+              {t.monthLabel}
+            </FieldLabel>
+            <BillsMonthSelect
+              describedBy="bills-month-description"
+              id="bills-month"
+              locale={prefs.locale}
+              maxMonth={currentMonth}
+              nextMonthLabel={t.nextMonth}
+              onMonthChange={onMonthSelect}
+              previousMonthLabel={t.previousMonth}
+              value={selectedMonth}
+            />
+          </Field>
           {search.month !== undefined && (
             <Button
-              className="w-full sm:hidden"
               onClick={() => onMonthSelect(currentMonth)}
-              size="sm"
               type="button"
-              variant="outline"
+              variant="ghost"
             >
               {t.currentMonthAction}
             </Button>
           )}
-        </CardContent>
-      </Card>
+        </div>
+        <p
+          className="mt-2 mb-0 text-muted-foreground text-xs"
+          id="bills-month-description"
+        >
+          {t.monthHistoryHint}
+        </p>
+      </section>
       <MonthlyExpenseProgress
         expenses={monthlyExpenses}
         hiddenMonetaryValueLabel={dictionary.common.hiddenMonetaryValue}
@@ -331,17 +260,16 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
         t={t}
       />
       <section aria-labelledby="monthly-bills-list" className="space-y-2">
-        <div
-          className="flex items-center gap-2 font-mono text-2xs text-muted-foreground uppercase tracking-wide"
+        <h2
+          className="m-0 font-medium text-foreground text-sm"
           id="monthly-bills-list"
         >
-          <ReceiptText aria-hidden="true" className="size-3.5 text-primary" />
           {t.listLabel}
-        </div>
+        </h2>
         {isBootstrapping ? (
           <MonthlyExpenseListSkeleton label={t.loading} />
         ) : monthlyExpenses.length > 0 ? (
-          <ul className="m-0 list-none space-y-2 p-0">
+          <ul className="m-0 list-none divide-y divide-border overflow-hidden rounded-xl border border-border bg-card p-0">
             {monthlyExpenses.map((expense) => (
               <li key={expense.id}>
                 <MonthlyExpenseRow
@@ -367,19 +295,17 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
             ))}
           </ul>
         ) : (
-          <Empty className="rounded-lg border border-border bg-background/40 py-10">
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <ReceiptText className="text-primary" />
-              </EmptyMedia>
-              <EmptyTitle className="text-muted-foreground">
-                {t.emptyState}
-              </EmptyTitle>
-              <EmptyDescription className="text-muted-foreground">
-                {t.emptyHint}
-              </EmptyDescription>
-            </EmptyHeader>
-          </Empty>
+          <ListEmptyState
+            actions={
+              <Button onClick={onOpenCreate} type="button">
+                <Plus />
+                {t.createPrompt}
+              </Button>
+            }
+            description={t.emptyHint}
+            icon={ReceiptText}
+            title={t.emptyState}
+          />
         )}
       </section>
       {payingExpense && (
@@ -411,7 +337,7 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
         open={isDialogOpen}
         t={t}
       />
-    </TerminalWindow>
+    </AppShell>
   );
 }
 

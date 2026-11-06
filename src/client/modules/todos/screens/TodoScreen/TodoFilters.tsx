@@ -1,13 +1,7 @@
-import { Calendar, CheckCircle2, Circle, Search, X } from "lucide-react";
-import type { ReactNode } from "react";
+import { CheckCircle2, Circle, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DEFAULT_TODO_STATUS } from "~/client/modules/todos/parsers/TodoSearch";
 import { Button } from "~/client/shared/components/ui/button";
-import {
-  Field,
-  FieldGroup,
-  FieldLabel,
-} from "~/client/shared/components/ui/field";
 import { Input } from "~/client/shared/components/ui/input";
 import {
   Select,
@@ -48,7 +42,7 @@ function getStatusLabel(
 ) {
   if (status === "Pending") return t.statusPending;
   if (status === "Completed") return t.statusCompleted;
-  return t.statusAll;
+  return t.statusAllShort;
 }
 
 function getDueLabel(due: TodoFilterValues["due"], t: Dictionary["todoPage"]) {
@@ -58,13 +52,11 @@ function getDueLabel(due: TodoFilterValues["due"], t: Dictionary["todoPage"]) {
 }
 
 export function TodoFilters({
-  action,
   filters,
   onClear,
   onChange,
   t,
 }: {
-  action?: ReactNode;
   filters: TodoFilterValues;
   onClear: () => void;
   onChange: (filters: Partial<TodoFilterValues>) => void;
@@ -100,117 +92,95 @@ export function TodoFilters({
     debouncedFilters.status,
   ]);
 
+  const hasActiveFilters =
+    draftFilters.q !== "" ||
+    draftFilters.dueDate !== "" ||
+    draftFilters.due !== "all" ||
+    draftFilters.status !== DEFAULT_TODO_STATUS;
+
   return (
-    <FieldGroup className="gap-3">
-      <div
-        className={
-          action
-            ? "grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end"
-            : "grid"
-        }
-      >
-        <Field>
-          <FieldLabel htmlFor="todo-filter-search">
-            <Search className="size-3.5 text-muted-foreground" />
-            {t.searchPlaceholder}
-          </FieldLabel>
-          <div className="relative min-w-0">
-            <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              id="todo-filter-search"
-              className="pl-8"
-              onChange={(event) =>
-                onChangeDraftFilters({ q: event.target.value })
-              }
-              placeholder={t.searchPlaceholder}
-              type="search"
-              value={draftFilters.q}
-            />
-          </div>
-        </Field>
-        {action}
+    <div className="flex flex-col gap-2 md:flex-row md:items-center">
+      <div className="relative min-w-0 flex-1">
+        <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          aria-label={t.searchPlaceholder}
+          id="todo-filter-search"
+          className="pl-8"
+          onChange={(event) => onChangeDraftFilters({ q: event.target.value })}
+          placeholder={t.searchPlaceholder}
+          type="search"
+          value={draftFilters.q}
+        />
       </div>
-      <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-[minmax(9rem,0.8fr)_minmax(10rem,1fr)_minmax(10rem,1fr)_auto] md:items-end">
-        <Field>
-          <FieldLabel htmlFor="todo-filter-status">
-            <Circle className="size-3.5 text-muted-foreground" />
-            {t.statusAll}
-          </FieldLabel>
-          <Select
-            onValueChange={(value) => {
-              if (!value) return;
-              onChangeDraftFilters({
-                status: value as TodoFilterValues["status"],
-              });
-            }}
-            value={draftFilters.status}
-          >
-            <SelectTrigger id="todo-filter-status" className="w-full">
-              <SelectValue>
-                {getStatusLabel(draftFilters.status, t)}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent align="start">
-              <SelectItem value="all">{t.statusAll}</SelectItem>
-              <SelectItem value="Pending">
-                <Circle className="text-warning" />
-                {t.statusPending}
-              </SelectItem>
-              <SelectItem value="Completed">
-                <CheckCircle2 className="text-success" />
-                {t.statusCompleted}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="todo-filter-due-date">
-            <Calendar className="size-3.5 text-muted-foreground" />
-            {t.dueWithDueDate}
-          </FieldLabel>
-          <Input
-            id="todo-filter-due-date"
-            onChange={(event) =>
-              onChangeDraftFilters({ dueDate: event.target.value })
-            }
-            type="date"
-            value={draftFilters.dueDate}
-          />
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="todo-filter-due">
-            <Calendar className="size-3.5 text-muted-foreground" />
-            {t.dueAll}
-          </FieldLabel>
-          <Select
-            onValueChange={(value) => {
-              if (!value) return;
-              onChangeDraftFilters({ due: value as TodoDueFilterDTO });
-            }}
-            value={draftFilters.due}
-          >
-            <SelectTrigger id="todo-filter-due" className="w-full">
-              <SelectValue>{getDueLabel(draftFilters.due, t)}</SelectValue>
-            </SelectTrigger>
-            <SelectContent align="start">
-              <SelectItem value="all">{t.dueAll}</SelectItem>
-              <SelectItem value="with_due_date">{t.dueWithDueDate}</SelectItem>
-              <SelectItem value="without_due_date">
-                {t.dueWithoutDueDate}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </Field>
-        <Button
-          className="w-full sm:col-span-2 md:col-span-1 md:w-auto"
-          onClick={onClearFilters}
-          type="button"
-          variant="outline"
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+        <Select
+          onValueChange={(value) => {
+            if (!value) return;
+            onChangeDraftFilters({
+              status: value as TodoFilterValues["status"],
+            });
+          }}
+          value={draftFilters.status}
         >
-          <X />
-          {t.clearFilters}
-        </Button>
+          <SelectTrigger
+            aria-label={t.statusFilterLabel}
+            id="todo-filter-status"
+            className="w-full sm:w-36"
+          >
+            <SelectValue>{getStatusLabel(draftFilters.status, t)}</SelectValue>
+          </SelectTrigger>
+          <SelectContent align="start">
+            <SelectItem value="all">{t.statusAllShort}</SelectItem>
+            <SelectItem value="Pending">
+              <Circle className="text-warning" />
+              {t.statusPending}
+            </SelectItem>
+            <SelectItem value="Completed">
+              <CheckCircle2 className="text-success" />
+              {t.statusCompleted}
+            </SelectItem>
+          </SelectContent>
+        </Select>
+        <Select
+          onValueChange={(value) => {
+            if (!value) return;
+            onChangeDraftFilters({ due: value as TodoDueFilterDTO });
+          }}
+          value={draftFilters.due}
+        >
+          <SelectTrigger
+            aria-label={t.dueFilterLabel}
+            id="todo-filter-due"
+            className="w-full sm:w-40"
+          >
+            <SelectValue>{getDueLabel(draftFilters.due, t)}</SelectValue>
+          </SelectTrigger>
+          <SelectContent align="start">
+            <SelectItem value="all">{t.dueAll}</SelectItem>
+            <SelectItem value="with_due_date">{t.dueWithDueDate}</SelectItem>
+            <SelectItem value="without_due_date">
+              {t.dueWithoutDueDate}
+            </SelectItem>
+          </SelectContent>
+        </Select>
+        <Input
+          aria-label={t.dueDateFilterLabel}
+          className="w-full sm:w-40"
+          id="todo-filter-due-date"
+          onChange={(event) =>
+            onChangeDraftFilters({ dueDate: event.target.value })
+          }
+          title={t.dueDateFilterLabel}
+          type="date"
+          value={draftFilters.dueDate}
+        />
+        {hasActiveFilters && (
+          <Button onClick={onClearFilters} type="button" variant="ghost">
+            <X />
+            {t.clearFilters}
+          </Button>
+        )}
       </div>
-    </FieldGroup>
+    </div>
   );
 }

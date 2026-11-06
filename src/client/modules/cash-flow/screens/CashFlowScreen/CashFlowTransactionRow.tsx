@@ -53,13 +53,13 @@ export function CashFlowTransactionRow({
   }).format(new Date(transaction.date));
 
   return (
-    <article className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 rounded-lg border border-border border-l-2 bg-background/45 px-3 py-3 transition-colors hover:border-l-brand hover:bg-muted/70">
+    <article className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/60">
       <span
         aria-hidden="true"
         className={
           isExpense
-            ? "mt-0.5 rounded-md border border-destructive/20 bg-destructive/10 p-1.5 text-destructive"
-            : "mt-0.5 rounded-md border border-success/20 bg-success/10 p-1.5 text-success"
+            ? "rounded-full bg-muted p-2 text-muted-foreground"
+            : "rounded-full bg-success/10 p-2 text-success"
         }
       >
         {isExpense ? (
@@ -92,7 +92,7 @@ export function CashFlowTransactionRow({
             </Badge>
           )}
         </div>
-        <p className="m-0 flex flex-wrap gap-x-2 gap-y-0.5 text-2xs text-muted-foreground">
+        <p className="m-0 flex flex-wrap gap-x-1.5 gap-y-0.5 text-muted-foreground text-xs">
           <span>{date}</span>
           <span aria-hidden="true">·</span>
           <span>{transaction.bankAccount}</span>
@@ -104,8 +104,8 @@ export function CashFlowTransactionRow({
         <span
           className={
             isExpense
-              ? "whitespace-nowrap font-semibold text-destructive text-sm tabular-nums"
-              : "whitespace-nowrap font-semibold text-sm text-success tabular-nums"
+              ? "whitespace-nowrap font-medium text-foreground text-sm tabular-nums"
+              : "whitespace-nowrap font-medium text-sm text-success tabular-nums"
           }
         >
           <MonetaryValue hiddenLabel={hiddenMonetaryValueLabel}>
@@ -159,6 +159,15 @@ export function CashFlowTransactionRow({
                     ? t.transferDeleteHint
                     : t.deleteLastConfirmation}
                 </AlertDialogDescription>
+                <p className="m-0 mt-1 rounded-lg border border-border bg-muted/50 px-3 py-2 text-left text-foreground text-sm">
+                  <span className="font-medium">
+                    {transaction.description || t.transferLabel}
+                  </span>
+                  <span className="block text-muted-foreground text-xs tabular-nums">
+                    {currency.format(transaction.value)} · {date} ·{" "}
+                    {transaction.bankAccount}
+                  </span>
+                </p>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel disabled={isSubmitting}>

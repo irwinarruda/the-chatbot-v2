@@ -3,9 +3,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   ArrowDown,
   ArrowUp,
-  BrainCircuit,
   CircleAlert,
-  Cpu,
   MessageSquare,
   Mic,
   Send,
@@ -23,7 +21,7 @@ import {
   useState,
 } from "react";
 import type { ChatErrorCode } from "~/client/modules/chat/app/services/ChatService";
-import { TerminalWindow } from "~/client/shared/components/terminal/TerminalWindow";
+import { AppShell } from "~/client/shared/components/terminal/AppShell";
 import { Alert, AlertDescription } from "~/client/shared/components/ui/alert";
 import { Button } from "~/client/shared/components/ui/button";
 import { Card, CardContent } from "~/client/shared/components/ui/card";
@@ -313,18 +311,16 @@ export function ChatScreen() {
     );
   }
 
+  const hasAudioInputChoice = audioInputOptions.length > 1;
+
   return (
-    <TerminalWindow
+    <AppShell
       title={windowTitle}
       wide
       activePath="/chat"
+      layout="fill"
       dictionary={dictionary}
       showLogout
-      mainClassName="items-stretch sm:items-center"
-      frameClassName="chat-frame-height"
-      navigationClassName="sm:mx-auto sm:mt-3 sm:w-full sm:max-w-3xl"
-      windowClassName="relative flex min-h-0 flex-1 flex-col overflow-hidden p-0 sm:p-0 md:p-0"
-      showShadow={false}
     >
       {chatErrorMessage ? (
         <Alert
@@ -446,7 +442,7 @@ export function ChatScreen() {
 
       <div
         ref={composerRef}
-        className="relative shrink-0 border-border/50 border-t bg-linear-to-t from-card via-card to-card/90 px-[max(0.75rem,env(safe-area-inset-left))] pt-2.5 pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-5 sm:pt-3 sm:pb-4"
+        className="relative shrink-0 bg-background px-[max(0.75rem,env(safe-area-inset-left))] pt-2.5 pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-5 sm:pt-3 sm:pb-4"
       >
         {showScrollBtn && chatMessages.length > 0 && (
           <div className="pointer-events-none absolute right-[max(1rem,env(safe-area-inset-right))] bottom-full z-10 mb-4 sm:right-auto sm:left-1/2 sm:flex sm:w-full sm:max-w-3xl sm:-translate-x-1/2 sm:justify-end">
@@ -502,18 +498,12 @@ export function ChatScreen() {
         ) : (
           <form
             onSubmit={onSubmit}
-            className="group/form mx-auto w-full max-w-3xl rounded-xl border border-border bg-muted/55 p-2 shadow-sm transition-[border-color,box-shadow,background-color] duration-200 focus-within:border-ring focus-within:bg-background/80 focus-within:shadow-field focus-within:ring-3 focus-within:ring-ring/50"
+            className="group/form mx-auto w-full max-w-3xl rounded-2xl border border-border bg-card p-2 shadow-scrim/10 shadow-sm transition-[border-color,box-shadow,background-color] duration-200 focus-within:border-ring focus-within:bg-background/80 focus-within:shadow-field focus-within:ring-3 focus-within:ring-ring/50"
           >
             <Label htmlFor="chat-message-input" className="sr-only">
               {t.placeholder}
             </Label>
-            <div className="flex min-w-0 items-start gap-2">
-              <span
-                aria-hidden="true"
-                className="mt-2.5 shrink-0 font-mono font-semibold text-base text-primary [text-shadow:0_0_8px_color-mix(in_srgb,var(--brand)_35%,transparent)]"
-              >
-                {">"}
-              </span>
+            <div className="flex min-w-0 items-start gap-2 px-1.5">
               <Textarea
                 id="chat-message-input"
                 ref={inputElRef}
@@ -524,26 +514,16 @@ export function ChatScreen() {
                 placeholder={t.placeholder}
                 enterKeyHint="send"
                 autoComplete="off"
-                className="max-h-40 min-h-12 min-w-0 resize-none appearance-none overflow-y-auto rounded-none border-0 bg-transparent px-0 py-2 font-mono pointer-fine:text-sm text-base text-foreground leading-6 caret-brand shadow-none ring-0 placeholder:text-muted-foreground focus-visible:border-0 focus-visible:shadow-none focus-visible:outline-none focus-visible:ring-0"
+                className="max-h-40 min-h-12 min-w-0 resize-none appearance-none overflow-y-auto rounded-none border-0 bg-transparent px-0 py-2 pointer-fine:text-sm text-base text-foreground leading-6 caret-brand shadow-none ring-0 placeholder:text-muted-foreground focus-visible:border-0 focus-visible:shadow-none focus-visible:outline-none focus-visible:ring-0"
               />
             </div>
 
-            <div className="mt-1 flex min-h-8 min-w-0 items-center gap-1.5 border-border/60 border-t pt-2">
+            <div className="mt-1 flex min-h-8 min-w-0 items-center gap-1.5">
               <div className="flex min-w-0 max-w-44 flex-1 items-center gap-1 md:max-w-56">
-                <Cpu
-                  aria-hidden="true"
-                  className="hidden size-3 text-muted-foreground sm:block"
-                />
-                <Label
-                  htmlFor="chat-model"
-                  className="hidden font-mono text-muted-foreground text-xs md:inline"
-                >
-                  {t.modelShort}
-                </Label>
                 <NativeSelect
                   id="chat-model"
                   size="sm"
-                  className="min-w-0 flex-1 **:data-[slot=native-select-icon]:right-1.5 **:data-[slot=native-select-icon]:size-3 **:data-[slot=native-select-icon]:text-muted-foreground [&_[data-slot=native-select]]:h-11 pointer-fine:[&_[data-slot=native-select]]:h-7 [&_[data-slot=native-select]]:truncate [&_[data-slot=native-select]]:rounded-md [&_[data-slot=native-select]]:border-transparent [&_[data-slot=native-select]]:bg-muted/70 [&_[data-slot=native-select]]:py-0.5 [&_[data-slot=native-select]]:pr-6 [&_[data-slot=native-select]]:pl-2 [&_[data-slot=native-select]]:font-mono [&_[data-slot=native-select]]:text-foreground [&_[data-slot=native-select]]:text-sm pointer-fine:[&_[data-slot=native-select]]:text-xs [&_[data-slot=native-select]]:transition-colors [&_[data-slot=native-select]]:hover:border-border [&_[data-slot=native-select]]:hover:bg-accent [&_[data-slot=native-select]]:focus-visible:border-brand/40 [&_[data-slot=native-select]]:focus-visible:ring-0"
+                  className="min-w-0 flex-1 **:data-[slot=native-select-icon]:right-1.5 **:data-[slot=native-select-icon]:size-3 **:data-[slot=native-select-icon]:text-muted-foreground [&_[data-slot=native-select]]:h-11 pointer-fine:[&_[data-slot=native-select]]:h-7 [&_[data-slot=native-select]]:truncate [&_[data-slot=native-select]]:rounded-md [&_[data-slot=native-select]]:border-transparent [&_[data-slot=native-select]]:bg-transparent [&_[data-slot=native-select]]:py-0.5 [&_[data-slot=native-select]]:pr-6 [&_[data-slot=native-select]]:pl-2 [&_[data-slot=native-select]]:text-muted-foreground [&_[data-slot=native-select]]:text-sm pointer-fine:[&_[data-slot=native-select]]:text-xs [&_[data-slot=native-select]]:transition-colors [&_[data-slot=native-select]]:hover:border-border [&_[data-slot=native-select]]:hover:bg-accent [&_[data-slot=native-select]]:focus-visible:border-brand/40 [&_[data-slot=native-select]]:focus-visible:ring-0"
                   value={currentModelId}
                   onChange={onModelChange}
                   disabled={isChatSubmitting || availableModels.length === 0}
@@ -560,20 +540,10 @@ export function ChatScreen() {
                 </NativeSelect>
               </div>
               <div className="flex shrink-0 items-center gap-1">
-                <BrainCircuit
-                  aria-hidden="true"
-                  className="hidden size-3 text-muted-foreground sm:block"
-                />
-                <Label
-                  htmlFor="chat-reasoning-effort"
-                  className="hidden font-mono text-muted-foreground text-xs sm:inline"
-                >
-                  {t.reasoningEffortShort}
-                </Label>
                 <NativeSelect
                   id="chat-reasoning-effort"
                   size="sm"
-                  className="w-20 **:data-[slot=native-select-icon]:right-1.5 **:data-[slot=native-select-icon]:size-3 **:data-[slot=native-select-icon]:text-muted-foreground [&_[data-slot=native-select]]:h-11 pointer-fine:[&_[data-slot=native-select]]:h-7 [&_[data-slot=native-select]]:rounded-md [&_[data-slot=native-select]]:border-transparent [&_[data-slot=native-select]]:bg-muted/70 [&_[data-slot=native-select]]:py-0.5 [&_[data-slot=native-select]]:pr-6 [&_[data-slot=native-select]]:pl-2 [&_[data-slot=native-select]]:font-mono [&_[data-slot=native-select]]:text-foreground [&_[data-slot=native-select]]:text-sm pointer-fine:[&_[data-slot=native-select]]:text-xs [&_[data-slot=native-select]]:transition-colors [&_[data-slot=native-select]]:hover:border-border [&_[data-slot=native-select]]:hover:bg-accent [&_[data-slot=native-select]]:focus-visible:border-brand/40 [&_[data-slot=native-select]]:focus-visible:ring-0"
+                  className="w-20 **:data-[slot=native-select-icon]:right-1.5 **:data-[slot=native-select-icon]:size-3 **:data-[slot=native-select-icon]:text-muted-foreground [&_[data-slot=native-select]]:h-11 pointer-fine:[&_[data-slot=native-select]]:h-7 [&_[data-slot=native-select]]:rounded-md [&_[data-slot=native-select]]:border-transparent [&_[data-slot=native-select]]:bg-transparent [&_[data-slot=native-select]]:py-0.5 [&_[data-slot=native-select]]:pr-6 [&_[data-slot=native-select]]:pl-2 [&_[data-slot=native-select]]:text-muted-foreground [&_[data-slot=native-select]]:text-sm pointer-fine:[&_[data-slot=native-select]]:text-xs [&_[data-slot=native-select]]:transition-colors [&_[data-slot=native-select]]:hover:border-border [&_[data-slot=native-select]]:hover:bg-accent [&_[data-slot=native-select]]:focus-visible:border-brand/40 [&_[data-slot=native-select]]:focus-visible:ring-0"
                   value={reasoningEffort}
                   onChange={onReasoningEffortChange}
                   disabled={isChatSubmitting}
@@ -587,44 +557,46 @@ export function ChatScreen() {
                 </NativeSelect>
               </div>
               <div className="ml-auto flex shrink-0 items-center justify-end gap-1.5">
-                <div
-                  data-disabled={!canSelectAudioInput}
-                  className="relative hidden w-44 min-w-0 data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 sm:block"
-                >
-                  <Label htmlFor="chat-audio-input" className="sr-only">
-                    {t.audioInputLabel}
-                  </Label>
-                  <span
-                    className="pointer-events-none absolute top-1/2 left-2.5 z-10 inline-flex size-3 -translate-y-1/2 items-center justify-center text-muted-foreground"
-                    aria-hidden="true"
+                {hasAudioInputChoice && (
+                  <div
+                    data-disabled={!canSelectAudioInput}
+                    className="relative hidden w-44 min-w-0 data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 sm:block"
                   >
-                    <Mic className="size-3" />
-                  </span>
-                  <NativeSelect
-                    id="chat-audio-input"
-                    size="sm"
-                    className="w-full **:data-[slot=native-select-icon]:right-2 **:data-[slot=native-select-icon]:size-3 **:data-[slot=native-select-icon]:text-muted-foreground [&_[data-slot=native-select]]:h-11 pointer-fine:[&_[data-slot=native-select]]:h-7 [&_[data-slot=native-select]]:rounded-md [&_[data-slot=native-select]]:border-transparent [&_[data-slot=native-select]]:bg-transparent [&_[data-slot=native-select]]:py-0.5 [&_[data-slot=native-select]]:pr-7 [&_[data-slot=native-select]]:pl-7 [&_[data-slot=native-select]]:font-mono [&_[data-slot=native-select]]:text-muted-foreground [&_[data-slot=native-select]]:text-sm pointer-fine:[&_[data-slot=native-select]]:text-xs [&_[data-slot=native-select]]:transition-colors [&_[data-slot=native-select]]:hover:border-border [&_[data-slot=native-select]]:hover:bg-accent [&_[data-slot=native-select]]:hover:text-accent-foreground [&_[data-slot=native-select]]:focus-visible:border-brand/40 [&_[data-slot=native-select]]:focus-visible:ring-0"
-                    value={selectedAudioInputId}
-                    onChange={onAudioInputChange}
-                    disabled={!canSelectAudioInput}
-                    aria-label={t.audioInputLabel}
-                  >
-                    {audioInputOptions.length === 0 ? (
-                      <NativeSelectOption value="">
-                        {t.audioInputUnavailable}
-                      </NativeSelectOption>
-                    ) : (
-                      audioInputOptions.map((option) => (
-                        <NativeSelectOption
-                          key={option.deviceId}
-                          value={option.deviceId}
-                        >
-                          {option.label}
+                    <Label htmlFor="chat-audio-input" className="sr-only">
+                      {t.audioInputLabel}
+                    </Label>
+                    <span
+                      className="pointer-events-none absolute top-1/2 left-2.5 z-10 inline-flex size-3 -translate-y-1/2 items-center justify-center text-muted-foreground"
+                      aria-hidden="true"
+                    >
+                      <Mic className="size-3" />
+                    </span>
+                    <NativeSelect
+                      id="chat-audio-input"
+                      size="sm"
+                      className="w-full **:data-[slot=native-select-icon]:right-2 **:data-[slot=native-select-icon]:size-3 **:data-[slot=native-select-icon]:text-muted-foreground [&_[data-slot=native-select]]:h-11 pointer-fine:[&_[data-slot=native-select]]:h-7 [&_[data-slot=native-select]]:rounded-md [&_[data-slot=native-select]]:border-transparent [&_[data-slot=native-select]]:bg-transparent [&_[data-slot=native-select]]:py-0.5 [&_[data-slot=native-select]]:pr-7 [&_[data-slot=native-select]]:pl-7 [&_[data-slot=native-select]]:font-mono [&_[data-slot=native-select]]:text-muted-foreground [&_[data-slot=native-select]]:text-sm pointer-fine:[&_[data-slot=native-select]]:text-xs [&_[data-slot=native-select]]:transition-colors [&_[data-slot=native-select]]:hover:border-border [&_[data-slot=native-select]]:hover:bg-accent [&_[data-slot=native-select]]:hover:text-accent-foreground [&_[data-slot=native-select]]:focus-visible:border-brand/40 [&_[data-slot=native-select]]:focus-visible:ring-0"
+                      value={selectedAudioInputId}
+                      onChange={onAudioInputChange}
+                      disabled={!canSelectAudioInput}
+                      aria-label={t.audioInputLabel}
+                    >
+                      {audioInputOptions.length === 0 ? (
+                        <NativeSelectOption value="">
+                          {t.audioInputUnavailable}
                         </NativeSelectOption>
-                      ))
-                    )}
-                  </NativeSelect>
-                </div>
+                      ) : (
+                        audioInputOptions.map((option) => (
+                          <NativeSelectOption
+                            key={option.deviceId}
+                            value={option.deviceId}
+                          >
+                            {option.label}
+                          </NativeSelectOption>
+                        ))
+                      )}
+                    </NativeSelect>
+                  </div>
+                )}
                 <TooltipButton
                   type="button"
                   onClick={onStartRecording}
@@ -650,7 +622,7 @@ export function ChatScreen() {
           </form>
         )}
       </div>
-    </TerminalWindow>
+    </AppShell>
   );
 }
 

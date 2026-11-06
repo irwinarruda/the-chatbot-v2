@@ -44,16 +44,13 @@ export const ChatMessage = memo(function ChatMessage({
   if (!isUser) {
     return (
       <article className="w-full py-2">
-        <div className="mb-1.5 flex items-center gap-2 font-mono text-2xs uppercase tracking-wider">
-          <span aria-hidden="true" className="font-bold text-primary">
-            {">"}
-          </span>
-          <span className="font-semibold text-primary">{botLabel}</span>
-          <time dateTime={message.createdAt} className="text-muted-foreground">
+        <div className="mb-1 flex items-center gap-2 text-xs">
+          <span className="font-medium text-muted-foreground">{botLabel}</span>
+          <time dateTime={message.createdAt} className="text-faint">
             {timestamp}
           </time>
         </div>
-        <div className="pl-4">
+        <div>
           {message.trace && (
             <GenerationTrace trace={message.trace} labels={activityLabels} />
           )}
@@ -77,13 +74,13 @@ export const ChatMessage = memo(function ChatMessage({
         isAudio ? "max-w-[88%] sm:max-w-80" : "max-w-[88%] sm:max-w-[75%]"
       }`}
     >
-      <div className="mb-1 flex items-center justify-end gap-2 px-0.5 font-mono text-2xs uppercase tracking-wider">
-        <span className="font-semibold text-foreground">{youLabel}</span>
-        <time dateTime={message.createdAt} className="text-muted-foreground">
+      <div className="mb-1 flex items-center justify-end gap-2 px-1 text-xs">
+        <span className="sr-only">{youLabel}</span>
+        <time dateTime={message.createdAt} className="text-faint">
           {timestamp}
         </time>
       </div>
-      <div className="rounded-lg border border-border bg-muted px-3.5 py-2.5">
+      <div className="rounded-2xl rounded-tr-md bg-muted px-4 py-2.5">
         <MessageContent
           message={message}
           theme={theme}
@@ -147,7 +144,7 @@ function MessageContent({
               }}
               disabled={isSending}
               variant="outline"
-              className="rounded-lg font-mono text-sm shadow-none"
+              className="rounded-lg text-sm shadow-none"
             >
               {option}
             </Button>
@@ -311,13 +308,13 @@ function InlineNode({ node }: { node: WhatsAppInlineNode }) {
       return <LinkedText value={node.value} />;
     case "bold":
       return (
-        <strong className="font-semibold text-syntax-param">
+        <strong className="font-semibold text-foreground">
           <InlineNodes nodes={node.children} />
         </strong>
       );
     case "italic":
       return (
-        <em className="text-syntax-string italic">
+        <em className="text-foreground italic">
           <InlineNodes nodes={node.children} />
         </em>
       );

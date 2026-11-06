@@ -1,0 +1,99 @@
+{
+  "round": "calibration",
+  "counted": ["opus", "luna", "glm", "gemini"],
+  "passed": false,
+  "overall": 8.39,
+  "missing": [],
+  "invalid": [],
+  "failing": [],
+  "modules": {
+    "t3-code": {
+      "ui": {
+        "weighted": 8.67,
+        "spread": 0.6,
+        "byJudge": {
+          "opus": 8.4,
+          "luna": 8.8,
+          "glm": 9,
+          "gemini": 8.9
+        }
+      },
+      "ux": {
+        "weighted": 8.35,
+        "spread": 0.6,
+        "byJudge": {
+          "opus": 8.1,
+          "luna": 8.5,
+          "glm": 8.5,
+          "gemini": 8.7
+        }
+      }
+    },
+    "codex": {
+      "ui": {
+        "weighted": 8.65,
+        "spread": 0.5,
+        "byJudge": {
+          "opus": 8.6,
+          "luna": 9,
+          "glm": 8.5,
+          "gemini": 8.6
+        }
+      },
+      "ux": {
+        "weighted": 8.17,
+        "spread": 0.8,
+        "byJudge": {
+          "opus": 7.9,
+          "luna": 8.7,
+          "glm": 8,
+          "gemini": 8.5
+        }
+      }
+    },
+    "claude-code": {
+      "ui": {
+        "weighted": 8,
+        "spread": 0.7,
+        "byJudge": {
+          "opus": 7.8,
+          "luna": 8.2,
+          "glm": 8.5,
+          "gemini": 7.8
+        }
+      },
+      "ux": {
+        "weighted": 7.47,
+        "spread": 1,
+        "byJudge": {
+          "opus": 7,
+          "luna": 7.6,
+          "glm": 8,
+          "gemini": 8
+        }
+      }
+    },
+    "linear": {
+      "ui": {
+        "weighted": 9.11,
+        "spread": 0.6,
+        "byJudge": {
+          "opus": 9,
+          "luna": 9,
+          "glm": 9,
+          "gemini": 9.6
+        }
+      },
+      "ux": {
+        "weighted": 8.68,
+        "spread": 0.9,
+        "byJudge": {
+          "opus": 8.5,
+          "luna": 8.6,
+          "glm": 8.5,
+          "gemini": 9.4
+        }
+      }
+    }
+  }
+}

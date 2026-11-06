@@ -1,5 +1,6 @@
 import { Copy, KeyRound, RefreshCw, ShieldCheck, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { ConfirmDialog } from "~/client/shared/components/ConfirmDialog";
 import { Alert, AlertDescription } from "~/client/shared/components/ui/alert";
 import { Badge } from "~/client/shared/components/ui/badge";
 import { Button } from "~/client/shared/components/ui/button";
@@ -66,14 +67,12 @@ export function UploadTokenCard() {
 
   async function onUploadTokenRotate() {
     if (!tokenStatus || isSubmitting) return;
-    if (tokenStatus.configured && !window.confirm(t.rotateConfirmation)) return;
     setCopyError(undefined);
     await rotateUploadToken();
   }
 
   async function onUploadTokenRevoke() {
     if (!tokenStatus?.configured || isSubmitting) return;
-    if (!window.confirm(t.revokeConfirmation)) return;
     setCopyError(undefined);
     await revokeUploadToken();
   }
@@ -99,7 +98,10 @@ export function UploadTokenCard() {
           <AlertDescription>{errorMessage}</AlertDescription>
         </Alert>
       )}
-      <Card className="mb-6 border-border bg-background/60" size="sm">
+      <Card
+        className="mt-8 rounded-xl border-border bg-card shadow-none"
+        size="sm"
+      >
         <CardHeader className="grid-cols-[1fr_auto]">
           <div>
             <CardTitle className="flex items-center gap-2 text-foreground">
@@ -160,31 +162,62 @@ export function UploadTokenCard() {
             </div>
           )}
           <div className="flex flex-wrap items-center gap-2">
-            <Button
-              disabled={!tokenStatus || isSubmitting}
-              onClick={onUploadTokenRotate}
-              size="sm"
-              type="button"
-            >
-              <RefreshCw />
-              {tokenStatus?.configured
-                ? t.rotateTokenAction
-                : t.createTokenAction}
-            </Button>
-            {tokenStatus?.configured && (
+            {tokenStatus?.configured ? (
+              <>
+                <ConfirmDialog
+                  cancelLabel={t.cancelAction}
+                  confirmLabel={t.rotateTokenAction}
+                  description={t.rotateConfirmation}
+                  isDestructive={false}
+                  isDisabled={isSubmitting}
+                  onConfirm={onUploadTokenRotate}
+                  title={t.rotateTokenAction}
+                  trigger={
+                    <Button
+                      disabled={isSubmitting}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      <RefreshCw />
+                      {t.rotateTokenAction}
+                    </Button>
+                  }
+                />
+                <ConfirmDialog
+                  cancelLabel={t.cancelAction}
+                  confirmLabel={t.revokeTokenAction}
+                  description={t.revokeConfirmation}
+                  isDisabled={isSubmitting}
+                  onConfirm={onUploadTokenRevoke}
+                  title={t.revokeTokenAction}
+                  trigger={
+                    <Button
+                      disabled={isSubmitting}
+                      size="sm"
+                      type="button"
+                      variant="ghost"
+                      className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <Trash2 />
+                      {t.revokeTokenAction}
+                    </Button>
+                  }
+                />
+              </>
+            ) : (
               <Button
-                disabled={isSubmitting}
-                onClick={onUploadTokenRevoke}
+                disabled={!tokenStatus || isSubmitting}
+                onClick={onUploadTokenRotate}
                 size="sm"
                 type="button"
-                variant="destructive"
               >
-                <Trash2 />
-                {t.revokeTokenAction}
+                <RefreshCw />
+                {t.createTokenAction}
               </Button>
             )}
             {tokenStatus?.lastUsedAt && (
-              <span className="ml-auto text-2xs text-muted-foreground">
+              <span className="ml-auto text-muted-foreground text-xs">
                 {t.lastUsedLabel}:{" "}
                 {new Date(tokenStatus.lastUsedAt).toLocaleString(prefs.locale)}
               </span>
