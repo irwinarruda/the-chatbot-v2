@@ -355,7 +355,7 @@ export function ChatScreen() {
       <div
         ref={parentRef}
         onScroll={onScroll}
-        className="relative flex-1 overflow-y-auto overscroll-y-contain px-[max(0.75rem,env(safe-area-inset-left))] pt-4 pb-10 pr-[max(0.75rem,env(safe-area-inset-right))] sm:px-5 sm:pt-6"
+        className="chat-scroll-fade relative flex-1 overflow-y-auto overscroll-y-contain px-[max(0.75rem,env(safe-area-inset-left))] pt-4 pb-10 pr-[max(0.75rem,env(safe-area-inset-right))] sm:px-5 sm:pt-6"
       >
         {chatMessages.length === 0 ? (
           <Empty className="h-full rounded-none border-0 px-4 py-10">
@@ -380,7 +380,7 @@ export function ChatScreen() {
           </Empty>
         ) : (
           <div
-            className="mx-auto w-full max-w-3xl"
+            className="mx-auto w-full max-w-2xl"
             style={{
               height: virtualizer.getTotalSize(),
               width: "100%",
@@ -460,7 +460,7 @@ export function ChatScreen() {
         className="relative shrink-0 bg-background px-[max(0.75rem,env(safe-area-inset-left))] pt-2.5 pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-5 sm:pt-3 sm:pb-4"
       >
         {showScrollBtn && chatMessages.length > 0 && (
-          <div className="pointer-events-none absolute right-[max(1rem,env(safe-area-inset-right))] bottom-full z-10 mb-4 sm:right-auto sm:left-1/2 sm:flex sm:w-full sm:max-w-3xl sm:-translate-x-1/2 sm:justify-end">
+          <div className="pointer-events-none absolute right-[max(1rem,env(safe-area-inset-right))] bottom-full z-10 mb-4 sm:right-auto sm:left-1/2 sm:flex sm:w-full sm:max-w-2xl sm:-translate-x-1/2 sm:justify-end">
             <TooltipButton
               type="button"
               onClick={onScrollToBottom}
@@ -476,7 +476,7 @@ export function ChatScreen() {
         {isRecording ? (
           <Card
             size="sm"
-            className="mx-auto w-full max-w-3xl gap-0 rounded-xl border-destructive/30 bg-background/90 py-0 shadow-scrim/10 shadow-sm"
+            className="mx-auto w-full max-w-2xl gap-0 rounded-xl border-destructive/30 bg-background/90 py-0 shadow-scrim/10 shadow-sm"
           >
             <CardContent className="flex flex-wrap items-center gap-2.5 px-3 py-3">
               <span
@@ -513,7 +513,7 @@ export function ChatScreen() {
         ) : (
           <form
             onSubmit={onSubmit}
-            className="group/form mx-auto w-full max-w-3xl rounded-2xl border border-border bg-card p-2 shadow-scrim/10 shadow-sm transition-[border-color,box-shadow,background-color] duration-200 focus-within:border-ring/60 focus-within:ring-3 focus-within:ring-ring/10"
+            className="group/form mx-auto w-full max-w-2xl rounded-2xl border border-border bg-card p-2 shadow-scrim/10 shadow-sm transition-[border-color,box-shadow,background-color] duration-200 focus-within:border-ring/60 focus-within:ring-3 focus-within:ring-ring/10"
           >
             <Label htmlFor="chat-message-input" className="sr-only">
               {t.placeholder}

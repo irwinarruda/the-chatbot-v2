@@ -27,7 +27,6 @@ function PrivacyRoute() {
   return (
     <AppShell
       title={t.windowTitle}
-      wide
       activePath="/privacy"
       dictionary={dictionary}
     >

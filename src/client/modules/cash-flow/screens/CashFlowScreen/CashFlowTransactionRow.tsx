@@ -93,7 +93,7 @@ export function CashFlowTransactionRow({
             </Badge>
           )}
         </div>
-        <p className="m-0 flex flex-wrap gap-x-1.5 gap-y-0.5 text-muted-foreground text-xs">
+        <p className="m-0 flex min-w-0 gap-x-1.5 truncate text-muted-foreground text-xs">
           <span>{date}</span>
           <span aria-hidden="true">·</span>
           <span>{transaction.bankAccount}</span>
@@ -113,7 +113,7 @@ export function CashFlowTransactionRow({
             {currency.format(transaction.value)}
           </MonetaryValue>
         </span>
-        <div className="flex min-w-8 shrink-0 justify-end gap-1">
+        <div className="flex shrink-0 justify-end gap-1 empty:hidden sm:min-w-8 sm:empty:flex">
           {transaction.transferId && (
             <Button
               aria-label={t.transferEditAction}

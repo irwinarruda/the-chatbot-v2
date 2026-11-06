@@ -86,7 +86,7 @@ export function TerminalResponsiveOverlay({
           )}
           initialFocus={() =>
             bodyRef.current?.querySelector<HTMLElement>(
-              "input:not([type=hidden]), textarea, [role=combobox]",
+              "input:not([type=hidden]), select, textarea, [role=combobox]",
             ) ?? true
           }
           showCloseButton={false}

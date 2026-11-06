@@ -142,28 +142,42 @@ export function ArtifactList() {
                   </p>
                 </div>
                 <div className="relative z-10 hidden shrink-0 items-center gap-1 sm:flex">
-                  <Button
-                    aria-label={t.copyLinkAction}
-                    onClick={() => onShareLinkCopy(artifact.id)}
-                    size="sm"
-                    type="button"
-                    variant="ghost"
-                    className="text-muted-foreground"
-                  >
-                    {copiedId === artifact.id ? (
-                      <Check className="text-success" />
-                    ) : (
-                      <Link2 />
-                    )}
-                    <span className="hidden sm:inline" aria-live="polite">
-                      {copiedId === artifact.id
-                        ? t.copiedAction
-                        : t.copyLinkAction}
-                    </span>
-                    <span className="sr-only sm:hidden">
-                      {t.copyLinkAction}
-                    </span>
-                  </Button>
+                  {isPublic ? (
+                    <Button
+                      aria-label={t.copyLinkAction}
+                      onClick={() => onShareLinkCopy(artifact.id)}
+                      size="sm"
+                      type="button"
+                      variant="ghost"
+                      className="text-muted-foreground"
+                    >
+                      {copiedId === artifact.id ? (
+                        <Check className="text-success" />
+                      ) : (
+                        <Link2 />
+                      )}
+                      <span className="hidden sm:inline" aria-live="polite">
+                        {copiedId === artifact.id
+                          ? t.copiedAction
+                          : t.copyLinkAction}
+                      </span>
+                      <span className="sr-only sm:hidden">
+                        {t.copyLinkAction}
+                      </span>
+                    </Button>
+                  ) : (
+                    <Button
+                      disabled={isSubmitting}
+                      onClick={() => onArtifactVisibilityToggle(artifact)}
+                      size="sm"
+                      type="button"
+                      variant="ghost"
+                      className="text-muted-foreground"
+                    >
+                      <Globe2 />
+                      {t.makePublicAction}
+                    </Button>
+                  )}
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger

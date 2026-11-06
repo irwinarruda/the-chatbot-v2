@@ -167,22 +167,21 @@ export function CashFlowSyncForm({
         </Field>
       </div>
       {bankAccount && balances[bankAccount] !== undefined && (
-        <p className="m-0 flex flex-wrap gap-x-4 gap-y-1 rounded-lg bg-muted/60 px-3 py-2 text-muted-foreground text-xs tabular-nums">
+        <p className="m-0 flex flex-wrap justify-between gap-x-4 gap-y-1 rounded-lg border border-border bg-muted/60 px-3 py-2 text-muted-foreground text-xs tabular-nums">
           <span>
             {t.trackedBalanceLabel}{" "}
             <strong className="font-medium text-foreground">
               {currency.format(balances[bankAccount])}
             </strong>
           </span>
-          {adjustment !== undefined && (
-            <span>
-              {t.adjustmentPreviewLabel}{" "}
-              <strong className="font-medium text-foreground">
-                {adjustment > 0 ? "+" : ""}
-                {currency.format(adjustment)}
-              </strong>
-            </span>
-          )}
+          <span>
+            {t.adjustmentPreviewLabel}{" "}
+            <strong className="font-medium text-foreground">
+              {adjustment === undefined
+                ? "—"
+                : `${adjustment > 0 ? "+" : ""}${currency.format(adjustment)}`}
+            </strong>
+          </span>
         </p>
       )}
       <div className="grid gap-4 sm:grid-cols-2">

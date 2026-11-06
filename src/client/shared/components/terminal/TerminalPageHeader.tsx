@@ -22,7 +22,7 @@ export function TerminalPageHeader({
           {heading}
         </h1>
         {subtitle && (
-          <p className="mt-1 max-w-xl text-pretty text-muted-foreground text-sm leading-relaxed">
+          <p className="mt-1 hidden max-w-xl text-pretty text-muted-foreground text-sm leading-relaxed sm:block">
             {subtitle}
           </p>
         )}

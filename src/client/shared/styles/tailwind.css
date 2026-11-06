@@ -395,6 +395,14 @@
   height: 100vh;
 }
 
+.chat-scroll-fade {
+  mask-image: linear-gradient(
+    to bottom,
+    black calc(100% - 1.5rem),
+    transparent
+  );
+}
+
 @media (min-width: 40rem) {
   .page-frame-min-height {
     min-height: calc(100vh - 3rem);
@@ -730,10 +738,10 @@
 .mdxeditor .notes-editor-toolbar {
   min-width: 0;
   max-width: 100%;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  overflow-y: hidden;
-  mask-image: linear-gradient(to right, black calc(100% - 1.5rem), transparent);
+  height: auto;
+  flex-wrap: wrap;
+  row-gap: 0.25rem;
+  overflow: visible;
 }
 
 .notes-editor-content {

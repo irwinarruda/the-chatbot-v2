@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect } from "react";
 import { calculateCashFlowNetBalance } from "~/client/modules/cash-flow/parsers/CashFlowBalances";
 import {
   getTodoDueUrgency,
@@ -48,11 +48,10 @@ function SummaryTile({
   );
 }
 
-export function HomeSummary() {
+export function HomeSummary({ isSignedIn }: { isSignedIn: boolean }) {
   const dictionary = useDictionary();
   const prefs = usePrefs();
   const t = dictionary.welcomePage.summary;
-  const hasWebAccess = useApp((state) => state.hasWebAccess);
   const bootstrapTodos = useApp((state) => state.bootstrapTodos);
   const bootstrapCashFlow = useApp((state) => state.bootstrapCashFlow);
   const bootstrapMonthlyExpenses = useApp(
@@ -69,7 +68,6 @@ export function HomeSummary() {
       state.isCashFlowBootstrapping ||
       state.isMonthlyExpenseBootstrapping,
   );
-  const [isSignedIn, setIsSignedIn] = useState(false);
   const currency = new Intl.NumberFormat(
     prefs.locale === "pt-BR" ? "pt-BR" : "en-US",
     { style: "currency", currency: "BRL" },
@@ -92,19 +90,12 @@ export function HomeSummary() {
   )[0];
 
   useEffect(() => {
-    let isActive = true;
-    void hasWebAccess().then((hasAccess) => {
-      if (!isActive || !hasAccess) return;
-      setIsSignedIn(true);
-      void bootstrapTodos();
-      void bootstrapCashFlow();
-      void bootstrapMonthlyExpenses();
-      void bootstrapNotes();
-    });
-    return () => {
-      isActive = false;
-    };
-  }, []);
+    if (!isSignedIn) return;
+    void bootstrapTodos();
+    void bootstrapCashFlow();
+    void bootstrapMonthlyExpenses();
+    void bootstrapNotes();
+  }, [isSignedIn]);
 
   if (!isSignedIn) return undefined;
 
