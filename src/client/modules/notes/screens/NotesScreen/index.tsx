@@ -5,7 +5,7 @@ import {
   useRouterState,
 } from "@tanstack/react-router";
 import { FileText, Plus, Search, SearchX, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import type { NotesSearchDTO } from "~/client/modules/notes/app/dtos/NotesSearchDTO";
 import type { NoteErrorCode } from "~/client/modules/notes/app/services/NoteService";
 import { ListEmptyState } from "~/client/shared/components/ListEmptyState";
@@ -55,7 +55,6 @@ export function NotesScreen({ search }: { search: NotesSearchDTO }) {
   const bootstrapNotes = useApp((state) => state.bootstrapNotes);
   const createNote = useApp((state) => state.createNote);
   const clearNoteError = useApp((state) => state.clearNoteError);
-  const [newName, setNewName] = useState("");
   const dictionary = getDictionary(prefs.locale);
   const t = dictionary.notesPage;
   const hasSelectedNote = pathname.startsWith("/notes/");
@@ -71,11 +70,9 @@ export function NotesScreen({ search }: { search: NotesSearchDTO }) {
     navigate({ to: "/notes", search: value.trim() ? { q: value } : {} });
   }
 
-  async function onCreateNote(event: React.FormEvent) {
-    event.preventDefault();
-    const note = await createNote(newName);
+  async function onCreateNote() {
+    const note = await createNote(t.untitledNote);
     if (!note) return;
-    setNewName("");
     navigate({
       to: "/notes/$noteId",
       params: { noteId: note.id },
@@ -99,6 +96,16 @@ export function NotesScreen({ search }: { search: NotesSearchDTO }) {
     >
       {!hasSelectedNote && (
         <TerminalPageHeader
+          actions={
+            <Button
+              disabled={isNoteSubmitting}
+              onClick={onCreateNote}
+              type="button"
+            >
+              <Plus />
+              {t.createAction}
+            </Button>
+          }
           heading={t.heading}
           subtitle={t.subtitle}
           withLogo={false}
@@ -127,8 +134,8 @@ export function NotesScreen({ search }: { search: NotesSearchDTO }) {
         <Outlet />
       ) : (
         <section aria-label={t.listLabel} className="min-h-0 flex-1">
-          <div className="mb-4 flex flex-col gap-2 sm:flex-row">
-            <div className="relative flex-1">
+          <div className="mb-4">
+            <div className="relative">
               <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 aria-label={t.searchPlaceholder}
@@ -139,24 +146,6 @@ export function NotesScreen({ search }: { search: NotesSearchDTO }) {
                 value={search.q ?? ""}
               />
             </div>
-            <form className="flex gap-2 sm:w-80" onSubmit={onCreateNote}>
-              <Input
-                aria-label={t.newNamePlaceholder}
-                className="min-h-11 min-w-0 flex-1 text-base md:min-h-9 md:text-sm"
-                maxLength={160}
-                onChange={(event) => setNewName(event.target.value)}
-                placeholder={t.newNamePlaceholder}
-                value={newName}
-              />
-              <Button
-                className="min-h-11 shrink-0 md:min-h-9"
-                disabled={isNoteSubmitting || !newName.trim()}
-                type="submit"
-              >
-                <Plus />
-                {t.createAction}
-              </Button>
-            </form>
           </div>
           {isNoteBootstrapping ? (
             <div aria-busy="true" aria-live="polite" className="space-y-2">

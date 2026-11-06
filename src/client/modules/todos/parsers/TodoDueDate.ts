@@ -25,3 +25,16 @@ export function getTodoDueUrgency(dueDate: string, now: Date): TodoDueUrgency {
   if (due === today) return TodoDueUrgency.Today;
   return TodoDueUrgency.Upcoming;
 }
+
+export function compareTodosByUrgency(
+  first: { dueDate?: string; status: string },
+  second: { dueDate?: string; status: string },
+): number {
+  if (first.status !== second.status)
+    return first.status === "Pending" ? -1 : 1;
+  if (first.dueDate && second.dueDate)
+    return first.dueDate.localeCompare(second.dueDate);
+  if (first.dueDate) return -1;
+  if (second.dueDate) return 1;
+  return 0;
+}

@@ -5,8 +5,7 @@
     {
       "module": "t3-code",
       "scores": {
-        "ui": 8.9,
-        "ux": 8.7
+        "uiux": 8.8
       },
       "strengths": [
         "Pure dark palette with subtle border delimiters instead of heavy solid cards, creating an immersive, focused workspace.",
@@ -17,14 +16,12 @@
       "issues": [
         {
           "severity": "low",
-          "criterion": "ux",
           "screen": "new-thread.png",
           "problem": "Cryptic colored status badges (such as MC and PC icons) in sidebar threads lack explicit textual meaning or onboarding tooltips.",
           "fix": "Add descriptive tooltips on hover and consider standardizing status indicators with human-readable labels."
         },
         {
           "severity": "low",
-          "criterion": "ui",
           "screen": "settings.png",
           "problem": "Setting subsections have long vertical lists of toggles with minimal visual rhythm, making scanning fatigue likely.",
           "fix": "Use subtle card enclosures or alternating row backgrounds to group related controls into clear visual clusters."
@@ -34,8 +31,7 @@
     {
       "module": "codex",
       "scores": {
-        "ui": 8.6,
-        "ux": 8.5
+        "uiux": 8.55
       },
       "strengths": [
         "Right-side auxiliary rail for results and sources keeps the main conversational thread focused and uncluttered.",
@@ -46,14 +42,12 @@
       "issues": [
         {
           "severity": "medium",
-          "criterion": "ux",
           "screen": "images-gallery.png",
           "problem": "The floating bottom prompt composer overlaps and obscures the bottommost row of content in the gallery grid.",
           "fix": "Add dynamic bottom scroll padding or a safe-area footer spacer to ensure all content scrolls completely above the floating input."
         },
         {
           "severity": "low",
-          "criterion": "ui",
           "screen": "conversation.png",
           "problem": "The right panel in its empty state presents plain cards with faint borders that look unpolished compared to the central thread.",
           "fix": "Add subtle empty-state illustrations, clear descriptive placeholders, or collapse the panel when no artifact or source is selected."
@@ -63,8 +57,7 @@
     {
       "module": "claude-code",
       "scores": {
-        "ui": 7.8,
-        "ux": 8.0
+        "uiux": 7.9
       },
       "strengths": [
         "Dedicated runtime inspector showing active environments, context percentage meter, and connected tools in real time.",
@@ -75,14 +68,12 @@
       "issues": [
         {
           "severity": "high",
-          "criterion": "ui",
           "screen": "conversation-with-panel.png",
           "problem": "Raw internal XML/JSON markup (<artifact-view-context ...>) leaks directly into the chat transcript, disrupting visual polish.",
           "fix": "Filter or parse technical context payloads into formatted UI metadata cards or hidden debug traces."
         },
         {
           "severity": "medium",
-          "criterion": "ux",
           "screen": "conversation-with-panel.png",
           "problem": "Deleted or unavailable artifact states in the right pane provide no recovery actions, re-run prompts, or contextual explanation.",
           "fix": "Provide a clear 'Regenerate artifact' button and display a brief explanation linking back to the originating prompt."
@@ -92,8 +83,7 @@
     {
       "module": "linear",
       "scores": {
-        "ui": 9.6,
-        "ux": 9.4
+        "uiux": 9.5
       },
       "strengths": [
         "Agent actions (branch creation, PR generation, status transitions) are integrated natively into the issue activity timeline alongside human collaboration.",
@@ -104,7 +94,6 @@
       "issues": [
         {
           "severity": "low",
-          "criterion": "ux",
           "screen": "issue-with-agent.png",
           "problem": "The floating docked agent card overlays issue comments and activity timeline on medium or smaller desktop viewports.",
           "fix": "Provide a quick toggle to dock the agent card into a collapsible side column or split-pane layout."

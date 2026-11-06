@@ -40,6 +40,7 @@ import {
 } from "~/client/shared/components/ui/select";
 import { Skeleton } from "~/client/shared/components/ui/skeleton";
 import { Textarea } from "~/client/shared/components/ui/textarea";
+import { usePrefs } from "~/client/shared/hooks/usePrefs";
 import type { Dictionary } from "~/client/shared/i18n/dictionary";
 import type { TodoDTO } from "~/contracts/http/todos/todo";
 
@@ -69,6 +70,7 @@ export function TodoDetailDialog({
   theme: "dark" | "light";
   todo?: TodoDTO;
 }) {
+  const prefs = usePrefs();
   const isCreate = mode === "create";
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -115,7 +117,18 @@ export function TodoDetailDialog({
     <TerminalResponsiveOverlay
       bodyClassName="space-y-4"
       closeLabel={t.cancelAction}
-      description={t.subtitle}
+      description={
+        isCreate || !todo
+          ? t.createDescription
+          : t.createdOn.replace(
+              "{date}",
+              new Date(todo.createdAt).toLocaleDateString(prefs.locale, {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              }),
+            )
+      }
       footer={
         showForm ? (
           <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">

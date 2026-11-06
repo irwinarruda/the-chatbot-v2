@@ -208,7 +208,7 @@
       "steps": [
         {
           "action": "click",
-          "selector": "text=Transfer between accounts"
+          "selector": "role=button[name=\"Transfer between accounts\"]"
         },
         {
           "action": "waitFor",
@@ -228,7 +228,7 @@
       "steps": [
         {
           "action": "click",
-          "selector": "text=sync balance"
+          "selector": "role=button[name=\"sync balance\"]"
         },
         {
           "action": "waitFor",

@@ -128,10 +128,10 @@ describe("ChatMessage", () => {
     expect(screen.queryByText("input")).not.toBeInTheDocument();
     expect(screen.queryByText("output")).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /list_todos/ }));
+    await user.click(screen.getByRole("button", { name: /List todos/ }));
 
     expect(screen.getByText("input")).toBeInTheDocument();
     expect(screen.getByText("output")).toBeInTheDocument();
-    expect(screen.getAllByText(/"count": 2/)).toHaveLength(2);
+    expect(screen.getAllByText(/"count": 2/)).toHaveLength(1);
   });
 });

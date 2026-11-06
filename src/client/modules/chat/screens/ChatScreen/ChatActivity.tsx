@@ -75,7 +75,7 @@ export function GenerationTrace({
   const toolCountLabel = toolCount === 1 ? labels.traceTool : labels.traceTools;
 
   return (
-    <div className="mb-2 border-border border-b pb-2">
+    <div className="mb-2">
       <Button
         type="button"
         variant="ghost"
@@ -83,7 +83,7 @@ export function GenerationTrace({
         aria-expanded={isExpanded}
         aria-label={isExpanded ? labels.traceHide : labels.traceShow}
         onClick={() => setIsExpanded((current) => !current)}
-        className="h-auto min-h-11 pointer-fine:min-h-8 max-w-full flex-wrap justify-start gap-1.5 rounded px-1.5 py-1.5 text-left font-mono text-muted-foreground text-xs leading-normal"
+        className="-ml-1.5 h-auto min-h-11 pointer-fine:min-h-7 max-w-full flex-wrap justify-start gap-1.5 rounded-md px-1.5 py-1 text-left font-normal text-muted-foreground text-xs leading-normal aria-expanded:bg-transparent aria-expanded:text-foreground"
       >
         <ChevronRight
           aria-hidden="true"
@@ -103,7 +103,7 @@ export function GenerationTrace({
         )}
       </Button>
       {isExpanded && (
-        <div className="mt-1.5 flex flex-col gap-1.5">
+        <div className="mt-1.5 flex flex-col gap-1.5 rounded-lg border border-border bg-muted/30 px-3 py-2">
           {trace.map((generation) => (
             <GenerationActivity
               key={generation.id}
@@ -247,7 +247,6 @@ export function ToolActivity({
     unknownLabel,
   );
   const hasDetails = argumentsValue !== undefined || outcome !== undefined;
-  const preview = getToolPreview(outcome ?? argumentsValue);
 
   return (
     <div data-slot="chat-tool-activity">
@@ -259,18 +258,15 @@ export function ToolActivity({
         onClick={() => {
           if (hasDetails) setIsExpanded((current) => !current);
         }}
-        className="h-auto pointer-fine:h-auto min-h-11 pointer-fine:min-h-6 w-full justify-start gap-1.5 rounded px-1.5 py-0 text-left font-mono text-muted-foreground text-xs"
+        className="h-auto pointer-fine:h-auto min-h-11 pointer-fine:min-h-6 w-full justify-start gap-1.5 rounded px-1.5 py-0 text-left font-normal text-muted-foreground text-xs aria-expanded:bg-transparent"
       >
         <Wrench
           aria-hidden="true"
-          className="size-3.5 shrink-0 text-syntax-function"
+          className="size-3.5 shrink-0 text-muted-foreground"
         />
-        <span className="shrink-0 text-foreground">{name}</span>
-        {preview && (
-          <span className="min-w-0 flex-1 truncate text-muted-foreground">
-            {preview}
-          </span>
-        )}
+        <span className="min-w-0 flex-1 truncate text-foreground">
+          {formatToolName(name)}
+        </span>
         <span
           className={`ml-auto inline-flex shrink-0 items-center gap-1 ${status.className}`}
         >
@@ -393,14 +389,12 @@ function getOutcomeStatus(outcome: unknown): string | undefined {
   return outcome.status;
 }
 
-function getToolPreview(value: unknown): string | undefined {
-  if (value === undefined) return undefined;
-  const compact = stringifyToolValue(value).replace(/\s+/g, " ").trim();
-  if (compact.length <= 96) return compact;
-  return `${compact.slice(0, 95)}…`;
-}
-
 function stringifyToolValue(value: unknown): string {
   if (typeof value === "string") return value;
   return JSON.stringify(value, null, 2) ?? String(value);
+}
+
+function formatToolName(name: string): string {
+  const words = name.replace(/[_-]+/g, " ").trim();
+  return words.charAt(0).toUpperCase() + words.slice(1);
 }

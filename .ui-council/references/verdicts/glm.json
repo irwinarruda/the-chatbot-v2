@@ -4,39 +4,37 @@
   "modules": [
     {
       "module": "t3-code",
-      "scores": { "ui": 9, "ux": 8.5 },
+      "scores": {
+        "uiux": 8.75
+      },
       "strengths": [
         "Every sidebar thread carries status and time metadata (Waiting 28m, 7h), making the list scannable and trustworthy at a glance",
         "New-thread screen focuses all attention on one headline plus one composer; everything else recedes into quiet surfaces",
-        "Settings rows follow one strict pattern — title, one-line explanation, right-aligned control — grouped into rounded cards with labeled sections",
+        "Settings rows follow one strict pattern \u2014 title, one-line explanation, right-aligned control \u2014 grouped into rounded cards with labeled sections",
         "Usage screen scales data well: huge percentage numbers anchor each row, then per-environment segments and time-remaining chips layer detail on top",
         "Keyboard and safety affordances are surfaced, not hidden: a / hint on search and an explicit delete-confirmation toggle"
       ],
       "issues": [
         {
           "severity": "medium",
-          "criterion": "ux",
           "screen": "usage-limits.png",
           "problem": "The hatched (striped) bar regions and small trend arrows beside 'left' percentages have no legend, so a first-time reader cannot tell what the pattern or arrow means",
           "fix": "Add a one-line legend under the segmented control, or a tooltip on first hover, explaining hatched regions and the trend arrow"
         },
         {
           "severity": "low",
-          "criterion": "ui",
           "screen": "usage-limits.png",
           "problem": "Labels like 'Match<IT> Claude 89%' run tight inside their bar segments and nearly clip at the divider",
           "fix": "Truncate labels to the segment width with ellipsis and show the full label on hover"
         },
         {
           "severity": "low",
-          "criterion": "ux",
           "screen": "new-thread.png",
           "problem": "The bottom-left footer ('Settled 573' plus three tiny icons) is unexplained and its icons are too small to be confident targets",
           "fix": "Add tooltips and enlarge the hit areas, or group the footer into one labeled status chip"
         },
         {
           "severity": "low",
-          "criterion": "ui",
           "screen": "settings.png",
           "problem": "The right control column mixes full-width dropdowns with small toggles, leaving a slightly ragged right edge across rows",
           "fix": "Reserve a fixed-width control column so toggles and dropdowns align on one edge"
@@ -45,7 +43,9 @@
     },
     {
       "module": "codex",
-      "scores": { "ui": 8.5, "ux": 8 },
+      "scores": {
+        "uiux": 8.25
+      },
       "strengths": [
         "Machine effort is summarized, not dumped: 'Trabalhou por 8s' collapses the whole work phase into one expandable line",
         "Inline code chips (rebase, squash, cherry-pick) make technical tokens visually distinct without breaking reading flow",
@@ -56,28 +56,24 @@
       "issues": [
         {
           "severity": "medium",
-          "criterion": "ux",
           "screen": "images-gallery.png",
           "problem": "The floating composer overlaps the third row of images, hiding gallery content while the user is browsing",
           "fix": "Dock the composer in its own footer band, or collapse it to a small pill that expands on focus while scrolling"
         },
         {
           "severity": "medium",
-          "criterion": "ux",
           "screen": "conversation.png",
           "problem": "The sidebar thread list shows plain truncated titles with no timestamps or status, so recent conversations are hard to tell apart",
           "fix": "Add relative time and a small state marker to each thread row, as the pinned section already hints at"
         },
         {
           "severity": "low",
-          "criterion": "ui",
           "screen": "conversation.png",
           "problem": "The top-right 'Resultados' panel floats without a visible anchor, so its relationship to the current thread is ambiguous",
           "fix": "Give the panel a header that names the thread, or visually connect it to the message that produced it"
         },
         {
           "severity": "low",
-          "criterion": "ui",
           "screen": "images-gallery.png",
           "problem": "The thin icon-only left rail has no labels, so discovering Library, History, or Sources depends on guessing",
           "fix": "Reveal text labels on hover or offer an expandable rail state"
@@ -86,73 +82,70 @@
     },
     {
       "module": "claude-code",
-      "scores": { "ui": 8.5, "ux": 8 },
+      "scores": {
+        "uiux": 8.25
+      },
       "strengths": [
         "Tool activity is folded into one-line collapsible summaries ('Usou Claude Docs 6 vezes, Carregou ferramentas'), keeping the transcript readable",
         "The side panel exposes system state the user would otherwise guess: context percentage, connectors needing reconnection, environment list",
-        "Empty and error states say what happened in words ('Este artefato foi excluído ou não está mais disponível') instead of going blank",
+        "Empty and error states say what happened in words ('Este artefato foi exclu\u00eddo ou n\u00e3o est\u00e1 mais dispon\u00edvel') instead of going blank",
         "User turns as soft cards versus plain assistant text give turn ownership without heavy chat bubbles",
         "The left nav groups threads by project and environment, matching how the work is actually organized"
       ],
       "issues": [
         {
           "severity": "medium",
-          "criterion": "ux",
           "screen": "conversation-with-panel.png",
-          "problem": "'Conectores · 2 para reconectar' reports a problem as plain text with no adjacent action to fix it",
+          "problem": "'Conectores \u00b7 2 para reconectar' reports a problem as plain text with no adjacent action to fix it",
           "fix": "Inline a 'Reconectar' button or link that takes the user straight to the reconnect flow"
         },
         {
           "severity": "low",
-          "criterion": "ui",
           "screen": "conversation-with-panel.png",
           "problem": "The panel's top icon strip (list, terminal, file, globe, folder) is icon-only and its meanings are not obvious",
           "fix": "Label the active tab and add tooltips for the rest"
         },
         {
           "severity": "low",
-          "criterion": "ui",
           "screen": "conversation-with-panel.png",
           "problem": "Collapsed activity lines use very low-contrast gray that approaches the legibility floor",
           "fix": "Raise the secondary text one contrast step while keeping the hierarchy"
         },
         {
           "severity": "low",
-          "criterion": "ux",
           "screen": "conversation-with-panel.png",
           "problem": "With the artifact unavailable, the right panel is mostly empty space beside a full transcript",
-          "fix": "Offer the remaining 'Saídas' artifacts as selectable content inside the panel so the space stays useful"
+          "fix": "Offer the remaining 'Sa\u00eddas' artifacts as selectable content inside the panel so the space stays useful"
         }
       ]
     },
     {
       "module": "linear",
-      "scores": { "ui": 9, "ux": 8.5 },
+      "scores": {
+        "uiux": 8.75
+      },
       "strengths": [
         "The agent panel closes the whole loop in one view: prompt, worked-for duration, plain-language summary, diff stats, draft PR with branch, and a reply box",
         "The activity feed narrates state transitions with actors and relative time (created via Slack, moved Todo to In Progress), so history reads like a story",
-        "Diff numbers (+22 −10) use red/green color coding that needs no legend",
+        "Diff numbers (+22 \u221210) use red/green color coding that needs no legend",
         "A Favorites section puts the user's active work one persistent click away in the sidebar",
         "Issue context stays visible in one toolbar row: ID, title, star, pagination (1/84), and prev/next navigation"
       ],
       "issues": [
         {
           "severity": "medium",
-          "criterion": "ui",
           "screen": "issue-with-agent.png",
           "problem": "The issue toolbar's five actions are icon-only with no labels, so their meaning is guessable but not certain",
           "fix": "Add tooltips and gather the rarer actions into an overflow menu with labeled entries"
         },
         {
           "severity": "low",
-          "criterion": "ux",
           "screen": "issue-with-agent.png",
           "problem": "Activity and comment text runs small; on a long issue the feed would strain scanning",
           "fix": "Bump the base size slightly or offer a comfortable-density option"
         },
         {
           "severity": "low",
-          "criterion": "ux",
           "screen": "issue-with-agent.png",
           "problem": "The reply composer's 'Skills' dropdown and its refresh, attach, and send buttons are all unlabeled icons",
           "fix": "Tooltips on the icons and a visible label state for Skills when a skill is selected"
@@ -160,5 +153,5 @@
       ]
     }
   ],
-  "overall": "Restraint plus status honesty. All four apps sit on near-monochrome dark surfaces with one or two meaningful accents, so color always means something — usage levels, diff stats, state markers — never decoration. Hierarchy is typographic: one big anchor per screen (a headline, a 99%, an issue title) and everything else stepped down through consistent grays. Machine activity is never dumped raw; it is folded into collapsible summaries ('worked for 8s', 'Usou Claude Docs 6 vezes') while system state (context %, connectors, usage windows) is promoted to first-class content. A persistent composer anchors each screen as the obvious next action, and nearly every item carries time metadata (7h, 2 min ago, 10d 22h) so the user can trust what they are looking at. Layers separate through hairline borders and surface tints instead of heavy shadows, which is what keeps these dense screens calm."
+  "overall": "Restraint plus status honesty. All four apps sit on near-monochrome dark surfaces with one or two meaningful accents, so color always means something \u2014 usage levels, diff stats, state markers \u2014 never decoration. Hierarchy is typographic: one big anchor per screen (a headline, a 99%, an issue title) and everything else stepped down through consistent grays. Machine activity is never dumped raw; it is folded into collapsible summaries ('worked for 8s', 'Usou Claude Docs 6 vezes') while system state (context %, connectors, usage windows) is promoted to first-class content. A persistent composer anchors each screen as the obvious next action, and nearly every item carries time metadata (7h, 2 min ago, 10d 22h) so the user can trust what they are looking at. Layers separate through hairline borders and surface tints instead of heavy shadows, which is what keeps these dense screens calm."
 }

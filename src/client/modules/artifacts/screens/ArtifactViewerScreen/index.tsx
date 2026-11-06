@@ -1,6 +1,14 @@
 import { Link, useRouter } from "@tanstack/react-router";
-import { ArrowLeft, Globe2, LockKeyhole, Moon, Sun } from "lucide-react";
-import { useEffect } from "react";
+import {
+  ArrowLeft,
+  Check,
+  Globe2,
+  Link2,
+  LockKeyhole,
+  Moon,
+  Sun,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 import { TerminalChromeButton } from "~/client/shared/components/terminal/TerminalChromeButton";
 import { Alert, AlertDescription } from "~/client/shared/components/ui/alert";
 import { Badge } from "~/client/shared/components/ui/badge";
@@ -23,6 +31,7 @@ export function ArtifactViewerScreen({ artifactId }: { artifactId: string }) {
   const closeArtifact = useApp((state) => state.closeArtifact);
   const dictionary = getDictionary(prefs.locale);
   const t = dictionary.artifactsPage;
+  const [isCopied, setIsCopied] = useState(false);
   const themeLabel =
     prefs.theme === "light"
       ? dictionary.common.switchToDarkTheme
@@ -31,6 +40,16 @@ export function ArtifactViewerScreen({ artifactId }: { artifactId: string }) {
   async function onToggleLocale() {
     await toggleLocale();
     router.invalidate();
+  }
+
+  async function onShareLinkCopy() {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setIsCopied(true);
+      window.setTimeout(() => setIsCopied(false), 2000);
+    } catch {
+      setIsCopied(false);
+    }
   }
 
   useEffect(() => {
@@ -93,6 +112,21 @@ export function ArtifactViewerScreen({ artifactId }: { artifactId: string }) {
               </span>
             </Badge>
           </>
+        )}
+        {artifact && (
+          <Button
+            className="shrink-0 text-muted-foreground"
+            aria-label={t.copyLinkAction}
+            onClick={onShareLinkCopy}
+            size="sm"
+            type="button"
+            variant="ghost"
+          >
+            {isCopied ? <Check className="text-success" /> : <Link2 />}
+            <span className="hidden sm:inline" aria-live="polite">
+              {isCopied ? t.copiedAction : t.copyLinkAction}
+            </span>
+          </Button>
         )}
         <TerminalChromeButton onClick={onToggleLocale} title={prefs.locale}>
           {prefs.locale === "pt-BR" ? "PT" : "EN"}

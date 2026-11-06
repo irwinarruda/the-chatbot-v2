@@ -3,6 +3,7 @@ import { AlertCircle, ListTodo, Plus, SearchX, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { TodoErrorCode } from "~/client/modules/todos/app/services/TodoService";
 import { TodoDetailDialog } from "~/client/modules/todos/components/TodoDetailDialog";
+import { compareTodosByUrgency } from "~/client/modules/todos/parsers/TodoDueDate";
 import {
   DEFAULT_TODO_STATUS,
   type TodoSearch,
@@ -193,7 +194,7 @@ export function TodoScreen({ search }: { search: TodoSearch }) {
           </div>
         ) : todos.length > 0 ? (
           <ul className="m-0 list-none divide-y divide-border overflow-hidden rounded-xl border border-border bg-card p-0">
-            {todos.map((todo) => (
+            {[...todos].sort(compareTodosByUrgency).map((todo) => (
               <li key={todo.id}>
                 <TodoRow
                   locale={prefs.locale}

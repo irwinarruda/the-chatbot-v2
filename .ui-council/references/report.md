@@ -1,19 +1,19 @@
 # Council report: calibration
 
-**Status:** SCORED · overall 8.39
+**Status:** SCORED · overall 8.42
 
 ## Scores
 
-| module | ui (weighted) | ux (weighted) | ui opus | ui luna | ui glm | ui gemini | ux opus | ux luna | ux glm | ux gemini |
-|---|---|---|---|---|---|---|---|---|---|---|
-| t3-code | 8.67 | 8.35 | 8.4 | 8.8 | 9 | 8.9 | 8.1 | 8.5 | 8.5 | 8.7 |
-| codex | 8.65 | 8.17 | 8.6 | 9 | 8.5 | 8.6 | 7.9 | 8.7 | 8 | 8.5 |
-| claude-code | 8 | 7.47 | 7.8 | 8.2 | 8.5 | 7.8 | 7 | 7.6 | 8 | 8 |
-| linear | 9.11 | 8.68 | 9 | 9 | 9 | 9.6 | 8.5 | 8.6 | 8.5 | 9.4 |
+| module | uiux (weighted) | uiux opus | uiux luna | uiux glm | uiux gemini |
+|---|---|---|---|---|---|
+| t3-code | 8.54 | 8.25 | 8.65 | 8.75 | 8.8 |
+| codex | 8.42 | 8.25 | 8.85 | 8.25 | 8.55 |
+| claude-code | 7.74 | 7.4 | 7.9 | 8.25 | 7.9 |
+| linear | 8.97 | 8.75 | 8.8 | 8.75 | 9.5 |
 
 ## Findings by module
 
-### t3-code (ui 8.67, ux 8.35)
+### t3-code (uiux 8.54)
 
 **Strengths**
 
@@ -38,21 +38,21 @@
 
 **Issues**
 
-- **medium** · ux · [opus] `usage-limits.png`: The bar encoding has no legend: the white vertical marker, the hatched tail, two different hues per row and a gray Codex bar all carry meaning the user has to guess. → Label the marker (e.g. 'expected pace') and the hatched region, keep one hue per account, and add a small legend or tooltip on first use.
-- **medium** · ui · [opus] `new-thread.png`: The floating top-right panel (user, Open in Zed, Add project script, branch) sits detached on an empty canvas and repeats the user and branch already shown under the composer. → Fold it into the composer footer or a header popover so context lives in one place next to the action it affects.
-- **medium** · ui · [opus] `settings.png`: On a pure-black canvas the small gray descriptions and the off-state toggles have weak contrast; the off toggle almost disappears into the card. → Use a near-black base with slightly raised card surfaces, lift secondary text contrast, and give the off toggle a visible track border.
-- **medium** · ux · [luna] `settings.png`: The header says Settings / General while Diffs & pull requests is highlighted in the navigation, so the current location is ambiguous. → Keep the selected navigation item and the settings page title in sync.
-- **medium** · ux · [glm] `usage-limits.png`: The hatched (striped) bar regions and small trend arrows beside 'left' percentages have no legend, so a first-time reader cannot tell what the pattern or arrow means → Add a one-line legend under the segmented control, or a tooltip on first hover, explaining hatched regions and the trend arrow
-- **low** · ux · [opus] `settings.png`: 'General' (selected) and 'Diffs & pull requests' (hovered) carry nearly identical fills, so the current page is not clearly distinguished; the last nav group (Maintenance, Labs, About, Archive) has no group header unlike the others. → Give the selected item a stronger fill or an accent bar, and either label the last group or separate it consistently.
-- **low** · ux · [opus] `new-thread.png`: Sidebar footer controls are icon-only and 'Settled 573 ›' is cryptic; the three top-right layout icons are also unlabeled. → Add text labels or always-available tooltips and a clearer name for the settled count.
-- **low** · ui · [opus] `usage-limits.png`: 'Claude & GPT (shared) · Weekly' wraps to two lines and pushes its percentage down, breaking the left-column alignment every other card keeps. → Truncate or shorten the label, or widen the label column so all cards align on the same baseline.
-- **low** · ui · [glm] `usage-limits.png`: Labels like 'Match<IT> Claude 89%' run tight inside their bar segments and nearly clip at the divider → Truncate labels to the segment width with ellipsis and show the full label on hover
-- **low** · ux · [glm] `new-thread.png`: The bottom-left footer ('Settled 573' plus three tiny icons) is unexplained and its icons are too small to be confident targets → Add tooltips and enlarge the hit areas, or group the footer into one labeled status chip
-- **low** · ui · [glm] `settings.png`: The right control column mixes full-width dropdowns with small toggles, leaving a slightly ragged right edge across rows → Reserve a fixed-width control column so toggles and dropdowns align on one edge
-- **low** · ux · [gemini] `new-thread.png`: Cryptic colored status badges (such as MC and PC icons) in sidebar threads lack explicit textual meaning or onboarding tooltips. → Add descriptive tooltips on hover and consider standardizing status indicators with human-readable labels.
-- **low** · ui · [gemini] `settings.png`: Setting subsections have long vertical lists of toggles with minimal visual rhythm, making scanning fatigue likely. → Use subtle card enclosures or alternating row backgrounds to group related controls into clear visual clusters.
+- **medium** · [opus] `usage-limits.png`: The bar encoding has no legend: the white vertical marker, the hatched tail, two different hues per row and a gray Codex bar all carry meaning the user has to guess. → Label the marker (e.g. 'expected pace') and the hatched region, keep one hue per account, and add a small legend or tooltip on first use.
+- **medium** · [opus] `new-thread.png`: The floating top-right panel (user, Open in Zed, Add project script, branch) sits detached on an empty canvas and repeats the user and branch already shown under the composer. → Fold it into the composer footer or a header popover so context lives in one place next to the action it affects.
+- **medium** · [opus] `settings.png`: On a pure-black canvas the small gray descriptions and the off-state toggles have weak contrast; the off toggle almost disappears into the card. → Use a near-black base with slightly raised card surfaces, lift secondary text contrast, and give the off toggle a visible track border.
+- **medium** · [luna] `settings.png`: The header says Settings / General while Diffs & pull requests is highlighted in the navigation, so the current location is ambiguous. → Keep the selected navigation item and the settings page title in sync.
+- **medium** · [glm] `usage-limits.png`: The hatched (striped) bar regions and small trend arrows beside 'left' percentages have no legend, so a first-time reader cannot tell what the pattern or arrow means → Add a one-line legend under the segmented control, or a tooltip on first hover, explaining hatched regions and the trend arrow
+- **low** · [opus] `settings.png`: 'General' (selected) and 'Diffs & pull requests' (hovered) carry nearly identical fills, so the current page is not clearly distinguished; the last nav group (Maintenance, Labs, About, Archive) has no group header unlike the others. → Give the selected item a stronger fill or an accent bar, and either label the last group or separate it consistently.
+- **low** · [opus] `new-thread.png`: Sidebar footer controls are icon-only and 'Settled 573 ›' is cryptic; the three top-right layout icons are also unlabeled. → Add text labels or always-available tooltips and a clearer name for the settled count.
+- **low** · [opus] `usage-limits.png`: 'Claude & GPT (shared) · Weekly' wraps to two lines and pushes its percentage down, breaking the left-column alignment every other card keeps. → Truncate or shorten the label, or widen the label column so all cards align on the same baseline.
+- **low** · [gemini] `new-thread.png`: Cryptic colored status badges (such as MC and PC icons) in sidebar threads lack explicit textual meaning or onboarding tooltips. → Add descriptive tooltips on hover and consider standardizing status indicators with human-readable labels.
+- **low** · [gemini] `settings.png`: Setting subsections have long vertical lists of toggles with minimal visual rhythm, making scanning fatigue likely. → Use subtle card enclosures or alternating row backgrounds to group related controls into clear visual clusters.
+- **low** · [glm] `usage-limits.png`: Labels like 'Match<IT> Claude 89%' run tight inside their bar segments and nearly clip at the divider → Truncate labels to the segment width with ellipsis and show the full label on hover
+- **low** · [glm] `new-thread.png`: The bottom-left footer ('Settled 573' plus three tiny icons) is unexplained and its icons are too small to be confident targets → Add tooltips and enlarge the hit areas, or group the footer into one labeled status chip
+- **low** · [glm] `settings.png`: The right control column mixes full-width dropdowns with small toggles, leaving a slightly ragged right edge across rows → Reserve a fixed-width control column so toggles and dropdowns align on one edge
 
-### codex (ui 8.65, ux 8.17)
+### codex (uiux 8.42)
 
 **Strengths**
 
@@ -77,21 +77,21 @@
 
 **Issues**
 
-- **medium** · ui · [opus] `conversation.png`: Sidebar titles are hard-clipped mid-word ('certidão do meu imó', 'verso', 'buscar e') with no ellipsis or fade, which looks broken in a list of thirty rows. → Apply an ellipsis or a fade mask at the edge and show the full title on hover.
-- **medium** · ux · [opus] `images-gallery.png`: The floating composer sits directly on the image grid with no scrim, covering the bottom of the third row and competing with the photos behind it. → Add a bottom gradient or solid dock behind the composer and bottom padding so the last row can scroll clear of it.
-- **medium** · ux · [opus] `conversation.png`: The left icon rail (seven icons) has no labels, and the right 'Resultados / Fontes' card has an unclear purpose with a very faint empty-state line. → Label the rail or show tooltips, and give the side card a one-line explanation and a visible call to action.
-- **medium** · ux · [glm] `images-gallery.png`: The floating composer overlaps the third row of images, hiding gallery content while the user is browsing → Dock the composer in its own footer band, or collapse it to a small pill that expands on focus while scrolling
-- **medium** · ux · [glm] `conversation.png`: The sidebar thread list shows plain truncated titles with no timestamps or status, so recent conversations are hard to tell apart → Add relative time and a small state marker to each thread row, as the pinned section already hints at
-- **medium** · ux · [gemini] `images-gallery.png`: The floating bottom prompt composer overlaps and obscures the bottommost row of content in the gallery grid. → Add dynamic bottom scroll padding or a safe-area footer spacer to ensure all content scrolls completely above the floating input.
-- **low** · ui · [opus] `images-gallery.png`: Captions on light images ('Esboço', 'Figurinhas') rely on a faint gradient, so legibility varies card by card. → Use a stronger, consistent scrim or place the caption below the image.
-- **low** · ux · [opus] `images-gallery.png`: The thread sidebar disappears on the gallery while it is present in the conversation, so the navigation model changes between modules. → Keep the same navigation chrome across modules, or make the collapse an explicit, consistent toggle.
-- **low** · ui · [opus] `conversation.png`: The composer placeholder and the disabled send button are very low contrast against the input surface. → Raise placeholder and disabled-icon contrast to at least 3:1 for the control.
-- **low** · ux · [luna] `conversation.png`: Long conversation titles are truncated in the sidebar, making similarly named threads harder to distinguish at a glance. → Expose the full title on focus or hover, or add a small amount of secondary identifying context.
-- **low** · ui · [glm] `conversation.png`: The top-right 'Resultados' panel floats without a visible anchor, so its relationship to the current thread is ambiguous → Give the panel a header that names the thread, or visually connect it to the message that produced it
-- **low** · ui · [glm] `images-gallery.png`: The thin icon-only left rail has no labels, so discovering Library, History, or Sources depends on guessing → Reveal text labels on hover or offer an expandable rail state
-- **low** · ui · [gemini] `conversation.png`: The right panel in its empty state presents plain cards with faint borders that look unpolished compared to the central thread. → Add subtle empty-state illustrations, clear descriptive placeholders, or collapse the panel when no artifact or source is selected.
+- **medium** · [opus] `conversation.png`: Sidebar titles are hard-clipped mid-word ('certidão do meu imó', 'verso', 'buscar e') with no ellipsis or fade, which looks broken in a list of thirty rows. → Apply an ellipsis or a fade mask at the edge and show the full title on hover.
+- **medium** · [opus] `images-gallery.png`: The floating composer sits directly on the image grid with no scrim, covering the bottom of the third row and competing with the photos behind it. → Add a bottom gradient or solid dock behind the composer and bottom padding so the last row can scroll clear of it.
+- **medium** · [opus] `conversation.png`: The left icon rail (seven icons) has no labels, and the right 'Resultados / Fontes' card has an unclear purpose with a very faint empty-state line. → Label the rail or show tooltips, and give the side card a one-line explanation and a visible call to action.
+- **medium** · [gemini] `images-gallery.png`: The floating bottom prompt composer overlaps and obscures the bottommost row of content in the gallery grid. → Add dynamic bottom scroll padding or a safe-area footer spacer to ensure all content scrolls completely above the floating input.
+- **medium** · [glm] `images-gallery.png`: The floating composer overlaps the third row of images, hiding gallery content while the user is browsing → Dock the composer in its own footer band, or collapse it to a small pill that expands on focus while scrolling
+- **medium** · [glm] `conversation.png`: The sidebar thread list shows plain truncated titles with no timestamps or status, so recent conversations are hard to tell apart → Add relative time and a small state marker to each thread row, as the pinned section already hints at
+- **low** · [opus] `images-gallery.png`: Captions on light images ('Esboço', 'Figurinhas') rely on a faint gradient, so legibility varies card by card. → Use a stronger, consistent scrim or place the caption below the image.
+- **low** · [opus] `images-gallery.png`: The thread sidebar disappears on the gallery while it is present in the conversation, so the navigation model changes between modules. → Keep the same navigation chrome across modules, or make the collapse an explicit, consistent toggle.
+- **low** · [opus] `conversation.png`: The composer placeholder and the disabled send button are very low contrast against the input surface. → Raise placeholder and disabled-icon contrast to at least 3:1 for the control.
+- **low** · [gemini] `conversation.png`: The right panel in its empty state presents plain cards with faint borders that look unpolished compared to the central thread. → Add subtle empty-state illustrations, clear descriptive placeholders, or collapse the panel when no artifact or source is selected.
+- **low** · [luna] `conversation.png`: Long conversation titles are truncated in the sidebar, making similarly named threads harder to distinguish at a glance. → Expose the full title on focus or hover, or add a small amount of secondary identifying context.
+- **low** · [glm] `conversation.png`: The top-right 'Resultados' panel floats without a visible anchor, so its relationship to the current thread is ambiguous → Give the panel a header that names the thread, or visually connect it to the message that produced it
+- **low** · [glm] `images-gallery.png`: The thin icon-only left rail has no labels, so discovering Library, History, or Sources depends on guessing → Reveal text labels on hover or offer an expandable rail state
 
-### claude-code (ui 8, ux 7.47)
+### claude-code (uiux 7.74)
 
 **Strengths**
 
@@ -115,20 +115,20 @@
 
 **Issues**
 
-- **high** · ux · [opus] `conversation-with-panel.png`: A raw '<artifact-view-context>' JSON payload is rendered inside a user message bubble; internal plumbing leaks into the conversation. → Hide machine-attached context or render it as a compact chip such as 'Viewing decisoes-do-port'.
-- **high** · ui · [gemini] `conversation-with-panel.png`: Raw internal XML/JSON markup (<artifact-view-context ...>) leaks directly into the chat transcript, disrupting visual polish. → Filter or parse technical context payloads into formatted UI metadata cards or hidden debug traces.
-- **medium** · ux · [opus] `conversation-with-panel.png`: The artifact pane takes about a third of the width to show only 'Este artefato foi excluído ou não está mais disponível', with no way forward. → Auto-collapse the pane for a missing artifact, or offer actions (close, open another output, recreate).
-- **medium** · ui · [opus] `conversation-with-panel.png`: Four columns at once (sidebar, chat, info panel, artifact) squeeze the conversation into a narrow column and make the screen feel crowded. → Make the info panel and the artifact pane share one slot with tabs, or let one collapse automatically when the other opens.
-- **medium** · ux · [luna] `conversation-with-panel.png`: The artifact pane reports that the artifact was deleted or is unavailable, but gives no recovery action or way to find another artifact. → Offer a clear next step, such as reopening the artifact list or returning to the conversation that created it.
-- **medium** · ux · [glm] `conversation-with-panel.png`: 'Conectores · 2 para reconectar' reports a problem as plain text with no adjacent action to fix it → Inline a 'Reconectar' button or link that takes the user straight to the reconnect flow
-- **medium** · ux · [gemini] `conversation-with-panel.png`: Deleted or unavailable artifact states in the right pane provide no recovery actions, re-run prompts, or contextual explanation. → Provide a clear 'Regenerate artifact' button and display a brief explanation linking back to the originating prompt.
-- **low** · ui · [opus] `conversation-with-panel.png`: The scroll-to-bottom button lands on top of message text with no backdrop. → Give it a solid surface and shadow, or anchor it just above the composer.
-- **low** · ux · [opus] `conversation-with-panel.png`: Six icon-only buttons in the header and tiny disclosure triangles on sidebar groups (MATCH, transform-it, WAY) give weak affordance. → Add tooltips or labels and larger, clearer disclosure targets.
-- **low** · ui · [glm] `conversation-with-panel.png`: The panel's top icon strip (list, terminal, file, globe, folder) is icon-only and its meanings are not obvious → Label the active tab and add tooltips for the rest
-- **low** · ui · [glm] `conversation-with-panel.png`: Collapsed activity lines use very low-contrast gray that approaches the legibility floor → Raise the secondary text one contrast step while keeping the hierarchy
-- **low** · ux · [glm] `conversation-with-panel.png`: With the artifact unavailable, the right panel is mostly empty space beside a full transcript → Offer the remaining 'Saídas' artifacts as selectable content inside the panel so the space stays useful
+- **high** · [opus] `conversation-with-panel.png`: A raw '<artifact-view-context>' JSON payload is rendered inside a user message bubble; internal plumbing leaks into the conversation. → Hide machine-attached context or render it as a compact chip such as 'Viewing decisoes-do-port'.
+- **high** · [gemini] `conversation-with-panel.png`: Raw internal XML/JSON markup (<artifact-view-context ...>) leaks directly into the chat transcript, disrupting visual polish. → Filter or parse technical context payloads into formatted UI metadata cards or hidden debug traces.
+- **medium** · [opus] `conversation-with-panel.png`: The artifact pane takes about a third of the width to show only 'Este artefato foi excluído ou não está mais disponível', with no way forward. → Auto-collapse the pane for a missing artifact, or offer actions (close, open another output, recreate).
+- **medium** · [opus] `conversation-with-panel.png`: Four columns at once (sidebar, chat, info panel, artifact) squeeze the conversation into a narrow column and make the screen feel crowded. → Make the info panel and the artifact pane share one slot with tabs, or let one collapse automatically when the other opens.
+- **medium** · [gemini] `conversation-with-panel.png`: Deleted or unavailable artifact states in the right pane provide no recovery actions, re-run prompts, or contextual explanation. → Provide a clear 'Regenerate artifact' button and display a brief explanation linking back to the originating prompt.
+- **medium** · [luna] `conversation-with-panel.png`: The artifact pane reports that the artifact was deleted or is unavailable, but gives no recovery action or way to find another artifact. → Offer a clear next step, such as reopening the artifact list or returning to the conversation that created it.
+- **medium** · [glm] `conversation-with-panel.png`: 'Conectores · 2 para reconectar' reports a problem as plain text with no adjacent action to fix it → Inline a 'Reconectar' button or link that takes the user straight to the reconnect flow
+- **low** · [opus] `conversation-with-panel.png`: The scroll-to-bottom button lands on top of message text with no backdrop. → Give it a solid surface and shadow, or anchor it just above the composer.
+- **low** · [opus] `conversation-with-panel.png`: Six icon-only buttons in the header and tiny disclosure triangles on sidebar groups (MATCH, transform-it, WAY) give weak affordance. → Add tooltips or labels and larger, clearer disclosure targets.
+- **low** · [glm] `conversation-with-panel.png`: The panel's top icon strip (list, terminal, file, globe, folder) is icon-only and its meanings are not obvious → Label the active tab and add tooltips for the rest
+- **low** · [glm] `conversation-with-panel.png`: Collapsed activity lines use very low-contrast gray that approaches the legibility floor → Raise the secondary text one contrast step while keeping the hierarchy
+- **low** · [glm] `conversation-with-panel.png`: With the artifact unavailable, the right panel is mostly empty space beside a full transcript → Offer the remaining 'Saídas' artifacts as selectable content inside the panel so the space stays useful
 
-### linear (ui 9.11, ux 8.68)
+### linear (uiux 8.97)
 
 **Strengths**
 
@@ -152,15 +152,15 @@
 
 **Issues**
 
-- **medium** · ux · [opus] `issue-with-agent.png`: The agent panel floats over the activity column: comment cards and the Reviews area are cut off underneath, so the user cannot read the thread and the agent side by side. → Dock the panel as a resizable side pane that pushes content, or narrow the activity column when it opens.
-- **medium** · ui · [glm] `issue-with-agent.png`: The issue toolbar's five actions are icon-only with no labels, so their meaning is guessable but not certain → Add tooltips and gather the rarer actions into an overflow menu with labeled entries
-- **low** · ui · [opus] `issue-with-agent.png`: Small gray metadata (timestamps, 'connected by', system events) is low contrast on the dark surface. → Lift the muted text token one step while keeping it below body text.
-- **low** · ux · [opus] `issue-with-agent.png`: The header action row (link, copy, branch, assign, dropdown) is icon-only. → Provide tooltips with shortcut hints or a labeled overflow menu.
-- **low** · ui · [opus] `issue-with-agent.png`: The agent panel leaves a large empty gap between the diff card and the reply box. → Let the panel height fit its content, or anchor the composer closer to the last message.
-- **low** · ui · [luna] `issue-with-agent.png`: The agent panel's run details and changed-file summary are dense in a narrow dock, so important review text is visually small. → Allow the agent panel to expand or resize for reviewing longer run summaries and file changes.
-- **low** · ux · [glm] `issue-with-agent.png`: Activity and comment text runs small; on a long issue the feed would strain scanning → Bump the base size slightly or offer a comfortable-density option
-- **low** · ux · [glm] `issue-with-agent.png`: The reply composer's 'Skills' dropdown and its refresh, attach, and send buttons are all unlabeled icons → Tooltips on the icons and a visible label state for Skills when a skill is selected
-- **low** · ux · [gemini] `issue-with-agent.png`: The floating docked agent card overlays issue comments and activity timeline on medium or smaller desktop viewports. → Provide a quick toggle to dock the agent card into a collapsible side column or split-pane layout.
+- **medium** · [opus] `issue-with-agent.png`: The agent panel floats over the activity column: comment cards and the Reviews area are cut off underneath, so the user cannot read the thread and the agent side by side. → Dock the panel as a resizable side pane that pushes content, or narrow the activity column when it opens.
+- **medium** · [glm] `issue-with-agent.png`: The issue toolbar's five actions are icon-only with no labels, so their meaning is guessable but not certain → Add tooltips and gather the rarer actions into an overflow menu with labeled entries
+- **low** · [opus] `issue-with-agent.png`: Small gray metadata (timestamps, 'connected by', system events) is low contrast on the dark surface. → Lift the muted text token one step while keeping it below body text.
+- **low** · [opus] `issue-with-agent.png`: The header action row (link, copy, branch, assign, dropdown) is icon-only. → Provide tooltips with shortcut hints or a labeled overflow menu.
+- **low** · [opus] `issue-with-agent.png`: The agent panel leaves a large empty gap between the diff card and the reply box. → Let the panel height fit its content, or anchor the composer closer to the last message.
+- **low** · [gemini] `issue-with-agent.png`: The floating docked agent card overlays issue comments and activity timeline on medium or smaller desktop viewports. → Provide a quick toggle to dock the agent card into a collapsible side column or split-pane layout.
+- **low** · [luna] `issue-with-agent.png`: The agent panel's run details and changed-file summary are dense in a narrow dock, so important review text is visually small. → Allow the agent panel to expand or resize for reviewing longer run summaries and file changes.
+- **low** · [glm] `issue-with-agent.png`: Activity and comment text runs small; on a long issue the feed would strain scanning → Bump the base size slightly or offer a comfortable-density option
+- **low** · [glm] `issue-with-agent.png`: The reply composer's 'Skills' dropdown and its refresh, attach, and send buttons are all unlabeled icons → Tooltips on the icons and a visible label state for Skills when a skill is selected
 
 ## Overall impressions
 

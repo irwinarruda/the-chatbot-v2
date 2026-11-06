@@ -144,7 +144,10 @@ export function TodoFilters({
         <Select
           onValueChange={(value) => {
             if (!value) return;
-            onChangeDraftFilters({ due: value as TodoDueFilterDTO });
+            onChangeDraftFilters({
+              due: value as TodoDueFilterDTO,
+              dueDate: value === "with_due_date" ? draftFilters.dueDate : "",
+            });
           }}
           value={draftFilters.due}
         >
@@ -163,17 +166,19 @@ export function TodoFilters({
             </SelectItem>
           </SelectContent>
         </Select>
-        <Input
-          aria-label={t.dueDateFilterLabel}
-          className="w-full sm:w-40"
-          id="todo-filter-due-date"
-          onChange={(event) =>
-            onChangeDraftFilters({ dueDate: event.target.value })
-          }
-          title={t.dueDateFilterLabel}
-          type="date"
-          value={draftFilters.dueDate}
-        />
+        {draftFilters.due === "with_due_date" && (
+          <Input
+            aria-label={t.dueDateFilterLabel}
+            className="w-full sm:w-40"
+            id="todo-filter-due-date"
+            onChange={(event) =>
+              onChangeDraftFilters({ dueDate: event.target.value })
+            }
+            title={t.dueDateFilterLabel}
+            type="date"
+            value={draftFilters.dueDate}
+          />
+        )}
         {hasActiveFilters && (
           <Button onClick={onClearFilters} type="button" variant="ghost">
             <X />

@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import {
+  Check,
   Globe2,
   Link2,
   LockKeyhole,
@@ -25,6 +26,7 @@ import { ArtifactVisibility } from "~/domain/artifacts/artifact-visibility";
 
 export function ArtifactList() {
   const prefs = usePrefs();
+  const [copiedId, setCopiedId] = useState<string>();
   const artifacts = useApp((state) => state.artifacts);
   const isLoading = useApp((state) => state.isArtifactsLoading);
   const isSubmitting = useApp((state) => state.isArtifactSubmitting);
@@ -48,6 +50,8 @@ export function ArtifactList() {
       await navigator.clipboard.writeText(
         new URL(`/a/${artifactId}`, window.location.origin).href,
       );
+      setCopiedId(artifactId);
+      window.setTimeout(() => setCopiedId(undefined), 2000);
     } catch (error) {
       setCopyError(clientError(error, "copy"));
     }
@@ -130,14 +134,23 @@ export function ArtifactList() {
                 </div>
                 <div className="relative z-10 flex shrink-0 items-center gap-1">
                   <Button
+                    aria-label={t.copyLinkAction}
                     onClick={() => onShareLinkCopy(artifact.id)}
                     size="sm"
                     type="button"
                     variant="ghost"
                     className="text-muted-foreground"
                   >
-                    <Link2 />
-                    <span className="hidden sm:inline">{t.copyLinkAction}</span>
+                    {copiedId === artifact.id ? (
+                      <Check className="text-success" />
+                    ) : (
+                      <Link2 />
+                    )}
+                    <span className="hidden sm:inline" aria-live="polite">
+                      {copiedId === artifact.id
+                        ? t.copiedAction
+                        : t.copyLinkAction}
+                    </span>
                     <span className="sr-only sm:hidden">
                       {t.copyLinkAction}
                     </span>
@@ -148,13 +161,15 @@ export function ArtifactList() {
                     }
                     disabled={isSubmitting}
                     onClick={() => onArtifactVisibilityToggle(artifact)}
-                    size="icon-sm"
-                    title={isPublic ? t.makePrivateAction : t.makePublicAction}
+                    size="sm"
                     type="button"
                     variant="ghost"
                     className="text-muted-foreground"
                   >
                     {isPublic ? <LockKeyhole /> : <Globe2 />}
+                    <span className="hidden sm:inline">
+                      {isPublic ? t.makePrivateAction : t.makePublicAction}
+                    </span>
                   </Button>
                   <ConfirmDialog
                     cancelLabel={t.cancelAction}

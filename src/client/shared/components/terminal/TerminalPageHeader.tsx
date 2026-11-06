@@ -16,7 +16,7 @@ export function TerminalPageHeader({
 }) {
   return (
     <header className="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 basis-64">
         {withLogo && <ThemeLogo />}
         <h1 className="m-0 text-balance font-semibold text-2xl text-foreground tracking-tight">
           {heading}

@@ -4,7 +4,9 @@
   "modules": [
     {
       "module": "t3-code",
-      "scores": { "ui": 8.8, "ux": 8.5 },
+      "scores": {
+        "uiux": 8.65
+      },
       "strengths": [
         "Keep workspace and thread navigation in a persistent rail, separate from the active task.",
         "Make the new-thread composer the clear focal point and keep project context controls close at hand.",
@@ -14,7 +16,6 @@
       "issues": [
         {
           "severity": "medium",
-          "criterion": "ux",
           "screen": "settings.png",
           "problem": "The header says Settings / General while Diffs & pull requests is highlighted in the navigation, so the current location is ambiguous.",
           "fix": "Keep the selected navigation item and the settings page title in sync."
@@ -23,7 +24,9 @@
     },
     {
       "module": "codex",
-      "scores": { "ui": 9.0, "ux": 8.7 },
+      "scores": {
+        "uiux": 8.85
+      },
       "strengths": [
         "Use restrained surfaces and clear spacing to keep a long conversation readable without visual clutter.",
         "Keep navigation, the active conversation, and output sources distinct while making them feel like one workspace.",
@@ -33,7 +36,6 @@
       "issues": [
         {
           "severity": "low",
-          "criterion": "ux",
           "screen": "conversation.png",
           "problem": "Long conversation titles are truncated in the sidebar, making similarly named threads harder to distinguish at a glance.",
           "fix": "Expose the full title on focus or hover, or add a small amount of secondary identifying context."
@@ -42,7 +44,9 @@
     },
     {
       "module": "claude-code",
-      "scores": { "ui": 8.2, "ux": 7.6 },
+      "scores": {
+        "uiux": 7.9
+      },
       "strengths": [
         "Let users keep the conversation, working context, and artifact in view at the same time.",
         "Use clear panel boundaries and compact labels to show which workspace each control belongs to.",
@@ -51,7 +55,6 @@
       "issues": [
         {
           "severity": "medium",
-          "criterion": "ux",
           "screen": "conversation-with-panel.png",
           "problem": "The artifact pane reports that the artifact was deleted or is unavailable, but gives no recovery action or way to find another artifact.",
           "fix": "Offer a clear next step, such as reopening the artifact list or returning to the conversation that created it."
@@ -60,7 +63,9 @@
     },
     {
       "module": "linear",
-      "scores": { "ui": 9.0, "ux": 8.6 },
+      "scores": {
+        "uiux": 8.8
+      },
       "strengths": [
         "Keep issue metadata, discussion, and agent work visible together so automation stays tied to its task.",
         "Use concise status labels and a clear activity timeline to show what changed and when.",
@@ -69,7 +74,6 @@
       "issues": [
         {
           "severity": "low",
-          "criterion": "ui",
           "screen": "issue-with-agent.png",
           "problem": "The agent panel's run details and changed-file summary are dense in a narrow dock, so important review text is visually small.",
           "fix": "Allow the agent panel to expand or resize for reviewing longer run summaries and file changes."

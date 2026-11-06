@@ -346,6 +346,12 @@ export function ChatScreen() {
         </Alert>
       ) : null}
 
+      <header className="hidden h-14 shrink-0 items-center gap-2 border-border border-b px-6 lg:flex">
+        <h1 className="m-0 font-semibold text-foreground text-sm">
+          {dictionary.nav.chat}
+        </h1>
+        <span className="text-muted-foreground text-xs">{t.syncedHint}</span>
+      </header>
       <div
         ref={parentRef}
         onScroll={onScroll}
@@ -406,6 +412,12 @@ export function ChatScreen() {
                 );
               }
               const message = chatMessages[virtualItem.index];
+              const previousMessage = chatMessages[virtualItem.index - 1];
+              const dayLabel = getChatDayLabel(
+                message.createdAt,
+                previousMessage?.createdAt,
+                prefs.locale,
+              );
               return (
                 <div
                   key={message.id}
@@ -421,6 +433,7 @@ export function ChatScreen() {
                 >
                   <div className="pb-2">
                     <ChatMessage
+                      dayLabel={dayLabel}
                       message={message}
                       theme={prefs.theme}
                       locale={prefs.locale}
@@ -498,7 +511,7 @@ export function ChatScreen() {
         ) : (
           <form
             onSubmit={onSubmit}
-            className="group/form mx-auto w-full max-w-3xl rounded-2xl border border-border bg-card p-2 shadow-scrim/10 shadow-sm transition-[border-color,box-shadow,background-color] duration-200 focus-within:border-ring focus-within:bg-background/80 focus-within:shadow-field focus-within:ring-3 focus-within:ring-ring/50"
+            className="group/form mx-auto w-full max-w-3xl rounded-2xl border border-border bg-card p-2 shadow-scrim/10 shadow-sm transition-[border-color,box-shadow,background-color] duration-200 focus-within:border-ring/60 focus-within:ring-3 focus-within:ring-ring/10"
           >
             <Label htmlFor="chat-message-input" className="sr-only">
               {t.placeholder}
@@ -519,11 +532,11 @@ export function ChatScreen() {
             </div>
 
             <div className="mt-1 flex min-h-8 min-w-0 items-center gap-1.5">
-              <div className="flex min-w-0 max-w-44 flex-1 items-center gap-1 md:max-w-56">
+              <div className="flex min-w-0 items-center gap-1">
                 <NativeSelect
                   id="chat-model"
                   size="sm"
-                  className="min-w-0 flex-1 **:data-[slot=native-select-icon]:right-1.5 **:data-[slot=native-select-icon]:size-3 **:data-[slot=native-select-icon]:text-muted-foreground [&_[data-slot=native-select]]:h-11 pointer-fine:[&_[data-slot=native-select]]:h-7 [&_[data-slot=native-select]]:truncate [&_[data-slot=native-select]]:rounded-md [&_[data-slot=native-select]]:border-transparent [&_[data-slot=native-select]]:bg-transparent [&_[data-slot=native-select]]:py-0.5 [&_[data-slot=native-select]]:pr-6 [&_[data-slot=native-select]]:pl-2 [&_[data-slot=native-select]]:text-muted-foreground [&_[data-slot=native-select]]:text-sm pointer-fine:[&_[data-slot=native-select]]:text-xs [&_[data-slot=native-select]]:transition-colors [&_[data-slot=native-select]]:hover:border-border [&_[data-slot=native-select]]:hover:bg-accent [&_[data-slot=native-select]]:focus-visible:border-brand/40 [&_[data-slot=native-select]]:focus-visible:ring-0"
+                  className="w-fit min-w-0 max-w-48 **:data-[slot=native-select-icon]:right-1.5 [&_[data-slot=native-select]]:field-sizing-content **:data-[slot=native-select-icon]:size-3 **:data-[slot=native-select-icon]:text-muted-foreground [&_[data-slot=native-select]]:h-11 pointer-fine:[&_[data-slot=native-select]]:h-7 [&_[data-slot=native-select]]:truncate [&_[data-slot=native-select]]:rounded-md [&_[data-slot=native-select]]:border-transparent [&_[data-slot=native-select]]:bg-transparent [&_[data-slot=native-select]]:py-0.5 [&_[data-slot=native-select]]:pr-6 [&_[data-slot=native-select]]:pl-2 [&_[data-slot=native-select]]:text-muted-foreground [&_[data-slot=native-select]]:text-sm pointer-fine:[&_[data-slot=native-select]]:text-xs [&_[data-slot=native-select]]:transition-colors [&_[data-slot=native-select]]:hover:border-border [&_[data-slot=native-select]]:hover:bg-accent [&_[data-slot=native-select]]:focus-visible:border-brand/40 [&_[data-slot=native-select]]:focus-visible:ring-0"
                   value={currentModelId}
                   onChange={onModelChange}
                   disabled={isChatSubmitting || availableModels.length === 0}
@@ -543,7 +556,7 @@ export function ChatScreen() {
                 <NativeSelect
                   id="chat-reasoning-effort"
                   size="sm"
-                  className="w-20 **:data-[slot=native-select-icon]:right-1.5 **:data-[slot=native-select-icon]:size-3 **:data-[slot=native-select-icon]:text-muted-foreground [&_[data-slot=native-select]]:h-11 pointer-fine:[&_[data-slot=native-select]]:h-7 [&_[data-slot=native-select]]:rounded-md [&_[data-slot=native-select]]:border-transparent [&_[data-slot=native-select]]:bg-transparent [&_[data-slot=native-select]]:py-0.5 [&_[data-slot=native-select]]:pr-6 [&_[data-slot=native-select]]:pl-2 [&_[data-slot=native-select]]:text-muted-foreground [&_[data-slot=native-select]]:text-sm pointer-fine:[&_[data-slot=native-select]]:text-xs [&_[data-slot=native-select]]:transition-colors [&_[data-slot=native-select]]:hover:border-border [&_[data-slot=native-select]]:hover:bg-accent [&_[data-slot=native-select]]:focus-visible:border-brand/40 [&_[data-slot=native-select]]:focus-visible:ring-0"
+                  className="w-fit **:data-[slot=native-select-icon]:right-1.5 [&_[data-slot=native-select]]:field-sizing-content **:data-[slot=native-select-icon]:size-3 **:data-[slot=native-select-icon]:text-muted-foreground [&_[data-slot=native-select]]:h-11 pointer-fine:[&_[data-slot=native-select]]:h-7 [&_[data-slot=native-select]]:rounded-md [&_[data-slot=native-select]]:border-transparent [&_[data-slot=native-select]]:bg-transparent [&_[data-slot=native-select]]:py-0.5 [&_[data-slot=native-select]]:pr-6 [&_[data-slot=native-select]]:pl-2 [&_[data-slot=native-select]]:text-muted-foreground [&_[data-slot=native-select]]:text-sm pointer-fine:[&_[data-slot=native-select]]:text-xs [&_[data-slot=native-select]]:transition-colors [&_[data-slot=native-select]]:hover:border-border [&_[data-slot=native-select]]:hover:bg-accent [&_[data-slot=native-select]]:focus-visible:border-brand/40 [&_[data-slot=native-select]]:focus-visible:ring-0"
                   value={reasoningEffort}
                   onChange={onReasoningEffortChange}
                   disabled={isChatSubmitting}
@@ -551,7 +564,7 @@ export function ChatScreen() {
                 >
                   {supportedReasoningEfforts.map((effort) => (
                     <NativeSelectOption key={effort} value={effort}>
-                      {effort}
+                      {t.reasoningEffortShort} · {effort}
                     </NativeSelectOption>
                   ))}
                 </NativeSelect>
@@ -639,4 +652,19 @@ function TooltipButton({ label, ...props }: TooltipButtonProps) {
       </TooltipContent>
     </Tooltip>
   );
+}
+
+function getChatDayLabel(
+  createdAt: string,
+  previousCreatedAt: string | undefined,
+  locale: string,
+): string | undefined {
+  const day = new Date(createdAt).toDateString();
+  if (previousCreatedAt && new Date(previousCreatedAt).toDateString() === day)
+    return undefined;
+  return new Date(createdAt).toLocaleDateString(locale, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
 }

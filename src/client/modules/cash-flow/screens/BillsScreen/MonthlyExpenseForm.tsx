@@ -140,7 +140,7 @@ export function MonthlyExpenseForm({
       <div className="grid gap-4">
         <Field data-invalid={Boolean(errors.name)}>
           <FieldLabel
-            className="font-sans text-muted-foreground text-xs uppercase tracking-wide"
+            className="font-medium text-foreground text-sm"
             htmlFor={nameId}
           >
             <ReceiptText
@@ -169,7 +169,7 @@ export function MonthlyExpenseForm({
         </Field>
         <Field data-invalid={Boolean(errors.expectedAmount)}>
           <FieldLabel
-            className="font-sans text-muted-foreground text-xs uppercase tracking-wide"
+            className="font-medium text-foreground text-sm"
             htmlFor={amountId}
           >
             <CircleDollarSign
@@ -210,7 +210,7 @@ export function MonthlyExpenseForm({
         </Field>
         <Field data-invalid={Boolean(errors.dueDay)}>
           <FieldLabel
-            className="font-sans text-muted-foreground text-xs uppercase tracking-wide"
+            className="font-medium text-foreground text-sm"
             htmlFor={dueDayId}
           >
             <CalendarDays
@@ -249,7 +249,7 @@ export function MonthlyExpenseForm({
         </Field>
         <Field>
           <FieldLabel
-            className="font-sans text-muted-foreground text-xs uppercase tracking-wide"
+            className="font-medium text-foreground text-sm"
             htmlFor={categoryId}
           >
             <Tags
@@ -275,7 +275,7 @@ export function MonthlyExpenseForm({
         </Field>
         <Field>
           <FieldLabel
-            className="font-sans text-muted-foreground text-xs uppercase tracking-wide"
+            className="font-medium text-foreground text-sm"
             htmlFor={defaultBankAccountId}
           >
             <Landmark

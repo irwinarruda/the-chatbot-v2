@@ -260,12 +260,15 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
         t={t}
       />
       <section aria-labelledby="monthly-bills-list" className="space-y-2">
-        <h2
-          className="m-0 font-medium text-foreground text-sm"
-          id="monthly-bills-list"
-        >
-          {t.listLabel}
-        </h2>
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+          <h2
+            className="m-0 font-medium text-foreground text-sm"
+            id="monthly-bills-list"
+          >
+            {t.listLabel}
+          </h2>
+          <p className="m-0 text-muted-foreground text-xs">{t.listHint}</p>
+        </div>
         {isBootstrapping ? (
           <MonthlyExpenseListSkeleton label={t.loading} />
         ) : monthlyExpenses.length > 0 ? (

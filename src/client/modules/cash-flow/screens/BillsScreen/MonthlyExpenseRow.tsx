@@ -126,7 +126,7 @@ export function MonthlyExpenseRow({
             variant="outline"
           >
             <Landmark />
-            <span className="hidden sm:inline">{t.payAction}</span>
+            {t.payAction}
           </Button>
         )}
         <Tooltip>

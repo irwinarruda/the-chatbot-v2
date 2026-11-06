@@ -24,12 +24,7 @@ export function ListEmptyState({
   title: ReactNode;
 }) {
   return (
-    <Empty
-      className={cn(
-        "gap-4 rounded-xl border border-border border-dashed px-6 py-12",
-        className,
-      )}
-    >
+    <Empty className={cn("gap-4 rounded-xl border-0 px-6 py-12", className)}>
       <EmptyHeader>
         <EmptyMedia
           variant="icon"

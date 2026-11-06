@@ -4,7 +4,9 @@
   "modules": [
     {
       "module": "t3-code",
-      "scores": { "ui": 8.4, "ux": 8.1 },
+      "scores": {
+        "uiux": 8.25
+      },
       "strengths": [
         "One shell for every secondary module: settings and usage open in the same centered panel with a breadcrumb header, a close button and the same bordered card groups, so a non-chat screen feels native to the chat app.",
         "Settings rows follow a single pattern (bold label, one-line muted description, control right-aligned) inside titled section cards; the whole page scans top to bottom without reading.",
@@ -15,53 +17,49 @@
       "issues": [
         {
           "severity": "medium",
-          "criterion": "ux",
           "screen": "usage-limits.png",
           "problem": "The bar encoding has no legend: the white vertical marker, the hatched tail, two different hues per row and a gray Codex bar all carry meaning the user has to guess.",
           "fix": "Label the marker (e.g. 'expected pace') and the hatched region, keep one hue per account, and add a small legend or tooltip on first use."
         },
         {
           "severity": "medium",
-          "criterion": "ui",
           "screen": "new-thread.png",
           "problem": "The floating top-right panel (user, Open in Zed, Add project script, branch) sits detached on an empty canvas and repeats the user and branch already shown under the composer.",
           "fix": "Fold it into the composer footer or a header popover so context lives in one place next to the action it affects."
         },
         {
           "severity": "medium",
-          "criterion": "ui",
           "screen": "settings.png",
           "problem": "On a pure-black canvas the small gray descriptions and the off-state toggles have weak contrast; the off toggle almost disappears into the card.",
           "fix": "Use a near-black base with slightly raised card surfaces, lift secondary text contrast, and give the off toggle a visible track border."
         },
         {
           "severity": "low",
-          "criterion": "ux",
           "screen": "settings.png",
           "problem": "'General' (selected) and 'Diffs & pull requests' (hovered) carry nearly identical fills, so the current page is not clearly distinguished; the last nav group (Maintenance, Labs, About, Archive) has no group header unlike the others.",
           "fix": "Give the selected item a stronger fill or an accent bar, and either label the last group or separate it consistently."
         },
         {
           "severity": "low",
-          "criterion": "ux",
           "screen": "new-thread.png",
-          "problem": "Sidebar footer controls are icon-only and 'Settled 573 ›' is cryptic; the three top-right layout icons are also unlabeled.",
+          "problem": "Sidebar footer controls are icon-only and 'Settled 573 \u203a' is cryptic; the three top-right layout icons are also unlabeled.",
           "fix": "Add text labels or always-available tooltips and a clearer name for the settled count."
         },
         {
           "severity": "low",
-          "criterion": "ui",
           "screen": "usage-limits.png",
-          "problem": "'Claude & GPT (shared) · Weekly' wraps to two lines and pushes its percentage down, breaking the left-column alignment every other card keeps.",
+          "problem": "'Claude & GPT (shared) \u00b7 Weekly' wraps to two lines and pushes its percentage down, breaking the left-column alignment every other card keeps.",
           "fix": "Truncate or shorten the label, or widen the label column so all cards align on the same baseline."
         }
       ]
     },
     {
       "module": "codex",
-      "scores": { "ui": 8.6, "ux": 7.9 },
+      "scores": {
+        "uiux": 8.25
+      },
       "strengths": [
-        "Calm conversation layout: the user's message in a soft bubble on the right, the assistant's text unboxed at a comfortable line length, and tool work collapsed into a single 'Trabalhou por 8s ›' line.",
+        "Calm conversation layout: the user's message in a soft bubble on the right, the assistant's text unboxed at a comfortable line length, and tool work collapsed into a single 'Trabalhou por 8s \u203a' line.",
         "The same shell carries non-chat modules: the image gallery keeps the icon rail, the page title style and the same composer, so a content grid and a chat read as one product.",
         "Restraint: one neutral dark gray, almost no accent color, hierarchy carried by size and weight; nothing competes with the content.",
         "Plain sectioned sidebar (Fixados, Projetos, Recentes) with quiet labels makes wayfinding simple even with a long history.",
@@ -70,42 +68,36 @@
       "issues": [
         {
           "severity": "medium",
-          "criterion": "ui",
           "screen": "conversation.png",
-          "problem": "Sidebar titles are hard-clipped mid-word ('certidão do meu imó', 'verso', 'buscar e') with no ellipsis or fade, which looks broken in a list of thirty rows.",
+          "problem": "Sidebar titles are hard-clipped mid-word ('certid\u00e3o do meu im\u00f3', 'verso', 'buscar e') with no ellipsis or fade, which looks broken in a list of thirty rows.",
           "fix": "Apply an ellipsis or a fade mask at the edge and show the full title on hover."
         },
         {
           "severity": "medium",
-          "criterion": "ux",
           "screen": "images-gallery.png",
           "problem": "The floating composer sits directly on the image grid with no scrim, covering the bottom of the third row and competing with the photos behind it.",
           "fix": "Add a bottom gradient or solid dock behind the composer and bottom padding so the last row can scroll clear of it."
         },
         {
           "severity": "medium",
-          "criterion": "ux",
           "screen": "conversation.png",
           "problem": "The left icon rail (seven icons) has no labels, and the right 'Resultados / Fontes' card has an unclear purpose with a very faint empty-state line.",
           "fix": "Label the rail or show tooltips, and give the side card a one-line explanation and a visible call to action."
         },
         {
           "severity": "low",
-          "criterion": "ui",
           "screen": "images-gallery.png",
-          "problem": "Captions on light images ('Esboço', 'Figurinhas') rely on a faint gradient, so legibility varies card by card.",
+          "problem": "Captions on light images ('Esbo\u00e7o', 'Figurinhas') rely on a faint gradient, so legibility varies card by card.",
           "fix": "Use a stronger, consistent scrim or place the caption below the image."
         },
         {
           "severity": "low",
-          "criterion": "ux",
           "screen": "images-gallery.png",
           "problem": "The thread sidebar disappears on the gallery while it is present in the conversation, so the navigation model changes between modules.",
           "fix": "Keep the same navigation chrome across modules, or make the collapse an explicit, consistent toggle."
         },
         {
           "severity": "low",
-          "criterion": "ui",
           "screen": "conversation.png",
           "problem": "The composer placeholder and the disabled send button are very low contrast against the input surface.",
           "fix": "Raise placeholder and disabled-icon contrast to at least 3:1 for the control."
@@ -114,46 +106,43 @@
     },
     {
       "module": "claude-code",
-      "scores": { "ui": 7.8, "ux": 7.0 },
+      "scores": {
+        "uiux": 7.4
+      },
       "strengths": [
-        "Progressive disclosure of agent work: each batch of tool calls collapses to one muted summary line ('Usou Claude Docs 6 vezes ▸') that can be expanded, so the transcript stays readable.",
-        "A context side panel of key/value rows (Ambiente, Contexto with an 85% meter, Conectores, Saídas) gives glanceable state without leaving the conversation.",
+        "Progressive disclosure of agent work: each batch of tool calls collapses to one muted summary line ('Usou Claude Docs 6 vezes \u25b8') that can be expanded, so the transcript stays readable.",
+        "A context side panel of key/value rows (Ambiente, Contexto with an 85% meter, Conectores, Sa\u00eddas) gives glanceable state without leaving the conversation.",
         "Typographic voice: serif for the assistant's prose and sans for interface chrome clearly separates content from controls.",
-        "Outputs are first-class objects: listed under 'Saídas' and linked inline, opening in a panel beside the chat instead of replacing it.",
+        "Outputs are first-class objects: listed under 'Sa\u00eddas' and linked inline, opening in a panel beside the chat instead of replacing it.",
         "Collapsible project groups in the sidebar keep a long thread list manageable."
       ],
       "issues": [
         {
           "severity": "high",
-          "criterion": "ux",
           "screen": "conversation-with-panel.png",
           "problem": "A raw '<artifact-view-context>' JSON payload is rendered inside a user message bubble; internal plumbing leaks into the conversation.",
           "fix": "Hide machine-attached context or render it as a compact chip such as 'Viewing decisoes-do-port'."
         },
         {
           "severity": "medium",
-          "criterion": "ux",
           "screen": "conversation-with-panel.png",
-          "problem": "The artifact pane takes about a third of the width to show only 'Este artefato foi excluído ou não está mais disponível', with no way forward.",
+          "problem": "The artifact pane takes about a third of the width to show only 'Este artefato foi exclu\u00eddo ou n\u00e3o est\u00e1 mais dispon\u00edvel', with no way forward.",
           "fix": "Auto-collapse the pane for a missing artifact, or offer actions (close, open another output, recreate)."
         },
         {
           "severity": "medium",
-          "criterion": "ui",
           "screen": "conversation-with-panel.png",
           "problem": "Four columns at once (sidebar, chat, info panel, artifact) squeeze the conversation into a narrow column and make the screen feel crowded.",
           "fix": "Make the info panel and the artifact pane share one slot with tabs, or let one collapse automatically when the other opens."
         },
         {
           "severity": "low",
-          "criterion": "ui",
           "screen": "conversation-with-panel.png",
           "problem": "The scroll-to-bottom button lands on top of message text with no backdrop.",
           "fix": "Give it a solid surface and shadow, or anchor it just above the composer."
         },
         {
           "severity": "low",
-          "criterion": "ux",
           "screen": "conversation-with-panel.png",
           "problem": "Six icon-only buttons in the header and tiny disclosure triangles on sidebar groups (MATCH, transform-it, WAY) give weak affordance.",
           "fix": "Add tooltips or labels and larger, clearer disclosure targets."
@@ -162,39 +151,37 @@
     },
     {
       "module": "linear",
-      "scores": { "ui": 9.0, "ux": 8.5 },
+      "scores": {
+        "uiux": 8.75
+      },
       "strengths": [
         "Hierarchy through restraint: one large title, muted metadata, and color only where it means something (yellow status icon, green/red diff counts, the star).",
         "The activity timeline uses two weights: system events as single muted lines, human comments as bordered cards, so importance is visible before reading.",
-        "The agent lives in a contextual panel attached to the work object, and its result is a structured card (Changed 2 files +22 −10, Draft PR, branch) rather than a paragraph.",
+        "The agent lives in a contextual panel attached to the work object, and its result is a structured card (Changed 2 files +22 \u221210, Draft PR, branch) rather than a paragraph.",
         "Precise alignment and a consistent border, radius and spacing scale across sidebar, header, cards and panel; keyboard-style navigation (1/84 with up and down arrows) signals speed.",
         "Sidebar sections (Workspace, Favorites) with small distinct icons scan quickly without heavy color."
       ],
       "issues": [
         {
           "severity": "medium",
-          "criterion": "ux",
           "screen": "issue-with-agent.png",
           "problem": "The agent panel floats over the activity column: comment cards and the Reviews area are cut off underneath, so the user cannot read the thread and the agent side by side.",
           "fix": "Dock the panel as a resizable side pane that pushes content, or narrow the activity column when it opens."
         },
         {
           "severity": "low",
-          "criterion": "ui",
           "screen": "issue-with-agent.png",
           "problem": "Small gray metadata (timestamps, 'connected by', system events) is low contrast on the dark surface.",
           "fix": "Lift the muted text token one step while keeping it below body text."
         },
         {
           "severity": "low",
-          "criterion": "ux",
           "screen": "issue-with-agent.png",
           "problem": "The header action row (link, copy, branch, assign, dropdown) is icon-only.",
           "fix": "Provide tooltips with shortcut hints or a labeled overflow menu."
         },
         {
           "severity": "low",
-          "criterion": "ui",
           "screen": "issue-with-agent.png",
           "problem": "The agent panel leaves a large empty gap between the diff card and the reply box.",
           "fix": "Let the panel height fit its content, or anchor the composer closer to the last message."

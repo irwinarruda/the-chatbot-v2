@@ -22,7 +22,6 @@ export function LoginScreen({ redirectTo }: { redirectTo: string }) {
             className="h-11 w-full"
             nativeButton={false}
             render={<a href={loginHref} />}
-            variant="outline"
           >
             <GoogleIcon className="size-4" />
             {t.loginButton}

@@ -85,7 +85,8 @@ export function CashFlowTransactionRow({
           )}
           {transaction.isLast && (
             <Badge
-              className="border-info/25 bg-info/10 text-info"
+              className="border-border bg-muted text-muted-foreground"
+              title={t.latestHint}
               variant="outline"
             >
               {t.latestBadge}
@@ -159,16 +160,16 @@ export function CashFlowTransactionRow({
                     ? t.transferDeleteHint
                     : t.deleteLastConfirmation}
                 </AlertDialogDescription>
-                <p className="m-0 mt-1 rounded-lg border border-border bg-muted/50 px-3 py-2 text-left text-foreground text-sm">
-                  <span className="font-medium">
-                    {transaction.description || t.transferLabel}
-                  </span>
-                  <span className="block text-muted-foreground text-xs tabular-nums">
-                    {currency.format(transaction.value)} · {date} ·{" "}
-                    {transaction.bankAccount}
-                  </span>
-                </p>
               </AlertDialogHeader>
+              <p className="m-0 rounded-lg border border-border bg-muted/50 px-3 py-2 text-left text-foreground text-sm">
+                <span className="font-medium">
+                  {transaction.description || t.transferLabel}
+                </span>
+                <span className="block text-muted-foreground text-xs tabular-nums">
+                  {currency.format(transaction.value)} · {date} ·{" "}
+                  {transaction.bankAccount}
+                </span>
+              </p>
               <AlertDialogFooter>
                 <AlertDialogCancel disabled={isSubmitting}>
                   {t.cancelAction}

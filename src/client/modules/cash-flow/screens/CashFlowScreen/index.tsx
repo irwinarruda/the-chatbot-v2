@@ -179,24 +179,24 @@ export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
         actions={
           <>
             <Button
+              aria-label={t.transferAction}
               disabled={isBootstrapping || isSubmitting}
               onClick={() => onOpenTransfer()}
               type="button"
               variant="outline"
             >
               <ArrowRightLeft />
-              <span className="hidden sm:inline">{t.transferAction}</span>
-              <span className="sr-only sm:hidden">{t.transferAction}</span>
+              {t.transferShort}
             </Button>
             <Button
+              aria-label={t.syncAction}
               disabled={isBootstrapping || dashboard.bankAccounts.length === 0}
               onClick={() => setIsSyncOpen(true)}
               type="button"
               variant="outline"
             >
               <RefreshCw />
-              <span className="hidden sm:inline">{t.syncAction}</span>
-              <span className="sr-only sm:hidden">{t.syncAction}</span>
+              {t.syncShort}
             </Button>
             <Button
               disabled={isBootstrapping || dashboard.bankAccounts.length === 0}

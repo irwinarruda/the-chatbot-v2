@@ -10,6 +10,7 @@ import type { ChatMessageDTO as ChatMessageEntity } from "~/contracts/http/chat/
 import { type ChatActivityLabels, GenerationTrace } from "./ChatActivity";
 
 interface ChatMessageProps {
+  dayLabel?: string;
   message: ChatMessageEntity;
   theme: "dark" | "light";
   locale: string;
@@ -23,6 +24,24 @@ interface ChatMessageProps {
 }
 
 export const ChatMessage = memo(function ChatMessage({
+  dayLabel,
+  ...props
+}: ChatMessageProps) {
+  return (
+    <>
+      {dayLabel && (
+        <div className="flex items-center gap-3 py-3 text-muted-foreground text-xs">
+          <span aria-hidden="true" className="h-px flex-1 bg-border" />
+          <span className="first-letter:uppercase">{dayLabel}</span>
+          <span aria-hidden="true" className="h-px flex-1 bg-border" />
+        </div>
+      )}
+      <ChatMessageBody {...props} />
+    </>
+  );
+});
+
+function ChatMessageBody({
   message,
   theme,
   locale,
@@ -33,7 +52,7 @@ export const ChatMessage = memo(function ChatMessage({
   showLessLabel,
   activityLabels,
   onButtonReply,
-}: ChatMessageProps) {
+}: Omit<ChatMessageProps, "dayLabel">) {
   const isUser = message.userType === "user";
   const isAudio = message.type === "audio" && Boolean(message.mediaUrl);
   const timestamp = new Date(message.createdAt).toLocaleTimeString(locale, {
@@ -80,7 +99,7 @@ export const ChatMessage = memo(function ChatMessage({
           {timestamp}
         </time>
       </div>
-      <div className="rounded-2xl rounded-tr-md bg-muted px-4 py-2.5">
+      <div className="rounded-2xl rounded-tr-md border border-border/60 bg-muted px-4 py-2.5">
         <MessageContent
           message={message}
           theme={theme}
@@ -93,7 +112,7 @@ export const ChatMessage = memo(function ChatMessage({
       </div>
     </article>
   );
-});
+}
 
 function MessageContent({
   message,
