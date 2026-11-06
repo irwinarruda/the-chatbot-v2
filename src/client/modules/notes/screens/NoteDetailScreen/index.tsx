@@ -5,7 +5,7 @@ import {
   useBlocker,
   useNavigate,
 } from "@tanstack/react-router";
-import { ArrowLeft, Eye, Pencil, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, Eye, Pencil, Save, Sparkles, Trash2 } from "lucide-react";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import type { NotesSearchDTO } from "~/client/modules/notes/app/dtos/NotesSearchDTO";
 import { ConfirmDialog } from "~/client/shared/components/ConfirmDialog";
@@ -45,6 +45,7 @@ export function NoteDetailScreen({
   const editorRef = useRef<MarkdownNoteEditorMethods>(null);
   const [name, setName] = useState("");
   const [markdown, setMarkdown] = useState("");
+  const [isAiOpen, setIsAiOpen] = useState(false);
   const [isPreviewing, setIsPreviewing] = useState(false);
   const dictionary = getDictionary(prefs.locale);
   const t = dictionary.notesPage;
@@ -108,7 +109,7 @@ export function NoteDetailScreen({
       <div className="sticky top-14 z-20 -mx-4 flex items-center gap-1.5 border-border border-b bg-background/95 px-2 py-2 backdrop-blur-sm sm:-mx-8 sm:gap-2 sm:px-6 lg:top-0">
         <Button
           aria-label={t.backAction}
-          className="w-11 px-0 sm:w-auto pointer-fine:sm:px-2.5 sm:px-3"
+          className="px-2.5"
           nativeButton={false}
           render={<Link search={search} to="/notes" />}
           size="sm"
@@ -116,7 +117,7 @@ export function NoteDetailScreen({
           variant="ghost"
         >
           <ArrowLeft />
-          <span className="hidden sm:inline">{t.backAction}</span>
+          <span className="sr-only">{t.backAction}</span>
         </Button>
         <span
           aria-live="polite"
@@ -129,35 +130,37 @@ export function NoteDetailScreen({
           {isDirty ? t.unsavedStatus : t.savedStatus}
         </span>
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-          <Button
-            aria-label={t.editAction}
-            aria-pressed={!isPreviewing}
-            className="w-11 px-0 sm:w-auto pointer-fine:sm:px-2.5 sm:px-3"
-            onClick={() => setIsPreviewing(false)}
-            size="sm"
-            title={t.editAction}
-            type="button"
-            variant={isPreviewing ? "ghost" : "outline"}
-          >
-            <Pencil />
-            <span className="hidden sm:inline">{t.editAction}</span>
-          </Button>
-          <Button
-            aria-label={t.previewAction}
-            aria-pressed={isPreviewing}
-            className="w-11 px-0 sm:w-auto pointer-fine:sm:px-2.5 sm:px-3"
-            onClick={() => setIsPreviewing(true)}
-            size="sm"
-            title={t.previewAction}
-            type="button"
-            variant={isPreviewing ? "outline" : "ghost"}
-          >
-            <Eye />
-            <span className="hidden sm:inline">{t.previewAction}</span>
-          </Button>
+          <div className="flex rounded-lg bg-muted p-0.5">
+            <Button
+              aria-label={t.editAction}
+              aria-pressed={!isPreviewing}
+              className="px-2.5 text-muted-foreground aria-pressed:bg-card aria-pressed:text-foreground aria-pressed:shadow-sm"
+              onClick={() => setIsPreviewing(false)}
+              size="sm"
+              title={t.editAction}
+              type="button"
+              variant="ghost"
+            >
+              <Pencil />
+              {t.editAction}
+            </Button>
+            <Button
+              aria-label={t.previewAction}
+              aria-pressed={isPreviewing}
+              className="px-2.5 text-muted-foreground aria-pressed:bg-card aria-pressed:text-foreground aria-pressed:shadow-sm"
+              onClick={() => setIsPreviewing(true)}
+              size="sm"
+              title={t.previewAction}
+              type="button"
+              variant="ghost"
+            >
+              <Eye />
+              {t.previewAction}
+            </Button>
+          </div>
           <Button
             aria-label={t.saveAction}
-            className="w-11 px-0 sm:w-auto pointer-fine:sm:px-2.5 sm:px-3"
+            className="px-2.5"
             disabled={!isDirty || isNoteSubmitting || !name.trim()}
             onClick={onSaveNote}
             size="sm"
@@ -165,7 +168,7 @@ export function NoteDetailScreen({
             type="button"
           >
             <Save />
-            <span className="hidden sm:inline">{t.saveAction}</span>
+            {t.saveAction}
           </Button>
         </div>
       </div>
@@ -176,7 +179,7 @@ export function NoteDetailScreen({
           </label>
           <Input
             id="note-name"
-            className="h-auto rounded-none border-0 bg-transparent px-0 py-1 font-semibold text-2xl text-foreground tracking-tight shadow-none focus-visible:border-transparent focus-visible:ring-0 sm:text-3xl"
+            className="h-auto rounded-none border-0 bg-transparent px-0 py-1 font-semibold pointer-fine:text-2xl text-2xl text-foreground tracking-tight shadow-none focus-visible:border-transparent focus-visible:ring-0"
             maxLength={160}
             onChange={(event) => setName(event.target.value)}
             value={name}
@@ -209,12 +212,24 @@ export function NoteDetailScreen({
             <MarkdownNoteViewer emptyLabel={t.emptyNote} markdown={markdown} />
           </div>
         </div>
-        <NoteAiComposer
-          disabled={!name.trim()}
-          isRefining={isNoteRefining}
-          onRefine={onRefineNote}
-          t={t}
-        />
+        {isAiOpen ? (
+          <NoteAiComposer
+            disabled={!name.trim()}
+            isRefining={isNoteRefining}
+            onRefine={onRefineNote}
+            t={t}
+          />
+        ) : (
+          <Button
+            className="text-muted-foreground"
+            onClick={() => setIsAiOpen(true)}
+            type="button"
+            variant="ghost"
+          >
+            <Sparkles className="text-primary" />
+            {t.aiOpenAction}
+          </Button>
+        )}
         <div className="flex justify-end border-border border-t pt-3">
           <ConfirmDialog
             cancelLabel={t.cancelAction}

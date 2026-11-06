@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { MonthlyExpenseErrorCode } from "~/client/modules/cash-flow/app/services/MonthlyExpenseService";
 import {
   type BillsSearch,
+  compareBillsByUrgency,
   getCurrentBillsMonth,
   toBillsRouteSearch,
 } from "~/client/modules/cash-flow/parsers/BillsSearch";
@@ -273,7 +274,7 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
           <MonthlyExpenseListSkeleton label={t.loading} />
         ) : monthlyExpenses.length > 0 ? (
           <ul className="m-0 list-none divide-y divide-border overflow-hidden rounded-xl border border-border bg-card p-0">
-            {monthlyExpenses.map((expense) => (
+            {[...monthlyExpenses].sort(compareBillsByUrgency).map((expense) => (
               <li key={expense.id}>
                 <MonthlyExpenseRow
                   bankAccount={

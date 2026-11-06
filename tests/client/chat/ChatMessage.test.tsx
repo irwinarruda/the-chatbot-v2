@@ -82,6 +82,8 @@ describe("ChatMessage", () => {
 
     render(
       <ChatMessage
+        copiedLabel="Copied"
+        copyLabel="Copy reply"
         message={message}
         theme="dark"
         locale="en"

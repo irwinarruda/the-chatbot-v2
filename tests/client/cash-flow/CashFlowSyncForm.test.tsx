@@ -12,7 +12,14 @@ describe("CashFlowSyncForm", () => {
     render(
       <>
         <CashFlowSyncForm
+          balances={{ NuConta: 100 }}
           bankAccounts={["NuConta"]}
+          currency={
+            new Intl.NumberFormat("en-US", {
+              style: "currency",
+              currency: "BRL",
+            })
+          }
           categories={["Balance adjustment"]}
           formId="cash-flow-sync"
           isSubmitting={false}
@@ -31,7 +38,11 @@ describe("CashFlowSyncForm", () => {
     expect(onSubmit).not.toHaveBeenCalled();
     expect(screen.getByText(t.invalidBalanceError)).toBeInTheDocument();
 
+    expect(screen.getByText("R$100.00")).toBeInTheDocument();
+
     await user.type(screen.getByLabelText(t.currentBalanceLabel), "0");
+
+    expect(screen.getByText("-R$100.00")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Submit" }));
 
     expect(onSubmit).toHaveBeenCalledWith(

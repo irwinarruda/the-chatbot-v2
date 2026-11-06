@@ -5,6 +5,7 @@ import {
   Pencil,
   Tags,
 } from "lucide-react";
+import { getBillDaysUntilDue } from "~/client/modules/cash-flow/parsers/BillsSearch";
 import { MonetaryValue } from "~/client/shared/components/MonetaryValue";
 import { Button } from "~/client/shared/components/ui/button";
 import { Checkbox } from "~/client/shared/components/ui/checkbox";
@@ -45,6 +46,17 @@ export function MonthlyExpenseRow({
       }).format(expense.expectedAmount)
     : t.variableAmount;
   const paidLabel = expense.isPaid ? t.paid : t.unpaid;
+  const daysUntilDue = getBillDaysUntilDue(expense, new Date());
+
+  function getDueLabel() {
+    if (!expense.dueDay) return t.noDueDay;
+    if (daysUntilDue === undefined)
+      return `${t.dueDayPrefix} ${expense.dueDay}`;
+    if (daysUntilDue < 0)
+      return t.billOverdue.replace("{day}", String(expense.dueDay));
+    if (daysUntilDue === 0) return t.billDueToday;
+    return t.billDueIn.replace("{days}", String(daysUntilDue));
+  }
 
   return (
     <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/60">
@@ -84,11 +96,20 @@ export function MonthlyExpenseRow({
               amount
             )}
           </span>
-          <span className="inline-flex items-center gap-1">
+          <span
+            className={cn(
+              "inline-flex items-center gap-1",
+              daysUntilDue !== undefined &&
+                daysUntilDue < 0 &&
+                "text-destructive",
+              daysUntilDue !== undefined &&
+                daysUntilDue >= 0 &&
+                daysUntilDue <= 7 &&
+                "text-warning",
+            )}
+          >
             <CalendarDays aria-hidden="true" className="size-3" />
-            {expense.dueDay
-              ? `${t.dueDayPrefix} ${expense.dueDay}`
-              : t.noDueDay}
+            {getDueLabel()}
           </span>
           {expense.category !== undefined && (
             <span className="inline-flex min-w-0 max-w-full items-center gap-1">

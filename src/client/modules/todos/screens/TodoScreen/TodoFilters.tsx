@@ -105,12 +105,25 @@ export function TodoFilters({
         <Input
           aria-label={t.searchPlaceholder}
           id="todo-filter-search"
-          className="pl-8"
+          className="pr-9 pl-8"
           onChange={(event) => onChangeDraftFilters({ q: event.target.value })}
           placeholder={t.searchPlaceholder}
           type="search"
           value={draftFilters.q}
         />
+        {hasActiveFilters && (
+          <Button
+            aria-label={t.clearFilters}
+            className="absolute top-1/2 right-1 -translate-y-1/2 text-muted-foreground"
+            onClick={onClearFilters}
+            size="icon-xs"
+            title={t.clearFilters}
+            type="button"
+            variant="ghost"
+          >
+            <X />
+          </Button>
+        )}
       </div>
       <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
         <Select
@@ -178,12 +191,6 @@ export function TodoFilters({
             type="date"
             value={draftFilters.dueDate}
           />
-        )}
-        {hasActiveFilters && (
-          <Button onClick={onClearFilters} type="button" variant="ghost">
-            <X />
-            {t.clearFilters}
-          </Button>
         )}
       </div>
     </div>

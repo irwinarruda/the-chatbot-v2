@@ -21,6 +21,8 @@ export function ConfirmDialog({
   isDestructive = true,
   isDisabled = false,
   onConfirm,
+  onOpenChange,
+  open,
   title,
   trigger,
 }: {
@@ -31,12 +33,14 @@ export function ConfirmDialog({
   isDestructive?: boolean;
   isDisabled?: boolean;
   onConfirm: () => void;
+  onOpenChange?: (open: boolean) => void;
+  open?: boolean;
   title: ReactNode;
-  trigger: ReactElement;
+  trigger?: ReactElement;
 }) {
   return (
-    <AlertDialog>
-      <AlertDialogTrigger render={trigger} />
+    <AlertDialog onOpenChange={onOpenChange} open={open}>
+      {trigger && <AlertDialogTrigger render={trigger} />}
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogMedia

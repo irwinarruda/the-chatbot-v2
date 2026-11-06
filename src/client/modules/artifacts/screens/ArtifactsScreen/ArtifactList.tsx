@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import {
   Check,
+  Ellipsis,
   Globe2,
   Link2,
   LockKeyhole,
@@ -12,6 +13,13 @@ import { ConfirmDialog } from "~/client/shared/components/ConfirmDialog";
 import { ListEmptyState } from "~/client/shared/components/ListEmptyState";
 import { Alert, AlertDescription } from "~/client/shared/components/ui/alert";
 import { Button } from "~/client/shared/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "~/client/shared/components/ui/dropdown-menu";
 import { Skeleton } from "~/client/shared/components/ui/skeleton";
 import {
   type ApiError,
@@ -27,6 +35,7 @@ import { ArtifactVisibility } from "~/domain/artifacts/artifact-visibility";
 export function ArtifactList() {
   const prefs = usePrefs();
   const [copiedId, setCopiedId] = useState<string>();
+  const [deletingArtifact, setDeletingArtifact] = useState<ArtifactDTO>();
   const artifacts = useApp((state) => state.artifacts);
   const isLoading = useApp((state) => state.isArtifactsLoading);
   const isSubmitting = useApp((state) => state.isArtifactSubmitting);
@@ -132,7 +141,7 @@ export function ArtifactList() {
                     </time>
                   </p>
                 </div>
-                <div className="relative z-10 flex shrink-0 items-center gap-1">
+                <div className="relative z-10 hidden shrink-0 items-center gap-1 sm:flex">
                   <Button
                     aria-label={t.copyLinkAction}
                     onClick={() => onShareLinkCopy(artifact.id)}
@@ -192,6 +201,45 @@ export function ArtifactList() {
                       </Button>
                     }
                   />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <Button
+                          aria-label={t.moreActions}
+                          className="relative z-10 text-muted-foreground sm:hidden"
+                          size="icon-sm"
+                          type="button"
+                          variant="ghost"
+                        />
+                      }
+                    >
+                      <Ellipsis />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-52">
+                      <DropdownMenuItem
+                        onClick={() => onShareLinkCopy(artifact.id)}
+                      >
+                        <Link2 />
+                        {t.copyLinkAction}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        disabled={isSubmitting}
+                        onClick={() => onArtifactVisibilityToggle(artifact)}
+                      >
+                        {isPublic ? <LockKeyhole /> : <Globe2 />}
+                        {isPublic ? t.makePrivateAction : t.makePublicAction}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        disabled={isSubmitting}
+                        onClick={() => setDeletingArtifact(artifact)}
+                        variant="destructive"
+                      >
+                        <Trash2 />
+                        {t.deleteAction}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </li>
             );
@@ -200,6 +248,21 @@ export function ArtifactList() {
       ) : (
         <ListEmptyState icon={PanelsTopLeft} title={t.emptyState} />
       )}
+      <ConfirmDialog
+        cancelLabel={t.cancelAction}
+        confirmLabel={t.deleteAction}
+        description={t.deleteConfirmation}
+        isDisabled={isSubmitting}
+        onConfirm={() => {
+          if (deletingArtifact) void onArtifactDelete(deletingArtifact);
+          setDeletingArtifact(undefined);
+        }}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setDeletingArtifact(undefined);
+        }}
+        open={deletingArtifact !== undefined}
+        title={t.deleteTitle.replace("{name}", deletingArtifact?.title ?? "")}
+      />
     </>
   );
 }

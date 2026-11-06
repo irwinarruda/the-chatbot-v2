@@ -1,4 +1,11 @@
-import { Copy, KeyRound, RefreshCw, ShieldCheck, Trash2 } from "lucide-react";
+import {
+  ChevronRight,
+  Copy,
+  KeyRound,
+  RefreshCw,
+  ShieldCheck,
+  Trash2,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { ConfirmDialog } from "~/client/shared/components/ConfirmDialog";
 import { Alert, AlertDescription } from "~/client/shared/components/ui/alert";
@@ -55,6 +62,7 @@ export function UploadTokenCard() {
   const rotateUploadToken = useApp((state) => state.rotateUploadToken);
   const revokeUploadToken = useApp((state) => state.revokeUploadToken);
   const [copyError, setCopyError] = useState<"copy" | ApiError>();
+  const [isExpanded, setIsExpanded] = useState(false);
   const t = getDictionary(prefs.locale).artifactsPage;
   const revealedConfig = revealedToken
     ? createArtifactSkillConfig(revealedToken)
@@ -91,6 +99,9 @@ export function UploadTokenCard() {
     return hideUploadToken;
   }, []);
 
+  const isOpen =
+    isExpanded || !tokenStatus?.configured || revealedConfig !== undefined;
+
   return (
     <>
       {errorMessage && (
@@ -102,11 +113,24 @@ export function UploadTokenCard() {
         className="mt-8 rounded-xl border-border bg-card shadow-none"
         size="sm"
       >
-        <CardHeader className="grid-cols-[1fr_auto]">
+        <CardHeader className="grid-cols-[1fr_auto] items-center">
           <div>
-            <CardTitle className="flex items-center gap-2 text-foreground">
-              <KeyRound className="size-4 text-primary" />
-              {t.tokenTitle}
+            <CardTitle className="text-foreground">
+              <button
+                aria-controls="upload-token-body"
+                aria-expanded={isOpen}
+                className="flex items-center gap-2 rounded-md text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/30"
+                onClick={() => setIsExpanded(!isOpen)}
+                type="button"
+              >
+                <ChevronRight
+                  aria-hidden="true"
+                  className="size-4 text-muted-foreground transition-transform data-[open=true]:rotate-90 motion-reduce:transition-none"
+                  data-open={isOpen}
+                />
+                <KeyRound className="size-4 text-primary" />
+                {t.tokenTitle}
+              </button>
             </CardTitle>
             <p className="mt-1 mb-0 text-muted-foreground text-xs leading-relaxed">
               {t.tokenDescription}
@@ -130,7 +154,11 @@ export function UploadTokenCard() {
             <Skeleton aria-label={t.loading} className="h-5 w-24" />
           )}
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent
+          className="space-y-3"
+          hidden={!isOpen}
+          id="upload-token-body"
+        >
           {revealedConfig && (
             <div className="space-y-2 rounded border border-warning/25 bg-warning/10 p-3">
               <p className="m-0 text-warning text-xs leading-relaxed">

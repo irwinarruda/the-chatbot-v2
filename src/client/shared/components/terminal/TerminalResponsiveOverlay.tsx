@@ -164,10 +164,10 @@ export function TerminalResponsiveOverlay({
               headerClassName,
             )}
           >
-            <div className="min-w-0 space-y-1">
+            <div className="min-w-0 flex-1 space-y-1">
               <DrawerTitle
                 className={cn(
-                  "font-semibold text-foreground text-sm",
+                  "text-left font-semibold text-foreground text-sm",
                   titleClassName,
                 )}
               >

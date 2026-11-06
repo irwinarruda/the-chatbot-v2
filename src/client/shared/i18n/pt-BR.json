@@ -69,7 +69,19 @@
       }
     },
     "footerPrompt": "Escolha um espaço para começar",
-    "primaryAction": "Abrir chat"
+    "primaryAction": "Abrir chat",
+    "summary": {
+      "title": "Hoje",
+      "todos": "Tarefas pendentes",
+      "overdue": "{count} atrasadas",
+      "bills": "Falta pagar no mês",
+      "unpaidBills": "{count} contas em aberto",
+      "cashFlow": "Saldo líquido",
+      "accounts": "Em {count} contas",
+      "notes": "Notas",
+      "noNotes": "Nenhuma nota ainda"
+    },
+    "areasLabel": "Todas as áreas"
   },
   "privacyPage": {
     "windowTitle": "Privacidade",
@@ -146,7 +158,9 @@
     "todoAction": "Abrir tarefas",
     "billsAction": "Abrir contas mensais",
     "scrollToLatest": "Ir para a mensagem mais recente",
-    "syncedHint": "A mesma conversa do seu WhatsApp"
+    "syncedHint": "A mesma conversa do seu WhatsApp",
+    "copyAction": "Copiar resposta",
+    "copiedAction": "Copiado"
   },
   "todoPage": {
     "windowTitle": "Tarefas",
@@ -191,7 +205,8 @@
     "emptyAllDone": "Nada pendente",
     "emptyAllDoneHint": "Novas tarefas do chat ou desta página aparecem aqui.",
     "createDescription": "Crie uma tarefa aqui ou só peça ao assistente no WhatsApp.",
-    "createdOn": "Criada em {date}"
+    "createdOn": "Criada em {date}",
+    "createNamed": "Criar “{name}”"
   },
   "notesPage": {
     "windowTitle": "Notas",
@@ -230,7 +245,8 @@
     "clearSearch": "Limpar busca",
     "cancelAction": "Cancelar",
     "deleteTitle": "Excluir “{name}”?",
-    "untitledNote": "Nota sem título"
+    "untitledNote": "Nota sem título",
+    "aiOpenAction": "Reescrever com IA"
   },
   "artifactsPage": {
     "windowTitle": "Artefatos",
@@ -271,7 +287,8 @@
     "cancelAction": "Cancelar",
     "deleteTitle": "Excluir “{name}”?",
     "backAction": "Artefatos",
-    "copiedAction": "Link copiado"
+    "copiedAction": "Link copiado",
+    "moreActions": "Mais ações"
   },
   "cashFlowPage": {
     "windowTitle": "Fluxo de caixa",
@@ -348,7 +365,13 @@
     "filtersAction": "Filtros",
     "latestHint": "Só a última entrada pode ser removida",
     "transferShort": "Transferir",
-    "syncShort": "Sincronizar"
+    "syncShort": "Sincronizar",
+    "monthIncome": "Entradas · {month}",
+    "monthSpending": "Saídas",
+    "monthNet": "Saldo do mês",
+    "trackedBalanceLabel": "Registrado:",
+    "adjustmentPreviewLabel": "Ajuste:",
+    "chooseCategory": "Escolha uma categoria"
   },
   "billsPage": {
     "windowTitle": "Contas",
@@ -425,13 +448,16 @@
     "payAction": "Pagar",
     "leftToPay": "Falta pagar",
     "paidSummary": "{paid} de {total} contas pagas · {percent}% do valor",
-    "listHint": "Marque para dar como paga · Pagar também registra a despesa no fluxo de caixa"
+    "listHint": "Marque para dar como paga · Pagar também registra a despesa no fluxo de caixa",
+    "billOverdue": "Atrasada · dia {day}",
+    "billDueToday": "Vence hoje",
+    "billDueIn": "Vence em {days} dias"
   },
   "loginPage": {
     "windowTitle": "Entrar",
     "heading": "Entrar no The Chatbot",
     "subtitle": "Use sua conta Google para continuar",
-    "body": "Entre com a mesma conta Google já registrada no The Chatbot. Após a autenticação, você voltará ao espaço solicitado.",
+    "body": "Use a conta Google vinculada ao seu número do WhatsApp.",
     "loginButton": "Entrar com Google",
     "footerPrompt": "Depois de entrar, você volta para a página que pediu."
   },

@@ -71,7 +71,7 @@ export function TodoRow({
           {todo.name}
         </span>
         {(todo.dueDate || todo.description) && (
-          <span className="mt-0.5 flex min-w-0 items-center gap-2 text-xs">
+          <span className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
             {todo.dueDate && (
               <span
                 className={cn(
@@ -84,7 +84,7 @@ export function TodoRow({
               </span>
             )}
             {todo.description && (
-              <span className="truncate text-muted-foreground">
+              <span className="line-clamp-2 min-w-0 text-muted-foreground sm:line-clamp-1">
                 {todo.description}
               </span>
             )}

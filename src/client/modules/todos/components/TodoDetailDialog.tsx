@@ -45,6 +45,7 @@ import type { Dictionary } from "~/client/shared/i18n/dictionary";
 import type { TodoDTO } from "~/contracts/http/todos/todo";
 
 export function TodoDetailDialog({
+  initialName = "",
   isSubmitting,
   mode = "edit",
   onClose,
@@ -55,6 +56,7 @@ export function TodoDetailDialog({
   theme,
   todo,
 }: {
+  initialName?: string;
   isSubmitting: boolean;
   mode?: "create" | "edit";
   onClose: () => void;
@@ -100,7 +102,7 @@ export function TodoDetailDialog({
   useEffect(() => {
     if (!open) return;
     if (isCreate) {
-      setName("");
+      setName(initialName);
       setDescription("");
       setDueDate("");
       setStatus("Pending");
@@ -111,7 +113,7 @@ export function TodoDetailDialog({
     setDescription(todo.description);
     setDueDate(toTodoDueDateInputValue(todo.dueDate));
     setStatus(todo.status);
-  }, [isCreate, open, todo]);
+  }, [initialName, isCreate, open, todo]);
 
   return (
     <TerminalResponsiveOverlay
@@ -221,11 +223,6 @@ export function TodoDetailDialog({
               </Field>
               <Field>
                 <FieldLabel htmlFor="todo-detail-status">
-                  {status === "Completed" ? (
-                    <CheckCircle2 className="size-3.5 text-success" />
-                  ) : (
-                    <Circle className="size-3.5 text-warning" />
-                  )}
                   {t.statusLabel}
                 </FieldLabel>
                 <Select
@@ -236,7 +233,14 @@ export function TodoDetailDialog({
                   value={status}
                 >
                   <SelectTrigger id="todo-detail-status" className="w-full">
-                    <SelectValue>{statusLabel}</SelectValue>
+                    <SelectValue>
+                      {status === "Completed" ? (
+                        <CheckCircle2 className="text-success" />
+                      ) : (
+                        <Circle className="text-warning" />
+                      )}
+                      {statusLabel}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent align="start">
                     <SelectItem value="Pending">

@@ -48,6 +48,7 @@ export function TodoScreen({ search }: { search: TodoSearch }) {
   const createTodo = useApp((s) => s.createTodo);
   const updateTodo = useApp((s) => s.updateTodo);
   const clearTodoError = useApp((s) => s.clearTodoError);
+  const [createName, setCreateName] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const dictionary = getDictionary(prefs.locale);
   const t = dictionary.todoPage;
@@ -81,7 +82,8 @@ export function TodoScreen({ search }: { search: TodoSearch }) {
     navigate({ to: "/todo/$todoId", params: { todoId: id }, search });
   }
 
-  function onOpenCreate() {
+  function onOpenCreate(name = "") {
+    setCreateName(name);
     setIsCreateOpen(true);
     navigate({ to: "/todo", search });
   }
@@ -125,7 +127,7 @@ export function TodoScreen({ search }: { search: TodoSearch }) {
     >
       <TerminalPageHeader
         actions={
-          <Button onClick={onOpenCreate} type="button">
+          <Button onClick={() => onOpenCreate()} type="button">
             <Plus />
             {t.createPrompt}
           </Button>
@@ -222,9 +224,11 @@ export function TodoScreen({ search }: { search: TodoSearch }) {
                     {t.clearFilters}
                   </Button>
                 )}
-                <Button onClick={onOpenCreate} type="button">
+                <Button onClick={() => onOpenCreate(filters.q)} type="button">
                   <Plus />
-                  {t.createPrompt}
+                  {filters.q
+                    ? t.createNamed.replace("{name}", filters.q)
+                    : t.createPrompt}
                 </Button>
               </>
             }
@@ -236,6 +240,7 @@ export function TodoScreen({ search }: { search: TodoSearch }) {
       </section>
       <TodoDetailDialog
         isSubmitting={isTodoSubmitting}
+        initialName={createName}
         mode="create"
         onClose={() => setIsCreateOpen(false)}
         onSave={onCreateTodo}

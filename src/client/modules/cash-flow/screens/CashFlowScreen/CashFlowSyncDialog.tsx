@@ -6,7 +6,9 @@ import type { SyncCashFlowBankAccountRequestDTO } from "~/contracts/http/cash-fl
 import { CashFlowSyncForm } from "./CashFlowSyncForm";
 
 export function CashFlowSyncDialog({
+  balances,
   bankAccounts,
+  currency,
   categories,
   isSubmitting,
   onClose,
@@ -14,7 +16,9 @@ export function CashFlowSyncDialog({
   open,
   t,
 }: {
+  balances: Record<string, number>;
   bankAccounts: string[];
+  currency: Intl.NumberFormat;
   categories: string[];
   isSubmitting: boolean;
   onClose: () => void;
@@ -45,7 +49,9 @@ export function CashFlowSyncDialog({
       title={t.syncTitle}
     >
       <CashFlowSyncForm
+        balances={balances}
         bankAccounts={bankAccounts}
+        currency={currency}
         categories={categories}
         formId={formId}
         isSubmitting={isSubmitting}

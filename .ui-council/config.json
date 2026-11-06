@@ -85,7 +85,8 @@
         },
         {
           "action": "wait",
-          "value": 500
+          "value": 500,
+          "selector": ""
         }
       ]
     },
@@ -116,7 +117,8 @@
         },
         {
           "action": "wait",
-          "value": 600
+          "value": 600,
+          "selector": ""
         }
       ]
     },
@@ -127,12 +129,13 @@
       "steps": [
         {
           "action": "fill",
-          "selector": "input[placeholder='search tasks...']",
+          "selector": "input[placeholder='Search tasks...']",
           "value": "zzzz"
         },
         {
           "action": "wait",
-          "value": 800
+          "value": 800,
+          "selector": ""
         }
       ]
     },
@@ -154,12 +157,13 @@
       "steps": [
         {
           "action": "fill",
-          "selector": "input[placeholder='search notes...']",
+          "selector": "input[placeholder='Search notes...']",
           "value": "zzzz"
         },
         {
           "action": "wait",
-          "value": 800
+          "value": 800,
+          "selector": ""
         }
       ]
     },
@@ -196,7 +200,8 @@
         },
         {
           "action": "wait",
-          "value": 600
+          "value": 600,
+          "selector": ""
         }
       ]
     },
@@ -216,7 +221,8 @@
         },
         {
           "action": "wait",
-          "value": 600
+          "value": 600,
+          "selector": ""
         }
       ]
     },
@@ -228,7 +234,7 @@
       "steps": [
         {
           "action": "click",
-          "selector": "role=button[name=\"sync balance\"]"
+          "selector": "role=button[name=\"Sync balance\"]"
         },
         {
           "action": "waitFor",
@@ -236,7 +242,8 @@
         },
         {
           "action": "wait",
-          "value": 600
+          "value": 600,
+          "selector": ""
         }
       ]
     },
@@ -256,7 +263,8 @@
         },
         {
           "action": "wait",
-          "value": 600
+          "value": 600,
+          "selector": ""
         }
       ]
     },
@@ -267,12 +275,13 @@
       "steps": [
         {
           "action": "fill",
-          "selector": "input[placeholder='description, category, or account...']",
+          "selector": "input[placeholder='Description, category, or account...']",
           "value": "zzzz"
         },
         {
           "action": "wait",
-          "value": 800
+          "value": 800,
+          "selector": ""
         }
       ]
     },
@@ -298,7 +307,8 @@
         },
         {
           "action": "wait",
-          "value": 600
+          "value": 600,
+          "selector": ""
         }
       ]
     },
@@ -318,7 +328,8 @@
         },
         {
           "action": "wait",
-          "value": 600
+          "value": 600,
+          "selector": ""
         }
       ]
     },
@@ -338,7 +349,8 @@
         },
         {
           "action": "wait",
-          "value": 600
+          "value": 600,
+          "selector": ""
         }
       ]
     },

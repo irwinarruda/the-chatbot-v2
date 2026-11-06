@@ -27,10 +27,8 @@ export function LoginScreen({ redirectTo }: { redirectTo: string }) {
             {t.loginButton}
           </Button>
         }
-        footnote={t.footerPrompt}
         heading={t.heading}
         icon={LogIn}
-        subtitle={t.subtitle}
       >
         {t.body}
       </AuthCard>

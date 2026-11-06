@@ -756,6 +756,18 @@
   font-weight: 600;
 }
 
+.notes-editor-content h1 {
+  font-size: 1.375rem;
+}
+
+.notes-editor-content h2 {
+  font-size: 1.125rem;
+}
+
+.notes-editor-content h3 {
+  font-size: 1rem;
+}
+
 .notes-editor-content p {
   margin-bottom: 0.9em;
 }

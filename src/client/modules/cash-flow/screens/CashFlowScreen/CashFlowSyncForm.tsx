@@ -28,7 +28,9 @@ const todayFormatter = new Intl.DateTimeFormat("en-CA", {
 });
 
 export function CashFlowSyncForm({
+  balances,
   bankAccounts,
+  currency,
   categories,
   formId,
   isSubmitting,
@@ -36,7 +38,9 @@ export function CashFlowSyncForm({
   open,
   t,
 }: {
+  balances: Record<string, number>;
   bankAccounts: string[];
+  currency: Intl.NumberFormat;
   categories: string[];
   formId: string;
   isSubmitting: boolean;
@@ -51,6 +55,13 @@ export function CashFlowSyncForm({
   const [date, setDate] = useState(todayFormatter.format(new Date()));
   const [errors, setErrors] = useState<SyncFormErrors>({});
   const fieldId = useId();
+  const enteredBalance = Number(currentBalance);
+  const adjustment =
+    currentBalance.trim() &&
+    Number.isFinite(enteredBalance) &&
+    balances[bankAccount] !== undefined
+      ? enteredBalance - balances[bankAccount]
+      : undefined;
   const balanceRef = useRef<HTMLInputElement>(null);
   const descriptionRef = useRef<HTMLInputElement>(null);
 
@@ -88,7 +99,7 @@ export function CashFlowSyncForm({
     if (!open) return;
     setBankAccount(bankAccounts[0] ?? "");
     setCurrentBalance("");
-    setCategory(categories[0] ?? "");
+    setCategory(categories.find((item) => /adjust|ajuste/i.test(item)) ?? "");
     setDescription(t.syncDescriptionDefault);
     setDate(todayFormatter.format(new Date()));
     setErrors({});
@@ -155,6 +166,25 @@ export function CashFlowSyncForm({
           <FieldError>{errors.currentBalance}</FieldError>
         </Field>
       </div>
+      {bankAccount && balances[bankAccount] !== undefined && (
+        <p className="m-0 flex flex-wrap gap-x-4 gap-y-1 rounded-lg bg-muted/60 px-3 py-2 text-muted-foreground text-xs tabular-nums">
+          <span>
+            {t.trackedBalanceLabel}{" "}
+            <strong className="font-medium text-foreground">
+              {currency.format(balances[bankAccount])}
+            </strong>
+          </span>
+          {adjustment !== undefined && (
+            <span>
+              {t.adjustmentPreviewLabel}{" "}
+              <strong className="font-medium text-foreground">
+                {adjustment > 0 ? "+" : ""}
+                {currency.format(adjustment)}
+              </strong>
+            </span>
+          )}
+        </p>
+      )}
       <div className="grid gap-4 sm:grid-cols-2">
         <Field data-invalid={Boolean(errors.category)}>
           <FieldLabel htmlFor={`${fieldId}-category`}>
@@ -171,6 +201,7 @@ export function CashFlowSyncForm({
             }}
             value={category}
           >
+            <NativeSelectOption value="">{t.chooseCategory}</NativeSelectOption>
             {categories.map((item) => (
               <NativeSelectOption key={item} value={item}>
                 {item}

@@ -34,3 +34,21 @@ export function shiftBillsMonth(month: string, offset: number): string {
   const date = new Date(Date.UTC(year, monthNumber - 1 + offset, 1));
   return date.toISOString().slice(0, 7);
 }
+
+export function getBillDaysUntilDue(
+  bill: { dueDay?: number; isPaid: boolean; month: string },
+  now: Date,
+): number | undefined {
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  if (bill.isPaid || !bill.dueDay || bill.month !== currentMonth)
+    return undefined;
+  return bill.dueDay - now.getDate();
+}
+
+export function compareBillsByUrgency(
+  first: { dueDay?: number; isPaid: boolean },
+  second: { dueDay?: number; isPaid: boolean },
+): number {
+  if (first.isPaid !== second.isPaid) return first.isPaid ? 1 : -1;
+  return (first.dueDay ?? 32) - (second.dueDay ?? 32);
+}

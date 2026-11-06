@@ -355,7 +355,7 @@ export function ChatScreen() {
       <div
         ref={parentRef}
         onScroll={onScroll}
-        className="relative flex-1 overflow-y-auto overscroll-y-contain px-[max(0.75rem,env(safe-area-inset-left))] py-4 pr-[max(0.75rem,env(safe-area-inset-right))] sm:px-5 sm:py-6"
+        className="relative flex-1 overflow-y-auto overscroll-y-contain px-[max(0.75rem,env(safe-area-inset-left))] pt-4 pb-10 pr-[max(0.75rem,env(safe-area-inset-right))] sm:px-5 sm:pt-6"
       >
         {chatMessages.length === 0 ? (
           <Empty className="h-full rounded-none border-0 px-4 py-10">
@@ -433,6 +433,8 @@ export function ChatScreen() {
                 >
                   <div className="pb-2">
                     <ChatMessage
+                      copiedLabel={t.copiedAction}
+                      copyLabel={t.copyAction}
                       dayLabel={dayLabel}
                       message={message}
                       theme={prefs.theme}

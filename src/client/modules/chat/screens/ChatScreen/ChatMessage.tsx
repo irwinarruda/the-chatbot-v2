@@ -1,3 +1,4 @@
+import { Check, Copy } from "lucide-react";
 import { memo, useState } from "react";
 import {
   type WhatsAppBlockNode,
@@ -20,6 +21,8 @@ interface ChatMessageProps {
   showMoreLabel: string;
   showLessLabel: string;
   activityLabels: ChatActivityLabels;
+  copiedLabel: string;
+  copyLabel: string;
   onButtonReply: (text: string) => void;
 }
 
@@ -52,7 +55,21 @@ function ChatMessageBody({
   showLessLabel,
   activityLabels,
   onButtonReply,
+  copiedLabel,
+  copyLabel,
 }: Omit<ChatMessageProps, "dayLabel">) {
+  const [isCopied, setIsCopied] = useState(false);
+
+  async function onCopy(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setIsCopied(true);
+      window.setTimeout(() => setIsCopied(false), 2000);
+    } catch {
+      setIsCopied(false);
+    }
+  }
+
   const isUser = message.userType === "user";
   const isAudio = message.type === "audio" && Boolean(message.mediaUrl);
   const timestamp = new Date(message.createdAt).toLocaleTimeString(locale, {
@@ -82,6 +99,21 @@ function ChatMessageBody({
             showLessLabel={showLessLabel}
             onButtonReply={onButtonReply}
           />
+          {message.text && (
+            <div className="mt-1.5 flex items-center">
+              <Button
+                aria-label={isCopied ? copiedLabel : copyLabel}
+                className="-ml-1.5 text-muted-foreground"
+                onClick={() => void onCopy(message.text ?? "")}
+                size="icon-xs"
+                title={isCopied ? copiedLabel : copyLabel}
+                type="button"
+                variant="ghost"
+              >
+                {isCopied ? <Check className="text-success" /> : <Copy />}
+              </Button>
+            </div>
+          )}
         </div>
       </article>
     );

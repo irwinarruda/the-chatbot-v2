@@ -69,7 +69,19 @@
       }
     },
     "footerPrompt": "Choose a workspace to get started",
-    "primaryAction": "Open chat"
+    "primaryAction": "Open chat",
+    "summary": {
+      "title": "Today",
+      "todos": "Pending tasks",
+      "overdue": "{count} overdue",
+      "bills": "Left to pay this month",
+      "unpaidBills": "{count} bills unpaid",
+      "cashFlow": "Net balance",
+      "accounts": "Across {count} accounts",
+      "notes": "Notes",
+      "noNotes": "No notes yet"
+    },
+    "areasLabel": "All areas"
   },
   "privacyPage": {
     "windowTitle": "Privacy",
@@ -146,7 +158,9 @@
     "todoAction": "Open todos",
     "billsAction": "Open monthly bills",
     "scrollToLatest": "Scroll to the latest message",
-    "syncedHint": "Same conversation as your WhatsApp chat"
+    "syncedHint": "Same conversation as your WhatsApp chat",
+    "copyAction": "Copy reply",
+    "copiedAction": "Copied"
   },
   "todoPage": {
     "windowTitle": "Todos",
@@ -191,7 +205,8 @@
     "emptyAllDone": "Nothing left to do",
     "emptyAllDoneHint": "New tasks from chat or this page show up here.",
     "createDescription": "Add a task here, or just tell the assistant on WhatsApp.",
-    "createdOn": "Created {date}"
+    "createdOn": "Created {date}",
+    "createNamed": "Create “{name}”"
   },
   "notesPage": {
     "windowTitle": "Notes",
@@ -230,7 +245,8 @@
     "clearSearch": "Clear search",
     "cancelAction": "Cancel",
     "deleteTitle": "Delete “{name}”?",
-    "untitledNote": "Untitled note"
+    "untitledNote": "Untitled note",
+    "aiOpenAction": "Rewrite with AI"
   },
   "artifactsPage": {
     "windowTitle": "Artifacts",
@@ -271,7 +287,8 @@
     "cancelAction": "Cancel",
     "deleteTitle": "Delete “{name}”?",
     "backAction": "Artifacts",
-    "copiedAction": "Link copied"
+    "copiedAction": "Link copied",
+    "moreActions": "More actions"
   },
   "cashFlowPage": {
     "windowTitle": "Cash flow",
@@ -348,7 +365,13 @@
     "filtersAction": "Filters",
     "latestHint": "Only the latest entry can be removed",
     "transferShort": "Transfer",
-    "syncShort": "Sync"
+    "syncShort": "Sync",
+    "monthIncome": "In · {month}",
+    "monthSpending": "Out",
+    "monthNet": "Net this month",
+    "trackedBalanceLabel": "Tracked:",
+    "adjustmentPreviewLabel": "Adjustment:",
+    "chooseCategory": "Choose a category"
   },
   "billsPage": {
     "windowTitle": "Bills",
@@ -425,13 +448,16 @@
     "payAction": "Pay",
     "leftToPay": "Left to pay",
     "paidSummary": "{paid} of {total} bills paid · {percent}% of the amount",
-    "listHint": "Tick to mark paid · Pay also records the expense in cash flow"
+    "listHint": "Tick to mark paid · Pay also records the expense in cash flow",
+    "billOverdue": "Overdue · day {day}",
+    "billDueToday": "Due today",
+    "billDueIn": "Due in {days} days"
   },
   "loginPage": {
     "windowTitle": "Sign in",
     "heading": "Sign in to The Chatbot",
     "subtitle": "Use your Google account to continue",
-    "body": "Sign in with the same Google account already registered in The Chatbot. After authentication, you will return to the workspace you requested.",
+    "body": "Use the Google account linked to your WhatsApp number.",
     "loginButton": "Log in with Google",
     "footerPrompt": "You return to the page you asked for after signing in."
   },

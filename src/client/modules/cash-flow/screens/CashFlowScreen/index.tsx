@@ -11,7 +11,10 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { CashFlowErrorCode } from "~/client/modules/cash-flow/app/services/CashFlowService";
-import { calculateCashFlowNetBalance } from "~/client/modules/cash-flow/parsers/CashFlowBalances";
+import {
+  calculateCashFlowNetBalance,
+  summarizeCashFlowMonth,
+} from "~/client/modules/cash-flow/parsers/CashFlowBalances";
 import {
   type CashFlowFilterValues,
   type CashFlowSearch,
@@ -167,6 +170,15 @@ export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
     void bootstrap();
   }, [bootstrap]);
 
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const monthSummary = summarizeCashFlowMonth(
+    dashboard.transactions,
+    currentMonth,
+  );
+  const monthLabel = new Date().toLocaleDateString(prefs.locale, {
+    month: "long",
+  });
+
   return (
     <AppShell
       activePath="/cash-flow"
@@ -260,6 +272,44 @@ export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
               </MonetaryValue>
             </p>
           </div>
+          <dl className="m-0 grid grid-cols-3 gap-3 border-border border-t px-5 py-3">
+            <div className="min-w-0">
+              <dt className="truncate text-muted-foreground text-xs">
+                {t.monthIncome.replace("{month}", monthLabel)}
+              </dt>
+              <dd className="m-0 font-medium text-sm text-success tabular-nums">
+                <MonetaryValue
+                  hiddenLabel={dictionary.common.hiddenMonetaryValue}
+                >
+                  {currency.format(monthSummary.income)}
+                </MonetaryValue>
+              </dd>
+            </div>
+            <div className="min-w-0">
+              <dt className="truncate text-muted-foreground text-xs">
+                {t.monthSpending}
+              </dt>
+              <dd className="m-0 font-medium text-foreground text-sm tabular-nums">
+                <MonetaryValue
+                  hiddenLabel={dictionary.common.hiddenMonetaryValue}
+                >
+                  {currency.format(monthSummary.spending)}
+                </MonetaryValue>
+              </dd>
+            </div>
+            <div className="min-w-0">
+              <dt className="truncate text-muted-foreground text-xs">
+                {t.monthNet}
+              </dt>
+              <dd className="m-0 font-medium text-foreground text-sm tabular-nums">
+                <MonetaryValue
+                  hiddenLabel={dictionary.common.hiddenMonetaryValue}
+                >
+                  {currency.format(monthSummary.income - monthSummary.spending)}
+                </MonetaryValue>
+              </dd>
+            </div>
+          </dl>
           <ul
             aria-label={t.accountBalancesLabel}
             className="m-0 grid list-none grid-cols-1 divide-y divide-border border-border border-t p-0 sm:grid-cols-3 sm:divide-x sm:divide-y-0"
@@ -381,7 +431,14 @@ export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
         t={t}
       />
       <CashFlowSyncDialog
+        balances={Object.fromEntries(
+          dashboard.bankAccountStatuses.map((account) => [
+            account.bankAccount,
+            account.balance,
+          ]),
+        )}
         bankAccounts={dashboard.bankAccounts}
+        currency={currency}
         categories={categories}
         isSubmitting={isSubmitting}
         onClose={() => setIsSyncOpen(false)}
