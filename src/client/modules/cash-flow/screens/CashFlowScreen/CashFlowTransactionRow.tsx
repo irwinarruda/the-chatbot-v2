@@ -1,24 +1,12 @@
 import {
-  AlertTriangle,
   ArrowDownLeft,
   ArrowRightLeft,
   ArrowUpRight,
   Pencil,
   Trash2,
 } from "lucide-react";
+import { ConfirmDialog } from "~/client/shared/components/ConfirmDialog";
 import { MonetaryValue } from "~/client/shared/components/MonetaryValue";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogMedia,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "~/client/shared/components/ui/alert-dialog";
 import { Badge } from "~/client/shared/components/ui/badge";
 import { Button } from "~/client/shared/components/ui/button";
 import type { Dictionary, Locale } from "~/client/shared/i18n/dictionary";
@@ -128,63 +116,50 @@ export function CashFlowTransactionRow({
           )}
           {(Boolean(transaction.transferId) ||
             (transaction.isLast && !transaction.paymentId)) && (
-            <AlertDialog>
-              <AlertDialogTrigger
-                render={
-                  <Button
-                    aria-label={
-                      transaction.transferId
-                        ? t.transferDeleteAction
-                        : t.deleteLastAction
-                    }
-                    disabled={isSubmitting}
-                    size="icon-sm"
-                    type="button"
-                    variant="ghost"
-                  />
-                }
-              >
-                <Trash2 className="text-destructive" />
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogMedia className="bg-destructive/10 text-destructive">
-                    <AlertTriangle />
-                  </AlertDialogMedia>
-                  <AlertDialogTitle>
-                    {transaction.transferId
-                      ? t.transferDeleteTitle
-                      : t.deleteLastTitle}
-                  </AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {transaction.transferId
-                      ? t.transferDeleteHint
-                      : t.deleteLastConfirmation}
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <p className="m-0 rounded-lg border border-border bg-muted/50 px-3 py-2 text-left text-foreground text-sm">
-                  <span className="font-medium">
-                    {transaction.description || t.transferLabel}
-                  </span>
-                  <span className="block text-muted-foreground text-xs tabular-nums">
-                    {currency.format(transaction.value)} · {date} ·{" "}
-                    {transaction.bankAccount}
-                  </span>
-                </p>
-                <AlertDialogFooter>
-                  <AlertDialogCancel disabled={isSubmitting}>
-                    {t.cancelAction}
-                  </AlertDialogCancel>
-                  <AlertDialogAction
-                    disabled={isSubmitting}
-                    onClick={onDelete}
-                    variant="destructive"
-                  >
-                    {t.deleteAction}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmDialog
+              cancelLabel={t.cancelAction}
+              confirmLabel={t.deleteAction}
+              description={
+                transaction.transferId
+                  ? t.transferDeleteHint
+                  : t.deleteLastConfirmation
+              }
+              isDisabled={isSubmitting}
+              onConfirm={onDelete}
+              title={
+                transaction.transferId
+                  ? t.transferDeleteTitle
+                  : t.deleteLastTitle
+              }
+              trigger={
+                <Button
+                  aria-label={
+                    transaction.transferId
+                      ? t.transferDeleteAction
+                      : t.deleteLastAction
+                  }
+                  disabled={isSubmitting}
+                  size="icon-sm"
+                  type="button"
+                  variant="ghost"
+                >
+                  <Trash2 className="text-destructive" />
+                </Button>
+              }
+            >
+              <p className="m-0 rounded-lg border border-border bg-muted/50 px-3 py-2 text-left text-foreground text-sm">
+                <span className="font-medium">
+                  {transaction.description ||
+                    (transaction.transferId ? t.transferLabel : "")}
+                </span>
+                <span className="block text-muted-foreground text-xs tabular-nums">
+                  <MonetaryValue hiddenLabel={hiddenMonetaryValueLabel}>
+                    {currency.format(transaction.value)}
+                  </MonetaryValue>{" "}
+                  · {date} · {transaction.bankAccount}
+                </span>
+              </p>
+            </ConfirmDialog>
           )}
         </div>
       </div>

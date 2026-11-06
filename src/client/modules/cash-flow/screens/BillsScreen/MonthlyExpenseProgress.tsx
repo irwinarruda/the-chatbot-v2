@@ -35,6 +35,8 @@ export function MonthlyExpenseProgress({
   let progress = 0;
   if (expectedTotal > 0)
     progress = Math.round((paidTotal / expectedTotal) * 100);
+  else if (expenses.length > 0)
+    progress = Math.round((paidCount / expenses.length) * 100);
   const summary = t.paidSummary
     .replace("{paid}", paidCount.toString())
     .replace("{total}", expenses.length.toString())

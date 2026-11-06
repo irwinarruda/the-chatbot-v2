@@ -51,7 +51,7 @@ This skill owns views and visuals. Placement comes from `client-architecture`; s
 
 - `src/client/shared/components/terminal/AppShell.tsx`: the app frame.
 - `src/client/modules/cash-flow/screens/BillsScreen/index.tsx`: signals, tints and dense data.
-- `src/client/modules/chat/screens/ChatScreen/ChatMessage.tsx`: prose following the Favo markup rules.
+- `src/client/modules/chat/screens/ChatScreen/ChatMessage.tsx`: calm prose, emphasis in `foreground`, per-message actions.
 
 ## Checklist
 

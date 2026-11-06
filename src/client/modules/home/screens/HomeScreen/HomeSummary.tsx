@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
-import { type ReactNode, useEffect } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { calculateCashFlowNetBalance } from "~/client/modules/cash-flow/parsers/CashFlowBalances";
 import {
   getTodoDueUrgency,
@@ -19,12 +19,16 @@ function SummaryTile({
   children,
   detail,
   href,
+  isUnavailable = false,
   label,
+  unavailableLabel,
 }: {
   children: ReactNode;
   detail: ReactNode;
   href: SummaryPath;
+  isUnavailable?: boolean;
   label: string;
+  unavailableLabel: string;
 }) {
   return (
     <li>
@@ -40,9 +44,11 @@ function SummaryTile({
           />
         </span>
         <span className="mt-1 font-semibold text-foreground text-xl tabular-nums tracking-tight">
-          {children}
+          {isUnavailable ? "—" : children}
         </span>
-        <span className="mt-0.5 text-muted-foreground text-xs">{detail}</span>
+        <span className="mt-0.5 text-muted-foreground text-xs">
+          {isUnavailable ? unavailableLabel : detail}
+        </span>
       </Link>
     </li>
   );
@@ -62,12 +68,19 @@ export function HomeSummary({ isSignedIn }: { isSignedIn: boolean }) {
   const notes = useApp((state) => state.notes);
   const dashboard = useApp((state) => state.cashFlowDashboard);
   const expenses = useApp((state) => state.monthlyExpenses);
-  const isLoading = useApp(
+  const todoError = useApp((state) => state.todoError);
+  const cashFlowError = useApp((state) => state.cashFlowError);
+  const monthlyExpenseError = useApp((state) => state.monthlyExpenseError);
+  const noteError = useApp((state) => state.noteError);
+  const isBootstrapping = useApp(
     (state) =>
       state.isTodoBootstrapping ||
       state.isCashFlowBootstrapping ||
-      state.isMonthlyExpenseBootstrapping,
+      state.isMonthlyExpenseBootstrapping ||
+      state.isNoteBootstrapping,
   );
+  const [hasRequested, setHasRequested] = useState(false);
+  const isLoading = !hasRequested || isBootstrapping;
   const currency = new Intl.NumberFormat(
     prefs.locale === "pt-BR" ? "pt-BR" : "en-US",
     { style: "currency", currency: "BRL" },
@@ -95,6 +108,7 @@ export function HomeSummary({ isSignedIn }: { isSignedIn: boolean }) {
     void bootstrapCashFlow();
     void bootstrapMonthlyExpenses();
     void bootstrapNotes();
+    setHasRequested(true);
   }, [isSignedIn]);
 
   if (!isSignedIn) return undefined;
@@ -122,7 +136,9 @@ export function HomeSummary({ isSignedIn }: { isSignedIn: boolean }) {
               </span>
             }
             href="/todo"
+            isUnavailable={todoError !== undefined}
             label={t.todos}
+            unavailableLabel={t.unavailable}
           >
             {pendingTodos.length}
           </SummaryTile>
@@ -132,7 +148,9 @@ export function HomeSummary({ isSignedIn }: { isSignedIn: boolean }) {
               unpaidExpenses.length.toString(),
             )}
             href="/bills"
+            isUnavailable={monthlyExpenseError !== undefined}
             label={t.bills}
+            unavailableLabel={t.unavailable}
           >
             <MonetaryValue hiddenLabel={dictionary.common.hiddenMonetaryValue}>
               {currency.format(leftToPay)}
@@ -144,7 +162,9 @@ export function HomeSummary({ isSignedIn }: { isSignedIn: boolean }) {
               dashboard.bankAccountStatuses.length.toString(),
             )}
             href="/cash-flow"
+            isUnavailable={cashFlowError !== undefined}
             label={t.cashFlow}
+            unavailableLabel={t.unavailable}
           >
             <MonetaryValue hiddenLabel={dictionary.common.hiddenMonetaryValue}>
               {currency.format(netBalance)}
@@ -157,7 +177,9 @@ export function HomeSummary({ isSignedIn }: { isSignedIn: boolean }) {
               </span>
             }
             href="/notes"
+            isUnavailable={noteError !== undefined}
             label={t.notes}
+            unavailableLabel={t.unavailable}
           >
             {notes.length}
           </SummaryTile>

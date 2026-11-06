@@ -79,7 +79,8 @@
       "cashFlow": "Saldo líquido",
       "accounts": "Em {count} contas",
       "notes": "Notas",
-      "noNotes": "Nenhuma nota ainda"
+      "noNotes": "Nenhuma nota ainda",
+      "unavailable": "Não carregou. Abra para tentar de novo."
     },
     "areasLabel": "Todas as áreas"
   },
@@ -91,7 +92,6 @@
     "windowTitle": "Conectado",
     "heading": "Conta Google conectada",
     "subtitle": "Tudo pronto",
-    "greeting": "Bem-vindo ao",
     "body": "O assistente já pode usar sua conta Google com suas planilhas. Volte ao WhatsApp ou abra o app web.",
     "footerPrompt": "Você também pode fechar esta janela e voltar ao WhatsApp.",
     "openAction": "Abrir o The Chatbot"
@@ -101,7 +101,6 @@
     "heading": "Já conectado",
     "subtitle": "Sua sessão Google está ativa",
     "badge": "Conectado",
-    "greeting": "Bem-vindo de volta ao",
     "body": "Esta conta Google já estava conectada, então renovamos a sessão. Não há mais nada a fazer.",
     "footerPrompt": "Você também pode fechar esta janela e voltar ao WhatsApp.",
     "openAction": "Abrir o The Chatbot"
@@ -110,8 +109,8 @@
     "windowTitle": "Não encontrado",
     "heading": "404",
     "subtitle": "Página não encontrada",
-    "body": "O caminho solicitado não existe nesta sessão do terminal.",
-    "footerPrompt": "Navegue para uma rota conhecida"
+    "body": "Esta página não existe. Use a barra lateral para voltar ao seu espaço.",
+    "homeAction": "Voltar ao início"
   },
   "chatPage": {
     "windowTitle": "Chat",
@@ -129,9 +128,7 @@
     "showLessTranscript": "Ocultar transcrição",
     "placeholder": "Digite uma mensagem...",
     "audioInputLabel": "Microfone",
-    "audioInputUnavailable": "Microfone padrão",
     "modelLabel": "Modelo de IA",
-    "modelShort": "modelo",
     "reasoningEffortLabel": "Esforço de raciocínio",
     "reasoningEffortShort": "Esforço",
     "traceShow": "Trabalhou",
@@ -154,9 +151,6 @@
     "stopRecording": "Parar",
     "cancelRecording": "Descartar",
     "sendRecording": "Enviar áudio",
-    "audioSent": "Mensagem de áudio enviada",
-    "todoAction": "Abrir tarefas",
-    "billsAction": "Abrir contas mensais",
     "scrollToLatest": "Ir para a mensagem mais recente",
     "syncedHint": "A mesma conversa do seu WhatsApp",
     "copyAction": "Copiar resposta",
@@ -169,10 +163,8 @@
     "loading": "Carregando...",
     "listLabel": "Tarefas",
     "detailTitle": "Detalhe da tarefa",
-    "chatAction": "Chat",
     "searchPlaceholder": "Buscar tarefas...",
     "clearFilters": "Limpar",
-    "statusAll": "Todos os status",
     "statusLabel": "Status",
     "statusPending": "Pendente",
     "statusCompleted": "Concluída",
@@ -180,7 +172,6 @@
     "dueDateLabel": "Data de vencimento",
     "dueWithDueDate": "Com prazo",
     "dueWithoutDueDate": "Sem prazo",
-    "noDueDate": "sem prazo",
     "createPrompt": "Nova tarefa",
     "createNamePlaceholder": "Nome da tarefa",
     "createDescriptionPlaceholder": "Detalhes, contexto ou notas",
@@ -190,7 +181,7 @@
     "deleteConfirmation": "Excluir esta tarefa? Esta ação não pode ser desfeita.",
     "cancelAction": "Cancelar",
     "emptyState": "Nenhuma tarefa combina com estes filtros.",
-    "audioLabel": "Audio de origem",
+    "audioLabel": "Áudio de origem",
     "transcriptLabel": "Transcrição",
     "errorLoading": "Falha ao carregar tarefas. Tente novamente.",
     "errorSaving": "Falha ao salvar tarefa. Tente novamente.",
@@ -207,7 +198,8 @@
     "createDescription": "Crie uma tarefa aqui ou só peça ao assistente no WhatsApp.",
     "createdOn": "Criada em {date}",
     "createNamed": "Criar “{name}”",
-    "closeAction": "Fechar"
+    "closeAction": "Fechar",
+    "deleteTitle": "Excluir “{name}”?"
   },
   "notesPage": {
     "windowTitle": "Notas",
@@ -215,7 +207,6 @@
     "subtitle": "Capture ideias, links e contexto duradouro em Markdown portátil.",
     "listLabel": "Todas as notas",
     "searchPlaceholder": "Buscar notas...",
-    "newNamePlaceholder": "Nome da nova nota",
     "createAction": "Nova nota",
     "emptyState": "Nenhuma nota combina com esta busca.",
     "emptyNote": "Nada por aqui ainda.",
@@ -273,7 +264,6 @@
     "publicLabel": "Público",
     "privateLabel": "Privado",
     "openAction": "Abrir artefato",
-    "manageAction": "Gerenciar",
     "copyLinkAction": "Copiar link",
     "makePublicAction": "Tornar público",
     "makePrivateAction": "Tornar privado",
@@ -296,7 +286,6 @@
     "heading": "Fluxo de Caixa",
     "subtitle": "Os dados da sua planilha, sem precisar usar a planilha.",
     "transactions": "Transações",
-    "chatAction": "Chat",
     "newTransaction": "Nova transação",
     "newTransactionHint": "Adicione uma despesa ou receita diretamente à planilha conectada.",
     "addAction": "Adicionar transação",
@@ -386,15 +375,7 @@
     "nextMonth": "Próximo mês",
     "currentMonthAction": "Mês atual",
     "monthHistoryHint": "As alterações seguem adiante até um mês posterior substituí-las.",
-    "remaining": "pendentes",
-    "chatAction": "Chat",
     "progressLabel": "Progresso mensal",
-    "progressMeasureLabel": "Calcular progresso por",
-    "progressByCount": "contas",
-    "progressByValue": "valor",
-    "of": "de",
-    "paidThisMonth": "pagas neste mês",
-    "paidValueThisMonth": "pagos neste mês",
     "paid": "Pagas",
     "unpaid": "Pendentes",
     "expectedTotal": "Total previsto",
@@ -438,7 +419,6 @@
     "paymentCategoryLabel": "Categoria da despesa",
     "paymentConfirm": "Pagar conta",
     "paymentRecorded": "Despesa registrada em",
-    "paymentAmountRequired": "Defina um valor para pagar por uma conta.",
     "paymentLoading": "Carregando contas…",
     "paymentLoadError": "Não foi possível carregar as contas. Feche e tente novamente.",
     "paymentNoAccounts": "Adicione uma conta bancária e uma categoria de despesa à planilha de fluxo de caixa.",
@@ -454,7 +434,9 @@
     "billOverdue": "Atrasada · dia {day}",
     "billDueToday": "Vence hoje",
     "billDueIn": "Vence em {days} dias",
-    "closeAction": "Fechar"
+    "closeAction": "Fechar",
+    "billDueTomorrow": "Vence amanhã",
+    "archiveTitle": "Arquivar “{name}”?"
   },
   "loginPage": {
     "windowTitle": "Entrar",
@@ -468,7 +450,7 @@
     "windowTitle": "Sem conta",
     "heading": "Conta não encontrada",
     "subtitle": "Esta conta Google ainda não está cadastrada",
-    "body": "O The Chatbot começa pelo WhatsApp. Envie qualquer mensagem ao bot para criar sua conta e depois entre aqui com a mesma conta Google.",
+    "body": "O The Chatbot começa pelo WhatsApp. Envie qualquer mensagem ao bot, abra o link que ele responder e entre com sua conta Google por lá, depois volte e entre aqui com a mesma conta.",
     "backLink": "Voltar ao início",
     "retryAction": "Usar outra conta Google"
   }

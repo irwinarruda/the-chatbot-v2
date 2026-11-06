@@ -5,19 +5,8 @@ import {
   toTodoDueDateRequestValue,
 } from "~/client/modules/todos/parsers/TodoDueDate";
 import { AudioWaveform } from "~/client/shared/components/AudioWaveform";
+import { ConfirmDialog } from "~/client/shared/components/ConfirmDialog";
 import { TerminalResponsiveOverlay } from "~/client/shared/components/terminal/TerminalResponsiveOverlay";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogMedia,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "~/client/shared/components/ui/alert-dialog";
 import { Button } from "~/client/shared/components/ui/button";
 import {
   Card,
@@ -135,45 +124,24 @@ export function TodoDetailDialog({
         showForm ? (
           <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
             {!isCreate && onDelete ? (
-              <AlertDialog>
-                <AlertDialogTrigger
-                  render={
-                    <Button
-                      disabled={isSubmitting}
-                      type="button"
-                      variant="destructive"
-                    />
-                  }
-                >
-                  <Trash2 />
-                  {t.deleteAction}
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogMedia className="bg-destructive/10 text-destructive">
-                      <Trash2 />
-                    </AlertDialogMedia>
-                    <AlertDialogTitle>
-                      {t.deleteAction}: {modalTitle}
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                      {t.deleteConfirmation}
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>{t.cancelAction}</AlertDialogCancel>
-                    <AlertDialogAction
-                      disabled={isSubmitting}
-                      onClick={onDelete}
-                      type="button"
-                      variant="destructive"
-                    >
-                      <Trash2 />
-                      {t.deleteAction}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <ConfirmDialog
+                cancelLabel={t.cancelAction}
+                confirmLabel={t.deleteAction}
+                description={t.deleteConfirmation}
+                isDisabled={isSubmitting}
+                onConfirm={onDelete}
+                title={t.deleteTitle.replace("{name}", modalTitle)}
+                trigger={
+                  <Button
+                    disabled={isSubmitting}
+                    type="button"
+                    variant="destructive"
+                  >
+                    <Trash2 />
+                    {t.deleteAction}
+                  </Button>
+                }
+              />
             ) : (
               <span className="hidden sm:block" />
             )}

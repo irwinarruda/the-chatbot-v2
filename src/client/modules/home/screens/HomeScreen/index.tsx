@@ -30,13 +30,20 @@ export function HomeScreen() {
   const dictionary = useDictionary();
   const t = dictionary.welcomePage;
   const hasWebAccess = useApp((state) => state.hasWebAccess);
-  const [isSignedIn, setIsSignedIn] = useState(false);
+  const isSessionExpired = useApp((state) => state.isSessionExpired);
+  const isLoggingOut = useApp((state) => state.isLoggingOut);
+  const [hasAccess, setHasAccess] = useState(false);
+  const isSignedIn = hasAccess && !isSessionExpired && !isLoggingOut;
 
   useEffect(() => {
     let isActive = true;
-    void hasWebAccess().then((hasAccess) => {
-      if (isActive) setIsSignedIn(hasAccess);
-    });
+    hasWebAccess()
+      .then((access) => {
+        if (isActive) setHasAccess(access);
+      })
+      .catch(() => {
+        if (isActive) setHasAccess(false);
+      });
     return () => {
       isActive = false;
     };
@@ -74,7 +81,7 @@ export function HomeScreen() {
                 <li key={item.href}>
                   <Link
                     to={item.href}
-                    className="group flex items-center gap-3 px-4 py-3 outline-none transition-colors hover:bg-muted/60 focus-visible:bg-muted/60"
+                    className="group flex items-center gap-3 px-4 py-3 outline-none transition-colors hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
                   >
                     <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand/12 text-primary">
                       <Icon className="size-4" aria-hidden="true" />

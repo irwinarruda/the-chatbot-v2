@@ -1,13 +1,16 @@
-import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import {
+  createRootRoute,
+  HeadContent,
+  Link,
+  Scripts,
+} from "@tanstack/react-router";
+import { FileQuestion } from "lucide-react";
 import { type ReactNode, useEffect } from "react";
 import { SessionBoundary } from "~/client/modules/identity/components/SessionBoundary";
 import type { Prefs } from "~/client/shared/app/entities/Prefs";
+import { ListEmptyState } from "~/client/shared/components/ListEmptyState";
 import { AppShell } from "~/client/shared/components/terminal/AppShell";
-import { TerminalFooter } from "~/client/shared/components/terminal/TerminalFooter";
-import { TerminalPageHeader } from "~/client/shared/components/terminal/TerminalPageHeader";
-import { TerminalPanel } from "~/client/shared/components/terminal/TerminalPanel";
-import { TerminalPanelText } from "~/client/shared/components/terminal/TerminalPanelText";
-import { TerminalPrompt } from "~/client/shared/components/terminal/TerminalPrompt";
+import { Button } from "~/client/shared/components/ui/button";
 import { TooltipProvider } from "~/client/shared/components/ui/tooltip";
 import { getDictionary } from "~/client/shared/i18n/dictionary";
 import { useApp } from "~/client/shared/stores/app";
@@ -97,13 +100,17 @@ function NotFoundRoute() {
   const t = dictionary.notFoundPage;
   return (
     <AppShell title={t.windowTitle} dictionary={dictionary}>
-      <TerminalPageHeader heading={t.heading} subtitle={t.subtitle} />
-      <TerminalPanel centered>
-        <TerminalPanelText>{t.body}</TerminalPanelText>
-      </TerminalPanel>
-      <TerminalFooter className="mt-auto pt-6">
-        <TerminalPrompt text={t.footerPrompt} />
-      </TerminalFooter>
+      <ListEmptyState
+        actions={
+          <Button nativeButton={false} render={<Link to="/" />}>
+            {t.homeAction}
+          </Button>
+        }
+        className="mt-12"
+        description={t.body}
+        icon={FileQuestion}
+        title={t.subtitle}
+      />
     </AppShell>
   );
 }

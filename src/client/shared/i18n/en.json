@@ -79,7 +79,8 @@
       "cashFlow": "Net balance",
       "accounts": "Across {count} accounts",
       "notes": "Notes",
-      "noNotes": "No notes yet"
+      "noNotes": "No notes yet",
+      "unavailable": "Couldn’t load. Open to retry."
     },
     "areasLabel": "All areas"
   },
@@ -91,7 +92,6 @@
     "windowTitle": "Connected",
     "heading": "Google account connected",
     "subtitle": "You are all set",
-    "greeting": "Welcome to",
     "body": "The assistant can now use your Google account with your spreadsheets. Head back to WhatsApp or open the web app.",
     "footerPrompt": "You can also close this window and return to WhatsApp.",
     "openAction": "Open The Chatbot"
@@ -101,7 +101,6 @@
     "heading": "Already connected",
     "subtitle": "Your Google session is active",
     "badge": "Connected",
-    "greeting": "Welcome back to",
     "body": "This Google account was already connected, so we refreshed the session. Nothing else to do.",
     "footerPrompt": "You can also close this window and return to WhatsApp.",
     "openAction": "Open The Chatbot"
@@ -110,8 +109,8 @@
     "windowTitle": "Not found",
     "heading": "404",
     "subtitle": "Page not found",
-    "body": "The requested path does not exist in this terminal session.",
-    "footerPrompt": "Navigate to a known route"
+    "body": "This page does not exist. Use the sidebar to get back to your workspace.",
+    "homeAction": "Back to home"
   },
   "chatPage": {
     "windowTitle": "Chat",
@@ -129,9 +128,7 @@
     "showLessTranscript": "Hide transcription",
     "placeholder": "Type a message...",
     "audioInputLabel": "Microphone",
-    "audioInputUnavailable": "Default microphone",
     "modelLabel": "AI model",
-    "modelShort": "model",
     "reasoningEffortLabel": "Reasoning effort",
     "reasoningEffortShort": "Effort",
     "traceShow": "Worked",
@@ -154,9 +151,6 @@
     "stopRecording": "Stop",
     "cancelRecording": "Discard",
     "sendRecording": "Send audio",
-    "audioSent": "Audio message sent",
-    "todoAction": "Open todos",
-    "billsAction": "Open monthly bills",
     "scrollToLatest": "Scroll to the latest message",
     "syncedHint": "Same conversation as your WhatsApp chat",
     "copyAction": "Copy reply",
@@ -169,10 +163,8 @@
     "loading": "Loading...",
     "listLabel": "Tasks",
     "detailTitle": "Todo detail",
-    "chatAction": "Chat",
     "searchPlaceholder": "Search tasks...",
     "clearFilters": "Clear",
-    "statusAll": "All status",
     "statusLabel": "Status",
     "statusPending": "Pending",
     "statusCompleted": "Completed",
@@ -180,7 +172,6 @@
     "dueDateLabel": "Due date",
     "dueWithDueDate": "With due date",
     "dueWithoutDueDate": "Without due date",
-    "noDueDate": "no due date",
     "createPrompt": "New task",
     "createNamePlaceholder": "Task name",
     "createDescriptionPlaceholder": "Details, context, or notes",
@@ -207,7 +198,8 @@
     "createDescription": "Add a task here, or just tell the assistant on WhatsApp.",
     "createdOn": "Created {date}",
     "createNamed": "Create “{name}”",
-    "closeAction": "Close"
+    "closeAction": "Close",
+    "deleteTitle": "Delete “{name}”?"
   },
   "notesPage": {
     "windowTitle": "Notes",
@@ -215,7 +207,6 @@
     "subtitle": "Capture ideas, links, and lasting context as portable Markdown.",
     "listLabel": "All notes",
     "searchPlaceholder": "Search notes...",
-    "newNamePlaceholder": "New note name",
     "createAction": "New note",
     "emptyState": "No notes match this search.",
     "emptyNote": "Nothing here yet.",
@@ -273,7 +264,6 @@
     "publicLabel": "Public",
     "privateLabel": "Private",
     "openAction": "Open artifact",
-    "manageAction": "Manage",
     "copyLinkAction": "Copy share link",
     "makePublicAction": "Make public",
     "makePrivateAction": "Make private",
@@ -296,7 +286,6 @@
     "heading": "Cash Flow",
     "subtitle": "Your spreadsheet data, without having to use the spreadsheet.",
     "transactions": "Transactions",
-    "chatAction": "Chat",
     "newTransaction": "New transaction",
     "newTransactionHint": "Add one expense or earning directly to the connected spreadsheet.",
     "addAction": "Add transaction",
@@ -386,15 +375,7 @@
     "nextMonth": "Next month",
     "currentMonthAction": "Current month",
     "monthHistoryHint": "Changes carry forward until a later month overrides them.",
-    "remaining": "remaining",
-    "chatAction": "Chat",
     "progressLabel": "Monthly progress",
-    "progressMeasureLabel": "Calculate progress by",
-    "progressByCount": "bills",
-    "progressByValue": "amount",
-    "of": "of",
-    "paidThisMonth": "paid this month",
-    "paidValueThisMonth": "paid this month",
     "paid": "Paid",
     "unpaid": "Unpaid",
     "expectedTotal": "Expected total",
@@ -438,7 +419,6 @@
     "paymentCategoryLabel": "Expense category",
     "paymentConfirm": "Pay bill",
     "paymentRecorded": "Expense recorded in",
-    "paymentAmountRequired": "Set an amount to pay from an account.",
     "paymentLoading": "Loading accounts…",
     "paymentLoadError": "Could not load accounts. Close and try again.",
     "paymentNoAccounts": "Add an account and expense category to your Cash Flow spreadsheet first.",
@@ -454,7 +434,9 @@
     "billOverdue": "Overdue · day {day}",
     "billDueToday": "Due today",
     "billDueIn": "Due in {days} days",
-    "closeAction": "Close"
+    "closeAction": "Close",
+    "billDueTomorrow": "Due tomorrow",
+    "archiveTitle": "Archive “{name}”?"
   },
   "loginPage": {
     "windowTitle": "Sign in",
@@ -468,7 +450,7 @@
     "windowTitle": "No account",
     "heading": "No account found",
     "subtitle": "This Google account is not registered yet",
-    "body": "The Chatbot starts on WhatsApp. Send any message to the bot to create your account, then sign in here with the same Google account.",
+    "body": "The Chatbot starts on WhatsApp. Send any message to the bot, open the link it replies with and sign in with Google there, then come back and sign in here with that same account.",
     "backLink": "Back to home",
     "retryAction": "Try another Google account"
   }

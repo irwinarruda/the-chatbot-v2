@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { CashFlowErrorCode } from "~/client/modules/cash-flow/app/services/CashFlowService";
+import { getCurrentBillsMonth } from "~/client/modules/cash-flow/parsers/BillsSearch";
 import {
   calculateCashFlowNetBalance,
   summarizeCashFlowMonth,
@@ -170,13 +171,16 @@ export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
     void bootstrap();
   }, [bootstrap]);
 
-  const currentMonth = new Date().toISOString().slice(0, 7);
+  const currentMonth = getCurrentBillsMonth();
   const monthSummary = summarizeCashFlowMonth(
     dashboard.transactions,
     currentMonth,
   );
-  const monthLabel = new Date().toLocaleDateString(prefs.locale, {
+  const monthLabel = new Date(
+    `${currentMonth}-15T12:00:00Z`,
+  ).toLocaleDateString(prefs.locale, {
     month: "long",
+    timeZone: "America/Sao_Paulo",
   });
 
   return (
@@ -439,6 +443,7 @@ export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
         )}
         bankAccounts={dashboard.bankAccounts}
         currency={currency}
+        hiddenMonetaryValueLabel={dictionary.common.hiddenMonetaryValue}
         categories={categories}
         isSubmitting={isSubmitting}
         onClose={() => setIsSyncOpen(false)}

@@ -56,7 +56,7 @@ export function TodoRow({
         onCheckedChange={onToggleStatus}
       />
       <button
-        className="min-w-0 text-left outline-none after:absolute after:inset-0 focus-visible:underline"
+        className="min-w-0 text-left outline-none after:absolute after:inset-0 after:rounded-sm focus-visible:after:ring-2 focus-visible:after:ring-ring focus-visible:after:ring-inset"
         onClick={onOpen}
         type="button"
       >

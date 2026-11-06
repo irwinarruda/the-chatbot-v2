@@ -8,6 +8,7 @@ import { FileText, Plus, Search, SearchX, X } from "lucide-react";
 import { useEffect } from "react";
 import type { NotesSearchDTO } from "~/client/modules/notes/app/dtos/NotesSearchDTO";
 import type { NoteErrorCode } from "~/client/modules/notes/app/services/NoteService";
+import { getAvailableNoteName } from "~/client/modules/notes/parsers/NoteName";
 import { ListEmptyState } from "~/client/shared/components/ListEmptyState";
 import { AppShell } from "~/client/shared/components/terminal/AppShell";
 import { TerminalPageHeader } from "~/client/shared/components/terminal/TerminalPageHeader";
@@ -71,7 +72,12 @@ export function NotesScreen({ search }: { search: NotesSearchDTO }) {
   }
 
   async function onCreateNote() {
-    const note = await createNote(t.untitledNote);
+    const note = await createNote(
+      getAvailableNoteName(
+        t.untitledNote,
+        notes.map((item) => item.name),
+      ),
+    );
     if (!note) return;
     navigate({
       to: "/notes/$noteId",
@@ -108,7 +114,6 @@ export function NotesScreen({ search }: { search: NotesSearchDTO }) {
           }
           heading={t.heading}
           subtitle={t.subtitle}
-          withLogo={false}
         />
       )}
       {errorMessage && (
@@ -159,7 +164,7 @@ export function NotesScreen({ search }: { search: NotesSearchDTO }) {
               {notes.map((note) => (
                 <li key={note.id}>
                   <Link
-                    className="group flex items-start gap-3 px-4 py-3 outline-none transition-colors hover:bg-muted/60 focus-visible:bg-muted/60"
+                    className="group flex items-start gap-3 px-4 py-3 outline-none transition-colors hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
                     params={{ noteId: note.id }}
                     search={search}
                     to="/notes/$noteId"

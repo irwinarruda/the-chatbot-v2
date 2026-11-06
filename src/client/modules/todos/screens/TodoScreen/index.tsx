@@ -42,8 +42,6 @@ export function TodoScreen({ search }: { search: TodoSearch }) {
   const todoError = useApp((s) => s.todoError);
   const isTodoBootstrapping = useApp((s) => s.isTodoBootstrapping);
   const isTodoSubmitting = useApp((s) => s.isTodoSubmitting);
-  const _pendingTodoCount = useApp((s) => s.pendingTodoCount);
-  const _completedTodoCount = useApp((s) => s.completedTodoCount);
   const bootstrapTodos = useApp((s) => s.bootstrapTodos);
   const createTodo = useApp((s) => s.createTodo);
   const updateTodo = useApp((s) => s.updateTodo);

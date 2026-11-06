@@ -47,7 +47,7 @@ const AppLayout = {
   fill: "fill",
 } as const;
 
-type AppLayout = (typeof AppLayout)[keyof typeof AppLayout];
+type AppLayout = ValueOf<typeof AppLayout>;
 
 function AppBrand() {
   const prefs = usePrefs();
@@ -97,9 +97,7 @@ function AppNavItem({
 
 export function AppShell({
   activePath,
-  chromeControls,
   children,
-  contentClassName,
   dictionary,
   layout = AppLayout.page,
   showLogout = false,
@@ -108,9 +106,7 @@ export function AppShell({
   wide = false,
 }: {
   activePath?: AppPath;
-  chromeControls?: ReactNode;
   children: ReactNode;
-  contentClassName?: string;
   dictionary?: Pick<Dictionary, "common" | "nav">;
   layout?: AppLayout;
   showLogout?: boolean;
@@ -245,17 +241,13 @@ export function AppShell({
         <div className="min-viewport-height flex flex-col bg-background">
           <header className="flex h-14 items-center justify-between gap-2 px-4 sm:px-6">
             <AppBrand />
-            <div className="flex items-center gap-1">
-              {chromeControls}
-              {preferenceControls}
-            </div>
+            <div className="flex items-center gap-1">{preferenceControls}</div>
           </header>
           <main
             id="main-content"
             tabIndex={-1}
             className={cn(
               "flex flex-1 flex-col items-center justify-center px-4 pb-16 sm:px-6",
-              contentClassName,
             )}
           >
             <div className="w-full max-w-md">
@@ -277,7 +269,7 @@ export function AppShell({
           isFill ? "viewport-height overflow-hidden" : "min-viewport-height",
         )}
       >
-        <aside className="viewport-height sticky top-0 hidden w-60 shrink-0 flex-col gap-4 border-sidebar-border border-r bg-sidebar px-3 py-3 lg:flex">
+        <aside className="viewport-height sticky top-0 hidden w-60 shrink-0 flex-col gap-4 overflow-y-auto border-sidebar-border border-r bg-sidebar px-3 py-3 lg:flex">
           <AppBrand />
           <nav aria-label={title} className="flex flex-col gap-0.5">
             {navLinks.map((link) => (
@@ -292,7 +284,6 @@ export function AppShell({
             {privacyLink}
             {logoutControl}
             <div className="mt-2 flex items-center gap-1 border-sidebar-border border-t px-1 pt-3">
-              {chromeControls}
               {preferenceControls}
             </div>
           </div>
@@ -313,7 +304,6 @@ export function AppShell({
             {activeLabel}
           </span>
           <div className="flex shrink-0 items-center gap-1">
-            {chromeControls}
             <TerminalChromeButton onClick={toggleTheme} title={themeLabel}>
               {prefs.theme === "light" ? <Sun /> : <Moon />}
             </TerminalChromeButton>
@@ -357,9 +347,7 @@ export function AppShell({
           )}
         >
           {isFill ? (
-            <div
-              className={cn("flex min-h-0 flex-1 flex-col", contentClassName)}
-            >
+            <div className="flex min-h-0 flex-1 flex-col">
               {sessionAlert}
               {children}
             </div>
@@ -368,7 +356,6 @@ export function AppShell({
               className={cn(
                 "mx-auto flex w-full flex-1 flex-col px-4 pt-6 pb-12 sm:px-8 lg:pt-10",
                 wide ? "max-w-4xl" : "max-w-2xl",
-                contentClassName,
               )}
             >
               {sessionAlert}

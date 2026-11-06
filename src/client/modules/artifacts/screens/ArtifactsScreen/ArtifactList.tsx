@@ -117,7 +117,7 @@ export function ArtifactList() {
                 <PanelsTopLeft className="size-4 shrink-0 text-muted-foreground" />
                 <div className="min-w-0 flex-1">
                   <Link
-                    className="block truncate font-medium text-foreground text-sm outline-none after:absolute after:inset-0 focus-visible:underline"
+                    className="block truncate font-medium text-foreground text-sm outline-none after:absolute after:inset-0 focus-visible:after:ring-2 focus-visible:after:ring-ring focus-visible:after:ring-inset"
                     params={{ artifactId: artifact.id }}
                     to="/a/$artifactId"
                   >

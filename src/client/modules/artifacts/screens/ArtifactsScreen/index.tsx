@@ -18,11 +18,7 @@ export function ArtifactsScreen() {
       title={t.windowTitle}
       wide
     >
-      <TerminalPageHeader
-        heading={t.heading}
-        subtitle={t.subtitle}
-        withLogo={false}
-      />
+      <TerminalPageHeader heading={t.heading} subtitle={t.subtitle} />
       <ArtifactList />
       <UploadTokenCard />
     </AppShell>

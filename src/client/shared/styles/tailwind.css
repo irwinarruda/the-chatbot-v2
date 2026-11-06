@@ -387,14 +387,6 @@
   min-height: 100vh;
 }
 
-.page-frame-min-height {
-  min-height: 100vh;
-}
-
-.chat-frame-height {
-  height: 100vh;
-}
-
 .chat-scroll-fade {
   mask-image: linear-gradient(
     to bottom,
@@ -403,56 +395,14 @@
   );
 }
 
-@media (min-width: 40rem) {
-  .page-frame-min-height {
-    min-height: calc(100vh - 3rem);
-  }
-
-  .chat-frame-height {
-    height: calc(100vh - 3rem);
-  }
-}
-
-@media (min-width: 48rem) {
-  .page-frame-min-height {
-    min-height: calc(100vh - 5rem);
-  }
-
-  .chat-frame-height {
-    height: calc(100vh - 5rem);
-  }
-}
-
 @supports (height: 100dvh) {
   body,
-  .min-viewport-height,
-  .page-frame-min-height {
+  .min-viewport-height {
     min-height: 100dvh;
   }
 
-  .viewport-height,
-  .chat-frame-height {
+  .viewport-height {
     height: 100dvh;
-  }
-
-  @media (min-width: 40rem) {
-    .page-frame-min-height {
-      min-height: calc(100dvh - 3rem);
-    }
-
-    .chat-frame-height {
-      height: calc(100dvh - 3rem);
-    }
-  }
-
-  @media (min-width: 48rem) {
-    .page-frame-min-height {
-      min-height: calc(100dvh - 5rem);
-    }
-
-    .chat-frame-height {
-      height: calc(100dvh - 5rem);
-    }
   }
 }
 
@@ -465,14 +415,6 @@
     /* biome-ignore lint/complexity/noImportantStyles: reduced-motion must override generated animation utilities */
     animation: none !important;
   }
-}
-
-/* --- Terminal logo glow — honey drop shadow --- */
-
-.terminal-logo-glow {
-  filter: drop-shadow(
-    0 0 12px color-mix(in srgb, var(--brand) 25%, transparent)
-  );
 }
 
 /* --- Terminal prose (markdown content), per SPEC "Prose and markup" --- */

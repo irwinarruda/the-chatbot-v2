@@ -1,5 +1,6 @@
 import { CalendarDays, Landmark, Tags } from "lucide-react";
 import { type SubmitEvent, useEffect, useId, useRef, useState } from "react";
+import { MonetaryValue } from "~/client/shared/components/MonetaryValue";
 import { MoneyInput } from "~/client/shared/components/MoneyInput";
 import {
   Field,
@@ -32,6 +33,7 @@ export function CashFlowSyncForm({
   balances,
   bankAccounts,
   currency,
+  hiddenMonetaryValueLabel,
   categories,
   formId,
   isSubmitting,
@@ -42,6 +44,7 @@ export function CashFlowSyncForm({
   balances: Record<string, number>;
   bankAccounts: string[];
   currency: Intl.NumberFormat;
+  hiddenMonetaryValueLabel: string;
   categories: string[];
   formId: string;
   isSubmitting: boolean;
@@ -63,6 +66,11 @@ export function CashFlowSyncForm({
     balances[bankAccount] !== undefined
       ? enteredBalance - balances[bankAccount]
       : undefined;
+  let adjustmentLabel: string | undefined;
+  if (adjustment !== undefined) {
+    const sign = adjustment > 0 ? "+" : "";
+    adjustmentLabel = `${sign}${currency.format(adjustment)}`;
+  }
   const balanceRef = useRef<HTMLInputElement>(null);
   const descriptionRef = useRef<HTMLInputElement>(null);
 
@@ -171,15 +179,21 @@ export function CashFlowSyncForm({
           <span>
             {t.trackedBalanceLabel}{" "}
             <strong className="font-medium text-foreground">
-              {currency.format(balances[bankAccount])}
+              <MonetaryValue hiddenLabel={hiddenMonetaryValueLabel}>
+                {currency.format(balances[bankAccount])}
+              </MonetaryValue>
             </strong>
           </span>
           <span>
             {t.adjustmentPreviewLabel}{" "}
             <strong className="font-medium text-foreground">
-              {adjustment === undefined
-                ? "—"
-                : `${adjustment > 0 ? "+" : ""}${currency.format(adjustment)}`}
+              {adjustmentLabel === undefined ? (
+                "—"
+              ) : (
+                <MonetaryValue hiddenLabel={hiddenMonetaryValueLabel}>
+                  {adjustmentLabel}
+                </MonetaryValue>
+              )}
             </strong>
           </span>
         </p>

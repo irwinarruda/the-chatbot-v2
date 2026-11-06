@@ -55,6 +55,7 @@ export function MonthlyExpenseRow({
     if (daysUntilDue < 0)
       return t.billOverdue.replace("{day}", String(expense.dueDay));
     if (daysUntilDue === 0) return t.billDueToday;
+    if (daysUntilDue === 1) return t.billDueTomorrow;
     return t.billDueIn.replace("{days}", String(daysUntilDue));
   }
 

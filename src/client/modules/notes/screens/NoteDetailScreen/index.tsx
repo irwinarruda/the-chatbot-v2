@@ -175,7 +175,7 @@ export function NoteDetailScreen({
         </div>
       </div>
       <div className="w-full space-y-5 py-5 sm:py-6">
-        <div className="border-border border-b pb-2">
+        <div className="border-border border-b pb-2 transition-colors focus-within:border-ring">
           <label className="sr-only" htmlFor="note-name">
             {t.nameLabel}
           </label>

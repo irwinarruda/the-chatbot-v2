@@ -1,3 +1,4 @@
+import { formatCashFlowDate } from "~/domain/cash-flow/cash-flow-date";
 export type BillsSearch = {
   month?: string;
 };
@@ -39,10 +40,10 @@ export function getBillDaysUntilDue(
   bill: { dueDay?: number; isPaid: boolean; month: string },
   now: Date,
 ): number | undefined {
-  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  if (bill.isPaid || !bill.dueDay || bill.month !== currentMonth)
+  const today = formatCashFlowDate(now);
+  if (bill.isPaid || !bill.dueDay || bill.month !== today.slice(0, 7))
     return undefined;
-  return bill.dueDay - now.getDate();
+  return bill.dueDay - Number(today.slice(8, 10));
 }
 
 export function compareBillsByUrgency(

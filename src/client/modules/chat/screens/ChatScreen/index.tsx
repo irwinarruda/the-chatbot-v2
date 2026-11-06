@@ -595,20 +595,14 @@ export function ChatScreen() {
                       disabled={!canSelectAudioInput}
                       aria-label={t.audioInputLabel}
                     >
-                      {audioInputOptions.length === 0 ? (
-                        <NativeSelectOption value="">
-                          {t.audioInputUnavailable}
+                      {audioInputOptions.map((option) => (
+                        <NativeSelectOption
+                          key={option.deviceId}
+                          value={option.deviceId}
+                        >
+                          {option.label}
                         </NativeSelectOption>
-                      ) : (
-                        audioInputOptions.map((option) => (
-                          <NativeSelectOption
-                            key={option.deviceId}
-                            value={option.deviceId}
-                          >
-                            {option.label}
-                          </NativeSelectOption>
-                        ))
-                      )}
+                      ))}
                     </NativeSelect>
                   </div>
                 )}

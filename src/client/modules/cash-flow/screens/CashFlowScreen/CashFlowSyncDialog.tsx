@@ -10,6 +10,7 @@ export function CashFlowSyncDialog({
   bankAccounts,
   currency,
   categories,
+  hiddenMonetaryValueLabel,
   isSubmitting,
   onClose,
   onSave,
@@ -19,6 +20,7 @@ export function CashFlowSyncDialog({
   balances: Record<string, number>;
   bankAccounts: string[];
   currency: Intl.NumberFormat;
+  hiddenMonetaryValueLabel: string;
   categories: string[];
   isSubmitting: boolean;
   onClose: () => void;
@@ -52,6 +54,7 @@ export function CashFlowSyncDialog({
         balances={balances}
         bankAccounts={bankAccounts}
         currency={currency}
+        hiddenMonetaryValueLabel={hiddenMonetaryValueLabel}
         categories={categories}
         formId={formId}
         isSubmitting={isSubmitting}

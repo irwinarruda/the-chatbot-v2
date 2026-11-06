@@ -62,7 +62,7 @@ export function UploadTokenCard() {
   const rotateUploadToken = useApp((state) => state.rotateUploadToken);
   const revokeUploadToken = useApp((state) => state.revokeUploadToken);
   const [copyError, setCopyError] = useState<"copy" | ApiError>();
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState<boolean>();
   const t = getDictionary(prefs.locale).artifactsPage;
   const revealedConfig = revealedToken
     ? createArtifactSkillConfig(revealedToken)
@@ -76,6 +76,7 @@ export function UploadTokenCard() {
   async function onUploadTokenRotate() {
     if (!tokenStatus || isSubmitting) return;
     setCopyError(undefined);
+    setIsExpanded(true);
     await rotateUploadToken();
   }
 
@@ -100,7 +101,7 @@ export function UploadTokenCard() {
   }, []);
 
   const isOpen =
-    isExpanded || !tokenStatus?.configured || revealedConfig !== undefined;
+    isExpanded ?? (!tokenStatus?.configured || revealedConfig !== undefined);
 
   return (
     <>

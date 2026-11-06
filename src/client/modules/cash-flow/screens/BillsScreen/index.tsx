@@ -17,7 +17,6 @@ import {
   AlertDescription,
 } from "~/client/shared/components/ui/alert";
 import { Button } from "~/client/shared/components/ui/button";
-import { Card, CardContent } from "~/client/shared/components/ui/card";
 import { Field, FieldLabel } from "~/client/shared/components/ui/field";
 import { Skeleton } from "~/client/shared/components/ui/skeleton";
 import {
@@ -73,17 +72,6 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
   const t = dictionary.billsPage;
   const currentMonth = getCurrentBillsMonth();
   const selectedMonth = search.month ?? currentMonth;
-  const _unpaidCount = monthlyExpenses.filter(
-    (expense) => !expense.isPaid,
-  ).length;
-  const _monthLabel = new Intl.DateTimeFormat(
-    prefs.locale === "pt-BR" ? "pt-BR" : "en-US",
-    {
-      month: "long",
-      year: "numeric",
-      timeZone: "America/Sao_Paulo",
-    },
-  ).format(new Date(`${selectedMonth}-15T12:00:00.000Z`));
   const errorMessages: Record<MonthlyExpenseErrorCode, string> = {
     loading: t.errorLoading,
     saving: t.errorSaving,
@@ -347,27 +335,25 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
 
 function MonthlyExpenseListSkeleton({ label }: { label: string }) {
   return (
-    <div aria-label={label} className="space-y-2" role="status">
+    <div
+      aria-label={label}
+      className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card"
+      role="status"
+    >
       <span className="sr-only">{label}</span>
       {[0, 1, 2].map((item) => (
-        <Card
+        <div
           aria-hidden="true"
-          className="gap-0 border-border border-l-2 bg-background/45 shadow-none data-[size=sm]:py-0"
+          className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3"
           key={item}
-          size="sm"
         >
-          <CardContent className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2.5 py-2.5">
-            <Skeleton className="size-4 rounded-sm" />
-            <div className="space-y-1">
-              <Skeleton className="h-3.5 w-2/3" />
-              <Skeleton className="h-3 w-1/2" />
-            </div>
-            <div className="flex items-center gap-0.5">
-              <Skeleton className="pointer-fine:size-7 size-11" />
-              <Skeleton className="pointer-fine:size-7 size-11" />
-            </div>
-          </CardContent>
-        </Card>
+          <Skeleton className="size-5 rounded-sm" />
+          <div className="space-y-1">
+            <Skeleton className="h-3.5 w-2/3" />
+            <Skeleton className="h-3 w-1/2" />
+          </div>
+          <Skeleton className="pointer-fine:h-7 h-11 w-16" />
+        </div>
       ))}
     </div>
   );

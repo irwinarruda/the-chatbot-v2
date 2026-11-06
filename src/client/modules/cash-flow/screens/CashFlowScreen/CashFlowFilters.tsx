@@ -82,7 +82,7 @@ export function CashFlowFilters({
           variant="outline"
         >
           <SlidersHorizontal />
-          <span className="hidden sm:inline">{t.filtersAction}</span>
+          <span className="sr-only sm:not-sr-only">{t.filtersAction}</span>
           {advancedCount > 0 && (
             <span className="rounded-full bg-brand/15 px-1.5 text-primary text-xs tabular-nums">
               {advancedCount}
@@ -92,7 +92,7 @@ export function CashFlowFilters({
         {hasAnyFilter && (
           <Button onClick={onClearAll} type="button" variant="ghost">
             <X />
-            <span className="hidden sm:inline">{t.clearFilters}</span>
+            <span className="sr-only sm:not-sr-only">{t.clearFilters}</span>
           </Button>
         )}
       </div>
