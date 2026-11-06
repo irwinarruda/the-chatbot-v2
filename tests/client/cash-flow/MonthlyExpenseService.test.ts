@@ -5,6 +5,7 @@ import {
   createMonthlyExpenseService,
   type MonthlyExpenseService,
 } from "~/client/modules/cash-flow/app/services/MonthlyExpenseService";
+import { container } from "~/client/shared/container";
 import type { MonthlyExpenseDTO } from "~/contracts/http/cash-flow/monthly-expense";
 import { createDeferred } from "~/tests/support/create-deferred";
 
@@ -65,9 +66,8 @@ describe("monthlyExpenseSlice", () => {
         };
       },
     };
-    const store = create<MonthlyExpenseService>()(
-      createMonthlyExpenseService(service),
-    );
+    container.register("MonthlyExpenseRepository", service);
+    const store = create<MonthlyExpenseService>()(createMonthlyExpenseService);
 
     await store.getState().bootstrapMonthlyExpenses("2026-06");
     await store.getState().createMonthlyExpense({ name: "Internet" });
@@ -124,9 +124,8 @@ describe("monthly expense navigation", () => {
       if (month === "2026-06") return june.promise;
       return july.promise;
     };
-    const store = create<MonthlyExpenseService>()(
-      createMonthlyExpenseService(service),
-    );
+    container.register("MonthlyExpenseRepository", service);
+    const store = create<MonthlyExpenseService>()(createMonthlyExpenseService);
     const juneLoad = store.getState().bootstrapMonthlyExpenses("2026-06");
     const julyLoad = store.getState().bootstrapMonthlyExpenses("2026-07");
     june.resolve({
@@ -149,8 +148,9 @@ describe("monthly expense navigation", () => {
       const expense = createExpense({ month: "2026-06" });
       const service = createService();
       service[operation] = () => result.promise;
+      container.register("MonthlyExpenseRepository", service);
       const store = create<MonthlyExpenseService>()(
-        createMonthlyExpenseService(service),
+        createMonthlyExpenseService,
       );
       await store.getState().bootstrapMonthlyExpenses("2026-06");
       let mutation: Promise<MonthlyExpenseDTO | undefined>;
@@ -174,9 +174,8 @@ describe("monthly expense navigation", () => {
     const archived = createDeferred<void>();
     const service = createService();
     service.archive = () => archived.promise;
-    const store = create<MonthlyExpenseService>()(
-      createMonthlyExpenseService(service),
-    );
+    container.register("MonthlyExpenseRepository", service);
+    const store = create<MonthlyExpenseService>()(createMonthlyExpenseService);
     await store.getState().bootstrapMonthlyExpenses("2026-06");
     const mutation = store.getState().archiveMonthlyExpense("rent");
     await store.getState().bootstrapMonthlyExpenses("2026-07");
@@ -204,9 +203,8 @@ describe("monthly expense navigation", () => {
       },
       setPaid: () => payment.promise,
     };
-    const store = create<MonthlyExpenseService>()(
-      createMonthlyExpenseService(service),
-    );
+    container.register("MonthlyExpenseRepository", service);
+    const store = create<MonthlyExpenseService>()(createMonthlyExpenseService);
     await store.getState().bootstrapMonthlyExpenses("2026-07");
     const old = store.getState().setMonthlyExpensePaid(internet.id, true);
     store.getState().resetMonthlyExpenses();
@@ -234,8 +232,9 @@ describe("monthly expense list and write ordering", () => {
         .mockReturnValueOnce(list.promise)
         .mockResolvedValue({ month: "2026-07", expenses: [rent, internet] });
       service.create = () => write.promise;
+      container.register("MonthlyExpenseRepository", service);
       const store = create<MonthlyExpenseService>()(
-        createMonthlyExpenseService(service),
+        createMonthlyExpenseService,
       );
       const loading = store.getState().bootstrapMonthlyExpenses();
       const creating = store

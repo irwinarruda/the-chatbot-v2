@@ -8,8 +8,8 @@ description: Always load when creating or changing Zustand services, computed va
 ## Rules
 
 - One flat store, `useApp`, composed in `shared/stores/app.ts` with `composeServices`, which throws on a duplicate key.
-- One service per file: the state and action interface, then `create<Name>Service(dependencies)` returning a `StateCreator`, then private helpers at the bottom. A service never imports the store or another service's file; it reads what it needs from `get()`.
-- A service receives its repositories and gateways as creator arguments. Never resolve them from a module-level singleton inside an action.
+- One service per file: the state and action interface, then `create<Name>Service`, a `StateCreator`, then private helpers at the bottom. A service never imports the store or another service's file; it reads what it needs from `get()`.
+- A service resolves its repositories and gateways with `container.get("<Port>")` inside the action that uses them, never at module or creator scope, because the entry point fills the container after the store exists. Bind it to a local when an action uses it more than once. A creator takes arguments only for store callbacks, like `createSessionService(resetFeatures)`.
 - Keep facts as source state and derive the rest with `compute`: store `selectedTodoId`, derive `selectedTodo`.
 - At the start of an action, destructure what it needs from `get()` once.
 - `try/finally` for a loading flag, whole body inside. Let errors bubble to the view unless the workflow shows them itself; store an `ApiError` or a typed error code, and let the view turn it into copy.
@@ -34,5 +34,6 @@ Streaming responses, overlapping requests, optimistic items, media recording and
 ## Checklist
 
 1. Add the port and its adapter before wiring the action.
-2. Register the service in `shared/stores/app.ts`.
-3. Test source state, computed state and races through the creator with a fake port.
+2. Add the port to `InjectableItems` and register it in both `bootstrapAppContainer` and `bootstrapMockContainer`.
+3. Register the service in `shared/stores/app.ts`.
+4. Test source state, computed state and races through the creator with a fake port.

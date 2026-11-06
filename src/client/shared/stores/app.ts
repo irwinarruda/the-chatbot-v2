@@ -41,7 +41,6 @@ import {
   createPrivacyService,
   type PrivacyService,
 } from "~/client/shared/app/services/PrivacyService";
-import { adapters } from "~/client/shared/stores/adapters";
 import { composeServices } from "~/client/shared/stores/composeServices";
 
 export type AppServices = SessionService &
@@ -77,19 +76,16 @@ export const useApp = create<AppServices>()(
       resetArtifacts();
     }
     return composeServices(
-      createSessionService(resetFeatures, adapters.session)(...args),
-      createPrefsService(adapters.prefs)(...args),
-      createPrivacyService(adapters.privacy)(...args),
-      createCashFlowService(adapters.cashFlow)(...args),
-      createMonthlyExpenseService(adapters.monthlyExpenses)(...args),
-      createChatService(adapters.chat)(...args),
-      createRecordingService(
-        adapters.audioInputs,
-        adapters.audioRecording,
-      )(...args),
-      createNoteService(adapters.notes)(...args),
-      createTodoService(adapters.todos)(...args),
-      createArtifactService(adapters.artifacts)(...args),
+      createSessionService(resetFeatures)(...args),
+      createPrefsService(...args),
+      createPrivacyService(...args),
+      createCashFlowService(...args),
+      createMonthlyExpenseService(...args),
+      createChatService(...args),
+      createRecordingService(...args),
+      createNoteService(...args),
+      createTodoService(...args),
+      createArtifactService(...args),
     );
   }),
 );

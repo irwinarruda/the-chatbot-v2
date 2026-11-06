@@ -7,7 +7,7 @@ The Chatbot is a personal assistant that lives in WhatsApp and on the web. One T
 Use `bun` as the package manager (not npm or yarn).
 
 - `bun run dev` starts the dev server (`--mode development`, port 3000).
-- `bun run dev:mock` runs the web app on demo data at port 3300, with no database, credentials or sign-in.
+- `bun run dev:mock` runs only the web app, on demo data, at port 3300: no backend, database, credentials or sign-in. Use it to work on the UI or to see a screen.
 - `bun run screenshots [scene...]` retakes the README pictures into `docs/assets`.
 - `bun run test` runs every test against the local PostgreSQL (`.env.test`); `bun run test:unit` runs everything that needs no database; `bun run test:ui` runs the jsdom view tests.
 - `bun run test:coverage` runs the suite with coverage.

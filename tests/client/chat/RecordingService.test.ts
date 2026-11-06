@@ -9,6 +9,7 @@ import {
   createRecordingService,
   type RecordingService,
 } from "~/client/modules/chat/app/services/RecordingService";
+import { container } from "~/client/shared/container";
 import { createDeferred } from "~/tests/support/create-deferred";
 
 type RecordingTestState = RecordingService &
@@ -27,9 +28,11 @@ describe("recordingSlice", () => {
       isActive: () => false,
     };
     const sendChatAudio = vi.fn(async () => {});
+    container.register("AudioInputGateway", browserAudioInputGateway);
+    container.register("AudioRecordingGateway", recording);
     const store = create<RecordingTestState>()(
       computed((...args) => ({
-        ...createRecordingService(browserAudioInputGateway, recording)(...args),
+        ...createRecordingService(...args),
         isChatSubmitting: false,
         sendChatAudio,
       })),
@@ -60,12 +63,11 @@ describe("recordingSlice", () => {
       listAudioInputs: () => devices.promise,
       storeDeviceId: vi.fn(),
     };
+    container.register("AudioInputGateway", inputs);
+    container.register("AudioRecordingGateway", browserAudioRecordingGateway);
     const store = create<RecordingTestState>()(
       computed((...args) => ({
-        ...createRecordingService(
-          inputs,
-          browserAudioRecordingGateway,
-        )(...args),
+        ...createRecordingService(...args),
         isChatSubmitting: false,
         async sendChatAudio() {},
       })),

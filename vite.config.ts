@@ -11,6 +11,7 @@ import { routes as virtualRoutes } from "./src/routes.ts";
 
 export default defineConfig(({ mode }) => {
   loadModeEnv(mode);
+  const isMock = mode === "mock";
   return {
     envDir: false,
     nitro: {
@@ -24,7 +25,6 @@ export default defineConfig(({ mode }) => {
           find: /^css-tree$/,
           replacement: resolvePath("node_modules/css-tree/dist/csstree.esm.js"),
         },
-        ...mockAliases(mode),
       ],
       tsconfigPaths: true,
     },
@@ -32,7 +32,9 @@ export default defineConfig(({ mode }) => {
     plugins: [
       tailwindcss(),
       tanstackStart({
+        start: { entry: isMock ? "client/mock/start.ts" : undefined },
         router: {
+          entry: isMock ? "client/mock/router.tsx" : undefined,
           routesDirectory: ".",
           generatedRouteTree: "./routeTree.gen.ts",
           virtualRouteConfig: virtualRoutes,
@@ -57,17 +59,3 @@ export default defineConfig(({ mode }) => {
     },
   };
 });
-
-function mockAliases(mode: string) {
-  if (mode !== "mock") return [];
-  return [
-    {
-      find: /^~\/client\/shared\/stores\/adapters$/,
-      replacement: resolvePath("src/client/mock/adapters.ts"),
-    },
-    {
-      find: /^~\/server\/shared\/http\/functions\/require-web-access$/,
-      replacement: resolvePath("src/client/mock/requireWebAccess.ts"),
-    },
-  ];
-}

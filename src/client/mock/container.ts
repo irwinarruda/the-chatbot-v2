@@ -9,18 +9,21 @@ import { browserAudioInputGateway } from "~/client/modules/chat/app/gateways/Bro
 import { browserAudioRecordingGateway } from "~/client/modules/chat/app/gateways/BrowserAudioRecordingGateway";
 import { cookiePrefsGateway } from "~/client/shared/app/gateways/CookiePrefsGateway";
 import { storageMonetaryPrivacyGateway } from "~/client/shared/app/gateways/StorageMonetaryPrivacyGateway";
-import type { AppAdapters } from "~/client/shared/stores/AppAdapters";
+import { container } from "~/client/shared/container";
 
-export const adapters: AppAdapters = {
-  session: new TestSessionRepository(),
-  prefs: cookiePrefsGateway,
-  privacy: storageMonetaryPrivacyGateway,
-  cashFlow: new TestCashFlowRepository(),
-  monthlyExpenses: new TestMonthlyExpenseRepository(),
-  chat: new TestChatRepository(),
-  audioInputs: browserAudioInputGateway,
-  audioRecording: browserAudioRecordingGateway,
-  notes: new TestNoteRepository(),
-  todos: new TestTodoRepository(),
-  artifacts: new TestArtifactRepository(),
-};
+export function bootstrapMockContainer() {
+  container.register("SessionRepository", new TestSessionRepository());
+  container.register("PrefsGateway", cookiePrefsGateway);
+  container.register("MonetaryPrivacyGateway", storageMonetaryPrivacyGateway);
+  container.register("CashFlowRepository", new TestCashFlowRepository());
+  container.register(
+    "MonthlyExpenseRepository",
+    new TestMonthlyExpenseRepository(),
+  );
+  container.register("ChatRepository", new TestChatRepository());
+  container.register("AudioInputGateway", browserAudioInputGateway);
+  container.register("AudioRecordingGateway", browserAudioRecordingGateway);
+  container.register("NoteRepository", new TestNoteRepository());
+  container.register("TodoRepository", new TestTodoRepository());
+  container.register("ArtifactRepository", new TestArtifactRepository());
+}

@@ -6,6 +6,7 @@ import {
   createTodoService,
   type TodoService,
 } from "~/client/modules/todos/app/services/TodoService";
+import { container } from "~/client/shared/container";
 import type { TodoDTO } from "~/contracts/http/todos/todo";
 import { createDeferred } from "~/tests/support/create-deferred";
 
@@ -40,7 +41,8 @@ describe("todoSlice", () => {
     service.listTodos
       .mockReturnValueOnce(pending.promise)
       .mockResolvedValueOnce([secondTodo]);
-    const store = create<TodoService>()(computed(createTodoService(service)));
+    container.register("TodoRepository", service);
+    const store = create<TodoService>()(computed(createTodoService));
     const first = store.getState().bootstrapTodos({ q: "first" });
     await store.getState().bootstrapTodos({ q: "second" });
     pending.reject(new Error("Old request failed"));
@@ -57,7 +59,8 @@ describe("todoSlice", () => {
     service.listTodos
       .mockReturnValueOnce(first.promise)
       .mockReturnValueOnce(second.promise);
-    const store = create<TodoService>()(computed(createTodoService(service)));
+    container.register("TodoRepository", service);
+    const store = create<TodoService>()(computed(createTodoService));
     const firstLoad = store.getState().bootstrapTodos({ q: "first" });
     const secondLoad = store.getState().bootstrapTodos({ q: "second" });
     first.resolve([firstTodo]);
@@ -73,7 +76,8 @@ describe("todoSlice", () => {
     const pending = createDeferred<TodoDTO>();
     const service = createService();
     service.getTodo.mockReturnValueOnce(pending.promise);
-    const store = create<TodoService>()(computed(createTodoService(service)));
+    container.register("TodoRepository", service);
+    const store = create<TodoService>()(computed(createTodoService));
     store.setState({ todos: [secondTodo], selectedTodo: firstTodo });
     const firstLoad = store.getState().loadTodo(firstTodo.id);
     expect(store.getState().selectedTodo).toBeUndefined();
@@ -87,7 +91,8 @@ describe("todoSlice", () => {
     const pending = createDeferred<TodoDTO>();
     const service = createService();
     service.updateTodo.mockReturnValueOnce(pending.promise);
-    const store = create<TodoService>()(computed(createTodoService(service)));
+    container.register("TodoRepository", service);
+    const store = create<TodoService>()(computed(createTodoService));
     store.setState({ todos: [firstTodo, secondTodo], selectedTodo: firstTodo });
     const saving = store
       .getState()
@@ -105,7 +110,8 @@ describe("todoSlice", () => {
     const service = createService();
     service.deleteTodo.mockReturnValueOnce(deletion.promise);
     service.createTodo.mockReturnValueOnce(creation.promise);
-    const store = create<TodoService>()(computed(createTodoService(service)));
+    container.register("TodoRepository", service);
+    const store = create<TodoService>()(computed(createTodoService));
     store.setState({ todos: [firstTodo] });
     const old = store.getState().deleteTodo(firstTodo.id);
     store.getState().resetTodos();
@@ -125,7 +131,8 @@ describe("todoSlice", () => {
     const list = createDeferred<TodoDTO[]>();
     const service = createService();
     service.listTodos.mockReturnValueOnce(list.promise);
-    const store = create<TodoService>()(computed(createTodoService(service)));
+    container.register("TodoRepository", service);
+    const store = create<TodoService>()(computed(createTodoService));
     store.setState({ todos: [firstTodo] });
     const loading = store.getState().bootstrapTodos();
     await store.getState().deleteTodo(firstTodo.id);
@@ -146,7 +153,8 @@ describe("Todo list and write ordering", () => {
         .mockReturnValueOnce(list.promise)
         .mockResolvedValue([firstTodo, secondTodo]);
       service.createTodo.mockReturnValueOnce(write.promise);
-      const store = create<TodoService>()(computed(createTodoService(service)));
+      container.register("TodoRepository", service);
+      const store = create<TodoService>()(computed(createTodoService));
       const loading = store.getState().bootstrapTodos();
       const creating = store
         .getState()
@@ -177,7 +185,8 @@ describe("Todo list and write ordering", () => {
     const service = createService();
     service.createTodo.mockReturnValueOnce(write.promise);
     service.listTodos.mockResolvedValue([secondTodo]);
-    const store = create<TodoService>()(computed(createTodoService(service)));
+    container.register("TodoRepository", service);
+    const store = create<TodoService>()(computed(createTodoService));
     const creating = store
       .getState()
       .createTodo({ name: "First", description: "", status: "Pending" });

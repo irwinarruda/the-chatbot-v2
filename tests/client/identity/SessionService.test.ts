@@ -5,6 +5,8 @@ import {
   type SessionService,
 } from "~/client/modules/identity/app/services/SessionService";
 import { apiNoteRepository } from "~/client/modules/notes/app/repositories/ApiNoteRepository";
+import { container } from "~/client/shared/container";
+import { bootstrapAppContainer } from "~/client/shared/container/app";
 import { ApiError } from "~/client/shared/error/ApiError";
 import { useApp } from "~/client/shared/stores/app";
 import type { CurrentUserDTO } from "~/contracts/http/identity/identity";
@@ -22,13 +24,13 @@ describe("sessionSlice", () => {
     const logout = createDeferred<void>();
     const reset = vi.fn();
     const service = {
+      hasWebAccess: async () => true,
       getCurrentUser: () => user.promise,
       logout: () => logout.promise,
       cancelPendingRequests: vi.fn(),
     };
-    const store = create<SessionService>()(
-      createSessionService(reset, service),
-    );
+    container.register("SessionRepository", service);
+    const store = create<SessionService>()(createSessionService(reset));
     const loading = store.getState().bootstrapSession();
     const leaving = store.getState().logout();
     expect(reset).toHaveBeenCalledOnce();
@@ -48,17 +50,17 @@ describe("sessionSlice", () => {
 
   test("failed logout remains retryable without restoring feature data", async () => {
     const reset = vi.fn();
-    const store = create<SessionService>()(
-      createSessionService(reset, {
-        async getCurrentUser() {
-          return { id: "user", name: "User", phoneNumber: "5511999999999" };
-        },
-        async logout() {
-          throw new ApiError("Unavailable", 503);
-        },
-        cancelPendingRequests() {},
-      }),
-    );
+    container.register("SessionRepository", {
+      hasWebAccess: async () => true,
+      async getCurrentUser() {
+        return { id: "user", name: "User", phoneNumber: "5511999999999" };
+      },
+      async logout() {
+        throw new ApiError("Unavailable", 503);
+      },
+      cancelPendingRequests() {},
+    });
+    const store = create<SessionService>()(createSessionService(reset));
     await expect(store.getState().logout()).rejects.toMatchObject({
       statusCode: 503,
     });
@@ -67,6 +69,7 @@ describe("sessionSlice", () => {
   });
 
   test("an API 401 resets every composed feature and ignores pending note writes", async () => {
+    bootstrapAppContainer();
     const pending = createDeferred<NoteDTO>();
     vi.spyOn(apiNoteRepository, "createNote").mockReturnValueOnce(
       pending.promise,
