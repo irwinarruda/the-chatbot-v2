@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import { parseMonthlyExpense } from "~/client/modules/cash-flow/app/repositories/ApiMonthlyExpenseRepository";
 import {
   CreateMonthlyExpenseRequestDTO,
+  PayMonthlyExpenseRequestDTO,
   UpdateMonthlyExpenseRequestDTO,
 } from "~/contracts/http/cash-flow/monthly-expense";
 import { toMonthlyExpenseResponse } from "~/contracts/http/cash-flow/monthly-expense-mapper";
@@ -17,7 +18,7 @@ describe("Monthly expense contracts", () => {
         expectedAmount: 180.5,
         dueDay: 15,
         category: "Utilities",
-        bankAccount: "Nubank",
+        defaultBankAccount: "Nubank",
       }),
       month: "2026-07",
       isPaid: true,
@@ -30,7 +31,7 @@ describe("Monthly expense contracts", () => {
       expectedAmount: 180.5,
       dueDay: 15,
       category: "Utilities",
-      bankAccount: "Nubank",
+      defaultBankAccount: "Nubank",
       isPaid: true,
       paidAt: "2026-07-10T12:00:00.000Z",
     });
@@ -47,19 +48,41 @@ describe("Monthly expense contracts", () => {
     expect(
       UpdateMonthlyExpenseRequestDTO.parse({
         category: null,
-        bankAccount: null,
+        defaultBankAccount: null,
       }),
-    ).toEqual({ category: null, bankAccount: null });
+    ).toEqual({ category: null, defaultBankAccount: null });
     expect(
       CreateMonthlyExpenseRequestDTO.parse({
         name: "Electricity",
-        bankAccount: "Nubank",
-      }).bankAccount,
+        defaultBankAccount: "Nubank",
+      }).defaultBankAccount,
     ).toBe("Nubank");
     expect(
       CreateMonthlyExpenseRequestDTO.safeParse({
         name: "Electricity",
         category: " ",
+      }).success,
+    ).toBe(false);
+  });
+
+  test("rejects a payment whose category or account a bill could not store", () => {
+    const payment = {
+      month: "2026-09",
+      bankAccount: "NuConta",
+      category: "Internet",
+      date: "2026-09-03",
+    };
+    expect(PayMonthlyExpenseRequestDTO.safeParse(payment).success).toBe(true);
+    expect(
+      PayMonthlyExpenseRequestDTO.safeParse({
+        ...payment,
+        category: "a".repeat(161),
+      }).success,
+    ).toBe(false);
+    expect(
+      PayMonthlyExpenseRequestDTO.safeParse({
+        ...payment,
+        bankAccount: "a".repeat(161),
       }).success,
     ).toBe(false);
   });

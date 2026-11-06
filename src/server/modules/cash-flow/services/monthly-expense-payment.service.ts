@@ -38,16 +38,23 @@ export class MonthlyExpensePaymentService {
       },
       `${id}:${dto.month}`,
     );
+    const recordedCategory = transaction.category.trim();
+    const recordedAccount = transaction.bankAccount.trim();
     const category =
-      dto.category === item.expense.category ? undefined : dto.category;
-    const bankAccount = item.expense.bankAccount ? undefined : dto.bankAccount;
-    if (category || bankAccount) {
-      await this.monthlyExpenses.updateMonthlyExpense({
+      recordedCategory && recordedCategory !== item.expense.category
+        ? recordedCategory
+        : undefined;
+    const defaultBankAccount =
+      recordedAccount && !item.expense.defaultBankAccount
+        ? recordedAccount
+        : undefined;
+    if (category || defaultBankAccount) {
+      await this.monthlyExpenses.saveMonthlyExpensePaymentDetails({
         idUser,
         id,
-        category,
-        bankAccount,
         month: dto.month,
+        category,
+        defaultBankAccount,
       });
     }
     return this.monthlyExpenses.setMonthlyExpensePaid(

@@ -344,13 +344,16 @@ function createMonthlyExpenses(): MonthlyExpenseResponseDTO[] {
     ["Phone", 59.9, 20, false, "Utilities", undefined],
     ["Gym", 99, 28, false, undefined, undefined],
   ].map(
-    ([name, expectedAmount, dueDay, isPaid, category, bankAccount], index) => ({
+    (
+      [name, expectedAmount, dueDay, isPaid, category, defaultBankAccount],
+      index,
+    ) => ({
       id: demoId(501 + index),
       name: name as string,
       expectedAmount: expectedAmount as number,
       dueDay: dueDay as number,
       category: category as string | undefined,
-      bankAccount: bankAccount as string | undefined,
+      defaultBankAccount: defaultBankAccount as string | undefined,
       month: DemoMonth,
       isPaid: isPaid as boolean,
       paidAt: isPaid ? at(2) : undefined,

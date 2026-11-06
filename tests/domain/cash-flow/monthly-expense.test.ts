@@ -10,14 +10,14 @@ describe("MonthlyExpense", () => {
       expectedAmount: 149.999,
       dueDay: 12,
       category: "  Utilities  ",
-      bankAccount: " Nubank ",
+      defaultBankAccount: " Nubank ",
     });
 
     expect(expense.name).toBe("Electricity bill");
     expect(expense.expectedAmount).toBe(150);
     expect(expense.dueDay).toBe(12);
     expect(expense.category).toBe("Utilities");
-    expect(expense.bankAccount).toBe("Nubank");
+    expect(expense.defaultBankAccount).toBe("Nubank");
   });
 
   test("rejects invalid names, amounts, due days, categories, and accounts", () => {
@@ -36,7 +36,20 @@ describe("MonthlyExpense", () => {
       () => new MonthlyExpense({ idUser, name: "Rent", category: " " }),
     ).toThrow(ValidationException);
     expect(
-      () => new MonthlyExpense({ idUser, name: "Rent", bankAccount: "" }),
+      () =>
+        new MonthlyExpense({ idUser, name: "Rent", defaultBankAccount: "" }),
+    ).toThrow(ValidationException);
+    expect(
+      () =>
+        new MonthlyExpense({ idUser, name: "Rent", category: "a".repeat(161) }),
+    ).toThrow(ValidationException);
+    expect(
+      () =>
+        new MonthlyExpense({
+          idUser,
+          name: "Rent",
+          defaultBankAccount: "a".repeat(161),
+        }),
     ).toThrow(ValidationException);
   });
 
@@ -47,7 +60,7 @@ describe("MonthlyExpense", () => {
       expectedAmount: 100,
       dueDay: 10,
       category: "Utilities",
-      bankAccount: "Nubank",
+      defaultBankAccount: "Nubank",
     });
 
     expense.rename("Home internet");
@@ -56,12 +69,12 @@ describe("MonthlyExpense", () => {
     expense.changeCategory("Housing");
     expect(expense.category).toBe("Housing");
     expense.changeCategory(undefined);
-    expense.changeBankAccount(undefined);
+    expense.changeDefaultBankAccount(undefined);
 
     expect(expense.name).toBe("Home internet");
     expect(expense.expectedAmount).toBeUndefined();
     expect(expense.dueDay).toBeUndefined();
     expect(expense.category).toBeUndefined();
-    expect(expense.bankAccount).toBeUndefined();
+    expect(expense.defaultBankAccount).toBeUndefined();
   });
 });

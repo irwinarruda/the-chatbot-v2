@@ -13,7 +13,7 @@ export interface CreateMonthlyExpenseDTO {
   expectedAmount?: number;
   dueDay?: number;
   category?: string;
-  bankAccount?: string;
+  defaultBankAccount?: string;
   month?: string;
 }
 
@@ -27,7 +27,15 @@ export interface UpdateMonthlyExpenseDTO {
   clearDueDay?: boolean;
   category?: string;
   clearCategory?: boolean;
-  bankAccount?: string;
-  clearBankAccount?: boolean;
+  defaultBankAccount?: string;
+  clearDefaultBankAccount?: boolean;
   month?: string;
+}
+
+export interface SaveMonthlyExpensePaymentDetailsDTO {
+  idUser: string;
+  id: string;
+  month: string;
+  category?: string;
+  defaultBankAccount?: string;
 }

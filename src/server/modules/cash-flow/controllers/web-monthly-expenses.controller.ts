@@ -40,7 +40,7 @@ export const Route = createFileRoute("/api/v1/web/monthly-expenses")({
           expectedAmount: body.expectedAmount,
           dueDay: body.dueDay,
           category: body.category,
-          bankAccount: body.bankAccount,
+          defaultBankAccount: body.defaultBankAccount,
           month: body.month,
         });
         return Http.json({ expense: toMonthlyExpenseResponse(expense) });

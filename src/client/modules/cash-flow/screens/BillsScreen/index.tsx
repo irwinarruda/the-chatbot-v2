@@ -140,7 +140,7 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
         expectedAmount: value.expectedAmount ?? null,
         dueDay: value.dueDay ?? null,
         category: value.category ?? null,
-        bankAccount: value.bankAccount ?? null,
+        defaultBankAccount: value.defaultBankAccount ?? null,
       });
       if (!expense) return;
       onCloseDialog();

@@ -60,11 +60,18 @@ export function MonthlyExpensePaymentDialog({
       : undefined;
   const selectedCategory = savedCategory ?? category;
   const savedBankAccount =
-    expense.bankAccount && bankAccounts.includes(expense.bankAccount)
-      ? expense.bankAccount
+    expense.defaultBankAccount &&
+    bankAccounts.includes(expense.defaultBankAccount)
+      ? expense.defaultBankAccount
       : undefined;
   const selectedBankAccount = bankAccount ?? savedBankAccount ?? "";
   const unavailable = bankAccounts.length === 0 || categories.length === 0;
+  const canSubmit =
+    Boolean(selectedBankAccount && selectedCategory) &&
+    !unavailable &&
+    !isLoading &&
+    !loadError &&
+    !isSubmitting;
   const amount = new Intl.NumberFormat(locale, {
     style: "currency",
     currency: "BRL",
@@ -72,14 +79,7 @@ export function MonthlyExpensePaymentDialog({
 
   function onFormSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (
-      !selectedBankAccount ||
-      !selectedCategory ||
-      isLoading ||
-      loadError ||
-      isSubmitting
-    )
-      return;
+    if (!canSubmit) return;
     onSave({
       bankAccount: selectedBankAccount,
       category: selectedCategory,
@@ -102,18 +102,7 @@ export function MonthlyExpensePaymentDialog({
           >
             {t.cancelAction}
           </Button>
-          <Button
-            disabled={
-              isSubmitting ||
-              isLoading ||
-              loadError ||
-              unavailable ||
-              !selectedBankAccount ||
-              !selectedCategory
-            }
-            form={formId}
-            type="submit"
-          >
+          <Button disabled={!canSubmit} form={formId} type="submit">
             <Landmark />
             {t.paymentConfirm}
           </Button>
@@ -136,7 +125,7 @@ export function MonthlyExpensePaymentDialog({
             <span className="block break-words font-medium text-foreground">
               {expense.name}
             </span>
-            {savedCategory && (
+            {savedCategory !== undefined && (
               <span className="flex items-center gap-1 font-mono text-2xs text-muted-foreground">
                 <Tags aria-hidden="true" className="size-3 shrink-0" />
                 <span className="sr-only">{t.paymentCategoryLabel}:</span>
@@ -178,7 +167,9 @@ export function MonthlyExpensePaymentDialog({
               </FieldLabel>
               <NativeSelect
                 aria-describedby={
-                  savedBankAccount ? undefined : `${formId}-account-hint`
+                  expense.defaultBankAccount
+                    ? undefined
+                    : `${formId}-account-hint`
                 }
                 className="w-full"
                 id={`${formId}-account`}
@@ -195,7 +186,7 @@ export function MonthlyExpensePaymentDialog({
                   </NativeSelectOption>
                 ))}
               </NativeSelect>
-              {!savedBankAccount && (
+              {!expense.defaultBankAccount && (
                 <FieldDescription id={`${formId}-account-hint`}>
                   {t.paymentAccountHint}
                 </FieldDescription>

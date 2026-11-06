@@ -207,7 +207,7 @@ describe("Monthly bill bank payments", () => {
     expect(await cashFlow.getAllTransactions(phoneNumber)).toHaveLength(2);
   });
 
-  test("reconciles a provider success followed by a lost response without duplicating the expense", async () => {
+  test("reconciles a provider success followed by a lost response without duplicating the expense or saving the retry's choices", async () => {
     const { user, bill, dto } = await setupBill();
     const original = gateway.addBillPayment.bind(gateway);
     vi.spyOn(gateway, "addBillPayment").mockImplementationOnce(
@@ -229,12 +229,17 @@ describe("Monthly bill bank payments", () => {
     await payments.payFromAccount(user.id, phoneNumber, bill.expense.id, {
       ...dto,
       bankAccount: "Caju",
+      category: "Delivery",
       date: "2026-09-04",
     });
     expect(await cashFlow.getAllTransactions(phoneNumber)).toHaveLength(1);
     expect((await bills.listMonthlyExpenses(user.id, month))[0]).toMatchObject({
       isPaid: true,
       paidAt: new Date("2026-09-03T12:00:00.000Z"),
+      expense: {
+        category: "Telefone, internet e TV",
+        defaultBankAccount: "NuConta",
+      },
     });
   });
 
@@ -256,7 +261,7 @@ describe("Monthly bill bank payments", () => {
   test("saves the first payment's category and account to the bill and keeps them for later months", async () => {
     const { user, bill, dto } = await setupBill();
     expect(bill.expense.category).toBeUndefined();
-    expect(bill.expense.bankAccount).toBeUndefined();
+    expect(bill.expense.defaultBankAccount).toBeUndefined();
 
     const paid = await payments.payFromAccount(
       user.id,
@@ -267,12 +272,12 @@ describe("Monthly bill bank payments", () => {
 
     expect(paid.expense).toMatchObject({
       category: "Telefone, internet e TV",
-      bankAccount: "NuConta",
+      defaultBankAccount: "NuConta",
     });
     const [october] = await bills.listMonthlyExpenses(user.id, "2026-10");
     expect(october?.expense).toMatchObject({
       category: "Telefone, internet e TV",
-      bankAccount: "NuConta",
+      defaultBankAccount: "NuConta",
     });
     expect((await cashFlow.getAllTransactions(phoneNumber))[0]).toMatchObject({
       category: "Telefone, internet e TV",
@@ -284,7 +289,7 @@ describe("Monthly bill bank payments", () => {
     await bills.updateMonthlyExpense({
       idUser: user.id,
       id: bill.expense.id,
-      bankAccount: "NuConta",
+      defaultBankAccount: "NuConta",
       month,
     });
 
@@ -295,9 +300,53 @@ describe("Monthly bill bank payments", () => {
       { ...dto, bankAccount: "Caju" },
     );
 
-    expect(paid.expense.bankAccount).toBe("NuConta");
+    expect(paid.expense.defaultBankAccount).toBe("NuConta");
     expect((await cashFlow.getAllTransactions(phoneNumber))[0]).toMatchObject({
       bankAccount: "Caju",
+    });
+  });
+
+  test("replaces a saved category the spreadsheet no longer lists", async () => {
+    const { user, bill, dto } = await setupBill();
+    await bills.updateMonthlyExpense({
+      idUser: user.id,
+      id: bill.expense.id,
+      category: "Renamed in the spreadsheet",
+      month,
+    });
+
+    const paid = await payments.payFromAccount(
+      user.id,
+      phoneNumber,
+      bill.expense.id,
+      dto,
+    );
+
+    expect(paid.expense.category).toBe("Telefone, internet e TV");
+  });
+
+  test("saves the payment's choices without freezing the bill's other details in the paid month", async () => {
+    const { user, bill, dto } = await setupBill();
+    await payments.payFromAccount(user.id, phoneNumber, bill.expense.id, {
+      ...dto,
+      month: "2026-11",
+      date: "2026-11-03",
+    });
+    await bills.updateMonthlyExpense({
+      idUser: user.id,
+      id: bill.expense.id,
+      expectedAmount: 150,
+      month: "2026-10",
+    });
+
+    const [november] = await bills.listMonthlyExpenses(user.id, "2026-11");
+    expect(november).toMatchObject({
+      isPaid: true,
+      expense: {
+        expectedAmount: 150,
+        category: "Telefone, internet e TV",
+        defaultBankAccount: "NuConta",
+      },
     });
   });
 

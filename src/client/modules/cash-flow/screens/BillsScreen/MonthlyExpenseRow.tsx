@@ -111,7 +111,7 @@ export function MonthlyExpenseRow({
                 ? `${t.dueDayPrefix} ${expense.dueDay}`
                 : t.noDueDay}
             </span>
-            {expense.category && (
+            {expense.category !== undefined && (
               <span className="inline-flex min-w-0 max-w-full items-center gap-1">
                 <Tags aria-hidden="true" className="size-3 shrink-0" />
                 <span className="sr-only">{t.categoryLabel}:</span>

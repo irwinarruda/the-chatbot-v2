@@ -2,6 +2,7 @@ import { MonthlyExpense } from "~/domain/cash-flow/monthly-expense";
 import type {
   CreateMonthlyExpenseDTO,
   MonthlyExpenseItemDTO,
+  SaveMonthlyExpensePaymentDetailsDTO,
   UpdateMonthlyExpenseDTO,
 } from "~/domain/cash-flow/monthly-expense-commands";
 import { ValidationException } from "~/domain/shared/domain-errors";
@@ -66,14 +67,30 @@ export class MonthlyExpenseService {
     } else if (dto.category !== undefined) {
       expense.changeCategory(dto.category);
     }
-    if (dto.clearBankAccount) {
-      expense.changeBankAccount(undefined);
-    } else if (dto.bankAccount !== undefined) {
-      expense.changeBankAccount(dto.bankAccount);
+    if (dto.clearDefaultBankAccount) {
+      expense.changeDefaultBankAccount(undefined);
+    } else if (dto.defaultBankAccount !== undefined) {
+      expense.changeDefaultBankAccount(dto.defaultBankAccount);
     }
     expense.updatedAt = this.now();
     await this.expenses.saveVersion(expense, month);
     return this.getMonthlyExpense(dto.idUser, dto.id, month);
+  }
+
+  async saveMonthlyExpensePaymentDetails(
+    dto: SaveMonthlyExpensePaymentDetailsDTO,
+  ): Promise<void> {
+    const { expense } = await this.getMonthlyExpense(
+      dto.idUser,
+      dto.id,
+      dto.month,
+    );
+    if (dto.category !== undefined) expense.changeCategory(dto.category);
+    if (dto.defaultBankAccount !== undefined) {
+      expense.changeDefaultBankAccount(dto.defaultBankAccount);
+    }
+    expense.updatedAt = this.now();
+    await this.expenses.savePaymentDetails(expense, dto.month);
   }
 
   async archiveMonthlyExpense(idUser: string, id: string): Promise<void> {

@@ -330,7 +330,7 @@ function serializeMonthlyExpense(item: MonthlyExpenseItemDTO) {
     expectedAmount: item.expense.expectedAmount,
     dueDay: item.expense.dueDay,
     category: item.expense.category,
-    bankAccount: item.expense.bankAccount,
+    defaultBankAccount: item.expense.defaultBankAccount,
     month: item.month,
     isPaid: item.isPaid,
     paidAt: item.paidAt?.toISOString(),

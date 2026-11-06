@@ -102,21 +102,21 @@ describe("MonthlyExpenseService", () => {
       idUser: user.id,
       name: "Rent",
       category: "Housing",
-      bankAccount: "Nubank",
+      defaultBankAccount: "Nubank",
       month: "2026-07",
     });
     await service.updateMonthlyExpense({
       idUser: user.id,
       id: rent.expense.id,
       clearCategory: true,
-      clearBankAccount: true,
+      clearDefaultBankAccount: true,
       month: "2026-09",
     });
 
     const defaults = await Promise.all(
       ["2026-07", "2026-08", "2026-09"].map(async (month) => {
         const [item] = await service.listMonthlyExpenses(user.id, month);
-        return [item?.expense.category, item?.expense.bankAccount];
+        return [item?.expense.category, item?.expense.defaultBankAccount];
       }),
     );
     expect(defaults).toEqual([

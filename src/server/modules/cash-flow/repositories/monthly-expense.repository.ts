@@ -15,7 +15,7 @@ export class MonthlyExpenseRepository {
         version.expected_amount,
         version.due_day,
         version.category,
-        version.bank_account,
+        version.default_bank_account,
         e.created_at,
         version.updated_at,
         p.paid_at
@@ -26,7 +26,7 @@ export class MonthlyExpenseRepository {
           v.expected_amount,
           v.due_day,
           v.category,
-          v.bank_account,
+          v.default_bank_account,
           v.updated_at
         FROM monthly_expense_versions v
         WHERE v.id_monthly_expense = e.id
@@ -68,7 +68,7 @@ export class MonthlyExpenseRepository {
         version.expected_amount,
         version.due_day,
         version.category,
-        version.bank_account,
+        version.default_bank_account,
         e.created_at,
         version.updated_at,
         p.paid_at
@@ -79,7 +79,7 @@ export class MonthlyExpenseRepository {
           v.expected_amount,
           v.due_day,
           v.category,
-          v.bank_account,
+          v.default_bank_account,
           v.updated_at
         FROM monthly_expense_versions v
         WHERE v.id_monthly_expense = e.id
@@ -126,7 +126,7 @@ export class MonthlyExpenseRepository {
           expected_amount,
           due_day,
           category,
-          bank_account,
+          default_bank_account,
           created_at,
           updated_at
         ) VALUES (
@@ -136,7 +136,7 @@ export class MonthlyExpenseRepository {
           ${expense.expectedAmount ?? null},
           ${expense.dueDay ?? null},
           ${expense.category ?? null},
-          ${expense.bankAccount ?? null},
+          ${expense.defaultBankAccount ?? null},
           ${expense.createdAt},
           ${expense.updatedAt}
         )
@@ -155,7 +155,7 @@ export class MonthlyExpenseRepository {
           expected_amount,
           due_day,
           category,
-          bank_account,
+          default_bank_account,
           created_at,
           updated_at
         ) VALUES (
@@ -165,7 +165,7 @@ export class MonthlyExpenseRepository {
           ${expense.expectedAmount ?? null},
           ${expense.dueDay ?? null},
           ${expense.category ?? null},
-          ${expense.bankAccount ?? null},
+          ${expense.defaultBankAccount ?? null},
           ${expense.updatedAt},
           ${expense.updatedAt}
         )
@@ -174,7 +174,7 @@ export class MonthlyExpenseRepository {
           expected_amount = EXCLUDED.expected_amount,
           due_day = EXCLUDED.due_day,
           category = EXCLUDED.category,
-          bank_account = EXCLUDED.bank_account,
+          default_bank_account = EXCLUDED.default_bank_account,
           updated_at = EXCLUDED.updated_at
       `;
       await sql`
@@ -184,6 +184,26 @@ export class MonthlyExpenseRepository {
         AND id_user = ${expense.idUser}
       `;
     });
+  }
+
+  async savePaymentDetails(
+    expense: MonthlyExpense,
+    month: string,
+  ): Promise<void> {
+    const monthDate = `${month}-01`;
+    await this.database.sql`
+      UPDATE monthly_expense_versions SET
+        category = ${expense.category ?? null},
+        default_bank_account = ${expense.defaultBankAccount ?? null},
+        updated_at = ${expense.updatedAt}
+      WHERE id_monthly_expense = ${expense.id}
+      AND month = (
+        SELECT MAX(month)
+        FROM monthly_expense_versions
+        WHERE id_monthly_expense = ${expense.id}
+        AND month <= ${monthDate}::date
+      )
+    `;
   }
 
   async archive(idUser: string, id: string, now: Date): Promise<boolean> {
@@ -249,7 +269,7 @@ function toExpense(row: DbMonthlyExpense): MonthlyExpense {
       row.expected_amount === null ? undefined : Number(row.expected_amount),
     dueDay: row.due_day ?? undefined,
     category: row.category ?? undefined,
-    bankAccount: row.bank_account ?? undefined,
+    defaultBankAccount: row.default_bank_account ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   });
@@ -262,7 +282,7 @@ interface DbMonthlyExpense {
   expected_amount: string | null;
   due_day: number | null;
   category: string | null;
-  bank_account: string | null;
+  default_bank_account: string | null;
   created_at: Date;
   updated_at: Date;
 }

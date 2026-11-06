@@ -9,7 +9,7 @@ describe("monthly expense AI tools", () => {
     await orquestrator.clearDatabase();
   });
 
-  test("creates, lists, and completes a recurring bill for the authenticated user", async () => {
+  test("creates, lists with its category and default account, and completes a recurring bill", async () => {
     const user = await orquestrator.createUser();
     const chat = new Chat();
     chat.idUser = user.id;
@@ -52,6 +52,12 @@ describe("monthly expense AI tools", () => {
       },
       { chat, sourceMessage },
     );
+    await orquestrator.monthlyExpenseService.updateMonthlyExpense({
+      idUser: user.id,
+      id: expense.expense.id,
+      category: "Moradia",
+      defaultBankAccount: "NuConta",
+    });
     const listed = await orquestrator.aiToolService.execute(
       {
         type: MessageContentType.ToolCall,
@@ -68,7 +74,10 @@ describe("monthly expense AI tools", () => {
     });
     expect(listed.outcome).toMatchObject({
       status: ToolResultStatus.Succeeded,
-      data: { count: 1 },
+      data: {
+        count: 1,
+        expenses: [{ category: "Moradia", defaultBankAccount: "NuConta" }],
+      },
     });
   });
 });

@@ -1,7 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { MonthlyExpenseForm } from "~/client/modules/cash-flow/screens/BillsScreen/MonthlyExpenseForm";
 import { MonthlyExpensePaymentDialog } from "~/client/modules/cash-flow/screens/BillsScreen/MonthlyExpensePaymentDialog";
 import { MonthlyExpenseRow } from "~/client/modules/cash-flow/screens/BillsScreen/MonthlyExpenseRow";
 import { CashFlowTransferDialog } from "~/client/modules/cash-flow/screens/CashFlowScreen/CashFlowTransferDialog";
@@ -170,7 +169,11 @@ describe("Account payment interactions", () => {
     const onSave = vi.fn();
     render(
       <MonthlyExpensePaymentDialog
-        expense={{ ...expense, category: "Housing", bankAccount: "Caju" }}
+        expense={{
+          ...expense,
+          category: "Housing",
+          defaultBankAccount: "Caju",
+        }}
         bankAccounts={["NuConta", "Caju"]}
         categories={["Internet", "Housing"]}
         hiddenMonetaryValueLabel="Hidden amount"
@@ -205,38 +208,51 @@ describe("Account payment interactions", () => {
     );
   });
 
-  test("keeps a bill's category and default account when editing before the spreadsheet lists load", async () => {
-    const user = userEvent.setup();
+  test("asks for an account without promising a new default when the saved one left the spreadsheet", async () => {
     const t = dictionary.billsPage;
-    const onSubmit = vi.fn();
     render(
-      <MonthlyExpenseForm
-        bankAccounts={[]}
-        categories={[]}
-        expense={{ ...expense, category: "Housing", bankAccount: "Caju" }}
+      <MonthlyExpensePaymentDialog
+        expense={{
+          ...expense,
+          category: "Housing",
+          defaultBankAccount: "Closed account",
+        }}
+        bankAccounts={["NuConta", "Caju"]}
+        categories={["Housing"]}
+        hiddenMonetaryValueLabel="Hidden amount"
+        isLoading={false}
         isSubmitting={false}
-        onCancel={vi.fn()}
-        onSubmit={onSubmit}
+        loadError={false}
+        paymentError={false}
+        locale="en"
+        onClose={vi.fn()}
+        onSave={vi.fn()}
         t={t}
       />,
     );
-    expect(screen.getByLabelText(t.categoryLabel)).toHaveValue("Housing");
-    expect(screen.getByLabelText(t.bankAccountLabel)).toHaveValue("Caju");
-    await user.click(screen.getByRole("button", { name: t.saveAction }));
-    expect(onSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({
-        name: "Home internet",
-        category: "Housing",
-        bankAccount: "Caju",
-      }),
+    await screen.findByRole("dialog", { name: t.payFromAccount });
+    expect(screen.getByLabelText(t.paymentAccountLabel)).toHaveValue("");
+    expect(screen.queryByText(t.paymentAccountHint)).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: t.paymentConfirm }),
+    ).toBeDisabled();
+  });
+
+  test("shows the bill's category on its row", () => {
+    const t = dictionary.billsPage;
+    render(
+      <MonthlyExpenseRow
+        expense={{ ...expense, category: "Housing" }}
+        hiddenMonetaryValueLabel="Hidden amount"
+        isSubmitting={false}
+        locale="en"
+        onEdit={vi.fn()}
+        onPayFromAccount={vi.fn()}
+        onTogglePaid={vi.fn()}
+        t={t}
+      />,
     );
-    await user.selectOptions(
-      screen.getByLabelText(t.categoryLabel),
-      t.noCategory,
-    );
-    await user.click(screen.getByRole("button", { name: t.saveAction }));
-    expect(onSubmit).toHaveBeenLastCalledWith(
-      expect.objectContaining({ category: undefined }),
-    );
+    expect(screen.getByText("Housing")).toBeVisible();
+    expect(screen.getByText(`${t.categoryLabel}:`)).toBeInTheDocument();
   });
 });

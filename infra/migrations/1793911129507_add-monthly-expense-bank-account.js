@@ -11,7 +11,7 @@ export const shorthands = undefined;
 export const up = (pgm) => {
   pgm.sql(`
     ALTER TABLE monthly_expense_versions
-      ADD COLUMN bank_account VARCHAR(160)
+      ADD COLUMN default_bank_account VARCHAR(160)
   `);
 };
 
@@ -23,6 +23,6 @@ export const up = (pgm) => {
 export const down = (pgm) => {
   pgm.sql(`
     ALTER TABLE monthly_expense_versions
-      DROP COLUMN bank_account
+      DROP COLUMN default_bank_account
   `);
 };
