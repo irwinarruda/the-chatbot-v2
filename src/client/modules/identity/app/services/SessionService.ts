@@ -70,7 +70,8 @@ export function createSessionService(
         const { isLoggingOut } = get();
         if (isLoggingOut) return;
         generation += 1;
-        container.get("SessionRepository").cancelPendingRequests();
+        const sessionRepository = container.get("SessionRepository");
+        sessionRepository.cancelPendingRequests();
         resetFeatures();
         set({
           currentUser: undefined,
@@ -78,7 +79,7 @@ export function createSessionService(
           sessionError: undefined,
         });
         try {
-          await container.get("SessionRepository").logout();
+          await sessionRepository.logout();
           set({ isSessionExpired: true });
         } catch (error) {
           set({ sessionError: clientError(error, "logout") });

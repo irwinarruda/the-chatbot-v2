@@ -233,11 +233,14 @@ export const createMonthlyExpenseService: StateCreator<
         monthlyExpenseError: undefined,
       });
       try {
-        await container.get("MonthlyExpenseRepository").archive(id);
+        const monthlyExpenseRepository = container.get(
+          "MonthlyExpenseRepository",
+        );
+        await monthlyExpenseRepository.archive(id);
         if (requestGeneration !== generation) return false;
-        const result = await container
-          .get("MonthlyExpenseRepository")
-          .list(monthlyExpenseMonth || undefined);
+        const result = await monthlyExpenseRepository.list(
+          monthlyExpenseMonth || undefined,
+        );
         if (requestGeneration !== generation) return false;
         if (requestView !== view) {
           const { bootstrapMonthlyExpenses, monthlyExpenseMonth } = get();

@@ -26,14 +26,13 @@ export const createPrivacyService: StateCreator<PrivacyService> = (
   },
   toggleMoneyVisibility() {
     const { isMoneyHidden, isMoneyPrivacyHydrated } = get();
+    const privacyGateway = container.get("MonetaryPrivacyGateway");
     let currentValue = isMoneyHidden;
     if (!isMoneyPrivacyHydrated) {
-      currentValue = container
-        .get("MonetaryPrivacyGateway")
-        .resolveIsMoneyHidden();
+      currentValue = privacyGateway.resolveIsMoneyHidden();
     }
     const nextValue = !currentValue;
-    container.get("MonetaryPrivacyGateway").persistIsMoneyHidden(nextValue);
+    privacyGateway.persistIsMoneyHidden(nextValue);
     set({ isMoneyHidden: nextValue, isMoneyPrivacyHydrated: true });
   },
 });

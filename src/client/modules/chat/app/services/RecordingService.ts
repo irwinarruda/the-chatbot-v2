@@ -80,8 +80,9 @@ export const createRecordingService: StateCreator<
       if (isStarting || isRecording || isChatSubmitting) return;
       const request = ++generation;
       isStarting = true;
+      const recordingGateway = container.get("AudioRecordingGateway");
       try {
-        const started = await container.get("AudioRecordingGateway").start({
+        const started = await recordingGateway.start({
           audioInputDeviceId: selectedAudioInputId || undefined,
           onTick(duration) {
             if (request === generation) set({ recordingDuration: duration });
@@ -101,7 +102,7 @@ export const createRecordingService: StateCreator<
         await syncAudioInputs();
       } catch {
         if (request !== generation) return;
-        container.get("AudioRecordingGateway").stop(false);
+        recordingGateway.stop(false);
         set({
           chatError: "microphone",
           isRecording: false,

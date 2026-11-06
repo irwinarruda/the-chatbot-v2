@@ -19,6 +19,17 @@ afterEach(() => {
 });
 
 describe("sessionSlice", () => {
+  test("asks the session repository whether the web app is signed in", async () => {
+    container.register("SessionRepository", {
+      hasWebAccess: async () => false,
+      getCurrentUser: vi.fn(),
+      logout: vi.fn(),
+      cancelPendingRequests: vi.fn(),
+    });
+    const store = create<SessionService>()(createSessionService(vi.fn()));
+    expect(await store.getState().hasWebAccess()).toBe(false);
+  });
+
   test("logout clears feature state immediately and rejects an earlier user load", async () => {
     const user = createDeferred<CurrentUserDTO>();
     const logout = createDeferred<void>();

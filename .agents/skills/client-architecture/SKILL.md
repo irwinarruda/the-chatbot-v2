@@ -65,11 +65,11 @@ view -> service (through useApp) -> repository / gateway port
 service -> domain, contracts, parsers
 ```
 
-- Views never import a repository, gateway or `ApiClient`; they read and act through `useApp`. `tests/architecture.test.ts` enforces it.
+- Views never import a repository, gateway, the container or `ApiClient`; they read and act through `useApp`. `tests/architecture.test.ts` enforces it.
 - The `app/` layer never imports React, TanStack, screens or components.
 - The client reaches the server only through HTTP and the server functions in `src/server/shared/http/functions/`.
 - Services resolve ports from `container`, keyed by the port's name (`container.get("TodoRepository")`). `InjectableItems` in `libs/container` lists every key with its port type.
-- Two entry points fill the container, as favo-cli's `main.tsx` and `dev.tsx` do. `src/router.tsx` calls `bootstrapAppContainer()` with the `Api*`, `Browser*`, `Cookie*` and `Storage*` adapters. In mock mode, `vite.config.ts` points TanStack Start at `src/client/mock/router.tsx`, which calls `bootstrapMockContainer()` with the `Test*` repositories, and at `src/client/mock/start.ts`, which keeps only the prefs cookie and answers every `/api/` request with 501. Mock mode therefore never builds the backend.
+- Two entry points fill the container, as favo-cli's `main.tsx` and `dev.tsx` do. `src/router.tsx` calls `bootstrapAppContainer()` with the `Api*`, `Browser*`, `Cookie*` and `Storage*` adapters. In mock mode, `vite.config.ts` points TanStack Start at `src/client/mock/router.tsx`, which calls `bootstrapMockContainer()` with the `Test*` repositories, and at `src/client/mock/start.ts`, which keeps only the prefs cookie and answers every server route (`ServerPathPrefixes`: `/api/`, `/g/`) with 501. Mock mode therefore never builds the backend; `tests/client/shared/MockStart.test.ts` fails if a controller is added under a prefix the guard misses.
 - A route guard asks the session service (`hasWebAccess`), never a server function, so mock mode can sign every page in.
 - Production code never imports `src/client/mock`; `readme-screenshots` owns it. A port added to `bootstrapAppContainer` needs its `Test*` twin in `bootstrapMockContainer`; `tests/client/shared/Container.test.ts` fails otherwise.
 
