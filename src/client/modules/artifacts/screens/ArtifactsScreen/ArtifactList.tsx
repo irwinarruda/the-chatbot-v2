@@ -164,83 +164,47 @@ export function ArtifactList() {
                       {t.copyLinkAction}
                     </span>
                   </Button>
-                  <Button
-                    aria-label={
-                      isPublic ? t.makePrivateAction : t.makePublicAction
-                    }
-                    disabled={isSubmitting}
-                    onClick={() => onArtifactVisibilityToggle(artifact)}
-                    size="sm"
-                    type="button"
-                    variant="ghost"
-                    className="text-muted-foreground"
-                  >
-                    {isPublic ? <LockKeyhole /> : <Globe2 />}
-                    <span className="hidden sm:inline">
-                      {isPublic ? t.makePrivateAction : t.makePublicAction}
-                    </span>
-                  </Button>
-                  <ConfirmDialog
-                    cancelLabel={t.cancelAction}
-                    confirmLabel={t.deleteAction}
-                    description={t.deleteConfirmation}
-                    isDisabled={isSubmitting}
-                    onConfirm={() => onArtifactDelete(artifact)}
-                    title={t.deleteTitle.replace("{name}", artifact.title)}
-                    trigger={
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
                       <Button
-                        aria-label={t.deleteAction}
-                        disabled={isSubmitting}
+                        aria-label={t.moreActions}
+                        className="relative z-10 text-muted-foreground"
                         size="icon-sm"
-                        title={t.deleteAction}
                         type="button"
                         variant="ghost"
-                        className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                      >
-                        <Trash2 />
-                      </Button>
+                      />
                     }
-                  />
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      render={
-                        <Button
-                          aria-label={t.moreActions}
-                          className="relative z-10 text-muted-foreground sm:hidden"
-                          size="icon-sm"
-                          type="button"
-                          variant="ghost"
-                        />
-                      }
+                  >
+                    <Ellipsis />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-52">
+                    <DropdownMenuItem
+                      className="sm:hidden"
+                      onClick={() => onShareLinkCopy(artifact.id)}
                     >
-                      <Ellipsis />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-52">
-                      <DropdownMenuItem
-                        onClick={() => onShareLinkCopy(artifact.id)}
-                      >
-                        <Link2 />
-                        {t.copyLinkAction}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        disabled={isSubmitting}
-                        onClick={() => onArtifactVisibilityToggle(artifact)}
-                      >
-                        {isPublic ? <LockKeyhole /> : <Globe2 />}
-                        {isPublic ? t.makePrivateAction : t.makePublicAction}
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        disabled={isSubmitting}
-                        onClick={() => setDeletingArtifact(artifact)}
-                        variant="destructive"
-                      >
-                        <Trash2 />
-                        {t.deleteAction}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+                      <Link2 />
+                      {t.copyLinkAction}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      disabled={isSubmitting}
+                      onClick={() => onArtifactVisibilityToggle(artifact)}
+                    >
+                      {isPublic ? <LockKeyhole /> : <Globe2 />}
+                      {isPublic ? t.makePrivateAction : t.makePublicAction}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      disabled={isSubmitting}
+                      onClick={() => setDeletingArtifact(artifact)}
+                      variant="destructive"
+                    >
+                      <Trash2 />
+                      {t.deleteAction}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </li>
             );
           })}

@@ -6,6 +6,7 @@ import {
   Tags,
 } from "lucide-react";
 import { type SubmitEvent, useEffect, useId, useRef, useState } from "react";
+import { MoneyInput } from "~/client/shared/components/MoneyInput";
 import { Button } from "~/client/shared/components/ui/button";
 import {
   Field,
@@ -79,7 +80,7 @@ export function MonthlyExpenseForm({
 
   useEffect(() => {
     setName(expense?.name ?? "");
-    setExpectedAmount(expense?.expectedAmount?.toString() ?? "");
+    setExpectedAmount(expense?.expectedAmount?.toFixed(2) ?? "");
     setDueDay(expense?.dueDay?.toString() ?? "");
     setCategory(expense?.category ?? "");
     setDefaultBankAccount(expense?.defaultBankAccount ?? "");
@@ -178,7 +179,7 @@ export function MonthlyExpenseForm({
             />
             {t.amountLabel}
           </FieldLabel>
-          <Input
+          <MoneyInput
             aria-describedby={
               [
                 !hideActions ? optionalHintId : undefined,

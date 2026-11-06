@@ -206,7 +206,8 @@
     "emptyAllDoneHint": "Novas tarefas do chat ou desta página aparecem aqui.",
     "createDescription": "Crie uma tarefa aqui ou só peça ao assistente no WhatsApp.",
     "createdOn": "Criada em {date}",
-    "createNamed": "Criar “{name}”"
+    "createNamed": "Criar “{name}”",
+    "closeAction": "Fechar"
   },
   "notesPage": {
     "windowTitle": "Notas",
@@ -371,7 +372,8 @@
     "monthNet": "Saldo do mês",
     "trackedBalanceLabel": "Registrado:",
     "adjustmentPreviewLabel": "Ajuste:",
-    "chooseCategory": "Escolha uma categoria"
+    "chooseCategory": "Escolha uma categoria",
+    "closeAction": "Fechar"
   },
   "billsPage": {
     "windowTitle": "Contas",
@@ -451,7 +453,8 @@
     "listHint": "Marque para dar como paga · Pagar também registra a despesa no fluxo de caixa",
     "billOverdue": "Atrasada · dia {day}",
     "billDueToday": "Vence hoje",
-    "billDueIn": "Vence em {days} dias"
+    "billDueIn": "Vence em {days} dias",
+    "closeAction": "Fechar"
   },
   "loginPage": {
     "windowTitle": "Entrar",

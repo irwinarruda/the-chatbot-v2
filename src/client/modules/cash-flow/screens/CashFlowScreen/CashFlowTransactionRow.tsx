@@ -101,7 +101,7 @@ export function CashFlowTransactionRow({
           <span>{transaction.category}</span>
         </p>
       </div>
-      <div className="flex flex-wrap items-center justify-end gap-1.5">
+      <div className="flex items-center justify-end gap-1.5">
         <span
           className={
             isExpense
@@ -113,78 +113,80 @@ export function CashFlowTransactionRow({
             {currency.format(transaction.value)}
           </MonetaryValue>
         </span>
-        {transaction.transferId && (
-          <Button
-            aria-label={t.transferEditAction}
-            disabled={isSubmitting}
-            onClick={onEditTransfer}
-            size="icon-sm"
-            type="button"
-            variant="ghost"
-          >
-            <Pencil />
-          </Button>
-        )}
-        {(Boolean(transaction.transferId) ||
-          (transaction.isLast && !transaction.paymentId)) && (
-          <AlertDialog>
-            <AlertDialogTrigger
-              render={
-                <Button
-                  aria-label={
-                    transaction.transferId
-                      ? t.transferDeleteAction
-                      : t.deleteLastAction
-                  }
-                  disabled={isSubmitting}
-                  size="icon-sm"
-                  type="button"
-                  variant="ghost"
-                />
-              }
+        <div className="flex min-w-8 shrink-0 justify-end gap-1">
+          {transaction.transferId && (
+            <Button
+              aria-label={t.transferEditAction}
+              disabled={isSubmitting}
+              onClick={onEditTransfer}
+              size="icon-sm"
+              type="button"
+              variant="ghost"
             >
-              <Trash2 className="text-destructive" />
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogMedia className="bg-destructive/10 text-destructive">
-                  <AlertTriangle />
-                </AlertDialogMedia>
-                <AlertDialogTitle>
-                  {transaction.transferId
-                    ? t.transferDeleteTitle
-                    : t.deleteLastTitle}
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                  {transaction.transferId
-                    ? t.transferDeleteHint
-                    : t.deleteLastConfirmation}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <p className="m-0 rounded-lg border border-border bg-muted/50 px-3 py-2 text-left text-foreground text-sm">
-                <span className="font-medium">
-                  {transaction.description || t.transferLabel}
-                </span>
-                <span className="block text-muted-foreground text-xs tabular-nums">
-                  {currency.format(transaction.value)} · {date} ·{" "}
-                  {transaction.bankAccount}
-                </span>
-              </p>
-              <AlertDialogFooter>
-                <AlertDialogCancel disabled={isSubmitting}>
-                  {t.cancelAction}
-                </AlertDialogCancel>
-                <AlertDialogAction
-                  disabled={isSubmitting}
-                  onClick={onDelete}
-                  variant="destructive"
-                >
-                  {t.deleteAction}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )}
+              <Pencil />
+            </Button>
+          )}
+          {(Boolean(transaction.transferId) ||
+            (transaction.isLast && !transaction.paymentId)) && (
+            <AlertDialog>
+              <AlertDialogTrigger
+                render={
+                  <Button
+                    aria-label={
+                      transaction.transferId
+                        ? t.transferDeleteAction
+                        : t.deleteLastAction
+                    }
+                    disabled={isSubmitting}
+                    size="icon-sm"
+                    type="button"
+                    variant="ghost"
+                  />
+                }
+              >
+                <Trash2 className="text-destructive" />
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogMedia className="bg-destructive/10 text-destructive">
+                    <AlertTriangle />
+                  </AlertDialogMedia>
+                  <AlertDialogTitle>
+                    {transaction.transferId
+                      ? t.transferDeleteTitle
+                      : t.deleteLastTitle}
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {transaction.transferId
+                      ? t.transferDeleteHint
+                      : t.deleteLastConfirmation}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <p className="m-0 rounded-lg border border-border bg-muted/50 px-3 py-2 text-left text-foreground text-sm">
+                  <span className="font-medium">
+                    {transaction.description || t.transferLabel}
+                  </span>
+                  <span className="block text-muted-foreground text-xs tabular-nums">
+                    {currency.format(transaction.value)} · {date} ·{" "}
+                    {transaction.bankAccount}
+                  </span>
+                </p>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={isSubmitting}>
+                    {t.cancelAction}
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    disabled={isSubmitting}
+                    onClick={onDelete}
+                    variant="destructive"
+                  >
+                    {t.deleteAction}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
       </div>
     </article>
   );

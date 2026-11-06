@@ -722,10 +722,18 @@
   scrollbar-width: thin;
 }
 
+.notes-editor.mdxeditor {
+  min-width: 0;
+  max-width: 100%;
+}
+
 .mdxeditor .notes-editor-toolbar {
-  flex-wrap: wrap;
-  height: auto;
-  overflow: visible;
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  mask-image: linear-gradient(to right, black calc(100% - 1.5rem), transparent);
 }
 
 .notes-editor-content {

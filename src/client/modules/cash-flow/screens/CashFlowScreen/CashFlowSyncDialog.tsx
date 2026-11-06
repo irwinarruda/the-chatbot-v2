@@ -30,7 +30,7 @@ export function CashFlowSyncDialog({
 
   return (
     <TerminalResponsiveOverlay
-      closeLabel={t.cancelAction}
+      closeLabel={t.closeAction}
       description={t.syncHint}
       footer={
         <div className="grid w-full grid-cols-2 gap-2 sm:ml-auto sm:flex sm:w-auto">

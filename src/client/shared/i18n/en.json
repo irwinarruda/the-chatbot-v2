@@ -206,7 +206,8 @@
     "emptyAllDoneHint": "New tasks from chat or this page show up here.",
     "createDescription": "Add a task here, or just tell the assistant on WhatsApp.",
     "createdOn": "Created {date}",
-    "createNamed": "Create “{name}”"
+    "createNamed": "Create “{name}”",
+    "closeAction": "Close"
   },
   "notesPage": {
     "windowTitle": "Notes",
@@ -371,7 +372,8 @@
     "monthNet": "Net this month",
     "trackedBalanceLabel": "Tracked:",
     "adjustmentPreviewLabel": "Adjustment:",
-    "chooseCategory": "Choose a category"
+    "chooseCategory": "Choose a category",
+    "closeAction": "Close"
   },
   "billsPage": {
     "windowTitle": "Bills",
@@ -451,7 +453,8 @@
     "listHint": "Tick to mark paid · Pay also records the expense in cash flow",
     "billOverdue": "Overdue · day {day}",
     "billDueToday": "Due today",
-    "billDueIn": "Due in {days} days"
+    "billDueIn": "Due in {days} days",
+    "closeAction": "Close"
   },
   "loginPage": {
     "windowTitle": "Sign in",

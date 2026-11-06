@@ -93,11 +93,7 @@ export function ArtifactViewerScreen({ artifactId }: { artifactId: string }) {
               v{artifact.version}
             </span>
             <Badge
-              className={
-                artifact.visibility === ArtifactVisibility.Public
-                  ? "shrink-0 border-info/25 bg-info/10 text-info"
-                  : "shrink-0 border-border bg-muted text-muted-foreground"
-              }
+              className="shrink-0 border-border bg-muted text-muted-foreground"
               variant="outline"
             >
               {artifact.visibility === ArtifactVisibility.Public ? (

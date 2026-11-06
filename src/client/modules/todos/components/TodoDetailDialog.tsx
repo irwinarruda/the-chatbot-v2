@@ -118,7 +118,7 @@ export function TodoDetailDialog({
   return (
     <TerminalResponsiveOverlay
       bodyClassName="space-y-4"
-      closeLabel={t.cancelAction}
+      closeLabel={t.closeAction}
       description={
         isCreate || !todo
           ? t.createDescription

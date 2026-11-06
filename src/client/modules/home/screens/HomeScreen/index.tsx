@@ -39,16 +39,12 @@ export function HomeScreen() {
         }
         heading={t.heading}
         subtitle={t.subtitle}
-        withLogo
       />
-      <p className="mb-8 max-w-2xl text-pretty text-muted-foreground text-sm leading-relaxed">
-        {t.description}
-      </p>
       <HomeSummary />
       <h2 className="mb-3 font-medium text-foreground text-sm">
         {t.areasLabel}
       </h2>
-      <ul className="mb-6 grid gap-3 sm:grid-cols-2">
+      <ul className="m-0 mb-6 list-none divide-y divide-border overflow-hidden rounded-xl border border-border bg-card p-0">
         {welcomeFeatures.map((item) => {
           const feature = t.features[item.key];
           const Icon = item.icon;
@@ -56,23 +52,23 @@ export function HomeScreen() {
             <li key={item.href}>
               <Link
                 to={item.href}
-                className="group flex h-full flex-col rounded-xl border border-border bg-card p-4 transition-colors hover:border-brand/40 hover:bg-muted/60"
+                className="group flex items-center gap-3 px-4 py-3 outline-none transition-colors hover:bg-muted/60 focus-visible:bg-muted/60"
               >
-                <div className="mb-2 flex items-center gap-2.5">
-                  <span className="flex size-8 items-center justify-center rounded-lg bg-brand/12 text-primary">
-                    <Icon className="size-4" aria-hidden="true" />
-                  </span>
-                  <h3 className="m-0 font-medium text-foreground text-sm">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand/12 text-primary">
+                  <Icon className="size-4" aria-hidden="true" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block font-medium text-foreground text-sm">
                     {feature.title}
-                  </h3>
-                  <ArrowRight
-                    aria-hidden="true"
-                    className="ml-auto size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary motion-reduce:transition-none"
-                  />
-                </div>
-                <p className="m-0 text-muted-foreground text-sm leading-relaxed">
-                  {feature.description}
-                </p>
+                  </span>
+                  <span className="block truncate text-muted-foreground text-xs">
+                    {feature.description}
+                  </span>
+                </span>
+                <ArrowRight
+                  aria-hidden="true"
+                  className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary motion-reduce:transition-none"
+                />
               </Link>
             </li>
           );

@@ -1,4 +1,4 @@
-import { AlertTriangle, Trash2 } from "lucide-react";
+import { AlertTriangle, Archive } from "lucide-react";
 import { useId } from "react";
 import { TerminalResponsiveOverlay } from "~/client/shared/components/terminal/TerminalResponsiveOverlay";
 import {
@@ -46,7 +46,7 @@ export function MonthlyExpenseDialog({
 }) {
   const formId = useId();
   const isCreate = expense === undefined;
-  const title = isCreate ? t.createPrompt : (expense.name ?? t.editTitle);
+  const title = isCreate ? t.createPrompt : t.editTitle;
   const submitLabel = isCreate ? t.createAction : t.saveAction;
 
   function onOpenChange(nextOpen: boolean) {
@@ -56,8 +56,8 @@ export function MonthlyExpenseDialog({
   return (
     <TerminalResponsiveOverlay
       bodyClassName="space-y-4"
-      closeLabel={t.cancelAction}
-      description={t.optionalHint}
+      closeLabel={t.closeAction}
+      description={expense ? expense.name : t.optionalHint}
       footer={
         <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           {!isCreate && canArchive && (
@@ -72,7 +72,7 @@ export function MonthlyExpenseDialog({
                   />
                 }
               >
-                <Trash2 />
+                <Archive />
                 {t.deleteAction}
               </AlertDialogTrigger>
               <AlertDialogContent>

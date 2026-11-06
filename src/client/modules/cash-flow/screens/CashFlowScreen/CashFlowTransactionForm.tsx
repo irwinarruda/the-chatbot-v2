@@ -2,11 +2,11 @@ import {
   BanknoteArrowDown,
   BanknoteArrowUp,
   CalendarDays,
-  CircleDollarSign,
   Landmark,
   Tags,
 } from "lucide-react";
 import { type SubmitEvent, useEffect, useId, useRef, useState } from "react";
+import { MoneyInput } from "~/client/shared/components/MoneyInput";
 import { Button } from "~/client/shared/components/ui/button";
 import {
   Field,
@@ -158,11 +158,8 @@ export function CashFlowTransactionForm({
       </Field>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field data-invalid={Boolean(errors.value)}>
-          <FieldLabel htmlFor={`${fieldId}-value`}>
-            <CircleDollarSign className="size-3.5 text-muted-foreground" />
-            {t.amountLabel}
-          </FieldLabel>
-          <Input
+          <FieldLabel htmlFor={`${fieldId}-value`}>{t.amountLabel}</FieldLabel>
+          <MoneyInput
             aria-invalid={Boolean(errors.value)}
             id={`${fieldId}-value`}
             inputMode="decimal"

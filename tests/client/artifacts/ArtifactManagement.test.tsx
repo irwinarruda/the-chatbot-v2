@@ -5,6 +5,7 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { apiArtifactRepository } from "~/client/modules/artifacts/app/repositories/ApiArtifactRepository";
@@ -121,16 +122,22 @@ describe("artifact management", () => {
 
     render(<ArtifactList />);
 
-    const buttons = await screen.findAllByRole("button", {
+    const user = userEvent.setup();
+    const menus = await screen.findAllByRole("button", {
+      name: "More actions",
+    });
+    await user.click(menus[0]);
+    await user.click(
+      await screen.findByRole("menuitem", { name: "Make public" }),
+    );
+    expect(changeVisibility).toHaveBeenCalledTimes(1);
+
+    await user.click(menus[1]);
+    const secondItem = await screen.findByRole("menuitem", {
       name: "Make public",
     });
-    fireEvent.click(buttons[0]);
-
-    await waitFor(() => {
-      expect(buttons[0]).toBeDisabled();
-      expect(buttons[1]).toBeDisabled();
-    });
-    fireEvent.click(buttons[1]);
+    expect(secondItem).toHaveAttribute("aria-disabled", "true");
+    await user.click(secondItem);
     expect(changeVisibility).toHaveBeenCalledTimes(1);
 
     await act(async () => {
@@ -141,6 +148,10 @@ describe("artifact management", () => {
       await visibility;
     });
 
-    expect(buttons[1]).toBeEnabled();
+    await waitFor(() => {
+      expect(
+        screen.getByRole("menuitem", { name: "Make public" }),
+      ).not.toHaveAttribute("aria-disabled", "true");
+    });
   });
 });

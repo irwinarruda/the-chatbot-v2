@@ -1,5 +1,6 @@
-import { CalendarDays, CircleDollarSign, Landmark, Tags } from "lucide-react";
+import { CalendarDays, Landmark, Tags } from "lucide-react";
 import { type SubmitEvent, useEffect, useId, useRef, useState } from "react";
+import { MoneyInput } from "~/client/shared/components/MoneyInput";
 import {
   Field,
   FieldError,
@@ -142,10 +143,9 @@ export function CashFlowSyncForm({
         </Field>
         <Field data-invalid={Boolean(errors.currentBalance)}>
           <FieldLabel htmlFor={`${fieldId}-balance`}>
-            <CircleDollarSign className="size-3.5 text-muted-foreground" />
             {t.currentBalanceLabel}
           </FieldLabel>
-          <Input
+          <MoneyInput
             aria-invalid={Boolean(errors.currentBalance)}
             id={`${fieldId}-balance`}
             inputMode="decimal"

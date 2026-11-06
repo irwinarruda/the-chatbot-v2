@@ -1,5 +1,5 @@
 import { XIcon } from "lucide-react";
-import { type ReactNode, useSyncExternalStore } from "react";
+import { type ReactNode, useRef, useSyncExternalStore } from "react";
 import { Button } from "~/client/shared/components/ui/button";
 import {
   Dialog,
@@ -69,6 +69,7 @@ export function TerminalResponsiveOverlay({
   title: ReactNode;
   titleClassName?: string;
 }) {
+  const bodyRef = useRef<HTMLDivElement>(null);
   const isDesktop = useSyncExternalStore(
     subscribeToDesktopOverlay,
     getDesktopOverlaySnapshot,
@@ -83,6 +84,11 @@ export function TerminalResponsiveOverlay({
             "flex max-w-2xl flex-col gap-0 overflow-hidden border-border bg-card p-0",
             contentClassName,
           )}
+          initialFocus={() =>
+            bodyRef.current?.querySelector<HTMLElement>(
+              "input:not([type=hidden]), textarea, [role=combobox]",
+            ) ?? true
+          }
           showCloseButton={false}
         >
           <DialogHeader className="shrink-0 border-border border-b px-4 py-3">
@@ -110,22 +116,16 @@ export function TerminalResponsiveOverlay({
                   {description}
                 </DialogDescription>
               </div>
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <DialogClose
-                      aria-label={closeLabel}
-                      render={<Button size="icon-sm" variant="ghost" />}
-                    />
-                  }
-                >
-                  <XIcon />
-                </TooltipTrigger>
-                <TooltipContent>{closeLabel}</TooltipContent>
-              </Tooltip>
+              <DialogClose
+                aria-label={closeLabel}
+                render={<Button size="icon-sm" variant="ghost" />}
+              >
+                <XIcon />
+              </DialogClose>
             </div>
           </DialogHeader>
           <div
+            ref={bodyRef}
             className={cn(
               "min-h-0 flex-1 overflow-y-auto overscroll-contain p-4",
               footer && "pb-5",

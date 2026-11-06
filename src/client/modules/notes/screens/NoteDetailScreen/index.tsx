@@ -106,7 +106,7 @@ export function NoteDetailScreen({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="sticky top-14 z-20 -mx-4 flex items-center gap-1.5 border-border border-b bg-background/95 px-2 py-2 backdrop-blur-sm sm:-mx-8 sm:gap-2 sm:px-6 lg:top-0">
+      <div className="sticky top-14 z-20 -mx-4 flex items-center gap-1.5 border-border border-b bg-background/95 px-4 py-2 backdrop-blur-sm sm:-mx-8 sm:gap-2 sm:px-6 lg:top-0">
         <Button
           aria-label={t.backAction}
           className="px-2.5"
@@ -158,18 +158,20 @@ export function NoteDetailScreen({
               {t.previewAction}
             </Button>
           </div>
-          <Button
-            aria-label={t.saveAction}
-            className="px-2.5"
-            disabled={!isDirty || isNoteSubmitting || !name.trim()}
-            onClick={onSaveNote}
-            size="sm"
-            title={t.saveAction}
-            type="button"
-          >
-            <Save />
-            {t.saveAction}
-          </Button>
+          {isDirty && (
+            <Button
+              aria-label={t.saveAction}
+              className="px-2.5"
+              disabled={!isDirty || isNoteSubmitting || !name.trim()}
+              onClick={onSaveNote}
+              size="sm"
+              title={t.saveAction}
+              type="button"
+            >
+              <Save />
+              {t.saveAction}
+            </Button>
+          )}
         </div>
       </div>
       <div className="w-full space-y-5 py-5 sm:py-6">

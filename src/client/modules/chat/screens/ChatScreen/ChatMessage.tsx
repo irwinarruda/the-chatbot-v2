@@ -105,7 +105,7 @@ function ChatMessageBody({
                 aria-label={isCopied ? copiedLabel : copyLabel}
                 className="-ml-1.5 text-muted-foreground"
                 onClick={() => void onCopy(message.text ?? "")}
-                size="icon-xs"
+                size="icon-sm"
                 title={isCopied ? copiedLabel : copyLabel}
                 type="button"
                 variant="ghost"
@@ -186,7 +186,7 @@ function MessageContent({
       <div className="flex flex-col gap-3">
         <FormattedChatText text={message.text ?? ""} />
         <div className="flex flex-wrap gap-1.5">
-          {message.buttonReplyOptions.map((option) => (
+          {message.buttonReplyOptions.map((option, index) => (
             <Button
               key={option}
               type="button"
@@ -194,7 +194,7 @@ function MessageContent({
                 void onButtonReply(option);
               }}
               disabled={isSending}
-              variant="outline"
+              variant={index === 0 ? "default" : "outline"}
               className="rounded-lg text-sm shadow-none"
             >
               {option}
