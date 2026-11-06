@@ -97,6 +97,7 @@
 
 @theme inline {
   --color-background: var(--background);
+  --color-desk: var(--desk);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
@@ -237,6 +238,7 @@
 
     /* shadcn */
     --background: var(--favo-background);
+    --desk: var(--favo-float);
     --foreground: var(--favo-foreground);
     --card: var(--favo-panel);
     --card-foreground: var(--favo-foreground);
@@ -324,6 +326,7 @@
       transparent
     );
     --scrim: var(--favo-foreground);
+    --desk: var(--favo-raised);
     --code-background: var(--favo-panel);
   }
 

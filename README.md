@@ -16,8 +16,8 @@
 > One assistant for conversations, tasks, notes, and personal finances.
 
 <p align="center">
-  <img src="docs/assets/home-honey.png#gh-dark-mode-only" alt="The Chatbot home page in the Favo Honey theme: a sidebar with every workspace and a Today row with pending tasks, money left to pay, net balance and notes" width="900" />
-  <img src="docs/assets/home-wax.png#gh-light-mode-only" alt="The Chatbot home page in the Favo Wax theme: a sidebar with every workspace and a Today row with pending tasks, money left to pay, net balance and notes" width="900" />
+  <img src="docs/assets/home-honey.png#gh-dark-mode-only" alt="The Chatbot home page in the Favo Honey theme: an app window whose title bar holds every workspace as a tab, and a Today row with pending tasks, money left to pay, net balance and notes" width="900" />
+  <img src="docs/assets/home-wax.png#gh-light-mode-only" alt="The Chatbot home page in the Favo Wax theme: an app window whose title bar holds every workspace as a tab, and a Today row with pending tasks, money left to pay, net balance and notes" width="900" />
 </p>
 
 ## What it is
@@ -32,7 +32,7 @@ The Chatbot is a **personal-use assistant**, not a SaaS. It started as a small b
 | **Cash Flow** | Review balances and transactions, add entries, transfer between accounts, and synchronize real bank balances with Google Sheets. |
 | **Monthly Bills** | Maintain a recurring checklist, follow monthly progress by count and value, mark payments from chat or the web, and preserve history. |
 
-Google sign-in protects the private web workspaces and returns the user to the exact page they originally requested. The interface is responsive, uses one sidebar app shell for every workspace, and is available in Portuguese and English.
+Google sign-in protects the private web workspaces and returns the user to the exact page they originally requested. The interface is responsive, puts every workspace in one app window with top-level tabs (a bottom sheet on phones), and is available in Portuguese and English.
 
 ## Why it exists
 
@@ -122,7 +122,7 @@ Every picture above comes from `bun run screenshots`, which runs the web app on 
 | AI runtime | **Pi AI** + **Pi Agent Core** | Provider/model normalization, reasoning configuration, streaming, and the tool loop. |
 | Speech and storage | **OpenAI speech-to-text**, **Cloudflare R2** | Audio transcription and durable media storage. |
 | Integrations | **WhatsApp Business Cloud API**, **Google OAuth**, **Google Sheets** | Messaging, authentication, and finance data. |
-| Interface | **Tailwind CSS v4**, **shadcn/ui**, [Favo theme](https://github.com/irwinarruda/favo-theme) | Responsive sidebar UI in Honey (dark) and Wax (light), on accessible primitives. |
+| Interface | **Tailwind CSS v4**, **shadcn/ui**, [Favo theme](https://github.com/irwinarruda/favo-theme) | Responsive windowed UI in Honey (dark) and Wax (light), on accessible primitives. |
 | Quality | **TypeScript**, **Biome**, **Vitest** | Static checking, formatting/linting, and layered tests. |
 
 ## Running locally

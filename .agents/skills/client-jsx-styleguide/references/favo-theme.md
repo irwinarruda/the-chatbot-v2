@@ -12,8 +12,9 @@ The Chatbot uses [favo-theme](https://github.com/irwinarruda/favo-theme). Its `S
 
 | Token                                            | Favo role                                  | Use                                          |
 | ------------------------------------------------ | ------------------------------------------ | -------------------------------------------- |
-| `background`                                     | `background`                               | page                                         |
-| `card`                                           | `panel`                                    | the terminal window, cards                   |
+| `background`                                     | `background`                               | the app window's body, page                  |
+| `desk`                                           | `float` (Honey), `raised` (Wax)            | behind the floating app window               |
+| `card`                                           | `panel`                                    | the window's title bar, cards                |
 | `muted`, `secondary`                             | `raised`                                   | chrome, controls, hovered rows               |
 | `popover`                                        | `float`                                    | menus, popovers, dialogs                     |
 | `accent`                                         | `accent` at 12% over `raised`              | hover surface of menu items                  |

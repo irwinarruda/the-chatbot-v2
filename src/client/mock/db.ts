@@ -319,7 +319,7 @@ function createCashFlow(): CashFlowDashboardResponseDTO {
   transactions[transactions.length - 1].isLast = true;
   return {
     transactions,
-    bankAccounts: ["Nubank", "Itaú", "Cash"],
+    bankAccounts: ["Nubank", "Itaú", "Credit card", "Savings box", "Cash"],
     expenseCategories: [
       "Groceries",
       "Housing",
@@ -331,6 +331,8 @@ function createCashFlow(): CashFlowDashboardResponseDTO {
     bankAccountStatuses: [
       { bankAccount: "Nubank", balance: 18432.55 },
       { bankAccount: "Itaú", balance: 6210.1 },
+      { bankAccount: "Credit card", balance: -1284.3 },
+      { bankAccount: "Savings box", balance: 12000 },
       { bankAccount: "Cash", balance: 340 },
     ],
   };

@@ -189,7 +189,6 @@ export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
       dictionary={dictionary}
       showLogout
       title={t.windowTitle}
-      wide
     >
       <TerminalPageHeader
         actions={
@@ -316,20 +315,23 @@ export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
           </dl>
           <ul
             aria-label={t.accountBalancesLabel}
-            className="m-0 grid list-none grid-cols-1 divide-y divide-border border-border border-t p-0 sm:grid-cols-3 sm:divide-x sm:divide-y-0"
+            className="m-0 grid list-none grid-cols-1 divide-y divide-border border-border border-t p-0 sm:grid-cols-3 sm:gap-x-3 sm:gap-y-4 sm:divide-y-0 sm:px-5 sm:py-4"
           >
             {dashboard.bankAccountStatuses.map((account) => (
               <li
-                className="flex items-baseline justify-between gap-3 px-5 py-3 sm:block"
+                className="flex min-w-0 items-baseline justify-between gap-3 px-5 py-3 sm:block sm:p-0"
                 key={account.bankAccount}
               >
-                <p className="m-0 flex items-center gap-1.5 truncate text-muted-foreground text-xs">
+                <p
+                  className="m-0 flex min-w-0 items-center gap-1.5 text-muted-foreground text-xs"
+                  title={account.bankAccount}
+                >
                   <Landmark className="size-3.5 shrink-0" aria-hidden="true" />
-                  {account.bankAccount}
+                  <span className="truncate">{account.bankAccount}</span>
                 </p>
                 <p
                   className={cn(
-                    "m-0 font-medium text-base tabular-nums sm:mt-1",
+                    "m-0 shrink-0 font-medium text-base tabular-nums sm:mt-1",
                     account.balance < 0
                       ? "text-destructive"
                       : "text-foreground",

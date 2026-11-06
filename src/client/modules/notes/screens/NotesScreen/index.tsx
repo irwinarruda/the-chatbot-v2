@@ -95,7 +95,6 @@ export function NotesScreen({ search }: { search: NotesSearchDTO }) {
   return (
     <AppShell
       title={t.windowTitle}
-      wide
       activePath="/notes"
       dictionary={dictionary}
       showLogout

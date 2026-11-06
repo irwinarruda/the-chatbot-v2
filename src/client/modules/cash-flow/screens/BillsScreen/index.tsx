@@ -172,7 +172,6 @@ export function BillsScreen({ search }: { search: BillsSearch }) {
       dictionary={dictionary}
       showLogout
       title={t.windowTitle}
-      wide
     >
       <TerminalPageHeader
         actions={
