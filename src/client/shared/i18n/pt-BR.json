@@ -21,8 +21,8 @@
     "showMonetaryValues": "Mostrar valores monetários",
     "switchToDarkTheme": "Usar tema escuro",
     "switchToLightTheme": "Usar tema claro",
-    "switchToFavoTheme": "Usar tema Favo",
-    "switchToTerminalTheme": "Usar tema Terminal"
+    "switchToFavoPalette": "Usar tema Favo",
+    "switchToTerminalPalette": "Usar tema Terminal"
   },
   "nav": {
     "home": "Início",

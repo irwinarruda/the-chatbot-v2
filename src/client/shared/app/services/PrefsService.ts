@@ -24,30 +24,34 @@ export const createPrefsService: StateCreator<PrefsService> = (set, get) => ({
   },
   async toggleTheme() {
     const { prefs } = get();
-    const next: PrefsDTO = {
-      ...prefs,
-      theme: prefs.theme === "light" ? "dark" : "light",
-    };
-    container.get("PrefsGateway").persistPrefs(next);
-    set({ prefs: next });
+    set({
+      prefs: savePrefs({
+        ...prefs,
+        theme: prefs.theme === "light" ? "dark" : "light",
+      }),
+    });
   },
   async togglePalette() {
     const { prefs } = get();
-    const next: PrefsDTO = {
-      ...prefs,
-      palette: prefs.palette === "favo" ? "terminal" : "favo",
-    };
-    container.get("PrefsGateway").persistPrefs(next);
-    set({ prefs: next });
+    set({
+      prefs: savePrefs({
+        ...prefs,
+        palette: prefs.palette === "favo" ? "terminal" : "favo",
+      }),
+    });
   },
   async toggleLocale() {
     const { prefs } = get();
-    const next: PrefsDTO = {
+    const next = savePrefs({
       ...prefs,
       locale: prefs.locale === "pt-BR" ? "en" : "pt-BR",
-    };
-    container.get("PrefsGateway").persistPrefs(next);
+    });
     set({ prefs: next });
     return next.locale;
   },
 });
+
+function savePrefs(prefs: PrefsDTO) {
+  container.get("PrefsGateway").persistPrefs(prefs);
+  return prefs;
+}

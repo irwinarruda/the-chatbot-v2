@@ -121,7 +121,9 @@ describe("AppShell", () => {
     );
 
     await user.click(
-      screen.getByRole("button", { name: dictionary.common.switchToFavoTheme }),
+      screen.getByRole("button", {
+        name: dictionary.common.switchToFavoPalette,
+      }),
     );
 
     expect(document.documentElement.dataset.palette).toBe("favo");
@@ -137,7 +139,7 @@ describe("AppShell", () => {
 
     expect(
       screen.getByRole("button", {
-        name: dictionary.common.switchToTerminalTheme,
+        name: dictionary.common.switchToTerminalPalette,
       }),
     ).toBeInTheDocument();
     expect(

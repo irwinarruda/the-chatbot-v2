@@ -199,8 +199,8 @@ export function AppShell({
       : (dictionary?.common.switchToLightTheme ?? "Use light theme");
   const paletteLabel =
     prefs.palette === "favo"
-      ? (dictionary?.common.switchToTerminalTheme ?? "Use Terminal theme")
-      : (dictionary?.common.switchToFavoTheme ?? "Use Favo theme");
+      ? (dictionary?.common.switchToTerminalPalette ?? "Use Terminal theme")
+      : (dictionary?.common.switchToFavoPalette ?? "Use Favo theme");
 
   async function onLocaleToggle() {
     await toggleLocale();

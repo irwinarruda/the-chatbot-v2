@@ -216,29 +216,6 @@
   :root {
     color-scheme: dark;
 
-    /* Terminal dark */
-    --palette-background: #0c1018;
-    --palette-panel: #131a23;
-    --palette-raised: #1c2330;
-    --palette-float: #0c1018;
-    --palette-border: #282f3c;
-    --palette-selection: rgb(80 223 170 / 15%);
-    --palette-faint: #5c6676;
-    --palette-comment: #8494a7;
-    --palette-foreground: #f8fafc;
-    --palette-accent: #50dfaa;
-    --palette-fill: #50dfaa;
-    --palette-fill-hover: #3ab888;
-    --palette-on-fill: #072019;
-    --palette-warning: #ffb627;
-    --palette-keyword: #50dfaa;
-    --palette-function: #58a6ff;
-    --palette-type: #7ee8fa;
-    --palette-string: #50dfaa;
-    --palette-constant: #d2a8ff;
-    --palette-param: #ffbd2e;
-    --palette-regex: #ff5f56;
-
     --radius: 0.625rem;
 
     /* shadcn */
@@ -292,7 +269,7 @@
     --hint: var(--palette-type);
     --faint: var(--palette-faint);
     --brand: var(--palette-accent);
-    /* Favo's widget shadow and code surface: float when dark, see light below */
+    /* Overlays, shadows and code blocks sit on float; light variants change it */
     --scrim: var(--palette-float);
     --code-background: var(--palette-float);
   }
@@ -300,6 +277,37 @@
   [data-theme="light"] {
     color-scheme: light;
 
+    /* Light variants of either palette shadow with foreground, code on panel */
+    --scrim: var(--palette-foreground);
+    --code-background: var(--palette-panel);
+  }
+
+  :root {
+    /* Terminal dark, the default palette */
+    --palette-background: #0c1018;
+    --palette-panel: #131a23;
+    --palette-raised: #1c2330;
+    --palette-float: #080b11;
+    --palette-border: #282f3c;
+    --palette-selection: rgb(80 223 170 / 15%);
+    --palette-faint: #5c6676;
+    --palette-comment: #8494a7;
+    --palette-foreground: #f8fafc;
+    --palette-accent: #50dfaa;
+    --palette-fill: #50dfaa;
+    --palette-fill-hover: #3ab888;
+    --palette-on-fill: #072019;
+    --palette-warning: #ffb627;
+    --palette-keyword: #50dfaa;
+    --palette-function: #58a6ff;
+    --palette-type: #7ee8fa;
+    --palette-string: #50dfaa;
+    --palette-constant: #d2a8ff;
+    --palette-param: #ffbd2e;
+    --palette-regex: #ff5f56;
+  }
+
+  [data-theme="light"] {
     /* Terminal light */
     --palette-background: #eae8e4;
     --palette-panel: #faf8f5;
@@ -322,10 +330,6 @@
     --palette-constant: #7c4ddb;
     --palette-param: #daa520;
     --palette-regex: #b91c1c;
-
-    /* Light variants shadow with foreground and put code on panel */
-    --scrim: var(--palette-foreground);
-    --code-background: var(--palette-panel);
   }
 
   [data-palette="favo"] {
