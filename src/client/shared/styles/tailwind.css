@@ -41,13 +41,18 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 /* ==========================================================
-  Tailwind v4 — Favo theme (https://github.com/irwinarruda/favo-theme)
+  Tailwind v4 — two palettes, each with a dark and a light variant
   CSS-first config (no tailwind.config.{js,ts})
-  Favo Honey (dark) is the default; Favo Wax (light) via [data-theme="light"].
 
-  Every color is written once below as a `--favo-*` variable named after its
-  Favo role, then mapped onto shadcn and signal tokens. Components use only
-  the semantic tokens; the default Tailwind palette is disabled.
+  Terminal, the app's original cool blue-gray and green palette, is the default.
+  Favo (https://github.com/irwinarruda/favo-theme) is chosen with
+  [data-palette="favo"]: Honey (dark) and Wax (light).
+  [data-theme="light"] picks the light variant of either palette.
+
+  Each palette writes every color once as a `--palette-*` variable named after
+  a Favo role, and the shadcn and signal tokens point at those roles, so
+  components use only the semantic tokens. The default Tailwind palette is
+  disabled.
   ========================================================== */
 
 @theme {
@@ -142,13 +147,13 @@
   --color-code: var(--code-background);
 
   /* Code colors, for prose and code */
-  --color-syntax-keyword: var(--favo-keyword);
-  --color-syntax-function: var(--favo-function);
-  --color-syntax-type: var(--favo-type);
-  --color-syntax-string: var(--favo-string);
-  --color-syntax-constant: var(--favo-constant);
-  --color-syntax-param: var(--favo-param);
-  --color-syntax-regex: var(--favo-regex);
+  --color-syntax-keyword: var(--palette-keyword);
+  --color-syntax-function: var(--palette-function);
+  --color-syntax-type: var(--palette-type);
+  --color-syntax-string: var(--palette-string);
+  --color-syntax-constant: var(--palette-constant);
+  --color-syntax-param: var(--palette-param);
+  --color-syntax-regex: var(--palette-regex);
 
   --shadow-field:
     inset 0 0 0 1px var(--ring),
@@ -205,115 +210,176 @@
   animation: blink 1.1s step-end infinite;
 }
 
-/* --- Favo palette and token mapping --- */
+/* --- Palettes and token mapping --- */
 
 @layer base {
   :root {
     color-scheme: dark;
 
-    /* Favo Honey (palette.json, honey) */
-    --favo-background: #14110b;
-    --favo-panel: #1b170f;
-    --favo-raised: #221d14;
-    --favo-float: #0f0d08;
-    --favo-border: #3a3122;
-    --favo-selection: #3d2e0f;
-    --favo-faint: #6e6250;
-    --favo-comment: #a3937a;
-    --favo-foreground: #f3e7cf;
-    --favo-accent: #f5a623;
-    --favo-fill: #f5a623;
-    --favo-fill-hover: #ffc857;
-    --favo-on-fill: #14110b;
-    --favo-warning: #ffc857;
-    --favo-keyword: #fcaf41;
-    --favo-function: #74c7ff;
-    --favo-type: #77edd1;
-    --favo-string: #b8ec6d;
-    --favo-constant: #bc9dfb;
-    --favo-param: #f898c3;
-    --favo-regex: #f9786a;
-
     --radius: 0.625rem;
 
     /* shadcn */
-    --background: var(--favo-background);
-    --desk: var(--favo-raised);
-    --foreground: var(--favo-foreground);
-    --card: var(--favo-panel);
-    --card-foreground: var(--favo-foreground);
-    --popover: var(--favo-float);
-    --popover-foreground: var(--favo-foreground);
-    --primary: var(--favo-fill);
-    --primary-foreground: var(--favo-on-fill);
-    --primary-hover: var(--favo-fill-hover);
-    --secondary: var(--favo-raised);
-    --secondary-foreground: var(--favo-foreground);
-    --muted: var(--favo-raised);
-    --muted-foreground: var(--favo-comment);
-    --accent: color-mix(in srgb, var(--favo-accent) 12%, var(--favo-raised));
-    --accent-foreground: var(--favo-foreground);
-    --destructive: var(--favo-regex);
-    --destructive-foreground: var(--favo-foreground);
-    --border: var(--favo-border);
-    --input: var(--favo-border);
-    --ring: var(--favo-accent);
-    --chart-1: var(--favo-keyword);
-    --chart-2: var(--favo-function);
-    --chart-3: var(--favo-type);
-    --chart-4: var(--favo-string);
-    --chart-5: var(--favo-constant);
-    --sidebar: var(--favo-panel);
-    --sidebar-foreground: var(--favo-foreground);
-    --sidebar-primary: var(--favo-fill);
-    --sidebar-primary-foreground: var(--favo-on-fill);
+    --background: var(--palette-background);
+    --desk: var(--palette-raised);
+    --foreground: var(--palette-foreground);
+    --card: var(--palette-panel);
+    --card-foreground: var(--palette-foreground);
+    --popover: var(--palette-float);
+    --popover-foreground: var(--palette-foreground);
+    --primary: var(--palette-fill);
+    --primary-foreground: var(--palette-on-fill);
+    --primary-hover: var(--palette-fill-hover);
+    --secondary: var(--palette-raised);
+    --secondary-foreground: var(--palette-foreground);
+    --muted: var(--palette-raised);
+    --muted-foreground: var(--palette-comment);
+    --accent: color-mix(
+      in srgb,
+      var(--palette-accent) 12%,
+      var(--palette-raised)
+    );
+    --accent-foreground: var(--palette-foreground);
+    --destructive: var(--palette-regex);
+    --destructive-foreground: var(--palette-foreground);
+    --border: var(--palette-border);
+    --input: var(--palette-border);
+    --ring: var(--palette-accent);
+    --chart-1: var(--palette-keyword);
+    --chart-2: var(--palette-function);
+    --chart-3: var(--palette-type);
+    --chart-4: var(--palette-string);
+    --chart-5: var(--palette-constant);
+    --sidebar: var(--palette-panel);
+    --sidebar-foreground: var(--palette-foreground);
+    --sidebar-primary: var(--palette-fill);
+    --sidebar-primary-foreground: var(--palette-on-fill);
     --sidebar-accent: color-mix(
       in srgb,
-      var(--favo-accent) 12%,
-      var(--favo-panel)
+      var(--palette-accent) 12%,
+      var(--palette-panel)
     );
-    --sidebar-accent-foreground: var(--favo-foreground);
-    --sidebar-border: var(--favo-border);
-    --sidebar-ring: var(--favo-accent);
+    --sidebar-accent-foreground: var(--palette-foreground);
+    --sidebar-border: var(--palette-border);
+    --sidebar-ring: var(--palette-accent);
 
     /* Signals and helpers */
-    --success: var(--favo-string);
-    --warning: var(--favo-warning);
-    --info: var(--favo-function);
-    --hint: var(--favo-type);
-    --faint: var(--favo-faint);
-    --brand: var(--favo-accent);
-    /* Favo's widget shadow: float on Honey, foreground on Wax */
-    --scrim: var(--favo-float);
-    /* Code blocks sit on float in Honey and panel in Wax (Favo's t3code port) */
-    --code-background: var(--favo-float);
+    --success: var(--palette-string);
+    --warning: var(--palette-warning);
+    --info: var(--palette-function);
+    --hint: var(--palette-type);
+    --faint: var(--palette-faint);
+    --brand: var(--palette-accent);
+    /* Overlays, shadows and code blocks sit on float; light variants change it */
+    --scrim: var(--palette-float);
+    --code-background: var(--palette-float);
   }
 
   [data-theme="light"] {
     color-scheme: light;
 
+    /* Light variants of either palette shadow with foreground, code on panel */
+    --scrim: var(--palette-foreground);
+    --code-background: var(--palette-panel);
+  }
+
+  :root {
+    /* Terminal dark, the default palette */
+    --palette-background: #0c1018;
+    --palette-panel: #131a23;
+    --palette-raised: #1c2330;
+    --palette-float: #080b11;
+    --palette-border: #282f3c;
+    --palette-selection: rgb(80 223 170 / 15%);
+    --palette-faint: #5c6676;
+    --palette-comment: #8494a7;
+    --palette-foreground: #f8fafc;
+    --palette-accent: #50dfaa;
+    --palette-fill: #50dfaa;
+    --palette-fill-hover: #3ab888;
+    --palette-on-fill: #072019;
+    --palette-warning: #ffb627;
+    --palette-keyword: #50dfaa;
+    --palette-function: #58a6ff;
+    --palette-type: #7ee8fa;
+    --palette-string: #50dfaa;
+    --palette-constant: #d2a8ff;
+    --palette-param: #ffbd2e;
+    --palette-regex: #ff5f56;
+  }
+
+  [data-theme="light"] {
+    /* Terminal light */
+    --palette-background: #eae8e4;
+    --palette-panel: #faf8f5;
+    --palette-raised: #e6e3de;
+    --palette-float: #faf8f5;
+    --palette-border: #d1cdc6;
+    --palette-selection: rgb(18 165 102 / 18%);
+    --palette-faint: #8494a7;
+    --palette-comment: #5c6676;
+    --palette-foreground: #1c2028;
+    --palette-accent: #0b7d4e;
+    --palette-fill: #0b7d4e;
+    --palette-fill-hover: #0a7248;
+    --palette-on-fill: #f7fbf9;
+    --palette-warning: #8a5200;
+    --palette-keyword: #0b7d4e;
+    --palette-function: #1d4ed8;
+    --palette-type: #0b6b85;
+    --palette-string: #0a7248;
+    --palette-constant: #7c4ddb;
+    --palette-param: #daa520;
+    --palette-regex: #b91c1c;
+  }
+
+  [data-palette="favo"] {
+    /* Favo Honey (palette.json, honey) */
+    --palette-background: #14110b;
+    --palette-panel: #1b170f;
+    --palette-raised: #221d14;
+    --palette-float: #0f0d08;
+    --palette-border: #3a3122;
+    --palette-selection: #3d2e0f;
+    --palette-faint: #6e6250;
+    --palette-comment: #a3937a;
+    --palette-foreground: #f3e7cf;
+    --palette-accent: #f5a623;
+    --palette-fill: #f5a623;
+    --palette-fill-hover: #ffc857;
+    --palette-on-fill: #14110b;
+    --palette-warning: #ffc857;
+    --palette-keyword: #fcaf41;
+    --palette-function: #74c7ff;
+    --palette-type: #77edd1;
+    --palette-string: #b8ec6d;
+    --palette-constant: #bc9dfb;
+    --palette-param: #f898c3;
+    --palette-regex: #f9786a;
+  }
+
+  [data-palette="favo"][data-theme="light"] {
     /* Favo Wax (palette.json, wax) */
-    --favo-background: #fbf5e6;
-    --favo-panel: #f4ebd5;
-    --favo-raised: #ede2c6;
-    --favo-float: #fffaef;
-    --favo-border: #dccdaa;
-    --favo-selection: #f6dfa6;
-    --favo-faint: #9c8d73;
-    --favo-comment: #857559;
-    --favo-foreground: #33291a;
-    --favo-accent: #b8720a;
-    --favo-fill: #8f5600;
-    --favo-fill-hover: #7a4900;
-    --favo-on-fill: #fbf5e6;
-    --favo-warning: #8f5600;
-    --favo-keyword: #915100;
-    --favo-function: #1f62a4;
-    --favo-type: #007d70;
-    --favo-string: #477c18;
-    --favo-constant: #7145b5;
-    --favo-param: #aa3069;
-    --favo-regex: #c43e27;
+    --palette-background: #fbf5e6;
+    --palette-panel: #f4ebd5;
+    --palette-raised: #ede2c6;
+    --palette-float: #fffaef;
+    --palette-border: #dccdaa;
+    --palette-selection: #f6dfa6;
+    --palette-faint: #9c8d73;
+    --palette-comment: #857559;
+    --palette-foreground: #33291a;
+    --palette-accent: #b8720a;
+    --palette-fill: #8f5600;
+    --palette-fill-hover: #7a4900;
+    --palette-on-fill: #fbf5e6;
+    --palette-warning: #8f5600;
+    --palette-keyword: #915100;
+    --palette-function: #1f62a4;
+    --palette-type: #007d70;
+    --palette-string: #477c18;
+    --palette-constant: #7145b5;
+    --palette-param: #aa3069;
+    --palette-regex: #c43e27;
 
     /*
       Wax `comment` is 3.8:1 on panel and 3.5:1 on raised, below AA for small
@@ -322,11 +388,9 @@
     */
     --muted-foreground: color-mix(
       in srgb,
-      var(--favo-foreground) 70%,
+      var(--palette-foreground) 70%,
       transparent
     );
-    --scrim: var(--favo-foreground);
-    --code-background: var(--favo-panel);
   }
 
   html {
@@ -345,7 +409,7 @@
   }
 
   ::selection {
-    background: var(--favo-selection);
+    background: var(--palette-selection);
     color: var(--foreground);
   }
 
@@ -518,12 +582,12 @@
 .terminal-prose a {
   color: var(--foreground);
   text-decoration: underline;
-  text-decoration-color: var(--favo-type);
+  text-decoration-color: var(--palette-type);
   text-underline-offset: 2px;
   transition: color 0.2s;
 }
 .terminal-prose a:hover {
-  color: var(--favo-type);
+  color: var(--palette-type);
 }
 
 .terminal-prose blockquote {
@@ -546,7 +610,7 @@
 }
 
 .terminal-prose code {
-  color: var(--favo-function);
+  color: var(--palette-function);
   background: var(--muted);
   padding: 0.15em 0.4em;
   border-radius: 0.25rem;
@@ -646,7 +710,7 @@
   --accentTextContrast: var(--foreground);
   --basePageBg: var(--background);
   --baseBase: var(--background);
-  --baseBgSubtle: var(--favo-panel);
+  --baseBgSubtle: var(--palette-panel);
   --baseBg: var(--muted);
   --baseBgHover: var(--accent);
   --baseBgActive: color-mix(in srgb, var(--brand) 18%, var(--muted));
@@ -789,7 +853,7 @@
 .notes-editor-content a {
   color: var(--foreground);
   text-decoration: underline;
-  text-decoration-color: var(--favo-type);
+  text-decoration-color: var(--palette-type);
   text-underline-offset: 2px;
 }
 
@@ -806,7 +870,7 @@
 }
 
 .notes-editor-content code {
-  color: var(--favo-function);
+  color: var(--palette-function);
 }
 
 /*
@@ -846,7 +910,7 @@
 .notes-editor .cm-editor .cm-selectionBackground,
 .notes-editor .cm-editor.cm-focused .cm-selectionBackground,
 .notes-editor .cm-editor .cm-content ::selection {
-  background-color: var(--favo-selection);
+  background-color: var(--palette-selection);
 }
 
 @media (min-width: 40rem) {

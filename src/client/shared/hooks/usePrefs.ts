@@ -8,10 +8,11 @@ export function usePrefs(): Prefs {
   const isPrefsHydrated = useApp((state) => state.isPrefsHydrated);
   const isServer = typeof document === "undefined";
   if (!isServer && isPrefsHydrated) return storePrefs;
-  if (routePrefs.locale && routePrefs.theme) {
+  if (routePrefs.locale && routePrefs.theme && routePrefs.palette) {
     return {
       locale: routePrefs.locale,
       theme: routePrefs.theme,
+      palette: routePrefs.palette,
     };
   }
   return storePrefs;

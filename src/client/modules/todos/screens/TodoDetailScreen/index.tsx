@@ -60,7 +60,6 @@ export function TodoDetailScreen({
       onSave={onSaveTodo}
       open={Boolean(todoId)}
       t={t}
-      theme={prefs.theme}
       todo={todo}
     />
   );

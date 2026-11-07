@@ -7,11 +7,12 @@ import {
 import { FileQuestion } from "lucide-react";
 import { type ReactNode, useEffect } from "react";
 import { SessionBoundary } from "~/client/modules/identity/components/SessionBoundary";
-import type { Prefs } from "~/client/shared/app/entities/Prefs";
+import type { Palette, Prefs } from "~/client/shared/app/entities/Prefs";
 import { ListEmptyState } from "~/client/shared/components/ListEmptyState";
 import { AppShell } from "~/client/shared/components/terminal/AppShell";
 import { Button } from "~/client/shared/components/ui/button";
 import { TooltipProvider } from "~/client/shared/components/ui/tooltip";
+import { usePrefs } from "~/client/shared/hooks/usePrefs";
 import { getDictionary } from "~/client/shared/i18n/dictionary";
 import { useApp } from "~/client/shared/stores/app";
 import tailwindHref from "~/client/shared/styles/tailwind.css?url";
@@ -19,6 +20,11 @@ import {
   DEFAULT_PREFS,
   resolvePrefs,
 } from "~/contracts/http/shared/prefs-cookie";
+
+const Favicons: Record<Palette, string> = {
+  terminal: "/favicon.ico",
+  favo: "/favicon-favo.ico",
+};
 
 type PrefsRouteContext = {
   serverContext?: {
@@ -53,20 +59,26 @@ export const Route = createRootRoute({
 });
 
 function RootDocument({ children }: { children: ReactNode }) {
-  const prefs = Route.useRouteContext();
+  const routePrefs = Route.useRouteContext();
+  const prefs = usePrefs();
   const suppressHydrationWarning = import.meta.env.DEV;
   const hydratePrefs = useApp((state) => state.hydratePrefs);
   const hydrateMoneyPrivacy = useApp((state) => state.hydrateMoneyPrivacy);
 
   useEffect(() => {
-    hydratePrefs(prefs);
+    hydratePrefs(routePrefs);
     hydrateMoneyPrivacy();
-  }, [hydrateMoneyPrivacy, hydratePrefs, prefs]);
+  }, [hydrateMoneyPrivacy, hydratePrefs, routePrefs]);
 
   return (
-    <html lang={prefs.locale} data-theme={prefs.theme}>
+    <html
+      lang={prefs.locale}
+      data-theme={prefs.theme}
+      data-palette={prefs.palette}
+    >
       <head>
         <HeadContent />
+        <link rel="icon" href={Favicons[prefs.palette]} />
         <link
           rel="preload"
           href="/fonts/jetbrains-mono-latin.woff2"

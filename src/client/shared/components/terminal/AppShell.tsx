@@ -13,9 +13,11 @@ import {
   ReceiptText,
   Shield,
   Sun,
+  SwatchBook,
   Wallet,
 } from "lucide-react";
 import { type ReactNode, useState } from "react";
+import type { Palette, Theme } from "~/client/shared/app/entities/Prefs";
 import { Alert, AlertDescription } from "~/client/shared/components/ui/alert";
 import { Button } from "~/client/shared/components/ui/button";
 import {
@@ -62,9 +64,14 @@ const AppLayout = {
 
 type AppLayout = ValueOf<typeof AppLayout>;
 
+const Logos: Record<Palette, Record<Theme, string>> = {
+  terminal: { dark: "/logo.svg", light: "/logo-light.svg" },
+  favo: { dark: "/logo-favo.svg", light: "/logo-favo-light.svg" },
+};
+
 function AppBrand() {
   const prefs = usePrefs();
-  const src = prefs.theme === "dark" ? "/logo.svg" : "/logo-light.svg";
+  const src = Logos[prefs.palette][prefs.theme];
 
   return (
     <Link
@@ -153,6 +160,7 @@ export function AppShell({
   const router = useRouter();
   const prefs = usePrefs();
   const toggleTheme = useApp((state) => state.toggleTheme);
+  const togglePalette = useApp((state) => state.togglePalette);
   const toggleLocale = useApp((state) => state.toggleLocale);
   const sessionError = useApp((state) => state.sessionError);
   const logout = useApp((state) => state.logout);
@@ -189,6 +197,10 @@ export function AppShell({
     prefs.theme === "light"
       ? (dictionary?.common.switchToDarkTheme ?? "Use dark theme")
       : (dictionary?.common.switchToLightTheme ?? "Use light theme");
+  const paletteLabel =
+    prefs.palette === "favo"
+      ? (dictionary?.common.switchToTerminalPalette ?? "Use Terminal theme")
+      : (dictionary?.common.switchToFavoPalette ?? "Use Favo theme");
 
   async function onLocaleToggle() {
     await toggleLocale();
@@ -235,6 +247,12 @@ export function AppShell({
     </TerminalChromeButton>
   );
 
+  const paletteControl = (
+    <TerminalChromeButton onClick={togglePalette} title={paletteLabel}>
+      <SwatchBook />
+    </TerminalChromeButton>
+  );
+
   const skipLink = (
     <a
       href="#main-content"
@@ -260,6 +278,7 @@ export function AppShell({
             <div className="flex items-center gap-1">
               {privacyControl}
               {localeControl}
+              <div className="hidden sm:flex">{paletteControl}</div>
               {themeControl}
             </div>
           </header>
@@ -335,7 +354,10 @@ export function AppShell({
               </nav>
               <div className="ml-auto flex shrink-0 items-center gap-0.5">
                 {privacyControl}
-                <div className="hidden lg:flex">{localeControl}</div>
+                <div className="hidden lg:flex">
+                  {localeControl}
+                  {paletteControl}
+                </div>
                 {themeControl}
                 <DropdownMenu>
                   <Tooltip>
@@ -446,6 +468,7 @@ export function AppShell({
             <div className="mt-2 flex items-center gap-1 px-1">
               {privacyControl}
               {localeControl}
+              {paletteControl}
               {themeControl}
             </div>
           </div>
