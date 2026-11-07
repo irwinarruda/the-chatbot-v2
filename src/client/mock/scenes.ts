@@ -13,13 +13,13 @@ export interface Scene {
 }
 
 export const Scenes: Record<string, Scene> = {
-  "home-honey": {
+  "home-dark": {
     path: "/",
     theme: "dark",
     viewport: "desktop",
     waitFor: "Pending tasks",
   },
-  "home-wax": {
+  "home-light": {
     path: "/",
     theme: "light",
     viewport: "desktop",

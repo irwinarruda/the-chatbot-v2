@@ -10,6 +10,7 @@ export type PrefsService = {
   isPrefsHydrated: boolean;
   hydratePrefs: (dto: HydratePrefsDTO) => void;
   toggleTheme: () => Promise<void>;
+  togglePalette: () => Promise<void>;
   toggleLocale: () => Promise<Locale>;
 };
 
@@ -26,6 +27,15 @@ export const createPrefsService: StateCreator<PrefsService> = (set, get) => ({
     const next: PrefsDTO = {
       ...prefs,
       theme: prefs.theme === "light" ? "dark" : "light",
+    };
+    container.get("PrefsGateway").persistPrefs(next);
+    set({ prefs: next });
+  },
+  async togglePalette() {
+    const { prefs } = get();
+    const next: PrefsDTO = {
+      ...prefs,
+      palette: prefs.palette === "favo" ? "terminal" : "favo",
     };
     container.get("PrefsGateway").persistPrefs(next);
     set({ prefs: next });

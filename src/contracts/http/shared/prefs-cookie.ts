@@ -1,6 +1,10 @@
 import { PrefsDTO } from "./prefs";
 
-export const DEFAULT_PREFS: PrefsDTO = { locale: "pt-BR", theme: "dark" };
+export const DEFAULT_PREFS: PrefsDTO = {
+  locale: "pt-BR",
+  theme: "dark",
+  palette: "terminal",
+};
 export const PREFS_COOKIE_NAME = "the-chatbot-prefs";
 
 export function parseCookieHeader(header: string): Record<string, string> {

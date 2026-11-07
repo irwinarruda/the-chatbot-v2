@@ -1,9 +1,16 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import type { Prefs } from "~/client/shared/app/entities/Prefs";
 import { AppShell } from "~/client/shared/components/terminal/AppShell";
 import { getDictionary } from "~/client/shared/i18n/dictionary";
+import { useApp } from "~/client/shared/stores/app";
+import { DEFAULT_PREFS } from "~/contracts/http/shared/prefs-cookie";
+
+const mockedPrefs = vi.hoisted(() => ({
+  current: { locale: "en", theme: "dark", palette: "terminal" } as Prefs,
+}));
 
 vi.mock("@tanstack/react-router", () => ({
   Link: ({ children, to, ...props }: { children: ReactNode; to: string }) => (
@@ -15,12 +22,14 @@ vi.mock("@tanstack/react-router", () => ({
 }));
 
 vi.mock("~/client/shared/hooks/usePrefs", () => ({
-  usePrefs: () => ({ locale: "en", theme: "dark" }),
+  usePrefs: () => mockedPrefs.current,
 }));
 
 const dictionary = getDictionary("en");
 
 beforeEach(() => {
+  mockedPrefs.current = { locale: "en", theme: "dark", palette: "terminal" };
+  useApp.setState({ prefs: { ...DEFAULT_PREFS, locale: "en" } });
   vi.stubGlobal(
     "matchMedia",
     vi.fn().mockReturnValue({
@@ -29,6 +38,10 @@ beforeEach(() => {
       removeEventListener: vi.fn(),
     }),
   );
+});
+
+afterEach(() => {
+  delete document.documentElement.dataset.palette;
 });
 
 describe("AppShell", () => {
@@ -97,5 +110,38 @@ describe("AppShell", () => {
       screen.queryByRole("link", { name: dictionary.nav.todo }),
     ).not.toBeInTheDocument();
     expect(screen.getByText("content")).toBeInTheDocument();
+  });
+
+  test("switches the page to the Favo theme from the title bar", async () => {
+    const user = userEvent.setup();
+    render(
+      <AppShell activePath="/todo" dictionary={dictionary} title="Todos">
+        <p>content</p>
+      </AppShell>,
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: dictionary.common.switchToFavoTheme }),
+    );
+
+    expect(document.documentElement.dataset.palette).toBe("favo");
+  });
+
+  test("shows the Favo logo and offers Terminal back while Favo is on", () => {
+    mockedPrefs.current = { locale: "en", theme: "light", palette: "favo" };
+    render(
+      <AppShell activePath="/todo" dictionary={dictionary} title="Todos">
+        <p>content</p>
+      </AppShell>,
+    );
+
+    expect(
+      screen.getByRole("button", {
+        name: dictionary.common.switchToTerminalTheme,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "The Chatbot" }).querySelector("img"),
+    ).toHaveAttribute("src", "/logo-favo-light.svg");
   });
 });

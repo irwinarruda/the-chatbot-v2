@@ -1,22 +1,22 @@
 ---
 name: client-jsx-styleguide
-description: Always load when creating or changing React views in src/client: routes, screens, components, dialogs, forms, layout, responsive behavior, accessibility, shadcn primitives, Tailwind classes, colors and the Favo theme. Also use when the request only says "make this look better", "add a button", "fix the mobile layout" or "change this color".
+description: Always load when creating or changing React views in src/client: routes, screens, components, dialogs, forms, layout, responsive behavior, accessibility, shadcn primitives, Tailwind classes, colors and the Terminal and Favo themes. Also use when the request only says "make this look better", "add a button", "fix the mobile layout" or "change this color".
 ---
 
 # Client JSX styleguide
 
 ## Authority
 
-This skill owns views and visuals. Placement comes from `client-architecture`; state and data from `client-service-styleguide`. `src/client/shared/styles/tailwind.css` is the source of truth for tokens; `references/favo-theme.md` explains them.
+This skill owns views and visuals. Placement comes from `client-architecture`; state and data from `client-service-styleguide`. `src/client/shared/styles/tailwind.css` is the source of truth for tokens; `references/themes.md` explains them.
 
 ## Look
 
-- The interface is a calm app shell in the Favo theme, in the spirit of T3 Code, Codex, Claude Code and Linear: Honey (dark, default) and Wax (light), switched by `data-theme` on `<html>`. `AppShell` puts every signed-in page in one floating window of the same width on a `desk` background: on desktop its sticky title bar holds the brand, every module as a top-level tab and the preference controls; on phones and tablets the window fills the screen and the title bar opens the modules in a bottom sheet. There is no sidebar: the app has few modules, and the window is its identity. Signed-out pages get a centered card. It is text-forward and restrained, not a SaaS dashboard.
+- The interface is a calm app shell, in the spirit of T3 Code, Codex, Claude Code and Linear, in one of two palettes: Terminal (blue-gray with a green accent, the default) or Favo (Honey and Wax). `data-palette` on `<html>` picks the palette and `data-theme` its dark or light variant; both live in the prefs cookie, so the server renders the right one. The logo and favicon follow the palette. `AppShell` puts every signed-in page in one floating window of the same width on a `desk` background: on desktop its sticky title bar holds the brand, every module as a top-level tab and the preference controls; on phones and tablets the window fills the screen and the title bar opens the modules in a bottom sheet. There is no sidebar: the app has few modules, and the window is its identity. Signed-out pages get a centered card. It is text-forward and restrained, not a SaaS dashboard.
 - Hierarchy comes from size and weight in the sans font. Mono is for code, amounts in inputs and the locale chip, not for labels or headings.
 - Lists are one bordered `rounded-xl` card with divider rows: title first, one muted meta line, actions on the right. Page headers are left-aligned with the primary action on the right. The key number of a data screen (net balance, amount left to pay) leads in large type.
 - Empty and no-result states use `ListEmptyState` with a next action; destructive confirmations use `ConfirmDialog` and name the item, never `window.confirm`.
 - Colors come only from role tokens: `background`, `desk`, `card`, `muted`, `popover`, `foreground`, `muted-foreground`, `faint`, `border`, `primary`, `brand`, `success`, `warning`, `info`, `hint`, `destructive`, `syntax-*`. Never a hex, `rgb()`, a Tailwind palette hue or a `dark:` branch; the default palette is switched off and the architecture test rejects color literals in TS.
-- Each color has one job. Honey (`primary`, `brand`) is brand, the active item and the primary action. `success` is a good outcome, `warning` needs attention, `destructive` is a problem or a destructive action, `info` is a link. Most text stays `foreground` or `muted-foreground`.
+- Each color has one job. The palette accent (`primary`, `brand`: green in Terminal, honey in Favo) is brand, the active item and the primary action. `success` is a good outcome, `warning` needs attention, `destructive` is a problem or a destructive action, `info` is a link. Most text stays `foreground` or `muted-foreground`.
 - Tints are opacity on a signal (`bg-destructive/10`, `border-brand/25`), never a new color.
 - Borders and low layers over heavy shadows; overlays and shadows use `scrim`.
 - The logo keeps its shape; only its color follows the theme.
@@ -43,7 +43,7 @@ This skill owns views and visuals. Placement comes from `client-architecture`; s
 ## Accessibility
 
 - Semantic elements and labels; icon-only controls have an accessible name.
-- Focus stays visible (`ring` is Favo accent). Never rely on color alone for a status.
+- Focus stays visible (`ring` is the palette accent). Never rely on color alone for a status.
 - `aria-current="page"` on the active nav item; keyboard and Escape work; motion respects `prefers-reduced-motion`.
 - Body text meets WCAG AA in both variants; `faint` is only for text a reader can ignore.
 
@@ -55,5 +55,5 @@ This skill owns views and visuals. Placement comes from `client-architecture`; s
 
 ## Checklist
 
-1. It works at 390px and 1440px wide, in Honey and Wax.
+1. It works at 390px and 1440px wide, in both palettes, dark and light.
 2. `bun run check` and `bun run test:ui` pass; a view test covers new interaction or conditional rendering.

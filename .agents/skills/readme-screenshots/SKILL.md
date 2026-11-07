@@ -39,7 +39,7 @@ These live at the top of `infra/scripts/screenshots.ts` and in `SceneViewport`. 
 | Viewport   | desktop 1280×800, phone 390×844                                             |
 | Browser    | Playwright's Chromium, `en-US`, `America/Sao_Paulo`, reduced motion         |
 | Clock      | fixed at `DemoNow`, so relative dates and the current month never drift     |
-| App prefs  | `en` and the scene's theme through the `the-chatbot-prefs` cookie           |
+| App prefs  | `en` and the scene's theme through the `the-chatbot-prefs` cookie, on the default Terminal palette |
 | Fonts      | the ones bundled in `public/fonts`, so the machine's fonts do not matter    |
 
 ## Add a picture
@@ -48,7 +48,7 @@ These live at the top of `infra/scripts/screenshots.ts` and in `SceneViewport`. 
 2. Add a scene to `Scenes`, with a `waitFor` text that only appears once the data has loaded.
 3. Run `bun run dev:mock` and open the path to check it by hand.
 4. Run `bun run screenshots <scene>`, and read the image.
-5. Add it to the README with alt text that describes what the picture shows. The hero is `home-honey` and `home-wax` with `#gh-dark-mode-only` and `#gh-light-mode-only`; other pictures use `width="760"`, or `width="380"` inside the workspace table.
+5. Add it to the README with alt text that describes what the picture shows. The hero is `home-dark` and `home-light` with `#gh-dark-mode-only` and `#gh-light-mode-only`; other pictures use `width="760"`, or `width="380"` inside the workspace table.
 
 A scene the README does not use is noise: remove it with its picture.
 

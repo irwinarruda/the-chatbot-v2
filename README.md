@@ -16,8 +16,8 @@
 > One assistant for conversations, tasks, notes, and personal finances.
 
 <p align="center">
-  <img src="docs/assets/home-honey.png#gh-dark-mode-only" alt="The Chatbot home page in the Favo Honey theme: an app window whose title bar holds every workspace as a tab, and a Today row with pending tasks, money left to pay, net balance and notes" width="900" />
-  <img src="docs/assets/home-wax.png#gh-light-mode-only" alt="The Chatbot home page in the Favo Wax theme: an app window whose title bar holds every workspace as a tab, and a Today row with pending tasks, money left to pay, net balance and notes" width="900" />
+  <img src="docs/assets/home-dark.png#gh-dark-mode-only" alt="The Chatbot home page in the dark Terminal theme: an app window whose title bar holds every workspace as a tab, and a Today row with pending tasks, money left to pay, net balance and notes" width="900" />
+  <img src="docs/assets/home-light.png#gh-light-mode-only" alt="The Chatbot home page in the light Terminal theme: an app window whose title bar holds every workspace as a tab, and a Today row with pending tasks, money left to pay, net balance and notes" width="900" />
 </p>
 
 ## What it is
@@ -107,7 +107,7 @@ tests/                   # domain/ contracts/ server/ client/ integration/ and a
 | Todos | Notes |
 | --- | --- |
 | <img src="docs/assets/todos.png" alt="Pending todos sorted by urgency, with overdue and due-today labels, filters and a new task button" width="380" /> | <img src="docs/assets/notes.png" alt="The notes index with three Markdown notes and their previews" width="380" /> |
-| **Cash flow** | **Monthly bills (Wax)** |
+| **Cash flow** | **Monthly bills (light)** |
 | <img src="docs/assets/cash-flow.png" alt="Net balance with this month's in and out, account balances, search and the latest transactions from the finance spreadsheet" width="380" /> | <img src="docs/assets/bills.png" alt="November's bills: money left to pay, progress, totals and the checklist with due-in labels and Pay buttons, in the light theme" width="380" /> |
 
 Every picture above comes from `bun run screenshots`, which runs the web app on demo data (`bun run dev:mock`) and retakes them in one go. See `.agents/skills/readme-screenshots`.
@@ -122,7 +122,7 @@ Every picture above comes from `bun run screenshots`, which runs the web app on 
 | AI runtime | **Pi AI** + **Pi Agent Core** | Provider/model normalization, reasoning configuration, streaming, and the tool loop. |
 | Speech and storage | **OpenAI speech-to-text**, **Cloudflare R2** | Audio transcription and durable media storage. |
 | Integrations | **WhatsApp Business Cloud API**, **Google OAuth**, **Google Sheets** | Messaging, authentication, and finance data. |
-| Interface | **Tailwind CSS v4**, **shadcn/ui**, [Favo theme](https://github.com/irwinarruda/favo-theme) | Responsive windowed UI in Honey (dark) and Wax (light), on accessible primitives. |
+| Interface | **Tailwind CSS v4**, **shadcn/ui** | Responsive windowed UI on accessible primitives, in the blue-gray Terminal theme or the optional [Favo theme](https://github.com/irwinarruda/favo-theme), each dark or light. |
 | Quality | **TypeScript**, **Biome**, **Vitest** | Static checking, formatting/linting, and layered tests. |
 
 ## Running locally

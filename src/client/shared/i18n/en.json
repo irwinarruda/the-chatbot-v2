@@ -20,7 +20,9 @@
     "skipToContent": "Skip to content",
     "showMonetaryValues": "Show monetary values",
     "switchToDarkTheme": "Use dark theme",
-    "switchToLightTheme": "Use light theme"
+    "switchToLightTheme": "Use light theme",
+    "switchToFavoTheme": "Use Favo theme",
+    "switchToTerminalTheme": "Use Terminal theme"
   },
   "nav": {
     "home": "Home",
