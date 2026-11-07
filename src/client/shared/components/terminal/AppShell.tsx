@@ -98,7 +98,7 @@ function AppNavTab({
       className={cn(
         "flex h-8 shrink-0 items-center rounded-md px-3 text-muted-foreground text-sm outline-none transition-colors",
         "hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50",
-        "aria-[current=page]:bg-brand/12 aria-[current=page]:font-medium aria-[current=page]:text-primary",
+        "aria-[current=page]:bg-brand/12 aria-[current=page]:font-medium aria-[current=page]:text-brand-text",
       )}
     >
       {link.label}
@@ -125,13 +125,13 @@ function AppNavItem({
       className={cn(
         "flex min-h-11 items-center gap-3 rounded-lg px-3 text-foreground text-sm outline-none transition-colors",
         "hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50",
-        "aria-[current=page]:bg-brand/12 aria-[current=page]:font-medium aria-[current=page]:text-primary",
+        "aria-[current=page]:bg-brand/12 aria-[current=page]:font-medium aria-[current=page]:text-brand-text",
       )}
     >
       <Icon
         className={cn(
           "size-4 shrink-0",
-          isActive ? "text-primary" : "text-muted-foreground",
+          isActive ? "text-brand-text" : "text-muted-foreground",
         )}
         aria-hidden="true"
       />
@@ -256,7 +256,7 @@ export function AppShell({
   const skipLink = (
     <a
       href="#main-content"
-      className="fixed top-3 left-3 z-60 -translate-y-24 rounded-md border border-brand/35 bg-card px-3 py-2 text-primary text-xs shadow-lg transition-transform focus:translate-y-0 motion-reduce:transition-none"
+      className="fixed top-3 left-3 z-60 -translate-y-24 rounded-md border border-brand/35 bg-card px-3 py-2 text-brand-text text-xs shadow-lg transition-transform focus:translate-y-0 motion-reduce:transition-none"
     >
       {skipToContentLabel}
     </a>

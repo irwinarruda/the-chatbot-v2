@@ -46,7 +46,7 @@
 
   Terminal, the app's original cool blue-gray and green palette, is the default.
   Favo (https://github.com/irwinarruda/favo-theme) is chosen with
-  [data-palette="favo"]: Honey (dark) and Wax (light).
+  [data-palette="favo"]: its calm gray pair, Smoke (dark) and Veil (light).
   [data-theme="light"] picks the light variant of either palette.
 
   Each palette writes every color once as a `--palette-*` variable named after
@@ -143,6 +143,7 @@
   --color-hint: var(--hint);
   --color-faint: var(--faint);
   --color-brand: var(--brand);
+  --color-brand-text: var(--brand-text);
   --color-scrim: var(--scrim);
   --color-code: var(--code-background);
 
@@ -269,6 +270,7 @@
     --hint: var(--palette-type);
     --faint: var(--palette-faint);
     --brand: var(--palette-accent);
+    --brand-text: var(--palette-accent-text);
     /* Overlays, shadows and code blocks sit on float; light variants change it */
     --scrim: var(--palette-float);
     --code-background: var(--palette-float);
@@ -294,6 +296,7 @@
     --palette-comment: #8494a7;
     --palette-foreground: #f8fafc;
     --palette-accent: #50dfaa;
+    --palette-accent-text: #50dfaa;
     --palette-fill: #50dfaa;
     --palette-fill-hover: #3ab888;
     --palette-on-fill: #072019;
@@ -319,6 +322,7 @@
     --palette-comment: #5c6676;
     --palette-foreground: #1c2028;
     --palette-accent: #0b7d4e;
+    --palette-accent-text: #0b7d4e;
     --palette-fill: #0b7d4e;
     --palette-fill-hover: #0a7248;
     --palette-on-fill: #f7fbf9;
@@ -333,17 +337,18 @@
   }
 
   [data-palette="favo"] {
-    /* Favo Honey (palette.json, honey) */
-    --palette-background: #14110b;
-    --palette-panel: #1b170f;
-    --palette-raised: #221d14;
-    --palette-float: #0f0d08;
-    --palette-border: #3a3122;
-    --palette-selection: #3d2e0f;
-    --palette-faint: #6e6250;
-    --palette-comment: #a3937a;
-    --palette-foreground: #f3e7cf;
+    /* Favo Smoke (favo-theme src/palette.ts, smoke) */
+    --palette-background: #121110;
+    --palette-panel: #191715;
+    --palette-raised: #1f1d1b;
+    --palette-float: #0e0d0c;
+    --palette-border: #35322e;
+    --palette-selection: #3b270b;
+    --palette-faint: #78746e;
+    --palette-comment: #99958d;
+    --palette-foreground: #ebe8e1;
     --palette-accent: #f5a623;
+    --palette-accent-text: #f5a623;
     --palette-fill: #f5a623;
     --palette-fill-hover: #ffc857;
     --palette-on-fill: #14110b;
@@ -358,20 +363,21 @@
   }
 
   [data-palette="favo"][data-theme="light"] {
-    /* Favo Wax (palette.json, wax) */
-    --palette-background: #fbf5e6;
-    --palette-panel: #f4ebd5;
-    --palette-raised: #ede2c6;
-    --palette-float: #fffaef;
-    --palette-border: #dccdaa;
-    --palette-selection: #f6dfa6;
-    --palette-faint: #9c8d73;
-    --palette-comment: #857559;
-    --palette-foreground: #33291a;
+    /* Favo Veil (favo-theme src/palette.ts, veil) */
+    --palette-background: #f7f5f1;
+    --palette-panel: #eeebe5;
+    --palette-raised: #e6e2da;
+    --palette-float: #fcfaf7;
+    --palette-border: #d2cec4;
+    --palette-selection: #f9d5a8;
+    --palette-faint: #8a867e;
+    --palette-comment: #67635c;
+    --palette-foreground: #2d2a26;
     --palette-accent: #b8720a;
-    --palette-fill: #8f5600;
-    --palette-fill-hover: #7a4900;
-    --palette-on-fill: #fbf5e6;
+    --palette-accent-text: #8f5600;
+    --palette-fill: #f5a623;
+    --palette-fill-hover: #e39600;
+    --palette-on-fill: #14110b;
     --palette-warning: #8f5600;
     --palette-keyword: #915100;
     --palette-function: #1f62a4;
@@ -380,17 +386,6 @@
     --palette-constant: #7145b5;
     --palette-param: #aa3069;
     --palette-regex: #c43e27;
-
-    /*
-      Wax `comment` is 3.8:1 on panel and 3.5:1 on raised, below AA for small
-      text. SPEC allows `foreground` at 70% for secondary text on panels, which
-      gives 5.0:1 and 4.7:1.
-    */
-    --muted-foreground: color-mix(
-      in srgb,
-      var(--palette-foreground) 70%,
-      transparent
-    );
   }
 
   html {

@@ -35,7 +35,7 @@ export function NoteAiComposer({
             className="mb-2 flex items-center gap-2 font-medium text-foreground text-sm"
             htmlFor="note-ai-instruction"
           >
-            <Sparkles className="size-4 text-primary" />
+            <Sparkles className="size-4 text-brand-text" />
             {t.aiLabel}
           </label>
           <div className="flex flex-col gap-2 md:flex-row md:items-end">

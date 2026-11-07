@@ -129,7 +129,7 @@ export function UploadTokenCard() {
                   className="size-4 text-muted-foreground transition-transform data-[open=true]:rotate-90 motion-reduce:transition-none"
                   data-open={isOpen}
                 />
-                <KeyRound className="size-4 text-primary" />
+                <KeyRound className="size-4 text-brand-text" />
                 {t.tokenTitle}
               </button>
             </CardTitle>

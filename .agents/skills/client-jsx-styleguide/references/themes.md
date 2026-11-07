@@ -3,7 +3,7 @@
 The web app has two palettes, each with a dark and a light variant:
 
 - **Terminal**, the default: the app's original cool blue-gray surfaces with a green accent.
-- **Favo**, the alternative: [favo-theme](https://github.com/irwinarruda/favo-theme)'s Honey (dark) and Wax (light). Its `SPEC.md` and `palette.json` are the source of truth for those values.
+- **Favo**, the alternative: [favo-theme](https://github.com/irwinarruda/favo-theme)'s calm gray pair, Smoke (dark) and Veil (light). They are Honey and Wax with warm gray surfaces and honey buttons; favo-theme derives them in `src/palette.ts` from `palette.json`, and its `SPEC.md` ("Smoke and Veil") is the source of truth for those values.
 
 ## Choosing one
 
@@ -17,7 +17,7 @@ In source order, inside `@layer base`:
 
 1. `:root`: the shadcn variables (`--background`, `--primary`, ...) and the app's signal variables, each pointing at a role. They are written once and shared by both palettes.
 2. `[data-theme="light"]`: what every light variant changes besides colors: `color-scheme`, `scrim` and `code`.
-3. `--palette-*`: each palette writes every color once, named after a Favo role. `:root` holds Terminal dark, `[data-theme="light"]` Terminal light, `[data-palette="favo"]` Honey and `[data-palette="favo"][data-theme="light"]` Wax. All four blocks set the same 21 roles, so no variant inherits a color from another; `tests/client/shared/ThemePalettes.test.ts` fails otherwise. No other place holds a hex value.
+3. `--palette-*`: each palette writes every color once, named after a Favo role. `:root` holds Terminal dark, `[data-theme="light"]` Terminal light, `[data-palette="favo"]` Smoke and `[data-palette="favo"][data-theme="light"]` Veil. All four blocks set the same 22 roles, so no variant inherits a color from another; `tests/client/shared/ThemePalettes.test.ts` fails otherwise. No other place holds a hex value.
 
 `@theme inline` then exposes the variables to Tailwind as `bg-*`, `text-*`, `border-*`. Tailwind's default palette is disabled (`--color-*: initial`), so a hue class renders nothing.
 
@@ -32,11 +32,12 @@ In source order, inside `@layer base`:
 | `popover`                                        | `float`                                    | `#080b11` / `#faf8f5`              | menus, popovers, dialogs                     |
 | `accent`                                         | `accent` at 12% over `raised`              |                                    | hover surface of menu items                  |
 | `foreground`                                     | `foreground`                               | `#f8fafc` / `#1c2028`              | text                                         |
-| `muted-foreground`                               | `comment` (foreground at 70% in Wax)       | `#8494a7` / `#5c6676`              | secondary text, kept AA on panels            |
+| `muted-foreground`                               | `comment`                                  | `#8494a7` / `#5c6676`              | secondary text, kept AA on panels            |
 | `faint`                                          | `faint`                                    | `#5c6676` / `#8494a7`              | ignorable hints only                         |
 | `border`, `input`                                | `border`                                   | `#282f3c` / `#d1cdc6`              | borders                                      |
-| `primary`, `primary-foreground`, `primary-hover` | `fill`, `onFill`, `fillHover`              | green                              | primary actions, brand text                  |
-| `brand`, `ring`                                  | `accent`                                   | green                              | active indicators, focus                     |
+| `primary`, `primary-foreground`, `primary-hover` | `fill`, `onFill`, `fillHover`              | green                              | primary buttons and other solid brand fills  |
+| `brand-text`                                     | `accentText`                               | green                              | brand-colored text and icons                 |
+| `brand`, `ring`                                  | `accent`                                   | green                              | active indicators, tints, focus              |
 | `success`                                        | `string`                                   | green                              | paid, done, connected                        |
 | `warning`                                        | `warning`                                  | amber                              | pending, unpaid, unsaved                     |
 | `info`                                           | `function`                                 | blue                               | links, informational tags                    |
@@ -46,7 +47,7 @@ In source order, inside `@layer base`:
 | `code`                                           | `float` (dark), `panel` (light)            |                                    | code block surface                           |
 | `syntax-*`                                       | the seven code colors                      | keyword green, constant magenta    | prose, code and fixed values such as amounts |
 
-Terminal dark's `float` is one step below its background, the way Honey's is, so dialogs and menus separate from the page and the overlay dims it. Terminal light's signal text (`warning`, `info`, `hint`, `success`, `destructive`) uses the old theme's darker text shades, or one step darker in the same hue where it had none, so it stays AA on every surface. Terminal's foreground is its old bright heading color, not its softer body gray, because the shell uses one `foreground` for titles and body and leans on the gap to `muted-foreground` for hierarchy. In Wax, `warning` and `primary` share a hex, so never place a warning badge next to a primary one when the difference must read.
+Terminal dark's `float` is one step below its background, the way Smoke's is, so dialogs and menus separate from the page and the overlay dims it. Terminal light's signal text (`warning`, `info`, `hint`, `success`, `destructive`) uses the old theme's darker text shades, or one step darker in the same hue where it had none, so it stays AA on every surface. Terminal's foreground is its old bright heading color, not its softer body gray, because the shell uses one `foreground` for titles and body and leans on the gap to `muted-foreground` for hierarchy. Brand-colored text is always `text-brand-text`, never `text-primary`: Veil's `fill` is bright honey for buttons with near-black text, which is 1.7:1 as text on its surfaces, while its `accentText` is 4.6:1 or better. In Veil, `warning` and `brand-text` share a hex, so never place a warning badge next to brand text when the difference must read.
 
 ## Prose
 

@@ -254,7 +254,7 @@ export function TodoDetailDialog({
             >
               <CardHeader className="px-3">
                 <CardTitle className="flex items-center gap-2 font-medium text-2xs text-muted-foreground uppercase tracking-wide">
-                  <Volume2 className="size-3.5 text-primary" />
+                  <Volume2 className="size-3.5 text-brand-text" />
                   {t.audioLabel}
                 </CardTitle>
               </CardHeader>
