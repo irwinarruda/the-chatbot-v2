@@ -27,7 +27,7 @@ Always create migration files with `bun run migrate:create -- <name>`, then edit
 - Services hold the rules; repositories hold the SQL; controllers and AI tools only parse, call one service and map.
 - A server module imports only lower levels; a flow that changes two modules lives in a higher one.
 - On the client, views call Zustand services, services call repositories and gateways. Everything under `app/` knows nothing about React.
-- Colors come from the Favo theme tokens in `src/client/shared/styles/tailwind.css`, never from a literal.
+- Colors come from the theme tokens in `src/client/shared/styles/tailwind.css`, never from a literal.
 - No comments in production code. No `../`. No barrels. No TS `enum`. `undefined`, never `null`, outside SQL and protocol boundaries.
 - `tests/architecture.test.ts` enforces the structural rules above. Change it together with the skill that owns the rule.
 

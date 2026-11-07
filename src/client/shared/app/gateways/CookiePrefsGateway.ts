@@ -10,6 +10,7 @@ export const cookiePrefsGateway: PrefsGateway = {
     if (typeof document === "undefined") return;
     document.documentElement.lang = prefs.locale;
     document.documentElement.dataset.theme = prefs.theme;
+    document.documentElement.dataset.palette = prefs.palette;
     CookieParser.set(PREFS_COOKIE_NAME, JSON.stringify(prefs), {
       maxAge: PREFS_COOKIE_MAX_AGE_SECONDS,
     });

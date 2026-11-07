@@ -13,7 +13,6 @@ import { type ChatActivityLabels, GenerationTrace } from "./ChatActivity";
 interface ChatMessageProps {
   dayLabel?: string;
   message: ChatMessageEntity;
-  theme: "dark" | "light";
   locale: string;
   isSending: boolean;
   youLabel: string;
@@ -46,7 +45,6 @@ export const ChatMessage = memo(function ChatMessage({
 
 function ChatMessageBody({
   message,
-  theme,
   locale,
   isSending,
   youLabel,
@@ -92,7 +90,6 @@ function ChatMessageBody({
           )}
           <MessageContent
             message={message}
-            theme={theme}
             isAudio={isAudio}
             isSending={isSending}
             showMoreLabel={showMoreLabel}
@@ -134,7 +131,6 @@ function ChatMessageBody({
       <div className="rounded-2xl rounded-tr-md border border-border/60 bg-muted px-4 py-2.5">
         <MessageContent
           message={message}
-          theme={theme}
           isAudio={isAudio}
           isSending={isSending}
           showMoreLabel={showMoreLabel}
@@ -148,7 +144,6 @@ function ChatMessageBody({
 
 function MessageContent({
   message,
-  theme,
   isAudio,
   isSending,
   showMoreLabel,
@@ -156,7 +151,6 @@ function MessageContent({
   onButtonReply,
 }: {
   message: ChatMessageEntity;
-  theme: "dark" | "light";
   isAudio: boolean;
   isSending: boolean;
   showMoreLabel: string;
@@ -166,7 +160,7 @@ function MessageContent({
   if (isAudio && message.mediaUrl) {
     return (
       <div className="flex flex-col gap-2">
-        <AudioWaveform src={message.mediaUrl} theme={theme} />
+        <AudioWaveform src={message.mediaUrl} />
         {message.transcript && (
           <AudioTranscript
             text={message.transcript}

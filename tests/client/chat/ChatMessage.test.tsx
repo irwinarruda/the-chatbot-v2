@@ -85,7 +85,6 @@ describe("ChatMessage", () => {
         copiedLabel="Copied"
         copyLabel="Copy reply"
         message={message}
-        theme="dark"
         locale="en"
         isSending={false}
         youLabel="You"

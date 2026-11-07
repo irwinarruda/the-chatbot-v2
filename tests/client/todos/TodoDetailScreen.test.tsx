@@ -17,7 +17,7 @@ const { appState, navigate } = vi.hoisted(() => ({
 
 vi.mock("@tanstack/react-router", () => ({ useNavigate: () => navigate }));
 vi.mock("~/client/shared/hooks/usePrefs", () => ({
-  usePrefs: () => ({ locale: "en", theme: "dark" }),
+  usePrefs: () => ({ locale: "en", theme: "dark", palette: "terminal" }),
 }));
 vi.mock("~/client/shared/stores/app", () => ({
   useApp: (selector: (state: typeof appState) => unknown) => selector(appState),
