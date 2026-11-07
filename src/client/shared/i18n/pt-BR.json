@@ -359,7 +359,7 @@
     "latestHint": "Só a última entrada pode ser removida",
     "transferShort": "Transferir",
     "syncShort": "Sincronizar",
-    "monthIncome": "Entradas · {month}",
+    "monthIncome": "Entradas",
     "monthSpending": "Saídas",
     "monthNet": "Saldo do mês",
     "trackedBalanceLabel": "Registrado:",

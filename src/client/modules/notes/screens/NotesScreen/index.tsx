@@ -101,16 +101,12 @@ export function NotesScreen({ search }: { search: NotesSearchDTO }) {
     >
       {!hasSelectedNote && (
         <TerminalPageHeader
-          actions={
-            <Button
-              disabled={isNoteSubmitting}
-              onClick={onCreateNote}
-              type="button"
-            >
-              <Plus />
-              {t.createAction}
-            </Button>
-          }
+          primaryAction={{
+            icon: Plus,
+            isDisabled: isNoteSubmitting,
+            label: t.createAction,
+            onClick: onCreateNote,
+          }}
           heading={t.heading}
           subtitle={t.subtitle}
         />

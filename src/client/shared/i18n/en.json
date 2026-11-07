@@ -359,7 +359,7 @@
     "latestHint": "Only the latest entry can be removed",
     "transferShort": "Transfer",
     "syncShort": "Sync",
-    "monthIncome": "In · {month}",
+    "monthIncome": "In",
     "monthSpending": "Out",
     "monthNet": "Net this month",
     "trackedBalanceLabel": "Tracked:",
