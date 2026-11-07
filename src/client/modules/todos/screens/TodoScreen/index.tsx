@@ -123,12 +123,11 @@ export function TodoScreen({ search }: { search: TodoSearch }) {
       showLogout
     >
       <TerminalPageHeader
-        actions={
-          <Button onClick={() => onOpenCreate()} type="button">
-            <Plus />
-            {t.createPrompt}
-          </Button>
-        }
+        primaryAction={{
+          icon: Plus,
+          label: t.createPrompt,
+          onClick: () => onOpenCreate(),
+        }}
         heading={t.heading}
         subtitle={t.subtitle}
       />

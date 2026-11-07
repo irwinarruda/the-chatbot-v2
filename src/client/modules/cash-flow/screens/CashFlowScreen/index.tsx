@@ -191,38 +191,28 @@ export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
       title={t.windowTitle}
     >
       <TerminalPageHeader
-        actions={
-          <>
-            <Button
-              aria-label={t.transferAction}
-              disabled={isBootstrapping || isSubmitting}
-              onClick={() => onOpenTransfer()}
-              type="button"
-              variant="outline"
-            >
-              <ArrowRightLeft />
-              {t.transferShort}
-            </Button>
-            <Button
-              aria-label={t.syncAction}
-              disabled={isBootstrapping || dashboard.bankAccounts.length === 0}
-              onClick={() => setIsSyncOpen(true)}
-              type="button"
-              variant="outline"
-            >
-              <RefreshCw />
-              {t.syncShort}
-            </Button>
-            <Button
-              disabled={isBootstrapping || dashboard.bankAccounts.length === 0}
-              onClick={() => setIsCreateOpen(true)}
-              type="button"
-            >
-              <Plus />
-              {t.newTransaction}
-            </Button>
-          </>
-        }
+        primaryAction={{
+          icon: Plus,
+          isDisabled: isBootstrapping || dashboard.bankAccounts.length === 0,
+          label: t.newTransaction,
+          onClick: () => setIsCreateOpen(true),
+        }}
+        secondaryActions={[
+          {
+            icon: ArrowRightLeft,
+            isDisabled: isBootstrapping || isSubmitting,
+            label: t.transferAction,
+            onClick: () => onOpenTransfer(),
+            shortLabel: t.transferShort,
+          },
+          {
+            icon: RefreshCw,
+            isDisabled: isBootstrapping || dashboard.bankAccounts.length === 0,
+            label: t.syncAction,
+            onClick: () => setIsSyncOpen(true),
+            shortLabel: t.syncShort,
+          },
+        ]}
         heading={t.heading}
         subtitle={t.subtitle}
       />
@@ -275,10 +265,11 @@ export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
               </MonetaryValue>
             </p>
           </div>
-          <dl className="m-0 grid grid-cols-3 gap-3 border-border border-t px-5 py-3">
+          <dl className="m-0 grid grid-cols-3 gap-2 border-border border-t px-5 py-3 sm:gap-3">
             <div className="min-w-0">
               <dt className="truncate text-muted-foreground text-xs">
-                {t.monthIncome.replace("{month}", monthLabel)}
+                {t.monthIncome}
+                <span className="hidden sm:inline"> · {monthLabel}</span>
               </dt>
               <dd className="m-0 font-medium text-sm text-success tabular-nums">
                 <MonetaryValue

@@ -11,7 +11,6 @@ import {
 import { useEffect, useState } from "react";
 import { AppShell } from "~/client/shared/components/terminal/AppShell";
 import { TerminalPageHeader } from "~/client/shared/components/terminal/TerminalPageHeader";
-import { Button } from "~/client/shared/components/ui/button";
 import { useDictionary } from "~/client/shared/hooks/useDictionary";
 import { useApp } from "~/client/shared/stores/app";
 
@@ -57,12 +56,12 @@ export function HomeScreen() {
       title={t.windowTitle}
     >
       <TerminalPageHeader
-        actions={
-          <Button nativeButton={false} render={<Link to="/chat" />}>
-            <MessageSquareText />
-            {t.primaryAction}
-          </Button>
-        }
+        primaryAction={{
+          icon: MessageSquareText,
+          label: t.primaryAction,
+          link: <Link to="/chat" />,
+          shouldKeepLabel: true,
+        }}
         heading={t.heading}
         subtitle={t.subtitle}
       />
