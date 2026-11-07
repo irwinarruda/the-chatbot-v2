@@ -314,14 +314,14 @@
     --palette-fill: #0b7d4e;
     --palette-fill-hover: #0a7248;
     --palette-on-fill: #f7fbf9;
-    --palette-warning: #a06000;
+    --palette-warning: #8a5200;
     --palette-keyword: #0b7d4e;
-    --palette-function: #2563eb;
-    --palette-type: #067a96;
-    --palette-string: #0b7d4e;
+    --palette-function: #1d4ed8;
+    --palette-type: #0b6b85;
+    --palette-string: #0a7248;
     --palette-constant: #7c4ddb;
     --palette-param: #daa520;
-    --palette-regex: #ef4444;
+    --palette-regex: #b91c1c;
 
     /* Light variants shadow with foreground and put code on panel */
     --scrim: var(--palette-foreground);

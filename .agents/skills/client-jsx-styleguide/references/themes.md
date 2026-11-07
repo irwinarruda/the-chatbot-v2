@@ -42,7 +42,7 @@ The logo and favicon follow the palette: `public/logo.svg`, `public/logo-light.s
 | `code`                                           | `float` (dark), `panel` (light)            |                                    | code block surface                           |
 | `syntax-*`                                       | the seven code colors                      | keyword green, constant magenta    | prose, code and fixed values such as amounts |
 
-Terminal's foreground is its old bright heading color, not its softer body gray, because the shell uses one `foreground` for titles and body and leans on the gap to `muted-foreground` for hierarchy. In Wax, `warning` and `primary` share a hex, so never place a warning badge next to a primary one when the difference must read.
+Terminal light's signal text (`warning`, `info`, `hint`, `success`, `destructive`) uses the old theme's darker text shades, or one step darker in the same hue where it had none, so it stays AA on every surface. Terminal's foreground is its old bright heading color, not its softer body gray, because the shell uses one `foreground` for titles and body and leans on the gap to `muted-foreground` for hierarchy. In Wax, `warning` and `primary` share a hex, so never place a warning badge next to a primary one when the difference must read.
 
 ## Prose
 

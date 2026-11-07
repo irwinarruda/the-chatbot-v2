@@ -436,7 +436,6 @@ export function ChatScreen() {
                       copyLabel={t.copyAction}
                       dayLabel={dayLabel}
                       message={message}
-                      theme={prefs.theme}
                       locale={prefs.locale}
                       isSending={isChatSubmitting}
                       youLabel={t.you}

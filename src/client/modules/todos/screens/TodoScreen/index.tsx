@@ -243,7 +243,6 @@ export function TodoScreen({ search }: { search: TodoSearch }) {
         onSave={onCreateTodo}
         open={isCreateOpen}
         t={t}
-        theme={prefs.theme}
       />
       <Outlet />
     </AppShell>

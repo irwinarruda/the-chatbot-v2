@@ -278,7 +278,7 @@ export function AppShell({
             <div className="flex items-center gap-1">
               {privacyControl}
               {localeControl}
-              {paletteControl}
+              <div className="hidden sm:flex">{paletteControl}</div>
               {themeControl}
             </div>
           </header>

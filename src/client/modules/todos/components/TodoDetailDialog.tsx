@@ -42,7 +42,6 @@ export function TodoDetailDialog({
   onSave,
   open,
   t,
-  theme,
   todo,
 }: {
   initialName?: string;
@@ -58,7 +57,6 @@ export function TodoDetailDialog({
   }) => void;
   open: boolean;
   t: Dictionary["todoPage"];
-  theme: "dark" | "light";
   todo?: TodoDTO;
 }) {
   const prefs = usePrefs();
@@ -262,7 +260,7 @@ export function TodoDetailDialog({
               </CardHeader>
               <CardContent className="space-y-3 px-3">
                 {source.mediaUrl ? (
-                  <AudioWaveform src={source.mediaUrl} theme={theme} />
+                  <AudioWaveform src={source.mediaUrl} />
                 ) : null}
                 {source.transcript ? (
                   <div>

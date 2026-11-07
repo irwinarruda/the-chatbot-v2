@@ -4,10 +4,10 @@ import WaveSurfer from "wavesurfer.js";
 import { Button } from "~/client/shared/components/ui/button";
 import { Skeleton } from "~/client/shared/components/ui/skeleton";
 import { useDictionary } from "~/client/shared/hooks/useDictionary";
+import { usePrefs } from "~/client/shared/hooks/usePrefs";
 
 interface AudioWaveformProps {
   src: string;
-  theme?: "dark" | "light";
 }
 
 function readCanvasColorsFromTheme(element: HTMLElement) {
@@ -20,8 +20,9 @@ function readCanvasColorsFromTheme(element: HTMLElement) {
   };
 }
 
-export function AudioWaveform({ src, theme = "dark" }: AudioWaveformProps) {
+export function AudioWaveform({ src }: AudioWaveformProps) {
   const dictionary = useDictionary();
+  const { theme, palette } = usePrefs();
   const [container, setContainer] = useState<HTMLDivElement | undefined>(
     undefined,
   );
@@ -75,7 +76,7 @@ export function AudioWaveform({ src, theme = "dark" }: AudioWaveformProps) {
       instance.destroy();
       setWavesurfer(undefined);
     };
-  }, [container, src, theme]);
+  }, [container, src, theme, palette]);
 
   return (
     <div className="flex w-55 min-w-0 max-w-full items-center gap-2.5">

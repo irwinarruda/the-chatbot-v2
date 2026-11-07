@@ -59,16 +59,16 @@ export const Route = createRootRoute({
 });
 
 function RootDocument({ children }: { children: ReactNode }) {
-  const prefs = Route.useRouteContext();
-  const { palette } = usePrefs();
+  const routePrefs = Route.useRouteContext();
+  const prefs = usePrefs();
   const suppressHydrationWarning = import.meta.env.DEV;
   const hydratePrefs = useApp((state) => state.hydratePrefs);
   const hydrateMoneyPrivacy = useApp((state) => state.hydrateMoneyPrivacy);
 
   useEffect(() => {
-    hydratePrefs(prefs);
+    hydratePrefs(routePrefs);
     hydrateMoneyPrivacy();
-  }, [hydrateMoneyPrivacy, hydratePrefs, prefs]);
+  }, [hydrateMoneyPrivacy, hydratePrefs, routePrefs]);
 
   return (
     <html
@@ -78,7 +78,7 @@ function RootDocument({ children }: { children: ReactNode }) {
     >
       <head>
         <HeadContent />
-        <link rel="icon" href={Favicons[palette]} />
+        <link rel="icon" href={Favicons[prefs.palette]} />
         <link
           rel="preload"
           href="/fonts/jetbrains-mono-latin.woff2"
