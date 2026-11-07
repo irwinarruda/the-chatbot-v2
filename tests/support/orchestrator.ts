@@ -72,6 +72,7 @@ export class Orquestrator {
   migrationService: MigrationService;
   aiToolService: ToolExecutor;
   aiGateway: TestAiChatGateway;
+  cashFlowSpreadsheetGateway: TestCashFlowSpreadsheetGateway;
   googleAuthGateway: TestAuthGateway;
   webMessagingGateway: TestWebMessagingGateway;
   whatsAppMessagingGateway: TestWhatsAppMessagingGateway;
@@ -90,6 +91,9 @@ export class Orquestrator {
     this.openAiConfig = this.config.openAi;
     this.jwtConfig = this.config.jwt;
     this.aiGateway = new TestAiChatGateway();
+    this.cashFlowSpreadsheetGateway = new TestCashFlowSpreadsheetGateway(
+      this.googleSheetsConfig,
+    );
     this.googleAuthGateway = new TestAuthGateway(this.googleConfig);
     this.webMessagingGateway = new TestWebMessagingGateway();
     this.whatsAppMessagingGateway = new TestWhatsAppMessagingGateway();
@@ -98,9 +102,7 @@ export class Orquestrator {
       {
         database: this.database,
         aiChat: this.aiGateway,
-        cashFlowSpreadsheet: new TestCashFlowSpreadsheetGateway(
-          this.googleSheetsConfig,
-        ),
+        cashFlowSpreadsheet: this.cashFlowSpreadsheetGateway,
         googleAuth: this.googleAuthGateway,
         migrations: new NodePgMigrationsGateway(
           this.database,
@@ -128,15 +130,35 @@ export class Orquestrator {
   }
 
   async wipeDatabase(): Promise<void> {
-    await this.database.sql`DROP SCHEMA public CASCADE`;
+    await this.database.sql`DROP SCHEMA IF EXISTS public CASCADE`;
     await this.database.sql`CREATE SCHEMA public`;
   }
 
-  async clearDatabase(): Promise<void> {
+  async rebuildDatabase(): Promise<void> {
     await this.wipeDatabase();
     await this.migrationService.runPendingMigrations(
       this.authConfig.hashPassword,
     );
+  }
+
+  async clearDatabase(): Promise<void> {
+    if ((await this.migrationService.listPendingMigrations()).length > 0) {
+      await this.rebuildDatabase();
+      return;
+    }
+    await this.truncateTables();
+  }
+
+  private async truncateTables(): Promise<void> {
+    const tables = await this.database.sql<{ tablename: string }[]>`
+      SELECT tablename FROM pg_tables
+      WHERE schemaname = 'public' AND tablename <> 'pgmigrations'
+    `;
+    if (tables.length === 0) return;
+    await this.database.sql`
+      TRUNCATE ${this.database.sql(tables.map((table) => table.tablename))}
+      RESTART IDENTITY CASCADE
+    `;
   }
 
   async createUser(options?: {
@@ -258,6 +280,7 @@ export let orquestrator: Orquestrator;
 
 beforeAll(async () => {
   orquestrator = new Orquestrator();
+  await orquestrator.rebuildDatabase();
 });
 
 afterAll(async () => {

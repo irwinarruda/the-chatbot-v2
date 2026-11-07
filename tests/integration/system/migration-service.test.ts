@@ -24,7 +24,7 @@ function rollbackCountFrom(migrationName: string): number {
   return migrationNames.length - migrationIndex;
 }
 
-describe("MigrationService", () => {
+describe("MigrationService", { timeout: 120_000 }, () => {
   test("testMigration", async () => {
     await orquestrator.wipeDatabase();
     const migrationCount = listMigrationNames().length;

@@ -41,6 +41,8 @@ Levels, cheapest first:
 
 A fake implements the production interface and nothing more. Never let a test select a live provider. Always `await expect(...).rejects`; an unawaited one passes silently. Integration tests run serially and own their schema reset.
 
+The orchestrator migrates a fresh schema once per file in its `beforeAll`, and `orquestrator.clearDatabase()` only truncates the tables. `bun run test:prev` runs the same suite in CI against the hosted preview database, where every query is a network round trip, so build bulk data through the gateway double or one query, never a loop of service calls. A test or hook gets 60 seconds. A test that needs more is too slow and gets fixed; only the migration tests raise the limit.
+
 ## Working references
 
 - `src/server/modules/todos/services/todo.service.ts` with `repositories/todo.repository.ts`: a service over a repository, hydrating across modules.
@@ -52,3 +54,4 @@ A fake implements the production interface and nothing more. Never let a test se
 1. A new external call goes through a gateway, with a test double.
 2. A new query goes in the owning repository; the service has no SQL.
 3. The test proves the rule through a public method, at the cheapest level that can.
+4. An integration test makes a handful of queries, not hundreds, so it passes over a slow link to the preview database.

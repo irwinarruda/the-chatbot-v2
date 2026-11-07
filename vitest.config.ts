@@ -11,8 +11,8 @@ export default defineConfig(({ mode = "test" }) => {
       environment: "node",
       include: ["tests/**/*.test.ts"],
       fileParallelism: false,
-      hookTimeout: 120000,
-      testTimeout: 120000,
+      hookTimeout: 60_000,
+      testTimeout: 60_000,
       coverage: {
         include: [
           "src/domain/**/*.ts",
