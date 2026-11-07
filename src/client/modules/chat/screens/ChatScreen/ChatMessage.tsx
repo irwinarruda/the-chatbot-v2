@@ -201,7 +201,7 @@ function MessageContent({
   if (message.type === "command") {
     return (
       <p className="m-0 font-mono text-base text-syntax-function leading-7">
-        <span aria-hidden="true" className="mr-2 text-primary">
+        <span aria-hidden="true" className="mr-2 text-brand-text">
           $
         </span>
         {message.text}

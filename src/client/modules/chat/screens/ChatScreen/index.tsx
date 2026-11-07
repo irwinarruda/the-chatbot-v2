@@ -361,14 +361,14 @@ export function ChatScreen() {
             <EmptyHeader>
               <EmptyMedia
                 variant="icon"
-                className="size-10 border border-brand/20 bg-brand/10 text-primary"
+                className="size-10 border border-brand/20 bg-brand/10 text-brand-text"
               >
                 <MessageSquare className="size-4" aria-hidden="true" />
               </EmptyMedia>
               <EmptyDescription className="m-0 text-base text-muted-foreground leading-7">
                 <span
                   aria-hidden="true"
-                  className="mr-1 font-mono font-semibold text-primary"
+                  className="mr-1 font-mono font-semibold text-brand-text"
                 >
                   $
                 </span>
@@ -465,7 +465,7 @@ export function ChatScreen() {
               label={t.scrollToLatest}
               variant="outline"
               size="icon"
-              className="pointer-events-auto rounded-full border-border bg-muted/95 p-0 text-muted-foreground shadow-lg shadow-scrim/15 backdrop-blur-sm hover:border-brand/35 hover:bg-brand/12 hover:text-primary"
+              className="pointer-events-auto rounded-full border-border bg-muted/95 p-0 text-muted-foreground shadow-lg shadow-scrim/15 backdrop-blur-sm hover:border-brand/35 hover:bg-brand/12 hover:text-brand-text"
             >
               <ArrowDown className="size-4" />
             </TooltipButton>
@@ -611,7 +611,7 @@ export function ChatScreen() {
                   label={t.startRecording}
                   variant="ghost"
                   size="icon"
-                  className="pointer-fine:size-8 size-11 rounded-lg border border-transparent bg-transparent p-0 text-muted-foreground hover:border-brand/20 hover:bg-brand/12 hover:text-primary"
+                  className="pointer-fine:size-8 size-11 rounded-lg border border-transparent bg-transparent p-0 text-muted-foreground hover:border-brand/20 hover:bg-brand/12 hover:text-brand-text"
                 >
                   <Mic className="size-4" />
                 </TooltipButton>

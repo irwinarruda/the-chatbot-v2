@@ -138,7 +138,7 @@ export function CashFlowTransferDialog({
             </Field>
             <ArrowRight
               aria-hidden="true"
-              className="hidden size-4 self-center text-primary sm:block"
+              className="hidden size-4 self-center text-brand-text sm:block"
             />
             <Field data-invalid={sameAccount}>
               <FieldLabel htmlFor={`${formId}-to`}>

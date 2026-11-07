@@ -84,7 +84,7 @@ export function CashFlowFilters({
           <SlidersHorizontal />
           <span className="sr-only sm:not-sr-only">{t.filtersAction}</span>
           {advancedCount > 0 && (
-            <span className="rounded-full bg-brand/15 px-1.5 text-primary text-xs tabular-nums">
+            <span className="rounded-full bg-brand/15 px-1.5 text-brand-text text-xs tabular-nums">
               {advancedCount}
             </span>
           )}

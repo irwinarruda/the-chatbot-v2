@@ -40,7 +40,7 @@ function SummaryTile({
           {label}
           <ArrowRight
             aria-hidden="true"
-            className="size-3.5 transition-transform group-hover:translate-x-0.5 group-hover:text-primary motion-reduce:transition-none"
+            className="size-3.5 transition-transform group-hover:translate-x-0.5 group-hover:text-brand-text motion-reduce:transition-none"
           />
         </span>
         <span className="mt-1 font-semibold text-foreground text-xl tabular-nums tracking-tight">

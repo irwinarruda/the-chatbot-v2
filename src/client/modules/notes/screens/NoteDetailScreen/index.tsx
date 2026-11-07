@@ -228,7 +228,7 @@ export function NoteDetailScreen({
             type="button"
             variant="ghost"
           >
-            <Sparkles className="text-primary" />
+            <Sparkles className="text-brand-text" />
             {t.aiOpenAction}
           </Button>
         )}

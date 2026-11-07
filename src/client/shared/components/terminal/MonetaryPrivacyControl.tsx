@@ -20,7 +20,7 @@ export function MonetaryPrivacyControl({
 
   return (
     <TerminalChromeButton
-      className="aria-pressed:border-brand/30 aria-pressed:bg-brand/12 aria-pressed:text-primary"
+      className="aria-pressed:border-brand/30 aria-pressed:bg-brand/12 aria-pressed:text-brand-text"
       onClick={toggleMoneyVisibility}
       pressed={isMoneyMasked}
       title={title}

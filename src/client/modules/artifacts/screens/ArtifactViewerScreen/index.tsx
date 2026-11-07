@@ -60,7 +60,7 @@ export function ArtifactViewerScreen({ artifactId }: { artifactId: string }) {
   return (
     <main className="flex h-dvh min-h-dvh w-full flex-col overflow-hidden bg-background">
       <a
-        className="fixed top-3 left-3 z-60 -translate-y-24 rounded-md border border-brand/35 bg-card px-3 py-2 text-primary text-xs shadow-lg transition-transform focus:translate-y-0 motion-reduce:transition-none"
+        className="fixed top-3 left-3 z-60 -translate-y-24 rounded-md border border-brand/35 bg-card px-3 py-2 text-brand-text text-xs shadow-lg transition-transform focus:translate-y-0 motion-reduce:transition-none"
         href="#artifact-content"
       >
         {dictionary.common.skipToContent}

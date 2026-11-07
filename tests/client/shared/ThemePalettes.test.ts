@@ -33,7 +33,7 @@ describe("Theme palettes", () => {
       '[data-palette="favo"]',
       '[data-palette="favo"][data-theme="light"]',
     ]);
-    expect(terminalDark.roles).toHaveLength(21);
+    expect(terminalDark.roles).toHaveLength(22);
     for (const block of blocks) {
       expect([...block.roles].sort()).toEqual([...terminalDark.roles].sort());
     }

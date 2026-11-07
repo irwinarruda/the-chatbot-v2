@@ -164,7 +164,7 @@ export function NotesScreen({ search }: { search: NotesSearchDTO }) {
                     search={search}
                     to="/notes/$noteId"
                   >
-                    <FileText className="mt-0.5 size-4 shrink-0 text-muted-foreground group-hover:text-primary" />
+                    <FileText className="mt-0.5 size-4 shrink-0 text-muted-foreground group-hover:text-brand-text" />
                     <span className="min-w-0 flex-1">
                       <span className="flex items-baseline justify-between gap-3">
                         <span className="truncate font-medium text-foreground text-sm">
