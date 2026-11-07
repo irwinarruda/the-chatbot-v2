@@ -337,16 +337,16 @@
   }
 
   [data-palette="favo"] {
-    /* Favo Smoke (favo-theme src/palette.ts, smoke) */
+    /* Favo Smoke (favo-theme 0.3.0, src/palette.ts, smoke) */
     --palette-background: #121110;
-    --palette-panel: #191715;
-    --palette-raised: #1f1d1b;
-    --palette-float: #0e0d0c;
-    --palette-border: #35322e;
+    --palette-panel: #181716;
+    --palette-raised: #1e1e1c;
+    --palette-float: #0d0d0c;
+    --palette-border: #333230;
     --palette-selection: #3b270b;
-    --palette-faint: #78746e;
-    --palette-comment: #99958d;
-    --palette-foreground: #ebe8e1;
+    --palette-faint: #767471;
+    --palette-comment: #979591;
+    --palette-foreground: #eae8e4;
     --palette-accent: #f5a623;
     --palette-accent-text: #f5a623;
     --palette-fill: #f5a623;
@@ -363,16 +363,16 @@
   }
 
   [data-palette="favo"][data-theme="light"] {
-    /* Favo Veil (favo-theme src/palette.ts, veil) */
-    --palette-background: #f7f5f1;
-    --palette-panel: #eeebe5;
-    --palette-raised: #e6e2da;
-    --palette-float: #fcfaf7;
-    --palette-border: #d2cec4;
+    /* Favo Veil (favo-theme 0.3.0, src/palette.ts, veil) */
+    --palette-background: #f6f5f3;
+    --palette-panel: #edebe8;
+    --palette-raised: #e4e2de;
+    --palette-float: #fbfaf9;
+    --palette-border: #d0cec9;
     --palette-selection: #f9d5a8;
-    --palette-faint: #8a867e;
-    --palette-comment: #67635c;
-    --palette-foreground: #2d2a26;
+    --palette-faint: #888682;
+    --palette-comment: #656360;
+    --palette-foreground: #2c2a28;
     --palette-accent: #b8720a;
     --palette-accent-text: #8f5600;
     --palette-fill: #f5a623;
