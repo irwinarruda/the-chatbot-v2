@@ -177,12 +177,8 @@ describe("mapPiAssistantResponse", () => {
     });
   });
 
-  test("folds text sent beside an options reply into its message, before the question", () => {
+  test("sends text written beside an options reply as its own message before the question", () => {
     const response = createAssistantMessage([
-      {
-        type: "text",
-        text: "Academia registrada ✅\n\nSaldo NuConta: R$ 2.400,00\n",
-      },
       {
         type: "toolCall",
         id: "reply-1",
@@ -192,20 +188,65 @@ describe("mapPiAssistantResponse", () => {
           options: ["Sim", "Não"],
         },
       },
+      {
+        type: "text",
+        text: "Academia registrada ✅\n\nSaldo NuConta: R$ 2.400,00\n",
+        textSignature: "text-signature",
+      },
     ]);
 
     expect(mapPiAssistantResponse(response)).toEqual({
       items: [
         {
+          type: MessageContentType.Text,
+          text: "Academia registrada ✅\n\nSaldo NuConta: R$ 2.400,00",
+          textSignature: "text-signature",
+        },
+        {
           type: MessageContentType.Button,
-          text: "Academia registrada ✅\n\nSaldo NuConta: R$ 2.400,00\n\nQuer marcar a Academia como paga?",
+          text: "Quer marcar a Academia como paga?",
           options: ["Sim", "Não"],
         },
       ],
     });
   });
 
-  test("does not repeat text the options message already carries", () => {
+  test("drops text lines the options message already carries", () => {
+    const response = createAssistantMessage([
+      {
+        type: "text",
+        text: "Academia registrada ✅\n\nSaldo NuConta: R$ 2.400,00",
+        textSignature: "text-signature",
+      },
+      {
+        type: "toolCall",
+        id: "reply-1",
+        name: "reply_with_options",
+        arguments: {
+          message:
+            "Saldo NuConta: R$ 2.400,00\n\nQuer marcar a Academia como paga?",
+          options: ["Sim", "Não"],
+        },
+      },
+    ]);
+
+    expect(mapPiAssistantResponse(response)).toEqual({
+      items: [
+        {
+          type: MessageContentType.Text,
+          text: "Academia registrada ✅",
+          textSignature: undefined,
+        },
+        {
+          type: MessageContentType.Button,
+          text: "Saldo NuConta: R$ 2.400,00\n\nQuer marcar a Academia como paga?",
+          options: ["Sim", "Não"],
+        },
+      ],
+    });
+  });
+
+  test("sends no extra message when the text only repeats the options message", () => {
     const response = createAssistantMessage([
       { type: "text", text: "Choose one" },
       {

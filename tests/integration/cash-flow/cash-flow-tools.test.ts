@@ -29,7 +29,7 @@ describe("cash-flow AI tools", () => {
     return user;
   }
 
-  test("records a batch together and returns the balance after every record", async () => {
+  test("records a batch together, in call order, and returns the balance after every record", async () => {
     const phoneNumber = "5511987654321";
     const user = await createUserWithSpreadsheet(phoneNumber);
     await orquestrator.cashFlowService.addEarning({
@@ -84,6 +84,11 @@ describe("cash-flow AI tools", () => {
       "pizza",
       "sorvete",
     ]);
+    const rows = await orquestrator.cashFlowService.getLatestTransactions(
+      phoneNumber,
+      2,
+    );
+    expect(rows.map((row) => Math.abs(row.value))).toEqual([40, 25.5]);
     for (const result of results) {
       expect(result.outcome).toMatchObject({
         status: ToolResultStatus.Succeeded,

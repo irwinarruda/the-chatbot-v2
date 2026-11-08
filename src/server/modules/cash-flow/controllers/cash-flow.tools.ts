@@ -28,7 +28,7 @@ export function createCashFlowTools(
   monthlyExpenseService: MonthlyExpenseService,
   transactionEntries: TransactionEntryService,
 ): RegisteredTool[] {
-  async function withBankAccountBalances(context: AiToolContext) {
+  async function loadBankAccountBalances(context: AiToolContext) {
     const user = await requireToolUser(auth, context);
     const bankAccountBalances = await cashFlowService.getBankAccountsStatus(
       requireCashFlowPhone(user),
@@ -190,14 +190,13 @@ export function createCashFlowTools(
         "Compare the transaction description, user message, value, category, and bank account with those candidates.",
         "If exactly one is a plausible match, finish by calling reply_with_options to ask whether it should be marked paid. Do not mark it automatically.",
         "If several are plausible, ask the user to choose. If none plausibly match, do not mention the checklist.",
-        "Several add_transaction calls in one response run at the same time.",
-        "The result also includes bankAccountBalances: the current balances, read after every record in the response finished.",
+        bankAccountBalancesNote,
         "Returns { message, type, category, bank_account, description, date, value, unpaid_monthly_expenses, bankAccountBalances }.",
       ].join("\n"),
       inputSchema: AddTransactionToolDTO,
       mutating: true,
       isParallelSafe: true,
-      afterRound: withBankAccountBalances,
+      afterRound: loadBankAccountBalances,
       run: async (args, context) => {
         const input = AddTransactionToolDTO.parse(args);
         const user = await requireToolUser(auth, context);
@@ -209,6 +208,7 @@ export function createCashFlowTools(
           value: input.value,
           date: parseToolDate(input.date) ?? new Date(),
           model: context.model,
+          inCallOrder: context.inCallOrder,
         });
         return {
           message: "Transaction added",
@@ -226,12 +226,15 @@ export function createCashFlowTools(
     },
     {
       name: "transfer_between_bank_accounts",
-      description:
-        "Transfer a fixed amount from one bank account to another. Creates two entries: an expense on the source account and an earning on the destination account. Bank accounts are resolved via classification, while the transfer category is read from the spreadsheet. Use this for credit card payments or any movement of money between accounts. Several transfers in one response run at the same time. Returns { message, from, to, category, description, date, value, bankAccountBalances }, where bankAccountBalances are the current balances read after every record in the response finished.",
+      description: [
+        "Transfer a fixed amount from one bank account to another. Creates two entries: an expense on the source account and an earning on the destination account. Bank accounts are resolved via classification, while the transfer category is read from the spreadsheet. Use this for credit card payments or any movement of money between accounts.",
+        bankAccountBalancesNote,
+        "Returns { message, from, to, category, description, date, value, bankAccountBalances }.",
+      ].join("\n"),
       inputSchema: TransferBetweenBankAccountsToolDTO,
       mutating: true,
       isParallelSafe: true,
-      afterRound: withBankAccountBalances,
+      afterRound: loadBankAccountBalances,
       run: async (args, context) => {
         const input = TransferBetweenBankAccountsToolDTO.parse(args);
         const user = await requireToolUser(auth, context);
@@ -242,6 +245,7 @@ export function createCashFlowTools(
           value: input.value,
           date: parseToolDate(input.date) ?? new Date(),
           model: context.model,
+          inCallOrder: context.inCallOrder,
         });
         return { message: "Transfer completed successfully", ...transfer };
       },
@@ -307,11 +311,14 @@ export function createCashFlowTools(
     },
     {
       name: "sync_bank_account_balance",
-      description:
-        "Reconcile a bank account's tracked balance with the real balance reported by the user. Automatically computes the difference and creates an earning (if money appeared, e.g. interest) or expense (if money disappeared) transaction to bring the spreadsheet in sync. Bank account, category, and description are automatically resolved via classification. Returns { message, bankAccountBalances }, where bankAccountBalances are the current balances read after every record in the response finished.",
+      description: [
+        "Reconcile a bank account's tracked balance with the real balance reported by the user. Automatically computes the difference and creates an earning (if money appeared, e.g. interest) or expense (if money disappeared) transaction to bring the spreadsheet in sync. Bank account, category, and description are automatically resolved via classification.",
+        bankAccountBalancesNote,
+        "Returns { message, bankAccountBalances }.",
+      ].join("\n"),
       inputSchema: SyncBankAccountBalanceToolDTO,
       mutating: true,
-      afterRound: withBankAccountBalances,
+      afterRound: loadBankAccountBalances,
       run: async (args, context) => {
         const input = SyncBankAccountBalanceToolDTO.parse(args);
         const user = await requireToolUser(auth, context);
@@ -328,6 +335,9 @@ export function createCashFlowTools(
     },
   ];
 }
+
+const bankAccountBalancesNote =
+  "The result includes bankAccountBalances: the current balance of every account, read once after every record in the response finished. Records sent together in one response can run at the same time and are written in the order they were sent.";
 
 function requireCashFlowPhone(user: User): string {
   if (!user.phoneNumber) {

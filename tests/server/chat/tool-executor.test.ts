@@ -1,12 +1,13 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import { z } from "zod";
 import { Chat } from "~/domain/chat/chat";
 import { MessageContentType } from "~/domain/chat/message-content-type";
 import { ToolResultStatus } from "~/domain/chat/tool-result-status";
 import { ValidationException } from "~/domain/shared/domain-errors";
 import {
+  type AfterRoundLoader,
+  type AiToolContext,
   ToolExecutor,
-  type ToolRoundData,
 } from "~/server/modules/chat/services/tool-executor.service";
 
 async function executeFailingTool(error: Error, mutating: boolean) {
@@ -83,35 +84,41 @@ function createRoundTool(
   options: {
     mutating: boolean;
     isParallelSafe?: boolean;
-    afterRound?: ToolRoundData;
+    afterRound?: AfterRoundLoader;
     fails?: boolean;
   },
-  running: { now: number; peak: number },
+  log: { running: number; peak: number; writes: string[] },
 ) {
   return {
     name,
     description: `Round test tool ${name}`,
-    inputSchema: z.object({}),
+    inputSchema: z.object({ delay: z.number().optional() }),
     mutating: options.mutating,
     isParallelSafe: options.isParallelSafe,
     afterRound: options.afterRound,
-    async run() {
-      running.now++;
-      running.peak = Math.max(running.peak, running.now);
-      await new Promise((resolve) => setTimeout(resolve, 20));
-      running.now--;
+    async run(args: unknown, context: AiToolContext) {
+      const { delay } = z.object({ delay: z.number().optional() }).parse(args);
+      log.running++;
+      log.peak = Math.max(log.peak, log.running);
+      await new Promise((resolve) => setTimeout(resolve, delay ?? 20));
+      log.running--;
       if (options.fails) throw new ValidationException("Record rejected");
+      const write = async () => {
+        log.writes.push(context.sourceMessage.text ?? "");
+      };
+      const inCallOrder = context.inCallOrder;
+      await (inCallOrder ? inCallOrder(write) : write());
       return { name };
     },
   };
 }
 
-function roundCall(callId: string, name: string) {
+function roundCall(callId: string, name: string, delay?: number) {
   return {
     type: MessageContentType.ToolCall,
     callId,
     name,
-    arguments: {},
+    arguments: { delay },
   } as const;
 }
 
@@ -121,40 +128,86 @@ function roundContext() {
   return { chat, sourceMessage };
 }
 
+function createLog() {
+  return { running: 0, peak: 0, writes: [] as string[] };
+}
+
 describe("ToolExecutor rounds", () => {
-  test("runs parallel-safe records at the same time and keeps the call order", async () => {
-    const running = { now: 0, peak: 0 };
+  test("runs a batch of parallel-safe records together, at most four at a time", async () => {
+    const log = createLog();
     const executor = new ToolExecutor([
-      createRoundTool(
-        "record",
-        { mutating: true, isParallelSafe: true },
-        running,
-      ),
-      createRoundTool("read", { mutating: false }, running),
+      createRoundTool("record", { mutating: true, isParallelSafe: true }, log),
+    ]);
+    const calls = ["a", "b", "c", "d", "e", "f"].map((id) =>
+      roundCall(id, "record"),
+    );
+
+    const results = await executor.executeRound(calls, roundContext());
+
+    expect(log.peak).toBe(4);
+    expect(results.map((result) => result.callId)).toEqual([
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "f",
+    ]);
+  });
+
+  test("writes the records of a batch in call order when the first one is slowest", async () => {
+    const log = createLog();
+    const executor = new ToolExecutor([
+      {
+        ...createRoundTool(
+          "record",
+          { mutating: true, isParallelSafe: true },
+          log,
+        ),
+        async run(args: unknown, context: AiToolContext) {
+          const { delay } = z.object({ delay: z.number() }).parse(args);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          await context.inCallOrder?.(async () => {
+            log.writes.push(String(delay));
+          });
+          return {};
+        },
+      },
     ]);
 
-    const results = await executor.executeRound(
+    await executor.executeRound(
       [
-        roundCall("a", "record"),
-        roundCall("b", "record"),
-        roundCall("c", "read"),
+        roundCall("pizza", "record", 60),
+        roundCall("sorvete", "record", 5),
+        roundCall("pastel", "record", 30),
       ],
       roundContext(),
     );
 
-    expect(running.peak).toBe(3);
-    expect(results.map((result) => result.callId)).toEqual(["a", "b", "c"]);
+    expect(log.writes).toEqual(["60", "5", "30"]);
+  });
+
+  test("runs a read after a record in order, so the read sees the record", async () => {
+    const log = createLog();
+    const executor = new ToolExecutor([
+      createRoundTool("record", { mutating: true, isParallelSafe: true }, log),
+      createRoundTool("read", { mutating: false }, log),
+    ]);
+
+    const results = await executor.executeRound(
+      [roundCall("a", "record"), roundCall("b", "read")],
+      roundContext(),
+    );
+
+    expect(log.peak).toBe(1);
+    expect(results.map((result) => result.callId)).toEqual(["a", "b"]);
   });
 
   test("runs the round in order when one write is not parallel-safe", async () => {
-    const running = { now: 0, peak: 0 };
+    const log = createLog();
     const executor = new ToolExecutor([
-      createRoundTool(
-        "record",
-        { mutating: true, isParallelSafe: true },
-        running,
-      ),
-      createRoundTool("delete", { mutating: true }, running),
+      createRoundTool("record", { mutating: true, isParallelSafe: true }, log),
+      createRoundTool("delete", { mutating: true }, log),
     ]);
 
     const results = await executor.executeRound(
@@ -162,29 +215,29 @@ describe("ToolExecutor rounds", () => {
       roundContext(),
     );
 
-    expect(running.peak).toBe(1);
+    expect(log.peak).toBe(1);
     expect(results.map((result) => result.callId)).toEqual(["a", "b"]);
   });
 
   test("adds the after-round data once to every succeeded record of the round", async () => {
-    const running = { now: 0, peak: 0 };
+    const log = createLog();
     let lookups = 0;
     let recordsRunningAtLookup = -1;
-    const balances: ToolRoundData = async () => {
+    const balances: AfterRoundLoader = async () => {
       lookups++;
-      recordsRunningAtLookup = running.now;
+      recordsRunningAtLookup = log.running;
       return { bankAccountBalances: [{ bankAccount: "NuConta", balance: 70 }] };
     };
     const executor = new ToolExecutor([
       createRoundTool(
         "record",
         { mutating: true, isParallelSafe: true, afterRound: balances },
-        running,
+        log,
       ),
       createRoundTool(
         "transfer",
         { mutating: true, isParallelSafe: true, afterRound: balances },
-        running,
+        log,
       ),
       createRoundTool(
         "rejected",
@@ -194,7 +247,7 @@ describe("ToolExecutor rounds", () => {
           afterRound: balances,
           fails: true,
         },
-        running,
+        log,
       ),
     ]);
 
@@ -226,7 +279,7 @@ describe("ToolExecutor rounds", () => {
   });
 
   test("keeps the records when the after-round data cannot be read", async () => {
-    const running = { now: 0, peak: 0 };
+    const log = createLog();
     const executor = new ToolExecutor([
       createRoundTool(
         "record",
@@ -237,7 +290,7 @@ describe("ToolExecutor rounds", () => {
             throw new Error("Sheet unavailable");
           },
         },
-        running,
+        log,
       ),
     ]);
 
@@ -250,5 +303,37 @@ describe("ToolExecutor rounds", () => {
       status: ToolResultStatus.Succeeded,
       data: { name: "record" },
     });
+  });
+
+  test("answers without the after-round data when it takes too long", async () => {
+    vi.useFakeTimers();
+    try {
+      const log = createLog();
+      const executor = new ToolExecutor([
+        createRoundTool(
+          "record",
+          {
+            mutating: true,
+            isParallelSafe: true,
+            afterRound: () => new Promise(() => {}),
+          },
+          log,
+        ),
+      ]);
+
+      const pending = executor.executeRound(
+        [roundCall("a", "record")],
+        roundContext(),
+      );
+      await vi.advanceTimersByTimeAsync(5_100);
+      const [result] = await pending;
+
+      expect(result.outcome).toEqual({
+        status: ToolResultStatus.Succeeded,
+        data: { name: "record" },
+      });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

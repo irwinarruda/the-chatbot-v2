@@ -3,6 +3,7 @@ import type { CashFlowService } from "~/server/modules/cash-flow/services/cash-f
 import type { MonthlyExpenseService } from "~/server/modules/cash-flow/services/monthly-expense.service";
 import type { TransactionClassifierService } from "~/server/modules/cash-flow/services/transaction-classifier.service";
 import type { AiModelSelectionDTO } from "~/server/modules/chat/gateways/ai-chat";
+import type { InCallOrder } from "~/server/modules/chat/services/tool-executor.service";
 
 export interface DescribedEntryDTO {
   idUser: string;
@@ -10,6 +11,7 @@ export interface DescribedEntryDTO {
   userMessage: string;
   date: Date;
   model?: AiModelSelectionDTO;
+  inCallOrder?: InCallOrder;
 }
 
 export interface DescribedTransactionDTO extends DescribedEntryDTO {
@@ -56,15 +58,16 @@ export class TransactionEntryService {
       description: parsed.description,
       bankAccount: parsed.bank_account,
     };
+    const inCallOrder = dto.inCallOrder ?? runNow;
     let unpaidMonthlyExpenses: MonthlyExpenseItemDTO[] = [];
     if (dto.type === "Expense") {
-      await this.cashFlow.addExpense(transaction);
+      await inCallOrder(() => this.cashFlow.addExpense(transaction));
       const monthlyExpenses = await this.monthlyExpenses.listMonthlyExpenses(
         dto.idUser,
       );
       unpaidMonthlyExpenses = monthlyExpenses.filter((item) => !item.isPaid);
     } else {
-      await this.cashFlow.addEarning(transaction);
+      await inCallOrder(() => this.cashFlow.addEarning(transaction));
     }
     return { ...transaction, unpaidMonthlyExpenses };
   }
@@ -78,14 +81,17 @@ export class TransactionEntryService {
       dto.idUser,
       dto.model,
     );
-    const category = await this.cashFlow.transferBetweenBankAccounts({
-      phoneNumber: dto.phoneNumber,
-      date: dto.date,
-      value: dto.value,
-      description: parsed.description,
-      from: parsed.from,
-      to: parsed.to,
-    });
+    const inCallOrder = dto.inCallOrder ?? runNow;
+    const category = await inCallOrder(() =>
+      this.cashFlow.transferBetweenBankAccounts({
+        phoneNumber: dto.phoneNumber,
+        date: dto.date,
+        value: dto.value,
+        description: parsed.description,
+        from: parsed.from,
+        to: parsed.to,
+      }),
+    );
     return {
       from: parsed.from,
       to: parsed.to,
@@ -117,4 +123,8 @@ export class TransactionEntryService {
       date: dto.date,
     });
   }
+}
+
+function runNow<T>(write: () => Promise<T>): Promise<T> {
+  return write();
 }

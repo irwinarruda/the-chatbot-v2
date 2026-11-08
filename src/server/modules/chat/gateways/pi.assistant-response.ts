@@ -34,27 +34,52 @@ export function mapPiAssistantResponse(
         "The options reply does not match the expected schema",
       );
     }
-    const leadingText = response.content
-      .flatMap((content) =>
-        content.type === "text" ? [content.text.trim()] : [],
-      )
-      .filter((text) => text && !reply.data.message.includes(text))
-      .join("\n\n");
+    const questionLines = new Set(
+      reply.data.message
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean),
+    );
+    const reasoning = response.content.flatMap(
+      (content): AiCompletionResponseDTO["items"] =>
+        content.type === "thinking"
+          ? [
+              {
+                type: MessageContentType.Reasoning,
+                text: content.thinking,
+                thinkingSignature: content.thinkingSignature,
+                redacted: content.redacted,
+              },
+            ]
+          : [],
+    );
+    const leadingTexts = response.content.flatMap(
+      (content): AiCompletionResponseDTO["items"] => {
+        if (content.type !== "text") return [];
+        const text = content.text
+          .split("\n")
+          .filter((line) => !questionLines.has(line.trim()))
+          .join("\n")
+          .replace(/\n{3,}/g, "\n\n")
+          .trim();
+        if (!text) return [];
+        const isUnchanged = text === content.text.trim();
+        return [
+          {
+            type: MessageContentType.Text,
+            text,
+            textSignature: isUnchanged ? content.textSignature : undefined,
+          },
+        ];
+      },
+    );
     return {
       items: [
-        ...response.content
-          .filter((content) => content.type === "thinking")
-          .map((content): AiCompletionResponseDTO["items"][number] => ({
-            type: MessageContentType.Reasoning,
-            text: content.thinking,
-            thinkingSignature: content.thinkingSignature,
-            redacted: content.redacted,
-          })),
+        ...reasoning,
+        ...leadingTexts,
         {
           type: MessageContentType.Button,
-          text: leadingText
-            ? `${leadingText}\n\n${reply.data.message}`
-            : reply.data.message,
+          text: reply.data.message,
           options: reply.data.options,
         },
       ],
