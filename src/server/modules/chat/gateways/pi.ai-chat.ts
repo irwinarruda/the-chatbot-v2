@@ -6,7 +6,6 @@ import {
   type Model,
   type MutableModels,
   type SimpleStreamOptions,
-  Type,
 } from "@earendil-works/pi-ai";
 import { openAICompletionsApi } from "@earendil-works/pi-ai/api/openai-completions.lazy";
 import { builtinModels } from "@earendil-works/pi-ai/providers/all";
@@ -150,7 +149,7 @@ export class PiAiChatGateway implements AiChatGateway {
       tools: this.getToolDefinitions(request.tools).map((tool) => ({
         name: tool.name,
         description: tool.description,
-        parameters: Type.Unsafe(this.toJsonSchema(tool)),
+        parameters: this.toJsonSchema(tool),
       })),
     };
     try {
