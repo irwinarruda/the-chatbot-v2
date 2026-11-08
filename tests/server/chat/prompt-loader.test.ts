@@ -24,6 +24,26 @@ describe("PromptLoader", () => {
     expect(prompt).toContain("sem confirmação explícita");
   });
 
+  test("ends a cash-flow record with the balances of the accounts it touched", () => {
+    const prompt = PromptLoader.getAiChatGateway(PromptLocale.PtBr, {
+      channelAddress: "5511999999999",
+    });
+
+    expect(prompt).toContain(
+      "`add_transaction`, `transfer_between_bank_accounts` ou `sync_bank_account_balance`",
+    );
+    expect(prompt).toContain(
+      "espere todos os registros terminarem e chame `get_bank_accounts_status` sem data, uma única vez",
+    );
+    expect(prompt).toContain(
+      "Termine a mensagem com o saldo atual de cada conta que recebeu um registro",
+    );
+    expect(prompt).toContain("Mostre só essas contas");
+    expect(prompt).toContain(
+      "chame `get_bank_accounts_status` antes, em uma rodada separada",
+    );
+  });
+
   test("separates notes from todos and keeps chat edits append-only", () => {
     const prompt = PromptLoader.getAiChatGateway(PromptLocale.PtBr, {
       channelAddress: "5511999999999",
