@@ -23,7 +23,7 @@ export type ChatResponseProgressListener = (
   event: ChatResponseProgressEventDTO,
 ) => void;
 
-const maximumToolRounds = 8;
+const maximumToolRounds = 9;
 
 export class AiAgentService {
   constructor(

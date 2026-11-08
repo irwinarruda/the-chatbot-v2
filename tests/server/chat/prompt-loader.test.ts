@@ -30,12 +30,18 @@ describe("PromptLoader", () => {
     });
 
     expect(prompt).toContain(
-      "chame `get_bank_accounts_status` sem data uma única vez",
+      "`add_transaction`, `transfer_between_bank_accounts` ou `sync_bank_account_balance`",
     );
     expect(prompt).toContain(
-      "depois que todos os registros da resposta terminarem",
+      "espere todos os registros terminarem e chame `get_bank_accounts_status` sem data, uma única vez",
+    );
+    expect(prompt).toContain(
+      "Termine a mensagem com o saldo atual de cada conta que recebeu um registro",
     );
     expect(prompt).toContain("Mostre só essas contas");
+    expect(prompt).toContain(
+      "chame `get_bank_accounts_status` antes, em uma rodada separada",
+    );
   });
 
   test("separates notes from todos and keeps chat edits append-only", () => {

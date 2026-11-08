@@ -179,7 +179,7 @@ export function createCashFlowTools(
         "Append a transaction specifying its type. Category and bank_account are automatically resolved via classification using available categories and bank accounts.",
         "For an Expense, the result also includes unpaid_monthly_expenses for the current month.",
         "Compare the transaction description, user message, value, category, and bank account with those candidates.",
-        "If exactly one is a plausible match, finish by calling reply_with_options to ask whether it should be marked paid. Do not mark it automatically.",
+        "If exactly one is a plausible match, call get_bank_accounts_status first, then finish by calling reply_with_options to ask whether it should be marked paid. Do not mark it automatically.",
         "If several are plausible, ask the user to choose. If none plausibly match, do not mention the checklist.",
         "Returns { message, type, category, bank_account, description, date, value, unpaid_monthly_expenses }.",
       ].join("\n"),
