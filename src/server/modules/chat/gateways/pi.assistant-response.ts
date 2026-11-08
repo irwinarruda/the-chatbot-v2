@@ -23,12 +23,9 @@ export function mapPiAssistantResponse(
   }
   const replyCall = replyCalls[0];
   if (replyCall) {
-    const conflictingContent = response.content.some(
-      (content) => content.type !== "thinking" && content !== replyCall,
-    );
-    if (conflictingContent) {
+    if (calls.length > 1) {
       throw new ValidationException(
-        "An options reply cannot include text or other tool calls",
+        "An options reply cannot include other tool calls",
       );
     }
     const reply = ReplyWithOptionsToolDTO.safeParse(replyCall.arguments);
@@ -37,16 +34,49 @@ export function mapPiAssistantResponse(
         "The options reply does not match the expected schema",
       );
     }
+    const questionLines = new Set(
+      reply.data.message
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean),
+    );
+    const reasoning = response.content.flatMap(
+      (content): AiCompletionResponseDTO["items"] =>
+        content.type === "thinking"
+          ? [
+              {
+                type: MessageContentType.Reasoning,
+                text: content.thinking,
+                thinkingSignature: content.thinkingSignature,
+                redacted: content.redacted,
+              },
+            ]
+          : [],
+    );
+    const leadingTexts = response.content.flatMap(
+      (content): AiCompletionResponseDTO["items"] => {
+        if (content.type !== "text") return [];
+        const text = content.text
+          .split("\n")
+          .filter((line) => !questionLines.has(line.trim()))
+          .join("\n")
+          .replace(/\n{3,}/g, "\n\n")
+          .trim();
+        if (!text) return [];
+        const isUnchanged = text === content.text.trim();
+        return [
+          {
+            type: MessageContentType.Text,
+            text,
+            textSignature: isUnchanged ? content.textSignature : undefined,
+          },
+        ];
+      },
+    );
     return {
       items: [
-        ...response.content
-          .filter((content) => content.type === "thinking")
-          .map((content): AiCompletionResponseDTO["items"][number] => ({
-            type: MessageContentType.Reasoning,
-            text: content.thinking,
-            thinkingSignature: content.thinkingSignature,
-            redacted: content.redacted,
-          })),
+        ...reasoning,
+        ...leadingTexts,
         {
           type: MessageContentType.Button,
           text: reply.data.message,
