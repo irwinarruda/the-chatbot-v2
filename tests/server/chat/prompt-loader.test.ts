@@ -24,6 +24,20 @@ describe("PromptLoader", () => {
     expect(prompt).toContain("sem confirmação explícita");
   });
 
+  test("ends a cash-flow record with the balances of the accounts it touched", () => {
+    const prompt = PromptLoader.getAiChatGateway(PromptLocale.PtBr, {
+      channelAddress: "5511999999999",
+    });
+
+    expect(prompt).toContain(
+      "chame `get_bank_accounts_status` sem data uma única vez",
+    );
+    expect(prompt).toContain(
+      "depois que todos os registros da resposta terminarem",
+    );
+    expect(prompt).toContain("Mostre só essas contas");
+  });
+
   test("separates notes from todos and keeps chat edits append-only", () => {
     const prompt = PromptLoader.getAiChatGateway(PromptLocale.PtBr, {
       channelAddress: "5511999999999",
