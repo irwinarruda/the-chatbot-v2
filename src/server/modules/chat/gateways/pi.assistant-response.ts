@@ -23,12 +23,9 @@ export function mapPiAssistantResponse(
   }
   const replyCall = replyCalls[0];
   if (replyCall) {
-    const conflictingContent = response.content.some(
-      (content) => content.type !== "thinking" && content !== replyCall,
-    );
-    if (conflictingContent) {
+    if (calls.length > 1) {
       throw new ValidationException(
-        "An options reply cannot include text or other tool calls",
+        "An options reply cannot include other tool calls",
       );
     }
     const reply = ReplyWithOptionsToolDTO.safeParse(replyCall.arguments);
@@ -37,6 +34,12 @@ export function mapPiAssistantResponse(
         "The options reply does not match the expected schema",
       );
     }
+    const leadingText = response.content
+      .flatMap((content) =>
+        content.type === "text" ? [content.text.trim()] : [],
+      )
+      .filter((text) => text && !reply.data.message.includes(text))
+      .join("\n\n");
     return {
       items: [
         ...response.content
@@ -49,7 +52,9 @@ export function mapPiAssistantResponse(
           })),
         {
           type: MessageContentType.Button,
-          text: reply.data.message,
+          text: leadingText
+            ? `${leadingText}\n\n${reply.data.message}`
+            : reply.data.message,
           options: reply.data.options,
         },
       ],
