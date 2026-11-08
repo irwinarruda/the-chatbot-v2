@@ -57,7 +57,7 @@ A module imports only lower levels. When a flow must change two modules, it live
 ## The edge
 
 - A controller parses the request with a contract schema, calls one service capability, and maps the result with a contract mapper. TanStack file routes, middleware and server functions cannot receive dependencies, so controllers, `shared/http/middleware` and `shared/http/functions` read `getServer().services`; nothing else imports `production.ts`, and the architecture test enforces it.
-- An AI tool is a controller for the model. Each module exports `create<Module>Tools(...)` returning `RegisteredTool[]` from `controllers/<m>.tools.ts`; `server.ts` concatenates them into the one `ToolExecutor` the chat agent runs. Chat never imports a feature module.
+- An AI tool is a controller for the model. Each module exports `create<Module>Tools(...)` returning `RegisteredTool[]` from `controllers/<m>.tools.ts`; `server.ts` concatenates them into the one `ToolExecutor` the chat agent runs. Chat never imports a feature module. The calls of one model response run together when every one is read-only or marked `isParallelSafe` (only writes that append, like `add_transaction`), and in order otherwise. A tool's `afterRound` runs once after the round and adds its data to each of that tool's succeeded results, as the cash-flow records do with the balances.
 - A new URL is a controller file plus one `route(...)` line in `src/routes.ts`.
 - Server functions that page routes call live in `shared/http/functions/`; they are the only server code the client may import.
 
