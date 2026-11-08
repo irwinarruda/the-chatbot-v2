@@ -177,9 +177,105 @@ describe("mapPiAssistantResponse", () => {
     });
   });
 
-  test("rejects options replies mixed with text or business tools", () => {
+  test("sends text written beside an options reply as its own message before the question", () => {
+    const response = createAssistantMessage([
+      {
+        type: "toolCall",
+        id: "reply-1",
+        name: "reply_with_options",
+        arguments: {
+          message: "Quer marcar a Academia como paga?",
+          options: ["Sim", "Não"],
+        },
+      },
+      {
+        type: "text",
+        text: "Academia registrada ✅\n\nSaldo NuConta: R$ 2.400,00\n",
+        textSignature: "text-signature",
+      },
+    ]);
+
+    expect(mapPiAssistantResponse(response)).toEqual({
+      items: [
+        {
+          type: MessageContentType.Text,
+          text: "Academia registrada ✅\n\nSaldo NuConta: R$ 2.400,00",
+          textSignature: "text-signature",
+        },
+        {
+          type: MessageContentType.Button,
+          text: "Quer marcar a Academia como paga?",
+          options: ["Sim", "Não"],
+        },
+      ],
+    });
+  });
+
+  test("drops text lines the options message already carries", () => {
+    const response = createAssistantMessage([
+      {
+        type: "text",
+        text: "Academia registrada ✅\n\nSaldo NuConta: R$ 2.400,00",
+        textSignature: "text-signature",
+      },
+      {
+        type: "toolCall",
+        id: "reply-1",
+        name: "reply_with_options",
+        arguments: {
+          message:
+            "Saldo NuConta: R$ 2.400,00\n\nQuer marcar a Academia como paga?",
+          options: ["Sim", "Não"],
+        },
+      },
+    ]);
+
+    expect(mapPiAssistantResponse(response)).toEqual({
+      items: [
+        {
+          type: MessageContentType.Text,
+          text: "Academia registrada ✅",
+          textSignature: undefined,
+        },
+        {
+          type: MessageContentType.Button,
+          text: "Saldo NuConta: R$ 2.400,00\n\nQuer marcar a Academia como paga?",
+          options: ["Sim", "Não"],
+        },
+      ],
+    });
+  });
+
+  test("sends no extra message when the text only repeats the options message", () => {
     const response = createAssistantMessage([
       { type: "text", text: "Choose one" },
+      {
+        type: "toolCall",
+        id: "reply-1",
+        name: "reply_with_options",
+        arguments: { message: "Choose one", options: ["A", "B"] },
+      },
+    ]);
+
+    expect(mapPiAssistantResponse(response)).toEqual({
+      items: [
+        {
+          type: MessageContentType.Button,
+          text: "Choose one",
+          options: ["A", "B"],
+        },
+      ],
+    });
+  });
+
+  test("rejects options replies mixed with business tools", () => {
+    const response = createAssistantMessage([
+      {
+        type: "toolCall",
+        id: "record-1",
+        name: "add_transaction",
+        arguments: { type: "Expense", value: 10, user_message: "10" },
+      },
       {
         type: "toolCall",
         id: "reply-1",

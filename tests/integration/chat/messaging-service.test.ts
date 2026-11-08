@@ -1518,7 +1518,7 @@ describe("MessagingService", () => {
     });
     const webAddress = user.email ?? "";
     const aiGateway = orquestrator.aiGateway;
-    const expectedMaximumToolRounds = 9;
+    const expectedMaximumToolRounds = 8;
     aiGateway.scriptedResponses = Array.from(
       { length: expectedMaximumToolRounds + 2 },
       (_, i) => ({

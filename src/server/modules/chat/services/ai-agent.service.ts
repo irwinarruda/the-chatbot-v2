@@ -23,7 +23,7 @@ export type ChatResponseProgressListener = (
   event: ChatResponseProgressEventDTO,
 ) => void;
 
-const maximumToolRounds = 9;
+const maximumToolRounds = 8;
 
 export class AiAgentService {
   constructor(
@@ -201,26 +201,24 @@ export class AiAgentService {
         await this.delivery.deliverGenerated(recipient, channelMessages);
         return;
       }
-      for (const call of toolCalls) {
-        const existingResult = chat.getToolResult(
-          sourceMessage.turnId,
-          call.callId,
-        );
-        if (existingResult?.content.type === MessageContentType.ToolResult) {
-          continue;
-        }
-        const result = await this.tools.execute(call, {
-          chat,
-          sourceMessage,
-          model: runtimeModel,
-        });
+      const pendingCalls = toolCalls.filter(
+        (call) =>
+          chat.getToolResult(sourceMessage.turnId, call.callId)?.content
+            .type !== MessageContentType.ToolResult,
+      );
+      const results = await this.tools.executeRound(pendingCalls, {
+        chat,
+        sourceMessage,
+        model: runtimeModel,
+      });
+      for (const [index, result] of results.entries()) {
         const resultMessage = chat.addToolResult(sourceMessage.turnId, result);
         await this.chats.createMessage(resultMessage);
         onProgress?.({
           type: "toolResult",
           round: round + 1,
-          callId: call.callId,
-          name: call.name,
+          callId: result.callId,
+          name: pendingCalls[index].name,
           outcome: result.outcome,
         });
       }
