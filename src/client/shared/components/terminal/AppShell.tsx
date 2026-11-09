@@ -81,7 +81,7 @@ function AppBrand() {
         className="h-5 w-auto"
         src={Logos[prefs.theme]}
         alt="The Chatbot"
-        width={106}
+        width={102}
         height={20}
       />
     </Link>
