@@ -66,7 +66,10 @@
 
   Each palette writes every color once as a `--palette-*` variable named after
   a theme role, and the shadcn and signal tokens point at those roles, so
-  components use only the semantic tokens. The default Tailwind palette is
+  components use only the semantic tokens. Surfaces and code colors come from
+  the editor palette. What irwin-ui's COLOR.md asks of an app comes from the
+  theme's app/tokens.json: brand text (`primary-fg`), reading text, the status
+  colors with their soft background and line. The default Tailwind palette is
   disabled.
   ========================================================== */
 
@@ -141,6 +144,8 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-soft: var(--destructive-soft);
+  --color-destructive-line: var(--destructive-line);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -158,14 +163,21 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* Signals (SPEC "Signals"): tint backgrounds with opacity, e.g. bg-success/10 */
+  /* Signals: a badge or banner is bg-success-soft, text-success and border-success-line, never an opacity tint (irwin-ui COLOR.md "App screens") */
   --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-line: var(--success-line);
   --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-line: var(--warning-line);
   --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-info-line: var(--info-line);
   --color-hint: var(--hint);
   --color-faint: var(--faint);
   --color-brand: var(--brand);
   --color-brand-text: var(--brand-text);
+  --color-brand-soft: var(--brand-soft);
   --color-scrim: var(--scrim);
   --color-code: var(--code-background);
 
@@ -264,6 +276,8 @@
     --accent-foreground: var(--palette-foreground);
     --destructive: var(--palette-danger);
     --destructive-foreground: var(--palette-foreground);
+    --destructive-soft: var(--palette-danger-soft);
+    --destructive-line: var(--palette-danger-line);
     --border: var(--palette-border);
     --input: var(--palette-border);
     --ring: var(--palette-accent);
@@ -287,12 +301,20 @@
 
     /* Signals and helpers */
     --success: var(--palette-success);
+    --success-soft: var(--palette-success-soft);
+    --success-line: var(--palette-success-line);
     --warning: var(--palette-warning);
+    --warning-soft: var(--palette-warning-soft);
+    --warning-line: var(--palette-warning-line);
     --info: var(--palette-info);
+    --info-soft: var(--palette-info-soft);
+    --info-line: var(--palette-info-line);
     --hint: var(--palette-type);
     --faint: var(--palette-faint);
     --brand: var(--palette-accent);
     --brand-text: var(--palette-accent-text);
+    --brand-soft: var(--palette-accent-soft);
+    --fg-reading: var(--palette-fg-reading);
     /* Overlays and shadows sit on float; light variants change it */
     --scrim: var(--palette-float);
     /* Code sits on the editor's own background, the one its colors are tuned to */
@@ -307,7 +329,7 @@
   }
 
   :root {
-    /* Barro Slate, the default palette (barro-theme 0.1.0, palette.json, slate; success and info from app/tokens.json) */
+    /* Barro Slate, the default palette (barro-theme: palette.json, slate; fg-reading to info-line from app/tokens.json, dark) */
     --palette-background: #0b0e11;
     --palette-panel: #111418;
     --palette-raised: #181c20;
@@ -318,14 +340,24 @@
     --palette-comment: #979fa8;
     --palette-foreground: #e6eaef;
     --palette-accent: #ec7d6b;
-    --palette-accent-text: #ec7d6b;
     --palette-fill: #b64d3f;
     --palette-fill-hover: #aa4235;
     --palette-on-fill: #ffffff;
-    --palette-warning: #f0bf54;
-    --palette-danger: #e95c5d;
+    --palette-fg-reading: #bac0c7;
+    --palette-accent-text: #ec7d6b;
+    --palette-accent-soft: #271714;
     --palette-success: #7ec259;
+    --palette-success-soft: #141f0f;
+    --palette-success-line: #203814;
+    --palette-warning: #f0bf54;
+    --palette-warning-soft: #221a0a;
+    --palette-warning-line: #3f2d02;
+    --palette-danger: #e95c5d;
+    --palette-danger-soft: #2c1313;
+    --palette-danger-line: #521c1c;
     --palette-info: #5db0f5;
+    --palette-info-soft: #101d28;
+    --palette-info-line: #15334b;
     --palette-keyword: #ec7d6b;
     --palette-function: #5db0f5;
     --palette-type: #46d4c9;
@@ -336,7 +368,7 @@
   }
 
   [data-theme="light"] {
-    /* Barro Kaolin (barro-theme 0.1.0, palette.json, kaolin; success and info from app/tokens.json) */
+    /* Barro Kaolin (barro-theme: palette.json, kaolin; fg-reading to info-line from app/tokens.json, light) */
     --palette-background: #f9fafc;
     --palette-panel: #eff2f5;
     --palette-raised: #e7eaed;
@@ -347,14 +379,24 @@
     --palette-comment: #626a72;
     --palette-foreground: #21272d;
     --palette-accent: #b64d3f;
-    --palette-accent-text: #a23e31;
     --palette-fill: #b64d3f;
     --palette-fill-hover: #aa4235;
     --palette-on-fill: #ffffff;
-    --palette-warning: #8b6600;
-    --palette-danger: #c92b37;
-    --palette-success: #397900;
+    --palette-fg-reading: #434a51;
+    --palette-accent-text: #b74133;
+    --palette-accent-soft: #fee3de;
+    --palette-success: #397800;
+    --palette-success-soft: #dff0d8;
+    --palette-success-line: #c2e1b4;
+    --palette-warning: #876300;
+    --palette-warning-soft: #f5e8d1;
+    --palette-warning-line: #ead3a5;
+    --palette-danger: #c72835;
+    --palette-danger-soft: #ffe2e0;
+    --palette-danger-line: #ffc5c2;
     --palette-info: #006eb0;
+    --palette-info-soft: #d9ecfe;
+    --palette-info-line: #b6dafb;
     --palette-keyword: #c14a3b;
     --palette-function: #0076bd;
     --palette-type: #007973;
@@ -365,7 +407,7 @@
   }
 
   [data-palette="favo"] {
-    /* Favo Smoke (favo-theme 0.3.0, src/palette.ts, smoke; success and info from app/tokens.json) */
+    /* Favo Smoke (favo-theme: src/palette.ts, smoke; fg-reading to info-line from app/tokens.json, dark, on its gray neutral) */
     --palette-background: #121110;
     --palette-panel: #181716;
     --palette-raised: #1e1e1c;
@@ -376,14 +418,24 @@
     --palette-comment: #979591;
     --palette-foreground: #eae8e4;
     --palette-accent: #f5a623;
-    --palette-accent-text: #f5a623;
     --palette-fill: #f5a623;
     --palette-fill-hover: #ffc857;
     --palette-on-fill: #14110b;
-    --palette-warning: #ffc857;
-    --palette-danger: #f9786a;
+    --palette-fg-reading: #bcbab5;
+    --palette-accent-text: #fcaf41;
+    --palette-accent-soft: #271b0c;
     --palette-success: #b8ec6d;
+    --palette-success-soft: #19210e;
+    --palette-success-line: #27390a;
+    --palette-warning: #fcaf41;
+    --palette-warning-soft: #271b0c;
+    --palette-warning-line: #462d05;
+    --palette-danger: #f9786a;
+    --palette-danger-soft: #2c1714;
+    --palette-danger-line: #51221d;
     --palette-info: #74c7ff;
+    --palette-info-soft: #131f28;
+    --palette-info-line: #183649;
     --palette-keyword: #fcaf41;
     --palette-function: #74c7ff;
     --palette-type: #77edd1;
@@ -394,7 +446,7 @@
   }
 
   [data-palette="favo"][data-theme="light"] {
-    /* Favo Veil (favo-theme 0.3.0, src/palette.ts, veil; success and info from app/tokens.json) */
+    /* Favo Veil (favo-theme: src/palette.ts, veil; fg-reading to info-line from app/tokens.json, light, on its gray neutral) */
     --palette-background: #f6f5f3;
     --palette-panel: #edebe8;
     --palette-raised: #e4e2de;
@@ -405,14 +457,24 @@
     --palette-comment: #656360;
     --palette-foreground: #2c2a28;
     --palette-accent: #b8720a;
-    --palette-accent-text: #8f5600;
     --palette-fill: #f5a623;
     --palette-fill-hover: #e39600;
     --palette-on-fill: #14110b;
-    --palette-warning: #8f5600;
-    --palette-danger: #c43e27;
-    --palette-success: #3e7207;
+    --palette-fg-reading: #4a4846;
+    --palette-accent-text: #915100;
+    --palette-accent-soft: #fadeba;
+    --palette-success: #3d7104;
+    --palette-success-soft: #dbe8cc;
+    --palette-success-line: #c0d8a3;
+    --palette-warning: #915100;
+    --palette-warning-soft: #fadeba;
+    --palette-warning-line: #f9c47e;
+    --palette-danger: #b9331c;
+    --palette-danger-soft: #fcdad4;
+    --palette-danger-line: #fbbcb3;
     --palette-info: #1f62a4;
+    --palette-info-soft: #d3e6f4;
+    --palette-info-line: #b0d4ee;
     --palette-keyword: #915100;
     --palette-function: #1f62a4;
     --palette-type: #007d70;
@@ -513,17 +575,12 @@
 }
 
 /* --- Reading surfaces: chat replies, notes and the privacy page, per
-  irwin-ui COLOR.md "Reading surfaces". Color marks the kind of text: body a
-  step below foreground so bold shows, italics in param, links in function,
-  headings in keyword and subheadings in type. --- */
+  irwin-ui COLOR.md "Reading surfaces". Color marks the kind of text: body in
+  the theme's `fg-reading`, a step below foreground so bold shows, italics in
+  param, links in function, headings in keyword and subheadings in type. --- */
 
 .reading-surface {
-  --reading-text: color-mix(
-    in oklab,
-    var(--foreground) 45%,
-    var(--muted-foreground)
-  );
-  color: var(--reading-text);
+  color: var(--fg-reading);
 }
 
 .reading-surface strong {
@@ -813,7 +870,7 @@
 
 /* MDXEditor colors its content from a stylesheet that loads after this one; the extra class keeps the reading tone */
 .notes-editor .notes-editor-content {
-  color: var(--reading-text);
+  color: var(--fg-reading);
 }
 
 .notes-editor-content h1,
@@ -929,11 +986,11 @@
 }
 
 .notes-editor .cm-editor .cm-activeLine {
-  background-color: color-mix(in srgb, var(--brand) 8%, transparent);
+  background-color: var(--brand-soft);
 }
 
 .notes-editor .cm-editor .cm-activeLineGutter {
-  background-color: color-mix(in srgb, var(--brand) 8%, transparent);
+  background-color: var(--brand-soft);
   color: var(--brand-text);
   font-weight: 700;
 }

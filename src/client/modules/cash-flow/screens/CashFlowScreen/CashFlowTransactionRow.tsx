@@ -47,7 +47,7 @@ export function CashFlowTransactionRow({
         className={
           isExpense
             ? "rounded-full bg-muted p-2 text-muted-foreground"
-            : "rounded-full bg-success/10 p-2 text-success"
+            : "rounded-full bg-success-soft p-2 text-success"
         }
       >
         {isExpense ? (
@@ -63,10 +63,7 @@ export function CashFlowTransactionRow({
               (transaction.transferId ? t.transferLabel : "")}
           </h3>
           {transaction.transferId && (
-            <Badge
-              className="border-info/25 bg-info/10 text-info"
-              variant="outline"
-            >
+            <Badge variant="info">
               <ArrowRightLeft />
               {t.transferLabel}
             </Badge>

@@ -86,7 +86,7 @@ export function CashFlowTransactionList({
       {hasMore && (
         <div className="flex justify-center pt-2">
           <Button
-            className="text-muted-foreground hover:text-brand-text"
+            className="text-muted-foreground hover:bg-brand-soft hover:text-brand-text"
             onClick={onLoadMore}
             ref={loadMoreRef}
             size="sm"

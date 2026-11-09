@@ -28,7 +28,7 @@ export function AlreadySignedInScreen() {
         footnote={t.footerPrompt}
         heading={t.heading}
         icon={CircleCheck}
-        iconClassName="bg-success/10 text-success"
+        iconClassName="bg-success-soft text-success"
         subtitle={t.subtitle}
       >
         {t.body}

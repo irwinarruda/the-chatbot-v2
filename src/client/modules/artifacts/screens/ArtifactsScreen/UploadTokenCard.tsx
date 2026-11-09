@@ -141,10 +141,10 @@ export function UploadTokenCard() {
             <Badge
               className={
                 tokenStatus.configured
-                  ? "border-success/25 bg-success/10 text-success"
+                  ? undefined
                   : "border-border bg-muted text-muted-foreground"
               }
-              variant="outline"
+              variant={tokenStatus.configured ? "success" : "outline"}
             >
               <ShieldCheck />
               {tokenStatus.configured
@@ -161,7 +161,7 @@ export function UploadTokenCard() {
           id="upload-token-body"
         >
           {revealedConfig && (
-            <div className="space-y-2 rounded border border-warning/25 bg-warning/10 p-3">
+            <div className="space-y-2 rounded border border-warning-line bg-warning-soft p-3">
               <p className="m-0 text-warning text-xs leading-relaxed">
                 {t.tokenOnceHint}
               </p>
@@ -226,7 +226,7 @@ export function UploadTokenCard() {
                       size="sm"
                       type="button"
                       variant="ghost"
-                      className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                      className="text-muted-foreground hover:bg-destructive-soft hover:text-destructive"
                     >
                       <Trash2 />
                       {t.revokeTokenAction}

@@ -102,7 +102,7 @@ function AppNavTab({
       className={cn(
         "flex h-8 shrink-0 items-center rounded-md px-3 text-muted-foreground text-sm outline-none transition-colors",
         "hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50",
-        "aria-[current=page]:bg-brand/12 aria-[current=page]:font-medium aria-[current=page]:text-brand-text",
+        "aria-[current=page]:bg-brand-soft aria-[current=page]:font-medium aria-[current=page]:text-brand-text",
       )}
     >
       {link.label}
@@ -129,7 +129,7 @@ function AppNavItem({
       className={cn(
         "flex min-h-11 items-center gap-3 rounded-lg px-3 text-foreground text-sm outline-none transition-colors",
         "hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50",
-        "aria-[current=page]:bg-brand/12 aria-[current=page]:font-medium aria-[current=page]:text-brand-text",
+        "aria-[current=page]:bg-brand-soft aria-[current=page]:font-medium aria-[current=page]:text-brand-text",
       )}
     >
       <Icon
@@ -463,7 +463,7 @@ export function AppShell({
                 type="button"
                 onClick={onLogout}
                 variant="ghost"
-                className="min-h-11 w-full justify-start gap-3 rounded-lg px-3 font-normal text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                className="min-h-11 w-full justify-start gap-3 rounded-lg px-3 font-normal text-muted-foreground hover:bg-destructive-soft hover:text-destructive"
               >
                 <LogOut className="size-4" />
                 {logoutLabel}

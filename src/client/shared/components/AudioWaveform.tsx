@@ -90,7 +90,7 @@ export function AudioWaveform({ src }: AudioWaveformProps) {
         aria-pressed={isPlaying}
         variant="outline"
         size="icon"
-        className="pointer-fine:size-8 size-11 shrink-0 rounded-lg border-brand/25 bg-background/70 p-0 text-brand-text shadow-none hover:border-brand/45 hover:bg-brand/12 hover:text-brand-text disabled:opacity-40"
+        className="pointer-fine:size-8 size-11 shrink-0 rounded-lg border-brand/25 bg-background/70 p-0 text-brand-text shadow-none hover:border-brand/45 hover:bg-brand-soft hover:text-brand-text disabled:opacity-40"
       >
         {isPlaying ? <Pause className="size-4" /> : <Play className="size-4" />}
       </Button>

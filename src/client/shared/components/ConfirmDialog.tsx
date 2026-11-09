@@ -46,8 +46,8 @@ export function ConfirmDialog({
           <AlertDialogMedia
             className={
               isDestructive
-                ? "bg-destructive/10 text-destructive"
-                : "bg-warning/10 text-warning"
+                ? "bg-destructive-soft text-destructive"
+                : "bg-warning-soft text-warning"
             }
           >
             <AlertTriangle />
