@@ -81,7 +81,7 @@
     Consolas, monospace;
   --font-display: "Chakra Petch", "IBM Plex Sans", system-ui, sans-serif;
 
-  /* Titles in Chakra Petch, 2px above the sans size they replaced (barro-theme TYPE.md) */
+  /* Titles in Chakra Petch, 2px above the sans size they replaced (irwin-ui TYPE.md) */
   --text-title: 1.625rem;
   --text-title--line-height: 2rem;
   --text-title-sm: 1.375rem;
@@ -513,7 +513,7 @@
 }
 
 /* --- Reading surfaces: chat replies, notes and the privacy page, per
-  barro-theme APPS.md "Reading surfaces". Color marks the kind of text: body a
+  irwin-ui COLOR.md "Reading surfaces". Color marks the kind of text: body a
   step below foreground so bold shows, italics in param, links in function,
   headings in keyword and subheadings in type. --- */
 

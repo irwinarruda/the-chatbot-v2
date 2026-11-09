@@ -7,7 +7,7 @@ description: Always load when creating or changing React views in src/client: ro
 
 ## Authority
 
-This skill owns views and visuals. Placement comes from `client-architecture`; state and data from `client-service-styleguide`. `src/client/shared/styles/tailwind.css` is the source of truth for tokens; `references/themes.md` explains them. How the app uses color and type comes from [barro-theme](https://github.com/irwinarruda/barro-theme): `APPS.md` (app screens and reading surfaces), `TYPE.md` and `PATTERNS.md`. When this skill and those disagree, follow them and fix this skill.
+This skill owns views and visuals. Placement comes from `client-architecture`; state and data from `client-service-styleguide`. `src/client/shared/styles/tailwind.css` is the source of truth for tokens; `references/themes.md` explains them. How the app uses color and type comes from [irwin-ui](https://github.com/irwinarruda/irwin-ui), the owner's design system: `COLOR.md` (app screens and reading surfaces, written for any theme), `TYPE.md`, `BRAND.md` and `PATTERNS.md`. The colors themselves come from the two themes, barro-theme and favo-theme. When this skill and those disagree, follow them and fix this skill.
 
 ## Look
 
