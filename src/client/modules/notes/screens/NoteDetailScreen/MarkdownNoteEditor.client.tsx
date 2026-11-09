@@ -85,7 +85,7 @@ export const MarkdownNoteEditor = forwardRef<
       <MDXEditor
         ref={ref}
         className="notes-editor"
-        contentEditableClassName="notes-editor-content"
+        contentEditableClassName="notes-editor-content reading-surface"
         markdown={initialMarkdown}
         onChange={(markdown, initialMarkdownNormalize) => {
           if (!initialMarkdownNormalize) onChange(markdown);

@@ -286,7 +286,7 @@
   },
   "cashFlowPage": {
     "windowTitle": "Fluxo de caixa",
-    "heading": "Fluxo de Caixa",
+    "heading": "Fluxo de caixa",
     "subtitle": "Os dados da sua planilha, sem precisar usar a planilha.",
     "transactions": "Transações",
     "newTransaction": "Nova transação",
@@ -369,7 +369,7 @@
   },
   "billsPage": {
     "windowTitle": "Contas",
-    "heading": "Contas do Mês",
+    "heading": "Contas do mês",
     "subtitle": "Uma checklist nova a cada mês. Nenhuma conta fica para trás.",
     "currentMonth": "mês atual",
     "monthNavigationLabel": "Mês da checklist",

@@ -129,7 +129,7 @@ function createChat(): WebChatDTO {
         id: demoId(104),
         type: "text",
         userType: "bot",
-        text: "You spent *R$ 842.30* on groceries in November, across 6 transactions. That is about 12% less than October.",
+        text: "You spent *R$ 842.30* on groceries in November, across 6 transactions, _about 12% less_ than October. They are under `Groceries` in your sheet: https://sheets.example.com/ada/finance",
         createdAt: at(3, 9, 20),
       },
       {
@@ -207,7 +207,7 @@ function createNotes(): NoteResponseDTO[] {
       id: demoId(401),
       name: "Lisbon trip",
       markdown:
-        "# Lisbon trip\n\n**Dates:** December 12 to 18\n\n## To book\n\n- [x] Flights\n- [ ] Apartment in Alfama\n- [ ] Day trip to Sintra\n\n## Food\n\n> Ask Marco about the bakery near the river.\n",
+        "# Lisbon trip\n\n**Dates:** December 12 to 18, *booked*\n\n## To book\n\n- [x] Flights\n- [ ] Apartment in Alfama\n- [ ] Day trip to Sintra\n\n### Check-in\n\n[Online](https://example.com), code:\n\n```\nK7Q2XM\n```\n\n## Food\n\n> Ask Marco about the bakery near the river.\n",
       createdAt: at(1, 18),
       updatedAt: at(3, 8, 40),
     },

@@ -39,7 +39,7 @@ describe("Theme palettes", () => {
       '[data-palette="favo"]',
       '[data-palette="favo"][data-theme="light"]',
     ]);
-    expect(barroSlate.roles).toHaveLength(23);
+    expect(barroSlate.roles).toHaveLength(25);
     for (const block of blocks) {
       expect([...block.roles].sort()).toEqual([...barroSlate.roles].sort());
     }
@@ -48,6 +48,11 @@ describe("Theme palettes", () => {
   test("errors use the danger color and leave regex to code", () => {
     expect(tokensReading("--palette-danger")).toEqual(["--destructive"]);
     expect(tokensReading("--palette-regex")).toEqual(["--color-syntax-regex"]);
+  });
+
+  test("success and info text use each palette's status colors, not its code colors", () => {
+    expect(tokensReading("--palette-success")).toEqual(["--success"]);
+    expect(tokensReading("--palette-info")).toEqual(["--info"]);
   });
 
   test("text on primary buttons comes from each palette's onFill", () => {
