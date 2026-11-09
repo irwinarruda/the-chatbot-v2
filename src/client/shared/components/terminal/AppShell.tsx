@@ -17,7 +17,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { type ReactNode, useState } from "react";
-import type { Palette, Theme } from "~/client/shared/app/entities/Prefs";
+import type { Theme } from "~/client/shared/app/entities/Prefs";
 import { Alert, AlertDescription } from "~/client/shared/components/ui/alert";
 import { Button } from "~/client/shared/components/ui/button";
 import {
@@ -64,22 +64,26 @@ const AppLayout = {
 
 type AppLayout = ValueOf<typeof AppLayout>;
 
-const Logos: Record<Palette, Record<Theme, string>> = {
-  terminal: { dark: "/logo.svg", light: "/logo-light.svg" },
-  favo: { dark: "/logo-favo.svg", light: "/logo-favo-light.svg" },
+const Logos: Record<Theme, string> = {
+  dark: "/brand/logo-dark.svg",
+  light: "/brand/logo-light.svg",
 };
 
 function AppBrand() {
   const prefs = usePrefs();
-  const src = Logos[prefs.palette][prefs.theme];
 
   return (
     <Link
       to="/"
-      className="flex shrink-0 items-center gap-2 rounded-md px-2 py-1.5 font-semibold text-foreground text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+      className="flex shrink-0 items-center rounded-md px-2 py-1.5 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
     >
-      <img className="size-6" src={src} alt="" />
-      <span>The Chatbot</span>
+      <img
+        className="h-5 w-auto"
+        src={Logos[prefs.theme]}
+        alt="The Chatbot"
+        width={106}
+        height={20}
+      />
     </Link>
   );
 }
@@ -199,7 +203,7 @@ export function AppShell({
       : (dictionary?.common.switchToLightTheme ?? "Use light theme");
   const paletteLabel =
     prefs.palette === "favo"
-      ? (dictionary?.common.switchToTerminalPalette ?? "Use Terminal theme")
+      ? (dictionary?.common.switchToBarroPalette ?? "Use Barro theme")
       : (dictionary?.common.switchToFavoPalette ?? "Use Favo theme");
 
   async function onLocaleToggle() {

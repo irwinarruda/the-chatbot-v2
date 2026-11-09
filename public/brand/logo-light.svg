@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-4 -166 990.46 187" role="img" aria-label="The Chatbot">
+<title>The Chatbot</title>
+<path d="M13 -104L44.18 -50L13 4" fill="none" stroke="#21272D" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+<g fill="none" stroke="#21272D" stroke-width="20" stroke-linecap="round" stroke-linejoin="round">
+  <path transform="translate(113 0)" d="M93.53 -100H28.87L0 -50L28.87 0H93.53"/>
+  <path transform="translate(246.53 0)" d="M0 -152V0M0 -100H50L78.87 -50V0"/>
+  <path transform="translate(365.4 0)" d="M93.53 -100H28.87L0 -50L28.87 0H93.53M93.53 -100V0"/>
+  <path transform="translate(498.92999999999995 0)" d="M30 -140V-34.64L50 0H80M0 -100H76"/>
+  <path transform="translate(618.93 0)" d="M0 -152V0H64.67L93.53 -50L64.67 -100H0"/>
+  <path transform="translate(896.4599999999999 0)" d="M30 -140V-34.64L50 0H80M0 -100H76"/>
+</g>
+<path transform="translate(746.4599999999999 0)" d="M0 10V-50A60 60 0 0 1 60 -110A60 60 0 0 1 120 -50A60 60 0 0 1 60 10H6A6 6 0 0 1 0 4Z" fill="#B64D3F"/>
+</svg>

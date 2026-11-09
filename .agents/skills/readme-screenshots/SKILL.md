@@ -39,7 +39,7 @@ These live at the top of `infra/scripts/screenshots.ts` and in `SceneViewport`. 
 | Viewport   | desktop 1280×800, phone 390×844                                             |
 | Browser    | Playwright's Chromium, `en-US`, `America/Sao_Paulo`, reduced motion         |
 | Clock      | fixed at `DemoNow`, so relative dates and the current month never drift     |
-| App prefs  | `en` and the scene's theme through the `the-chatbot-prefs` cookie, on the default Terminal palette |
+| App prefs  | `en` and the scene's theme through the `the-chatbot-prefs` cookie, on the default Barro palette |
 | Fonts      | the ones bundled in `public/fonts`, so the machine's fonts do not matter    |
 
 ## Add a picture

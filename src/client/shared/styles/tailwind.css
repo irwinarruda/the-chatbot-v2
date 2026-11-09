@@ -44,13 +44,16 @@
   Tailwind v4 — two palettes, each with a dark and a light variant
   CSS-first config (no tailwind.config.{js,ts})
 
-  Terminal, the app's original cool blue-gray and green palette, is the default.
+  Barro (https://github.com/irwinarruda/barro-theme), the owner's brand theme,
+  is the default: cool slate surfaces with a brick accent, Slate (dark) and
+  Kaolin (light). Primary buttons are brick with white text, and errors use
+  their own red, `danger`, never a code color.
   Favo (https://github.com/irwinarruda/favo-theme) is chosen with
   [data-palette="favo"]: its calm gray pair, Smoke (dark) and Veil (light).
   [data-theme="light"] picks the light variant of either palette.
 
   Each palette writes every color once as a `--palette-*` variable named after
-  a Favo role, and the shadcn and signal tokens point at those roles, so
+  a theme role, and the shadcn and signal tokens point at those roles, so
   components use only the semantic tokens. The default Tailwind palette is
   disabled.
   ========================================================== */
@@ -240,7 +243,7 @@
       var(--palette-raised)
     );
     --accent-foreground: var(--palette-foreground);
-    --destructive: var(--palette-regex);
+    --destructive: var(--palette-danger);
     --destructive-foreground: var(--palette-foreground);
     --border: var(--palette-border);
     --input: var(--palette-border);
@@ -285,55 +288,57 @@
   }
 
   :root {
-    /* Terminal dark, the default palette */
-    --palette-background: #0c1018;
-    --palette-panel: #131a23;
-    --palette-raised: #1c2330;
-    --palette-float: #080b11;
-    --palette-border: #282f3c;
-    --palette-selection: rgb(80 223 170 / 15%);
-    --palette-faint: #5c6676;
-    --palette-comment: #8494a7;
-    --palette-foreground: #f8fafc;
-    --palette-accent: #50dfaa;
-    --palette-accent-text: #50dfaa;
-    --palette-fill: #50dfaa;
-    --palette-fill-hover: #3ab888;
-    --palette-on-fill: #072019;
-    --palette-warning: #ffb627;
-    --palette-keyword: #50dfaa;
-    --palette-function: #58a6ff;
-    --palette-type: #7ee8fa;
-    --palette-string: #50dfaa;
-    --palette-constant: #d2a8ff;
-    --palette-param: #ffbd2e;
-    --palette-regex: #ff5f56;
+    /* Barro Slate, the default palette (barro-theme 0.1.0, palette.json, slate) */
+    --palette-background: #0b0e11;
+    --palette-panel: #111418;
+    --palette-raised: #181c20;
+    --palette-float: #06080b;
+    --palette-border: #2c3136;
+    --palette-selection: #44241f;
+    --palette-faint: #5d646b;
+    --palette-comment: #979fa8;
+    --palette-foreground: #e6eaef;
+    --palette-accent: #ec7d6b;
+    --palette-accent-text: #ec7d6b;
+    --palette-fill: #b64d3f;
+    --palette-fill-hover: #aa4235;
+    --palette-on-fill: #ffffff;
+    --palette-warning: #f0bf54;
+    --palette-danger: #e95c5d;
+    --palette-keyword: #ec7d6b;
+    --palette-function: #5db0f5;
+    --palette-type: #46d4c9;
+    --palette-string: #7ec259;
+    --palette-constant: #c1a4ff;
+    --palette-param: #f0bf54;
+    --palette-regex: #ff8dc2;
   }
 
   [data-theme="light"] {
-    /* Terminal light */
-    --palette-background: #eae8e4;
-    --palette-panel: #faf8f5;
-    --palette-raised: #e6e3de;
-    --palette-float: #faf8f5;
-    --palette-border: #d1cdc6;
-    --palette-selection: rgb(18 165 102 / 18%);
-    --palette-faint: #8494a7;
-    --palette-comment: #5c6676;
-    --palette-foreground: #1c2028;
-    --palette-accent: #0b7d4e;
-    --palette-accent-text: #0b7d4e;
-    --palette-fill: #0b7d4e;
-    --palette-fill-hover: #0a7248;
-    --palette-on-fill: #f7fbf9;
-    --palette-warning: #8a5200;
-    --palette-keyword: #0b7d4e;
-    --palette-function: #1d4ed8;
-    --palette-type: #0b6b85;
-    --palette-string: #0a7248;
-    --palette-constant: #7c4ddb;
-    --palette-param: #daa520;
-    --palette-regex: #b91c1c;
+    /* Barro Kaolin (barro-theme 0.1.0, palette.json, kaolin) */
+    --palette-background: #f9fafc;
+    --palette-panel: #eff2f5;
+    --palette-raised: #e7eaed;
+    --palette-float: #fcfdff;
+    --palette-border: #d2d6db;
+    --palette-selection: #f6d8d2;
+    --palette-faint: #878d93;
+    --palette-comment: #626a72;
+    --palette-foreground: #21272d;
+    --palette-accent: #b64d3f;
+    --palette-accent-text: #a23e31;
+    --palette-fill: #b64d3f;
+    --palette-fill-hover: #aa4235;
+    --palette-on-fill: #ffffff;
+    --palette-warning: #8b6600;
+    --palette-danger: #c92b37;
+    --palette-keyword: #c14a3b;
+    --palette-function: #0076bd;
+    --palette-type: #007973;
+    --palette-string: #3e8200;
+    --palette-constant: #845cc8;
+    --palette-param: #8b6600;
+    --palette-regex: #b23578;
   }
 
   [data-palette="favo"] {
@@ -353,6 +358,7 @@
     --palette-fill-hover: #ffc857;
     --palette-on-fill: #14110b;
     --palette-warning: #ffc857;
+    --palette-danger: #f9786a;
     --palette-keyword: #fcaf41;
     --palette-function: #74c7ff;
     --palette-type: #77edd1;
@@ -379,6 +385,7 @@
     --palette-fill-hover: #e39600;
     --palette-on-fill: #14110b;
     --palette-warning: #8f5600;
+    --palette-danger: #c43e27;
     --palette-keyword: #915100;
     --palette-function: #1f62a4;
     --palette-type: #007d70;
@@ -701,7 +708,7 @@
   --accentBorderHover: var(--brand);
   --accentSolid: var(--primary);
   --accentSolidHover: var(--primary-hover);
-  --accentText: var(--primary);
+  --accentText: var(--brand-text);
   --accentTextContrast: var(--foreground);
   --basePageBg: var(--background);
   --baseBase: var(--background);
@@ -870,7 +877,8 @@
 
 /*
   MDXEditor always mounts CodeMirror's `basicLight` theme (white background).
-  Re-skin it with Favo; the extra class keeps these rules ahead of the theme.
+  Re-skin it with the palette; the extra class keeps these rules ahead of the
+  theme.
 */
 .notes-editor .cm-editor {
   background-color: var(--code-background);
@@ -898,7 +906,7 @@
 
 .notes-editor .cm-editor .cm-activeLineGutter {
   background-color: color-mix(in srgb, var(--brand) 8%, transparent);
-  color: var(--primary);
+  color: var(--brand-text);
   font-weight: 700;
 }
 

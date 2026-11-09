@@ -20,7 +20,7 @@ vi.mock("@tanstack/react-router", () => ({
 }));
 
 vi.mock("~/client/shared/hooks/usePrefs", () => ({
-  usePrefs: () => ({ locale: "en", theme: "dark", palette: "terminal" }),
+  usePrefs: () => ({ locale: "en", theme: "dark", palette: "barro" }),
 }));
 
 beforeEach(() => {

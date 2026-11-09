@@ -8,13 +8,13 @@ import {
 import { container } from "~/client/shared/container";
 
 describe("PrefsService", () => {
-  test("switches between the Terminal and Favo palettes and saves each choice", async () => {
+  test("switches between the Barro and Favo palettes and saves each choice", async () => {
     const gateway = { persistPrefs: vi.fn<PrefsGateway["persistPrefs"]>() };
     container.register("PrefsGateway", gateway);
     const store = create<PrefsService>()(createPrefsService);
     store
       .getState()
-      .hydratePrefs({ locale: "en", theme: "light", palette: "terminal" });
+      .hydratePrefs({ locale: "en", theme: "light", palette: "barro" });
 
     await store.getState().togglePalette();
 
@@ -31,11 +31,11 @@ describe("PrefsService", () => {
 
     await store.getState().togglePalette();
 
-    expect(store.getState().prefs.palette).toBe("terminal");
+    expect(store.getState().prefs.palette).toBe("barro");
     expect(gateway.persistPrefs).toHaveBeenLastCalledWith({
       locale: "en",
       theme: "light",
-      palette: "terminal",
+      palette: "barro",
     });
   });
 });

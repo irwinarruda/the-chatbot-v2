@@ -47,7 +47,7 @@ src/client/
     i18n/        dictionaries
     container/   the container instance and bootstrapAppContainer, which registers the real adapters
     stores/      app.ts: the one flat store
-    styles/      tailwind.css: the Terminal and Favo theme tokens
+    styles/      tailwind.css: the Barro and Favo theme tokens
   modules/<m>/
     app/         services/ repositories/ gateways/ entities/ dtos/ utils/
     parsers/     pure transformations owned by the module: route search, formatting

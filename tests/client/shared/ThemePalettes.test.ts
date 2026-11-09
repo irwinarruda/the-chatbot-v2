@@ -22,10 +22,16 @@ function paletteBlocks() {
     .filter((block) => block.roles.length > 0);
 }
 
+function tokensReading(role: string) {
+  return [
+    ...css.matchAll(new RegExp(`^\\s+(--[a-z0-9-]+): var\\(${role}\\);`, "gm")),
+  ].map(([, token]) => token);
+}
+
 describe("Theme palettes", () => {
-  test("Terminal and Favo, dark and light, each define every color role", () => {
+  test("Barro and Favo, dark and light, each define every color role", () => {
     const blocks = paletteBlocks();
-    const [terminalDark] = blocks;
+    const [barroSlate] = blocks;
 
     expect(blocks.map((block) => block.selector)).toEqual([
       ":root",
@@ -33,9 +39,21 @@ describe("Theme palettes", () => {
       '[data-palette="favo"]',
       '[data-palette="favo"][data-theme="light"]',
     ]);
-    expect(terminalDark.roles).toHaveLength(22);
+    expect(barroSlate.roles).toHaveLength(23);
     for (const block of blocks) {
-      expect([...block.roles].sort()).toEqual([...terminalDark.roles].sort());
+      expect([...block.roles].sort()).toEqual([...barroSlate.roles].sort());
     }
+  });
+
+  test("errors use the danger color and leave regex to code", () => {
+    expect(tokensReading("--palette-danger")).toEqual(["--destructive"]);
+    expect(tokensReading("--palette-regex")).toEqual(["--color-syntax-regex"]);
+  });
+
+  test("text on primary buttons comes from each palette's onFill", () => {
+    expect(tokensReading("--palette-on-fill")).toEqual([
+      "--primary-foreground",
+      "--sidebar-primary-foreground",
+    ]);
   });
 });
