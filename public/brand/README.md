@@ -1,6 +1,6 @@
 # The Chatbot brand
 
-Every brand asset of The Chatbot. They are final: use them as they are, and never redraw or recolor them. The bubble is always Barro's brick, `#B64D3F`.
+Every brand asset of The Chatbot. They are generated in [barro-theme](https://github.com/irwinarruda/barro-theme/blob/main/BRAND.md), which documents the lettering and its spacing, and copied here: use them as they are, and never redraw, recolor or edit them. The `o` is a round speech bubble with a small tail cut at 60°, like the letters. The bubble is always Barro's brick, `#B64D3F`.
 
 `favicon.ico`, the slate tile at 16, 32 and 48 px, is the one exception: it stays at the root of `public/`, because browsers ask for `/favicon.ico` by default.
 
