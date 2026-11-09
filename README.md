@@ -232,3 +232,4 @@ Credential setup, smoke tests and Pi upgrades are maintainer work, documented by
 - [favo](https://github.com/irwinarruda/favo-cli): every AI subscription you have, on every computer you own.
 - [Favo theme](https://github.com/irwinarruda/favo-theme): a warm theme with the contrast to read code all day.
 - [Barro theme](https://github.com/irwinarruda/barro-theme): clay on slate, and the brick in this logo.
+- [irwin-ui](https://github.com/irwinarruda/irwin-ui): the design system this app follows, with the rules for color, type and the marks.

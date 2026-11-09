@@ -9,7 +9,7 @@ The web app has two palettes, each with a dark and a light variant:
 
 `<html data-palette="barro" | "favo" data-theme="dark" | "light">`. Both values live in the `the-chatbot-prefs` cookie (`PrefsDTO`), so the server renders the chosen palette on the first paint; a cookie without `palette` reads as Barro, and one with a palette the schema does not know, such as the removed `terminal`, falls back to the default prefs. `togglePalette` and `toggleTheme` in `PrefsService` save the cookie and set the attributes through `CookiePrefsGateway`. The title bar's swatch button switches the palette and the sun or moon switches the variant.
 
-The logo is the brand, not the palette. It is the `>chatbot` wordmark, in the same rounded strokes as favo-cli's and Barro's, and its `o` is a round speech bubble with a small 60° tail, in Barro's brick, `#B64D3F`. The marks are generated in barro-theme (`BRAND.md`) and copied into `public/brand/`. The brick never changes; only the letters follow dark and light, through two files in `public/brand/`: `logo-dark.svg` has light letters for the dark variants and `logo-light.svg` dark letters for the light ones, and `AppShell` picks one from the theme. `logo.svg` has mid-gray letters for a place that cannot pick, and `mark*.svg` are the `>o` mark in the same three colors, all on a transparent background.
+The logo is the brand, not the palette. It is the `>chatbot` wordmark, in the same rounded strokes as favo-cli's and Barro's, and its `o` is a round speech bubble with a small 60° tail, in Barro's brick, `#B64D3F`. The marks are generated in irwin-ui (`BRAND.md`) and copied into `public/brand/`. The brick never changes; only the letters follow dark and light, through two files in `public/brand/`: `logo-dark.svg` has light letters for the dark variants and `logo-light.svg` dark letters for the light ones, and `AppShell` picks one from the theme. `logo.svg` has mid-gray letters for a place that cannot pick, and `mark*.svg` are the `>o` mark in the same three colors, all on a transparent background.
 
 The favicon and app icon are the `>o` mark, a white chevron and the brick bubble, on a slate rounded tile: `icon.svg`, `apple-touch-icon.png` at 180 px (square, since iOS rounds it) and `icon-512.png` at 512 px. The `avatar*` files are the mark on a slate square, for profile pictures.
 
@@ -55,7 +55,7 @@ Each color has one job, so errors never borrow a code color: `destructive` reads
 
 ## Reading surfaces
 
-barro-theme's `APPS.md` splits screens in two. App screens are controls and status, and follow the role map above. Reading surfaces are text someone reads top to bottom, and there color marks what kind of text each piece is, the way it does in code. Here they are the chat's bot replies, the note viewer and editor, and the privacy page. Each container carries the `reading-surface` class, and its rules in `tailwind.css` color the text:
+irwin-ui's `COLOR.md` splits screens in two. App screens are controls and status, and follow the role map above. Reading surfaces are text someone reads top to bottom, and there color marks what kind of text each piece is, the way it does in code. Here they are the chat's bot replies, the note viewer and editor, and the privacy page. Each container carries the `reading-surface` class, and its rules in `tailwind.css` color the text:
 
 | Text                                  | Color                                                                           |
 | ------------------------------------- | ------------------------------------------------------------------------------- |
@@ -76,7 +76,7 @@ Code blocks sit on `code`, which is each palette's `background` in both variants
 
 ## Type
 
-Three families, self-hosted in `public/fonts` and declared with `@font-face` at the top of `tailwind.css`, following barro-theme's `TYPE.md`:
+Three families, self-hosted in `public/fonts` and declared with `@font-face` at the top of `tailwind.css`, following irwin-ui's `TYPE.md`:
 
 - **IBM Plex Sans** (`font-sans`): interface text and chat replies.
 - **JetBrains Mono** (`font-mono`): code, amounts in inputs and the locale chip.
