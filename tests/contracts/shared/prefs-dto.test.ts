@@ -16,10 +16,19 @@ describe("Prefs cookie contract", () => {
     expect(resolvePrefs(prefsCookie(prefs))).toEqual(prefs);
   });
 
-  test("a cookie saved before palettes existed keeps its prefs on Terminal", () => {
+  test("a cookie saved before palettes existed keeps its prefs on Barro", () => {
     expect(resolvePrefs(prefsCookie({ locale: "en", theme: "light" }))).toEqual(
-      { locale: "en", theme: "light", palette: "terminal" },
+      { locale: "en", theme: "light", palette: "barro" },
     );
+  });
+
+  test("a cookie saved with the removed Terminal palette falls back to the default prefs on Barro", () => {
+    const prefs = resolvePrefs(
+      prefsCookie({ locale: "en", theme: "light", palette: "terminal" }),
+    );
+
+    expect(prefs).toEqual(DEFAULT_PREFS);
+    expect(prefs.palette).toBe("barro");
   });
 
   test("an unknown palette falls back to the default prefs", () => {
@@ -30,7 +39,7 @@ describe("Prefs cookie contract", () => {
     ).toEqual(DEFAULT_PREFS);
   });
 
-  test("Terminal is the default palette", () => {
-    expect(resolvePrefs("")).toMatchObject({ palette: "terminal" });
+  test("Barro is the default palette", () => {
+    expect(resolvePrefs("")).toMatchObject({ palette: "barro" });
   });
 });

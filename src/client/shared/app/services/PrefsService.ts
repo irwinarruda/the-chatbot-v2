@@ -36,7 +36,7 @@ export const createPrefsService: StateCreator<PrefsService> = (set, get) => ({
     set({
       prefs: savePrefs({
         ...prefs,
-        palette: prefs.palette === "favo" ? "terminal" : "favo",
+        palette: prefs.palette === "favo" ? "barro" : "favo",
       }),
     });
   },

@@ -22,7 +22,7 @@
     "switchToDarkTheme": "Use dark theme",
     "switchToLightTheme": "Use light theme",
     "switchToFavoPalette": "Use Favo theme",
-    "switchToTerminalPalette": "Use Terminal theme"
+    "switchToBarroPalette": "Use Barro theme"
   },
   "nav": {
     "home": "Home",

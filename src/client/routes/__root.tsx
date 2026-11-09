@@ -7,7 +7,7 @@ import {
 import { FileQuestion } from "lucide-react";
 import { type ReactNode, useEffect } from "react";
 import { SessionBoundary } from "~/client/modules/identity/components/SessionBoundary";
-import type { Palette, Prefs } from "~/client/shared/app/entities/Prefs";
+import type { Prefs } from "~/client/shared/app/entities/Prefs";
 import { ListEmptyState } from "~/client/shared/components/ListEmptyState";
 import { AppShell } from "~/client/shared/components/terminal/AppShell";
 import { Button } from "~/client/shared/components/ui/button";
@@ -20,11 +20,6 @@ import {
   DEFAULT_PREFS,
   resolvePrefs,
 } from "~/contracts/http/shared/prefs-cookie";
-
-const Favicons: Record<Palette, string> = {
-  terminal: "/favicon.ico",
-  favo: "/favicon-favo.ico",
-};
 
 type PrefsRouteContext = {
   serverContext?: {
@@ -54,7 +49,12 @@ export const Route = createRootRoute({
       },
       { title: "The Chatbot" },
     ],
-    links: [{ rel: "stylesheet", href: tailwindHref }],
+    links: [
+      { rel: "stylesheet", href: tailwindHref },
+      { rel: "icon", href: "/favicon.ico", sizes: "48x48" },
+      { rel: "icon", type: "image/svg+xml", href: "/brand/icon.svg" },
+      { rel: "apple-touch-icon", href: "/brand/apple-touch-icon.png" },
+    ],
   }),
 });
 
@@ -78,7 +78,6 @@ function RootDocument({ children }: { children: ReactNode }) {
     >
       <head>
         <HeadContent />
-        <link rel="icon" href={Favicons[prefs.palette]} />
         <link
           rel="preload"
           href="/fonts/jetbrains-mono-latin.woff2"

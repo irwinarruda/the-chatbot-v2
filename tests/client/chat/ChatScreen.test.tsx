@@ -110,7 +110,7 @@ vi.mock("~/client/shared/components/terminal/AppShell", () => ({
 }));
 
 vi.mock("~/client/shared/hooks/usePrefs", () => ({
-  usePrefs: () => ({ locale: "en", theme: "dark", palette: "terminal" }),
+  usePrefs: () => ({ locale: "en", theme: "dark", palette: "barro" }),
 }));
 
 vi.mock("~/client/shared/stores/app", () => ({

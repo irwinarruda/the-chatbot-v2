@@ -9,7 +9,7 @@ import { useApp } from "~/client/shared/stores/app";
 import { DEFAULT_PREFS } from "~/contracts/http/shared/prefs-cookie";
 
 const mockedPrefs = vi.hoisted(() => ({
-  current: { locale: "en", theme: "dark", palette: "terminal" } as Prefs,
+  current: { locale: "en", theme: "dark", palette: "barro" } as Prefs,
 }));
 
 vi.mock("@tanstack/react-router", () => ({
@@ -28,7 +28,7 @@ vi.mock("~/client/shared/hooks/usePrefs", () => ({
 const dictionary = getDictionary("en");
 
 beforeEach(() => {
-  mockedPrefs.current = { locale: "en", theme: "dark", palette: "terminal" };
+  mockedPrefs.current = { locale: "en", theme: "dark", palette: "barro" };
   useApp.setState({ prefs: { ...DEFAULT_PREFS, locale: "en" } });
   vi.stubGlobal(
     "matchMedia",
@@ -129,7 +129,19 @@ describe("AppShell", () => {
     expect(document.documentElement.dataset.palette).toBe("favo");
   });
 
-  test("shows the Favo logo and offers Terminal back while Favo is on", () => {
+  test("shows the light-letter wordmark in the dark theme", () => {
+    render(
+      <AppShell activePath="/todo" dictionary={dictionary} title="Todos">
+        <p>content</p>
+      </AppShell>,
+    );
+
+    expect(
+      screen.getByRole("link", { name: "The Chatbot" }).querySelector("img"),
+    ).toHaveAttribute("src", "/brand/logo-dark.svg");
+  });
+
+  test("keeps the light wordmark and offers Barro back while Favo is on", () => {
     mockedPrefs.current = { locale: "en", theme: "light", palette: "favo" };
     render(
       <AppShell activePath="/todo" dictionary={dictionary} title="Todos">
@@ -139,11 +151,11 @@ describe("AppShell", () => {
 
     expect(
       screen.getByRole("button", {
-        name: dictionary.common.switchToTerminalPalette,
+        name: dictionary.common.switchToBarroPalette,
       }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "The Chatbot" }).querySelector("img"),
-    ).toHaveAttribute("src", "/logo-favo-light.svg");
+    ).toHaveAttribute("src", "/brand/logo-light.svg");
   });
 });

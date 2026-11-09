@@ -4,7 +4,7 @@ import type { Prefs } from "~/client/shared/app/entities/Prefs";
 import { AudioWaveform } from "~/client/shared/components/AudioWaveform";
 
 const mocked = vi.hoisted(() => ({
-  prefs: { locale: "en", theme: "dark", palette: "terminal" } as Prefs,
+  prefs: { locale: "en", theme: "dark", palette: "barro" } as Prefs,
   create: vi.fn(() => ({
     on: vi.fn(() => () => {}),
     destroy: vi.fn(),
