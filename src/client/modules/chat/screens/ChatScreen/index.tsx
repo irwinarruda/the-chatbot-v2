@@ -337,7 +337,7 @@ export function ChatScreen() {
               size="icon-xs"
               onClick={clearChatError}
               label={dictionary.common.dismiss}
-              className="pointer-fine:size-7 size-11 rounded-md border-0 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              className="pointer-fine:size-7 size-11 rounded-md border-0 p-0 text-destructive"
             >
               <X className="size-3.5" />
             </TooltipButton>
@@ -361,7 +361,7 @@ export function ChatScreen() {
             <EmptyHeader>
               <EmptyMedia
                 variant="icon"
-                className="size-10 border border-brand/20 bg-brand/10 text-brand-text"
+                className="size-10 border border-brand/20 bg-brand-soft text-brand-text"
               >
                 <MessageSquare className="size-4" aria-hidden="true" />
               </EmptyMedia>
@@ -465,7 +465,7 @@ export function ChatScreen() {
               label={t.scrollToLatest}
               variant="outline"
               size="icon"
-              className="pointer-events-auto rounded-full border-border bg-muted/95 p-0 text-muted-foreground shadow-lg shadow-scrim/15 backdrop-blur-sm hover:border-brand/35 hover:bg-brand/12 hover:text-brand-text"
+              className="pointer-events-auto rounded-full border-border bg-muted/95 p-0 text-muted-foreground shadow-lg shadow-scrim/15 backdrop-blur-sm hover:border-brand/35 hover:bg-brand-soft hover:text-brand-text"
             >
               <ArrowDown className="size-4" />
             </TooltipButton>
@@ -474,7 +474,7 @@ export function ChatScreen() {
         {isRecording ? (
           <Card
             size="sm"
-            className="mx-auto w-full max-w-2xl gap-0 rounded-xl border-destructive/30 bg-background/90 py-0 shadow-scrim/10 shadow-sm"
+            className="mx-auto w-full max-w-2xl gap-0 rounded-xl border-destructive-line bg-background/90 py-0 shadow-scrim/10 shadow-sm"
           >
             <CardContent className="flex flex-wrap items-center gap-2.5 px-3 py-3">
               <span
@@ -492,7 +492,7 @@ export function ChatScreen() {
                 type="button"
                 onClick={onCancelRecording}
                 variant="outline"
-                className="rounded-lg border-border bg-transparent font-mono text-muted-foreground text-sm shadow-none hover:border-destructive/35 hover:bg-destructive/10 hover:text-destructive"
+                className="rounded-lg border-border bg-transparent font-mono text-muted-foreground text-sm shadow-none hover:border-destructive-line hover:bg-destructive-soft hover:text-destructive"
               >
                 <Trash2 className="size-3.5" />
                 {t.cancelRecording}
@@ -501,7 +501,7 @@ export function ChatScreen() {
                 type="button"
                 onClick={onSendRecording}
                 variant="destructive"
-                className="rounded-lg border border-destructive/40 bg-destructive/10 font-mono text-destructive text-sm shadow-none hover:border-destructive/60 hover:bg-destructive/15 hover:text-destructive"
+                className="rounded-lg border border-destructive-line font-mono text-sm shadow-none hover:border-destructive"
               >
                 <Send className="size-3.5" />
                 {t.sendRecording}
@@ -611,7 +611,7 @@ export function ChatScreen() {
                   label={t.startRecording}
                   variant="ghost"
                   size="icon"
-                  className="pointer-fine:size-8 size-11 rounded-lg border border-transparent bg-transparent p-0 text-muted-foreground hover:border-brand/20 hover:bg-brand/12 hover:text-brand-text"
+                  className="pointer-fine:size-8 size-11 rounded-lg border border-transparent bg-transparent p-0 text-muted-foreground hover:border-brand/20 hover:bg-brand-soft hover:text-brand-text"
                 >
                   <Mic className="size-4" />
                 </TooltipButton>

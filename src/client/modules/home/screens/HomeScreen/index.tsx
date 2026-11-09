@@ -81,7 +81,7 @@ export function HomeScreen() {
                     to={item.href}
                     className="group flex items-center gap-3 px-4 py-3 outline-none transition-colors hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
                   >
-                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand/12 text-brand-text">
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand-text">
                       <Icon className="size-4" aria-hidden="true" />
                     </span>
                     <span className="min-w-0 flex-1">

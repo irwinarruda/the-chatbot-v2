@@ -243,7 +243,7 @@ function AudioTranscript({
           variant="ghost"
           size="sm"
           onClick={onToggleExpanded}
-          className="mt-1 h-11 pointer-fine:h-7 rounded-md border-0 px-2 font-mono text-info text-xs hover:bg-info/10 hover:text-info"
+          className="mt-1 h-11 pointer-fine:h-7 rounded-md border-0 px-2 font-mono text-info text-xs hover:bg-info-soft hover:text-info"
         >
           {isExpanded ? showLessLabel : showMoreLabel}
         </Button>

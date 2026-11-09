@@ -37,7 +37,7 @@ export function NotRegisteredScreen({ redirectTo }: { redirectTo: string }) {
         }
         heading={t.heading}
         icon={UserX}
-        iconClassName="bg-warning/10 text-warning"
+        iconClassName="bg-warning-soft text-warning"
         subtitle={t.subtitle}
       >
         {t.body}

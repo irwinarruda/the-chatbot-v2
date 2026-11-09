@@ -23,7 +23,7 @@ export function AuthCard({
     <section className="rounded-2xl border border-border bg-card p-6 text-center shadow-scrim/10 shadow-sm sm:p-8">
       <span
         className={cn(
-          "mx-auto mb-4 flex size-11 items-center justify-center rounded-full bg-brand/12 text-brand-text",
+          "mx-auto mb-4 flex size-11 items-center justify-center rounded-full bg-brand-soft text-brand-text",
           iconClassName,
         )}
       >
