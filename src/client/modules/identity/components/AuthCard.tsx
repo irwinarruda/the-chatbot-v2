@@ -29,7 +29,7 @@ export function AuthCard({
       >
         <Icon className="size-5" aria-hidden="true" />
       </span>
-      <h1 className="m-0 text-balance font-semibold text-foreground text-xl tracking-tight">
+      <h1 className="m-0 text-balance font-display font-semibold text-foreground text-title-sm tracking-tight">
         {heading}
       </h1>
       {subtitle && (

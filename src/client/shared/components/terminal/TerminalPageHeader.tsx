@@ -37,7 +37,7 @@ export function TerminalPageHeader({
   return (
     <header className="mb-6 flex items-center justify-between gap-4 sm:items-end">
       <div className="min-w-0 flex-1">
-        <h1 className="m-0 text-balance font-semibold text-2xl text-foreground tracking-tight">
+        <h1 className="m-0 text-balance font-display font-semibold text-foreground text-title tracking-tight">
           {heading}
         </h1>
         {subtitle && (

@@ -246,7 +246,7 @@
   "artifactsPage": {
     "windowTitle": "Artifacts",
     "viewerWindowTitle": "Artifacts",
-    "heading": "HTML Artifacts",
+    "heading": "HTML artifacts",
     "subtitle": "Publish structured pages from your coding agents and share them without giving their code access to the application.",
     "listLabel": "Published artifacts",
     "loading": "Loading artifacts...",
@@ -286,7 +286,7 @@
   },
   "cashFlowPage": {
     "windowTitle": "Cash flow",
-    "heading": "Cash Flow",
+    "heading": "Cash flow",
     "subtitle": "Your spreadsheet data, without having to use the spreadsheet.",
     "transactions": "Transactions",
     "newTransaction": "New transaction",
@@ -369,7 +369,7 @@
   },
   "billsPage": {
     "windowTitle": "Bills",
-    "heading": "Monthly Bills",
+    "heading": "Monthly bills",
     "subtitle": "A fresh checklist for every month. No bill left behind.",
     "currentMonth": "current month",
     "monthNavigationLabel": "Checklist month",

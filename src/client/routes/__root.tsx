@@ -92,6 +92,13 @@ function RootDocument({ children }: { children: ReactNode }) {
           type="font/woff2"
           crossOrigin=""
         />
+        <link
+          rel="preload"
+          href="/fonts/chakra-petch-600-latin.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin=""
+        />
       </head>
       <body suppressHydrationWarning={suppressHydrationWarning}>
         <TooltipProvider delay={250}>

@@ -88,14 +88,16 @@ function ChatMessageBody({
           {message.trace && (
             <GenerationTrace trace={message.trace} labels={activityLabels} />
           )}
-          <MessageContent
-            message={message}
-            isAudio={isAudio}
-            isSending={isSending}
-            showMoreLabel={showMoreLabel}
-            showLessLabel={showLessLabel}
-            onButtonReply={onButtonReply}
-          />
+          <div className="reading-surface">
+            <MessageContent
+              message={message}
+              isAudio={isAudio}
+              isSending={isSending}
+              showMoreLabel={showMoreLabel}
+              showLessLabel={showLessLabel}
+              onButtonReply={onButtonReply}
+            />
+          </div>
           {message.text && (
             <div className="mt-1.5 flex items-center">
               <Button
@@ -256,12 +258,12 @@ function FormattedChatText({ text }: { text: string }) {
 
   if (blocks.length === 0) {
     return (
-      <p className="wrap-break-word m-0 whitespace-pre-wrap text-base text-foreground leading-7" />
+      <p className="wrap-break-word m-0 whitespace-pre-wrap text-base leading-7" />
     );
   }
 
   return (
-    <div className="wrap-break-word flex flex-col gap-2.5 text-base text-foreground leading-7">
+    <div className="wrap-break-word flex flex-col gap-2.5 text-base leading-7">
       {blocks.map((block) => (
         <MessageBlock key={getBlockKey(serializeBlock(block))} block={block} />
       ))}
@@ -322,7 +324,7 @@ function MessageBlock({ block }: { block: WhatsAppBlockNode }) {
     case "quote": {
       const getQuoteKey = createSiblingKeyFactory();
       return (
-        <blockquote className="m-0 rounded-r-md border-syntax-keyword/60 border-l-2 bg-muted px-3 py-2 text-muted-foreground">
+        <blockquote className="m-0 rounded-r-md border-syntax-keyword/60 border-l-2 bg-muted px-3 py-2">
           <div className="flex flex-col gap-1">
             {block.lines.map((line) => (
               <p key={getQuoteKey(serializeInlineNodes(line))} className="m-0">
@@ -353,13 +355,13 @@ function InlineNode({ node }: { node: WhatsAppInlineNode }) {
       return <LinkedText value={node.value} />;
     case "bold":
       return (
-        <strong className="font-semibold text-foreground">
+        <strong>
           <InlineNodes nodes={node.children} />
         </strong>
       );
     case "italic":
       return (
-        <em className="text-foreground italic">
+        <em>
           <InlineNodes nodes={node.children} />
         </em>
       );
@@ -371,13 +373,13 @@ function InlineNode({ node }: { node: WhatsAppInlineNode }) {
       );
     case "inlineCode":
       return (
-        <code className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[0.8125em] text-syntax-function">
+        <code className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[0.8125em] text-foreground">
           {node.value}
         </code>
       );
     case "monospace":
       return (
-        <code className="rounded-md border border-border bg-code px-2 py-1 font-mono text-[0.8125em] text-syntax-function">
+        <code className="rounded-md border border-border bg-code px-2 py-1 font-mono text-[0.8125em] text-foreground">
           {node.value}
         </code>
       );
@@ -395,7 +397,7 @@ function LinkedText({ value }: { value: string }) {
           <a
             key={getPartKey(part)}
             href={part}
-            className="text-foreground underline decoration-syntax-type underline-offset-2 transition-colors hover:text-syntax-type focus-visible:text-syntax-type"
+            className="underline underline-offset-2"
           >
             {part}
           </a>

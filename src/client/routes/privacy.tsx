@@ -31,7 +31,7 @@ function PrivacyRoute() {
       dictionary={dictionary}
     >
       <div className="mx-auto w-full max-w-3xl">
-        <article className="terminal-prose">
+        <article className="terminal-prose reading-surface">
           <div dangerouslySetInnerHTML={{ __html: contentHtml }} />
         </article>
         <TerminalFooter className="mt-8">&copy; {t.copyright}</TerminalFooter>

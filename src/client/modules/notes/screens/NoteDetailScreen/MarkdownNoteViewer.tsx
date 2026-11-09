@@ -16,7 +16,7 @@ export function MarkdownNoteViewer({
     );
   }
   return (
-    <article className="terminal-prose min-w-0 overflow-x-auto">
+    <article className="terminal-prose reading-surface min-w-0 overflow-x-auto">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         skipHtml

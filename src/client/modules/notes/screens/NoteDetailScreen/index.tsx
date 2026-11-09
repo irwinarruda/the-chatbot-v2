@@ -181,7 +181,7 @@ export function NoteDetailScreen({
           </label>
           <Input
             id="note-name"
-            className="h-auto rounded-none border-0 bg-transparent px-0 py-1 font-semibold pointer-fine:text-2xl text-2xl text-foreground tracking-tight shadow-none focus-visible:border-transparent focus-visible:ring-0"
+            className="h-auto rounded-none border-0 bg-transparent px-0 py-1 font-display font-semibold pointer-fine:text-title text-foreground text-title tracking-tight shadow-none focus-visible:border-transparent focus-visible:ring-0"
             maxLength={160}
             onChange={(event) => setName(event.target.value)}
             value={name}
