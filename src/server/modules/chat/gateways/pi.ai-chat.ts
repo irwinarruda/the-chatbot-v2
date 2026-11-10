@@ -10,10 +10,6 @@ import {
 import { openAICompletionsApi } from "@earendil-works/pi-ai/api/openai-completions.lazy";
 import { builtinModels } from "@earendil-works/pi-ai/providers/all";
 import { z } from "zod";
-import {
-  ReplyWithOptionsToolDTO,
-  replyWithOptionsToolName,
-} from "~/contracts/tools/chat/reply-with-options";
 import type { ConversationSummary } from "~/domain/chat/conversation-summary";
 import {
   ReasoningEffort,
@@ -46,16 +42,6 @@ const summaryCandidateSchema = z.object({
   userProfile: z.array(z.string()),
   durableFacts: z.array(z.string()),
 });
-
-const replyWithOptionsTool: AiToolDefinitionDTO = {
-  name: replyWithOptionsToolName,
-  description: [
-    "Send the final user-visible assistant message with 1 to 3 selectable options.",
-    "Use this instead of writing choices in a text response.",
-    "This response is terminal: do not include text or call another tool in the same response.",
-  ].join("\n"),
-  inputSchema: ReplyWithOptionsToolDTO,
-};
 
 export interface AiCredentialStoreFactory {
   create(idUser: string): AiCredentialStore;
@@ -146,7 +132,7 @@ export class PiAiChatGateway implements AiChatGateway {
     const context = {
       systemPrompt,
       messages: PiMessageMapper.map(request.messages, model),
-      tools: this.getToolDefinitions(request.tools).map((tool) => ({
+      tools: request.tools.map((tool) => ({
         name: tool.name,
         description: tool.description,
         parameters: this.toJsonSchema(tool),
@@ -189,7 +175,7 @@ export class PiAiChatGateway implements AiChatGateway {
       request.channelAddress,
       request.memory,
     );
-    const tools = this.getToolDefinitions(request.tools).map((tool) => ({
+    const tools = request.tools.map((tool) => ({
       name: tool.name,
       description: tool.description,
       inputSchema: this.toJsonSchema(tool),
@@ -290,17 +276,6 @@ export class PiAiChatGateway implements AiChatGateway {
   private toJsonSchema(tool: AiToolDefinitionDTO): Record<string, unknown> {
     const { $schema, ...schema } = z.toJSONSchema(tool.inputSchema);
     return schema;
-  }
-
-  private getToolDefinitions(
-    tools: AiToolDefinitionDTO[],
-  ): AiToolDefinitionDTO[] {
-    if (tools.some((tool) => tool.name === replyWithOptionsToolName)) {
-      throw new ValidationException(
-        `Tool name ${replyWithOptionsToolName} is reserved for assistant output`,
-      );
-    }
-    return [...tools, replyWithOptionsTool];
   }
 
   private getProviderReasoningLevel(

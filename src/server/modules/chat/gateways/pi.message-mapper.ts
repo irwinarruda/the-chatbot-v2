@@ -9,6 +9,7 @@ import type {
   Usage,
 } from "@earendil-works/pi-ai";
 import { z } from "zod";
+import { replyWithOptionsToolName } from "~/contracts/tools/chat/reply-with-options";
 import type {
   AiChatContextMessageDTO,
   AiGenerationContextDTO,
@@ -41,6 +42,7 @@ export class PiMessageMapper {
     const mapped: PiMessage[] = [];
     const toolNames = new Map<string, string>();
     let currentGenerationId: string | undefined;
+    let optionsReplyCount = 0;
     for (const message of messages) {
       const content = message.content;
       if (content.type === MessageContentType.ToolResult) {
@@ -73,6 +75,10 @@ export class PiMessageMapper {
           );
         }
         const generationId = message.generation?.id;
+        let options: string[] = [];
+        if (content.type === MessageContentType.Button) {
+          options = content.options ?? [];
+        }
         let assistant = mapped[mapped.length - 1];
         if (
           assistant?.role !== "assistant" ||
@@ -82,7 +88,7 @@ export class PiMessageMapper {
             message.generation,
             model,
             message.timestamp,
-            content.type === MessageContentType.ToolCall,
+            content.type === MessageContentType.ToolCall || options.length > 0,
           );
           mapped.push(assistant);
         }
@@ -115,14 +121,34 @@ export class PiMessageMapper {
           });
           continue;
         }
-        let text = content.text;
-        if (content.type === MessageContentType.Button) {
-          text =
-            `${content.text}\n\nSelectable options: ${(content.options ?? []).join("; ")}`.trim();
+        if (options.length > 0) {
+          optionsReplyCount += 1;
+          const callId = `reply_${optionsReplyCount}`;
+          const outcome = {
+            status: ToolResultStatus.Succeeded,
+            data: { message: "Options sent" },
+          };
+          assistant.content.push({
+            type: "toolCall",
+            id: callId,
+            name: replyWithOptionsToolName,
+            arguments: { message: content.text, options },
+          });
+          mapped.push({
+            role: "toolResult",
+            toolCallId: callId,
+            toolName: replyWithOptionsToolName,
+            content: [{ type: "text", text: JSON.stringify(outcome) }],
+            details: outcome,
+            isError: false,
+            timestamp: message.timestamp,
+          });
+          currentGenerationId = undefined;
+          continue;
         }
         const textContent: TextContent = {
           type: "text",
-          text,
+          text: content.text,
         };
         if (content.type === MessageContentType.Text) {
           textContent.textSignature = content.textSignature;

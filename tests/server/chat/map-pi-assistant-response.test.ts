@@ -1,6 +1,5 @@
 import type { AssistantMessage } from "@earendil-works/pi-ai";
 import { MessageContentType } from "~/domain/chat/message-content-type";
-import { ValidationException } from "~/domain/shared/domain-errors";
 import { mapPiAssistantResponse } from "~/server/modules/chat/gateways/pi.assistant-response";
 
 function createAssistantMessage(
@@ -268,7 +267,7 @@ describe("mapPiAssistantResponse", () => {
     });
   });
 
-  test("rejects options replies mixed with business tools", () => {
+  test("leaves an options reply mixed with business tools as a tool call the executor answers", () => {
     const response = createAssistantMessage([
       {
         type: "toolCall",
@@ -284,19 +283,52 @@ describe("mapPiAssistantResponse", () => {
       },
     ]);
 
-    expect(() => mapPiAssistantResponse(response)).toThrow(ValidationException);
+    expect(mapPiAssistantResponse(response)).toEqual({
+      items: [
+        {
+          type: MessageContentType.ToolCall,
+          callId: "record-1",
+          name: "add_transaction",
+          arguments: { type: "Expense", value: 10, user_message: "10" },
+          thoughtSignature: undefined,
+        },
+        {
+          type: MessageContentType.ToolCall,
+          callId: "reply-1",
+          name: "reply_with_options",
+          arguments: { message: "Choose one", options: ["A", "B"] },
+          thoughtSignature: undefined,
+        },
+      ],
+    });
   });
 
-  test("rejects invalid options reply arguments", () => {
+  test("leaves an options reply with a button label over 20 characters as a tool call the executor answers", () => {
     const response = createAssistantMessage([
       {
         type: "toolCall",
         id: "reply-1",
         name: "reply_with_options",
-        arguments: { message: "Choose one", options: [] },
+        arguments: {
+          message: "Quer marcar a Academia como paga?",
+          options: ["Sim, marcar como paga", "Não"],
+        },
       },
     ]);
 
-    expect(() => mapPiAssistantResponse(response)).toThrow(ValidationException);
+    expect(mapPiAssistantResponse(response)).toEqual({
+      items: [
+        {
+          type: MessageContentType.ToolCall,
+          callId: "reply-1",
+          name: "reply_with_options",
+          arguments: {
+            message: "Quer marcar a Academia como paga?",
+            options: ["Sim, marcar como paga", "Não"],
+          },
+          thoughtSignature: undefined,
+        },
+      ],
+    });
   });
 });
