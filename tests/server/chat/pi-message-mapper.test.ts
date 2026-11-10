@@ -29,7 +29,7 @@ function contextMessages(
 }
 
 describe("PiMessageMapper", () => {
-  test("maps text, buttons, and audio transcripts in order", () => {
+  test("maps text, options replies, and audio transcripts in order", () => {
     const messages = PiMessageMapper.map(
       contextMessages([
         {
@@ -59,12 +59,91 @@ describe("PiMessageMapper", () => {
     expect(messages[0]).toMatchObject({ role: "user", content: "hello" });
     expect(messages[1]).toMatchObject({
       role: "assistant",
-      content: [{ type: "text", text: "choose\n\nSelectable options: A; B" }],
+      stopReason: "toolUse",
+      content: [
+        {
+          type: "toolCall",
+          id: "reply_1",
+          name: "reply_with_options",
+          arguments: { message: "choose", options: ["A", "B"] },
+        },
+      ],
     });
     expect(messages[2]).toMatchObject({
+      role: "toolResult",
+      toolCallId: "reply_1",
+      toolName: "reply_with_options",
+      isError: false,
+    });
+    expect(messages[3]).toMatchObject({
       role: "user",
       content: "audio text",
     });
+  });
+
+  test("replays each options reply as its own tool call, after the text of the same generation", () => {
+    const generation = {
+      id: "generation-1",
+      finishReason: "toolUse",
+      timestamp: 1,
+    };
+    const messages = PiMessageMapper.map(
+      contextMessages([
+        {
+          role: MessageRole.Assistant,
+          generation,
+          content: {
+            type: MessageContentType.Text,
+            text: "Academia registrada",
+          },
+        },
+        {
+          role: MessageRole.Assistant,
+          generation,
+          content: {
+            type: MessageContentType.Button,
+            text: "Marcar como paga?",
+            options: ["Sim", "Não"],
+          },
+        },
+        {
+          role: MessageRole.User,
+          content: { type: MessageContentType.Button, text: "Sim" },
+        },
+        {
+          role: MessageRole.Assistant,
+          content: {
+            type: MessageContentType.Button,
+            text: "Apagar a tarefa?",
+            options: ["Confirmar", "Cancelar"],
+          },
+        },
+      ]),
+      model,
+    );
+
+    expect(messages.map((message) => message.role)).toEqual([
+      "assistant",
+      "toolResult",
+      "user",
+      "assistant",
+      "toolResult",
+    ]);
+    expect(messages[0]).toMatchObject({
+      content: [
+        { type: "text", text: "Academia registrada" },
+        {
+          type: "toolCall",
+          id: "reply_1",
+          arguments: { message: "Marcar como paga?", options: ["Sim", "Não"] },
+        },
+      ],
+    });
+    expect(messages[2]).toMatchObject({ role: "user", content: "Sim" });
+    expect(messages[3]).toMatchObject({
+      content: [{ type: "toolCall", id: "reply_2" }],
+    });
+    expect(JSON.stringify(messages)).not.toContain("Selectable options");
   });
 
   test("groups assistant tool calls and resolves result tool names", () => {

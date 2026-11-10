@@ -1384,6 +1384,69 @@ describe("MessagingService", () => {
     expect(chat?.messages[5]?.audience).toBe(MessageAudience.Both);
   });
 
+  test("an options reply with a button label WhatsApp refuses goes back to the model and the corrected one reaches the user", async () => {
+    await orquestrator.clearDatabase();
+    const user = await orquestrator.createUser({
+      phoneNumber: "5511912345678",
+    });
+    const webAddress = user.email ?? "";
+    const aiGateway = orquestrator.aiGateway;
+    aiGateway.scriptedResponses = [
+      {
+        toolCalls: [
+          {
+            type: MessageContentType.ToolCall,
+            callId: "call-reply",
+            name: "reply_with_options",
+            arguments: {
+              message: "Quer marcar a Academia como paga?",
+              options: ["Sim, marcar como paga", "Não"],
+            },
+          },
+        ],
+        finishReason: "tool_calls",
+      },
+      {
+        content: {
+          type: MessageContentType.Button,
+          text: "Quer marcar a Academia como paga?",
+          options: ["Sim", "Não"],
+        },
+        toolCalls: [],
+        finishReason: "stop",
+      },
+    ];
+
+    await orquestrator.messagingService.receiveWebMessage(webAddress, {
+      text: "paguei a academia",
+    });
+    await new Promise((r) => setTimeout(r, delay));
+
+    const chat = await orquestrator.messagingService.getChatByChannelAddress(
+      webAddress,
+      ChatChannel.Web,
+    );
+    const turnId = chat?.messages[0]?.turnId ?? "";
+    expect(chat?.getToolResult(turnId, "call-reply")?.content).toMatchObject({
+      type: MessageContentType.ToolResult,
+      outcome: {
+        status: ToolResultStatus.Failed,
+        code: "InvalidArguments",
+        message:
+          "Invalid arguments for reply_with_options: options.0: A button label has at most 20 characters",
+      },
+    });
+    expect(
+      aiGateway.lastRequest?.messages.map((message) => message.content),
+    ).toContainEqual(chat?.getToolResult(turnId, "call-reply")?.content);
+    expect(chat?.messages.at(-1)?.content).toEqual({
+      type: MessageContentType.Button,
+      text: "Quer marcar a Academia como paga?",
+      options: ["Sim", "Não"],
+    });
+    expect(chat?.messages.at(-1)?.audience).toBe(MessageAudience.Both);
+  });
+
   test("persisted results prevent duplicate execution and unknown outcomes are not retried", async () => {
     await orquestrator.clearDatabase();
     const user = await orquestrator.createUser({

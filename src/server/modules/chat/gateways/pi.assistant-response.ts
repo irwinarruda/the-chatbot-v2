@@ -4,7 +4,6 @@ import {
   replyWithOptionsToolName,
 } from "~/contracts/tools/chat/reply-with-options";
 import { MessageContentType } from "~/domain/chat/message-content-type";
-import { ValidationException } from "~/domain/shared/domain-errors";
 import type { AiCompletionResponseDTO } from "./ai-chat";
 
 export function mapPiAssistantResponse(
@@ -13,29 +12,14 @@ export function mapPiAssistantResponse(
   const calls = response.content.filter(
     (content) => content.type === "toolCall",
   );
-  const replyCalls = calls.filter(
-    (call) => call.name === replyWithOptionsToolName,
-  );
-  if (replyCalls.length > 1) {
-    throw new ValidationException(
-      "The AI returned more than one options reply",
-    );
+  let reply: ReplyWithOptionsToolDTO | undefined;
+  if (calls.length === 1 && calls[0].name === replyWithOptionsToolName) {
+    reply = ReplyWithOptionsToolDTO.safeParse(calls[0].arguments).data;
   }
-  const replyCall = replyCalls[0];
-  if (replyCall) {
-    if (calls.length > 1) {
-      throw new ValidationException(
-        "An options reply cannot include other tool calls",
-      );
-    }
-    const reply = ReplyWithOptionsToolDTO.safeParse(replyCall.arguments);
-    if (!reply.success) {
-      throw new ValidationException(
-        "The options reply does not match the expected schema",
-      );
-    }
+  if (reply) {
+    const { message, options } = reply;
     const questionLines = new Set(
-      reply.data.message
+      message
         .split("\n")
         .map((line) => line.trim())
         .filter(Boolean),
@@ -79,8 +63,8 @@ export function mapPiAssistantResponse(
         ...leadingTexts,
         {
           type: MessageContentType.Button,
-          text: reply.data.message,
-          options: reply.data.options,
+          text: message,
+          options,
         },
       ],
     };
