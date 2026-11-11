@@ -76,14 +76,14 @@ function createChat(): WebChatDTO {
         id: demoId(101),
         type: "text",
         userType: "user",
-        text: "Add oat milk and coffee beans to my todos, and remind me to renew my passport by Friday.",
-        createdAt: at(3, 9, 12),
+        text: "How much did I spend on groceries this month?",
+        createdAt: at(3, 9, 20),
       },
       {
         id: demoId(102),
         type: "text",
         userType: "bot",
-        text: "Done. I added *oat milk* and *coffee beans*, and a todo to _renew your passport_ due Friday, November 6.",
+        text: "You spent *R$ 842.30* on groceries in November, across 6 transactions, _about 12% less_ than October. They are under `Groceries` in your sheet: https://sheets.example.com/ada/finance",
         trace: [
           {
             id: demoId(201),
@@ -94,46 +94,26 @@ function createChat(): WebChatDTO {
             items: [
               {
                 type: "reasoning",
-                text: "Two shopping items and one dated todo. Friday is November 6.",
+                text: "This month is November so far. Sum the Groceries category and compare it with October.",
               },
               {
                 type: "toolCall",
-                callId: "call-create-todos",
-                name: "create_todos",
-                arguments: {
-                  todos: [
-                    { name: "Oat milk" },
-                    { name: "Coffee beans" },
-                    { name: "Renew passport", due_date: "2026-11-06" },
-                  ],
-                },
+                callId: "call-get-latest-transactions",
+                name: "get_latest_transactions",
+                arguments: { limit: 60 },
               },
               {
                 type: "toolResult",
-                callId: "call-create-todos",
-                outcome: { status: "succeeded", data: { count: 3 } },
+                callId: "call-get-latest-transactions",
+                outcome: { status: "succeeded", data: { count: 60 } },
               },
             ],
           },
         ],
-        createdAt: at(3, 9, 12),
+        createdAt: at(3, 9, 20),
       },
       {
         id: demoId(103),
-        type: "text",
-        userType: "user",
-        text: "How much did I spend on groceries this month?",
-        createdAt: at(3, 9, 20),
-      },
-      {
-        id: demoId(104),
-        type: "text",
-        userType: "bot",
-        text: "You spent *R$ 842.30* on groceries in November, across 6 transactions, _about 12% less_ than October. They are under `Groceries` in your sheet: https://sheets.example.com/ada/finance",
-        createdAt: at(3, 9, 20),
-      },
-      {
-        id: demoId(105),
         type: "interactive",
         userType: "bot",
         text: "I found a R$ 119.90 charge from your internet provider on November 2. Should I mark *Internet* as paid for November?",

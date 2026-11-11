@@ -9,7 +9,7 @@ Every picture of the app in the README comes from one command, so they all look 
 
 ```sh
 bun run screenshots              # every scene, into docs/assets
-bun run screenshots chat todos   # just these
+bun run screenshots chat-dark todos   # just these
 bun run dev:mock                 # the app on demo data at http://localhost:3300, by hand
 SCREENSHOTS_DIR=/tmp/try bun run screenshots   # try it without touching docs/assets
 ```
@@ -48,7 +48,7 @@ These live at the top of `infra/scripts/screenshots.ts` and in `SceneViewport`. 
 2. Add a scene to `Scenes`, with a `waitFor` text that only appears once the data has loaded.
 3. Run `bun run dev:mock` and open the path to check it by hand.
 4. Run `bun run screenshots <scene>`, and read the image.
-5. Add it to the README with alt text that describes what the picture shows. The hero is `home-dark` and `home-light` with `#gh-dark-mode-only` and `#gh-light-mode-only`; other pictures use `width="760"`, or `width="380"` inside the workspace table.
+5. Add it to the README with alt text that describes what the picture shows. The hero is `chat-dark` and `chat-light` with `#gh-dark-mode-only` and `#gh-light-mode-only`; other pictures use `width="760"`, or `width="380"` inside the workspace table.
 
 A scene the README does not use is noise: remove it with its picture.
 
