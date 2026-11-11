@@ -13,21 +13,15 @@ export interface Scene {
 }
 
 export const Scenes: Record<string, Scene> = {
-  "home-dark": {
-    path: "/",
-    theme: "dark",
-    viewport: "desktop",
-    waitFor: "Pending tasks",
-  },
-  "home-light": {
-    path: "/",
-    theme: "light",
-    viewport: "desktop",
-    waitFor: "Pending tasks",
-  },
-  chat: {
+  "chat-dark": {
     path: "/chat",
     theme: "dark",
+    viewport: "desktop",
+    waitFor: "Yes, mark it paid",
+  },
+  "chat-light": {
+    path: "/chat",
+    theme: "light",
     viewport: "desktop",
     waitFor: "Yes, mark it paid",
   },

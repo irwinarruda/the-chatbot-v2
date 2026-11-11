@@ -20,8 +20,8 @@
 </p>
 
 <p align="center">
-  <img src="docs/assets/home-dark.png#gh-dark-mode-only" alt="The Chatbot home page in Barro Slate, the dark theme: an app window whose title bar holds every workspace as a tab, and a Today row with pending tasks, money left to pay, net balance and notes" width="900">
-  <img src="docs/assets/home-light.png#gh-light-mode-only" alt="The Chatbot home page in Barro Kaolin, the light theme: an app window whose title bar holds every workspace as a tab, and a Today row with pending tasks, money left to pay, net balance and notes" width="900">
+  <img src="docs/assets/chat-dark.png#gh-dark-mode-only" alt="The Chatbot web chat in Barro Slate, the dark theme: an app window whose title bar holds every workspace as a tab, where the assistant answers a spending question after working through a tool, then offers buttons to mark a bill as paid" width="900">
+  <img src="docs/assets/chat-light.png#gh-light-mode-only" alt="The Chatbot web chat in Barro Kaolin, the light theme: an app window whose title bar holds every workspace as a tab, where the assistant answers a spending question after working through a tool, then offers buttons to mark a bill as paid" width="900">
 </p>
 
 The Chatbot is a personal assistant, not a SaaS. It started as a small bridge between WhatsApp and a Google Sheet: send a message, log an expense. It grew into one app with two front doors, WhatsApp and the web, and the same core behind both.
@@ -39,12 +39,6 @@ Built for one user. Reviewed by the same user. Maintained, hopefully, by him too
 | **Monthly Bills** | A recurring checklist with progress by count and value, payments marked from chat or the web, and the history kept. |
 
 Google sign-in guards the web workspaces and brings you back to the page you asked for. The web app puts every workspace in one window with tabs at the top, a bottom sheet on phones, in Portuguese or English.
-
-<p align="center">
-  <img src="docs/assets/chat.png" alt="The web chat: the assistant adds todos through a tool, answers a spending question, and offers buttons to mark a bill as paid" width="760">
-  <br>
-  <sub><em>Web chat and WhatsApp reach the same tools and the same conversation.</em></sub>
-</p>
 
 | Todos | Notes |
 | --- | --- |
