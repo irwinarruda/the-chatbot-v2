@@ -85,9 +85,7 @@ describe("artifact management", () => {
       baseUrl: window.location.origin,
       artifactToken: "tca_generated-upload-token",
     });
-    expect(
-      screen.getByText("~/.agents/skills/the-chatbot-artifact/config.json"),
-    ).toBeVisible();
+    expect(screen.getByText("~/.config/the-chatbot/config.json")).toBeVisible();
   });
 
   test("serializes artifact mutations across rows", async () => {

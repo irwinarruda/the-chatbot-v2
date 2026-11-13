@@ -187,6 +187,32 @@ Each user's provider credentials are encrypted before they are stored. OpenAI Co
 
 Credential setup, smoke tests and Pi upgrades are maintainer work, documented by the repository's scripts rather than the everyday setup.
 
+## Publishing from a coding agent
+
+The web app has an Artifacts page: HTML documents an agent publishes and you open from a link. The skill that publishes them lives in [`skills/the-chatbot-artifact`](skills/the-chatbot-artifact), next to the server rules it has to follow, and this repository is also the marketplace that installs it.
+
+In Claude Code:
+
+```text
+/plugin marketplace add irwinarruda/the-chatbot-v2
+/plugin install the-chatbot@the-chatbot
+```
+
+In Codex:
+
+```bash
+codex plugin marketplace add irwinarruda/the-chatbot-v2
+codex plugin add the-chatbot@the-chatbot
+```
+
+In any other agent that reads Agent Skills:
+
+```bash
+npx skills add irwinarruda/the-chatbot-v2 --skill the-chatbot-artifact
+```
+
+Then log in: create an upload token on the Artifacts page, press the copy button beside the configuration it shows, and ask the agent to log in to The Chatbot. The skill's `login.mjs` takes the configuration from the clipboard and saves it, private, at `~/.config/the-chatbot/config.json`, so the token never passes through the model. It stays outside the skill, so updating the skill never deletes it.
+
 ## Testing
 
 - The main Vitest suite runs serially, with a 30-second timeout, against a real PostgreSQL test database the project scripts prepare.
