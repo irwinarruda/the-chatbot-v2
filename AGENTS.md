@@ -80,6 +80,10 @@ Load the skills that govern the paths a task touches:
 
 Skills that govern one side carry its prefix (`server-`, `client-`, `domain-`, `contracts-`). Skills that span sides have no prefix. A `-styleguide` skill says how one layer's code is written; an `-architecture` skill says where things live and which way dependencies point.
 
+## Published skills
+
+`.agents/skills` is for working on this repository. `skills/` is what the project ships to its users: `.claude-plugin/marketplace.json` publishes that folder as the `the-chatbot` plugin. `skills/the-chatbot-artifact` is the client of the artifacts module, so change it in the same commit as what it mirrors: the allowed HTML and code languages, the design tokens, `ARTIFACT_MAX_SOURCE_BYTES`, the upload token format, the `/api/v1/artifacts` endpoints, and the config path the Artifacts page shows.
+
 ## Generated files
 
 `*.gen.ts` files (including `src/routeTree.gen.ts`) are auto-generated and gitignored. Do not edit them manually.

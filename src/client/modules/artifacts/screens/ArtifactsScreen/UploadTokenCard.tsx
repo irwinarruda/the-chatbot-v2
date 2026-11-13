@@ -27,8 +27,7 @@ import { usePrefs } from "~/client/shared/hooks/usePrefs";
 import { getDictionary } from "~/client/shared/i18n/dictionary";
 import { useApp } from "~/client/shared/stores/app";
 
-const ARTIFACT_SKILL_CONFIG_PATH =
-  "~/.agents/skills/the-chatbot-artifact/config.json";
+const ARTIFACT_SKILL_CONFIG_PATH = "~/.config/the-chatbot/config.json";
 
 function createArtifactSkillConfig(artifactToken: string): string {
   let environment = "production";
