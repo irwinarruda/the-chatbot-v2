@@ -12,9 +12,11 @@ Choose one path per mutation: accept the authoritative entity the server returns
 
 Use them only when latency hurts and there is a deterministic reconciliation key. An optimistic item has a client correlation id, a visible pending or failed state, exact reconciliation and a rollback. Never let a failed optimistic item look confirmed.
 
+A dropped connection is not a failed send. A repository that cannot confirm the outcome returns `undefined` instead of throwing; the service then reads the authoritative snapshot until the item's correlation id is answered, sends it again with the same id when the server never got it, and gives up with its own error at a deadline. Roll back only when the server rejected the item (`ChatService.submitMessage`).
+
 ## Streams
 
-The repository owns parsing, reconnect and cancellation; the service owns connection state and reduces events by persisted id; the view renders status. Key each subscription by the conversation it belongs to; opening another one cancels the previous one and ignores late callbacks. Reduce updates by exact id, never by "the most plausible item". Batch high-frequency progress (`createChatProgressBatcher`) before it reaches the store.
+The repository owns parsing, the idle timeout and telling a lost connection from a rejection; the service owns connection state and reduces events by persisted id; the view renders status. Key each subscription by the conversation it belongs to; opening another one cancels the previous one and ignores late callbacks. Reduce updates by exact id, never by "the most plausible item". Batch high-frequency progress (`createChatProgressBatcher`) before it reaches the store.
 
 ## Media and devices
 

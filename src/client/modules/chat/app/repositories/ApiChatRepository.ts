@@ -26,13 +26,46 @@ export function parseChatMessages(data: unknown): ChatMessageDTO[] {
   return parseWebChat(data).messages;
 }
 
-async function parseWebChatStream(
-  response: Response,
-  onProgress?: ChatProgressListener,
-): Promise<WebChatDTO> {
-  if (!response.body) {
-    throw new ApiError("The chat response had no body", 502);
+const streamIdleTimeoutMs = 45_000;
+
+async function openWebChatStream(
+  url: string,
+  options: RequestInit,
+): Promise<Response | undefined> {
+  try {
+    return await apiClient.request(url, options);
+  } catch (error) {
+    if (error instanceof TypeError) return undefined;
+    throw error;
   }
+}
+
+async function readWebChatStreamChunk(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+): Promise<ReadableStreamReadResult<Uint8Array> | undefined> {
+  let idleTimer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      reader.read(),
+      new Promise<undefined>((resolve) => {
+        idleTimer = setTimeout(() => resolve(undefined), streamIdleTimeoutMs);
+      }),
+    ]);
+  } catch (error) {
+    if (error instanceof TypeError) return undefined;
+    throw error;
+  } finally {
+    clearTimeout(idleTimer);
+  }
+}
+
+async function sendThroughWebChatStream(
+  url: string,
+  options: RequestInit,
+  onProgress?: ChatProgressListener,
+): Promise<WebChatDTO | undefined> {
+  const response = await openWebChatStream(url, options);
+  if (!response?.body) return undefined;
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
@@ -51,30 +84,20 @@ async function parseWebChatStream(
   }
   try {
     while (true) {
-      const { done, value } = await reader.read();
-      buffer += decoder.decode(value, { stream: !done });
+      const chunk = await readWebChatStreamChunk(reader);
+      if (!chunk) return undefined;
+      buffer += decoder.decode(chunk.value, { stream: !chunk.done });
       let lineEnd = buffer.indexOf("\n");
       while (lineEnd >= 0) {
         parseLine(buffer.slice(0, lineEnd));
         buffer = buffer.slice(lineEnd + 1);
         lineEnd = buffer.indexOf("\n");
       }
-      if (done) break;
+      if (chunk.done) return snapshot;
     }
-    parseLine(buffer);
-    if (!snapshot) {
-      throw new ApiError(
-        "The chat response ended without an authoritative snapshot",
-        502,
-      );
-    }
-    return snapshot;
   } finally {
-    try {
-      await reader.cancel();
-    } finally {
-      reader.releaseLock();
-    }
+    await reader.cancel().catch(() => undefined);
+    reader.releaseLock();
   }
 }
 
@@ -87,27 +110,33 @@ export const apiChatRepository: ChatRepository = {
   async sendMessage(
     dto: SendWebMessageDTO,
     onProgress?: ChatProgressListener,
-  ): Promise<WebChatDTO> {
-    const response = await apiClient.request("/api/v1/web/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(dto),
-    });
-    return parseWebChatStream(response, onProgress);
+  ): Promise<WebChatDTO | undefined> {
+    return sendThroughWebChatStream(
+      "/api/v1/web/messages",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dto),
+      },
+      onProgress,
+    );
   },
 
   async sendAudio(
     dto: SendWebAudioDTO,
     onProgress?: ChatProgressListener,
-  ): Promise<WebChatDTO> {
-    const response = await apiClient.request("/api/v1/web/audio", {
-      method: "POST",
-      headers: {
-        "Content-Type": dto.mimeType,
-        "X-Client-Message-Id": dto.clientMessageId,
+  ): Promise<WebChatDTO | undefined> {
+    return sendThroughWebChatStream(
+      "/api/v1/web/audio",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": dto.mimeType,
+          "X-Client-Message-Id": dto.clientMessageId,
+        },
+        body: dto.blob,
       },
-      body: dto.blob,
-    });
-    return parseWebChatStream(response, onProgress);
+      onProgress,
+    );
   },
 };

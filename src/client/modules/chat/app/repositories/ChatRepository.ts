@@ -14,9 +14,9 @@ export interface ChatRepository {
   sendMessage(
     dto: SendWebMessageDTO,
     onProgress?: ChatProgressListener,
-  ): Promise<WebChatDTO>;
+  ): Promise<WebChatDTO | undefined>;
   sendAudio(
     dto: SendWebAudioDTO,
     onProgress?: ChatProgressListener,
-  ): Promise<WebChatDTO>;
+  ): Promise<WebChatDTO | undefined>;
 }

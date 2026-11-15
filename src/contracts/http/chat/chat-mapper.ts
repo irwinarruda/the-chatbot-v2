@@ -15,11 +15,13 @@ import {
 export function toChannelMessageResponse(
   message: Message,
   trace?: AiGenerationTraceDTO[],
+  isAnswered?: boolean,
 ): ChannelMessageResponseDTO {
   return ChannelMessageResponseDTO.parse({
     ...message.toJSON(),
     clientMessageId: message.channelMessageId,
     trace,
+    isAnswered,
   });
 }
 
@@ -38,6 +40,7 @@ export function toChatMessagesResponse(
   }
   const channelMessages = chat.getChannelMessages();
   const traceAnchorByTurn = new Map<string, string>();
+  const answeredTurnIds = new Set<string>();
   const messagesByGenerationId = new Map<string, Message[]>();
   for (const message of chat.messages) {
     if (message.generationId === undefined) continue;
@@ -52,10 +55,9 @@ export function toChatMessagesResponse(
     generationsByTurnId.set(generation.turnId, generations);
   }
   for (const message of channelMessages) {
-    if (
-      message.role === MessageRole.Assistant &&
-      generationsByTurnId.has(message.turnId)
-    ) {
+    if (message.role !== MessageRole.Assistant) continue;
+    answeredTurnIds.add(message.turnId);
+    if (generationsByTurnId.has(message.turnId)) {
       traceAnchorByTurn.set(message.turnId, message.id);
     }
   }
@@ -69,7 +71,11 @@ export function toChatMessagesResponse(
         );
         if (trace.length === 0) trace = undefined;
       }
-      return toChannelMessageResponse(message, trace);
+      let isAnswered: boolean | undefined;
+      if (message.role === MessageRole.User) {
+        isAnswered = answeredTurnIds.has(message.turnId);
+      }
+      return toChannelMessageResponse(message, trace, isAnswered);
     }),
     currentModel: modelConfiguration.currentModel,
     availableModels: modelConfiguration.availableModels,

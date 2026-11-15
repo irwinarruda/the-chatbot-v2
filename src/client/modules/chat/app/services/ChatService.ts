@@ -1,6 +1,7 @@
 import type { StateCreator } from "zustand";
 import { compute } from "zustand-computed-state";
 import type { ChatResponseProgressDTO } from "~/client/modules/chat/app/dtos/ChatResponseProgressDTO";
+import type { ChatProgressListener } from "~/client/modules/chat/app/repositories/ChatRepository";
 import { createChatProgressBatcher } from "~/client/modules/chat/app/utils/createChatProgressBatcher";
 import type { SessionService } from "~/client/modules/identity/app/services/SessionService";
 import { container } from "~/client/shared/container";
@@ -15,7 +16,14 @@ import {
   type ReasoningEffort as ReasoningEffortType,
 } from "~/domain/chat/reasoning-effort";
 
-export type ChatErrorCode = "loading" | "sending" | "microphone";
+export type ChatErrorCode = "loading" | "sending" | "unanswered" | "microphone";
+
+type ChatSend = (
+  onProgress: ChatProgressListener,
+) => Promise<WebChatDTO | undefined>;
+
+const answerPollMs = 3_000;
+const answerDeadlineMs = 300_000;
 
 export type ChatService = {
   chatMessages: ChatMessageDTO[];
@@ -69,31 +77,21 @@ export const createChatService: StateCreator<ChatState, [], [], ChatService> = (
       supportedReasoningEfforts: chat.supportedReasoningEfforts,
     });
   }
-  async function sendTextMessage(
-    text: string,
-    type: "text" | "command",
-    clearInput: boolean,
+  async function submitMessage(
+    optimistic: ChatMessageDTO,
+    send: ChatSend,
+    draft?: string,
   ) {
-    const { isChatSubmitting } = get();
-    if (!text || isChatSubmitting) return;
-    const { invalidateChatRequests } = get();
-
+    const { isChatSubmitting, invalidateChatRequests } = get();
+    if (isChatSubmitting) return;
     invalidateChatRequests();
     const request = generation;
-    const submittingState: Partial<ChatService> = {
+    set((state) => ({
+      chatMessages: [...state.chatMessages, optimistic],
       chatResponseProgress: undefined,
+      chatError: undefined,
       isChatSubmitting: true,
-    };
-    if (clearInput) submittingState.chatInput = "";
-    set(submittingState);
-    const optimistic: ChatMessageDTO = {
-      id: crypto.randomUUID(),
-      type,
-      userType: "user",
-      text,
-      createdAt: new Date().toISOString(),
-    };
-    set((state) => ({ chatMessages: [...state.chatMessages, optimistic] }));
+    }));
     const progressBatcher = createChatProgressBatcher(
       (chatResponseProgress) => {
         if (request === generation) set({ chatResponseProgress });
@@ -101,27 +99,68 @@ export const createChatService: StateCreator<ChatState, [], [], ChatService> = (
     );
     progressBatchers.add(progressBatcher);
     try {
-      const chat = await container.get("ChatRepository").sendMessage(
-        {
-          text,
-          clientMessageId: optimistic.id,
-        },
-        progressBatcher.push,
-      );
-      progressBatcher.cancel();
+      const deadline = Date.now() + answerDeadlineMs;
+      let chat = await send(progressBatcher.push);
+      let sent = findSentMessage(chat, optimistic.id);
+      while (!chat || !sent?.isAnswered) {
+        if (request !== generation) return;
+        if (Date.now() >= deadline) {
+          if (chat && sent) applyChatSnapshot(chat);
+          set({ chatError: "unanswered", chatResponseProgress: undefined });
+          return;
+        }
+        await wait(answerPollMs);
+        if (request !== generation) return;
+        chat = await readReachableChat();
+        if (request !== generation) return;
+        if (chat && !findSentMessage(chat, optimistic.id)) {
+          chat = await send(progressBatcher.push);
+        }
+        sent = findSentMessage(chat, optimistic.id);
+      }
       if (request !== generation) return;
       applyChatSnapshot(chat);
     } catch (error) {
       if (request !== generation) return;
-      set({
-        chatError: clientError(error, "sending"),
-        chatResponseProgress: undefined,
+      set((state) => {
+        const failed: Partial<ChatService> = {
+          chatMessages: state.chatMessages.filter(
+            (message) => message.id !== optimistic.id,
+          ),
+          chatError: clientError(error, "sending"),
+          chatResponseProgress: undefined,
+        };
+        if (draft !== undefined && state.chatInput === "") {
+          failed.chatInput = draft;
+        }
+        return failed;
       });
     } finally {
       progressBatcher.cancel();
       progressBatchers.delete(progressBatcher);
       if (request === generation) set({ isChatSubmitting: false });
     }
+  }
+  async function sendTextMessage(
+    text: string,
+    type: "text" | "command",
+    draft?: string,
+  ) {
+    const clientMessageId = crypto.randomUUID();
+    await submitMessage(
+      {
+        id: clientMessageId,
+        type,
+        userType: "user",
+        text,
+        createdAt: new Date().toISOString(),
+      },
+      (onProgress) =>
+        container
+          .get("ChatRepository")
+          .sendMessage({ text, clientMessageId }, onProgress),
+      draft,
+    );
   }
   return {
     chatMessages: [],
@@ -195,7 +234,8 @@ export const createChatService: StateCreator<ChatState, [], [], ChatService> = (
       const { chatInput, isChatSubmitting } = get();
       const text = chatInput.trim();
       if (!text || isChatSubmitting) return;
-      await sendTextMessage(text, "text", true);
+      set({ chatInput: "" });
+      await sendTextMessage(text, "text", text);
     },
     async setModel(model) {
       const { currentModel, isChatSubmitting } = get();
@@ -206,105 +246,48 @@ export const createChatService: StateCreator<ChatState, [], [], ChatService> = (
       ) {
         return;
       }
-      await sendTextMessage(`/model ${model.model}`, "command", false);
+      await sendTextMessage(`/model ${model.model}`, "command");
     },
     async setReasoningEffort(effort) {
       const { reasoningEffort, isChatSubmitting } = get();
       if (effort === reasoningEffort || isChatSubmitting) return;
-      await sendTextMessage(`/effort ${effort}`, "command", false);
+      await sendTextMessage(`/effort ${effort}`, "command");
     },
     async sendButtonReply(buttonReply) {
-      const { isChatSubmitting } = get();
-      if (isChatSubmitting) return;
-      const { invalidateChatRequests } = get();
-      invalidateChatRequests();
-      const request = generation;
-      set({ chatResponseProgress: undefined, isChatSubmitting: true });
-      const optimistic: ChatMessageDTO = {
-        id: crypto.randomUUID(),
-        type: "interactive",
-        userType: "user",
-        buttonReply,
-        createdAt: new Date().toISOString(),
-      };
-      set((state) => ({ chatMessages: [...state.chatMessages, optimistic] }));
-      const progressBatcher = createChatProgressBatcher(
-        (chatResponseProgress) => {
-          if (request === generation) set({ chatResponseProgress });
+      const clientMessageId = crypto.randomUUID();
+      await submitMessage(
+        {
+          id: clientMessageId,
+          type: "interactive",
+          userType: "user",
+          buttonReply,
+          createdAt: new Date().toISOString(),
         },
+        (onProgress) =>
+          container
+            .get("ChatRepository")
+            .sendMessage({ buttonReply, clientMessageId }, onProgress),
       );
-      progressBatchers.add(progressBatcher);
-      try {
-        const chat = await container.get("ChatRepository").sendMessage(
-          {
-            buttonReply,
-            clientMessageId: optimistic.id,
-          },
-          progressBatcher.push,
-        );
-        progressBatcher.cancel();
-        if (request !== generation) return;
-        applyChatSnapshot(chat);
-      } catch (error) {
-        if (request !== generation) return;
-        set({
-          chatError: clientError(error, "sending"),
-          chatResponseProgress: undefined,
-        });
-      } finally {
-        progressBatcher.cancel();
-        progressBatchers.delete(progressBatcher);
-        if (request === generation) set({ isChatSubmitting: false });
-      }
     },
     async sendChatAudio(blob, url) {
-      const { isChatSubmitting, invalidateChatRequests } = get();
-      if (isChatSubmitting) return;
-      invalidateChatRequests();
-      const request = generation;
-      const optimistic: ChatMessageDTO = {
-        id: crypto.randomUUID(),
-        type: "audio",
-        userType: "user",
-        mediaUrl: url,
-        mimeType: blob.type,
-        createdAt: new Date().toISOString(),
-      };
-      set((state) => ({
-        chatMessages: [...state.chatMessages, optimistic],
-        chatResponseProgress: undefined,
-        chatError: undefined,
-        isChatSubmitting: true,
-      }));
-      const progressBatcher = createChatProgressBatcher(
-        (chatResponseProgress) => {
-          if (request === generation) set({ chatResponseProgress });
+      const clientMessageId = crypto.randomUUID();
+      await submitMessage(
+        {
+          id: clientMessageId,
+          type: "audio",
+          userType: "user",
+          mediaUrl: url,
+          mimeType: blob.type,
+          createdAt: new Date().toISOString(),
         },
+        (onProgress) =>
+          container
+            .get("ChatRepository")
+            .sendAudio(
+              { blob, mimeType: blob.type, clientMessageId },
+              onProgress,
+            ),
       );
-      progressBatchers.add(progressBatcher);
-      try {
-        const chat = await container
-          .get("ChatRepository")
-          .sendAudio(
-            { blob, mimeType: blob.type, clientMessageId: optimistic.id },
-            progressBatcher.push,
-          );
-        if (request !== generation) return;
-        applyChatSnapshot(chat);
-      } catch (error) {
-        if (request !== generation) return;
-        set((state) => ({
-          chatMessages: state.chatMessages.filter(
-            (message) => message.id !== optimistic.id,
-          ),
-          chatError: clientError(error, "sending"),
-          chatResponseProgress: undefined,
-        }));
-      } finally {
-        progressBatcher.cancel();
-        progressBatchers.delete(progressBatcher);
-        if (request === generation) set({ isChatSubmitting: false });
-      }
     },
     invalidateChatRequests() {
       generation += 1;
@@ -331,3 +314,24 @@ export const createChatService: StateCreator<ChatState, [], [], ChatService> = (
     },
   };
 };
+
+function findSentMessage(
+  chat: WebChatDTO | undefined,
+  clientMessageId: string,
+) {
+  return chat?.messages.find(
+    (message) => message.clientMessageId === clientMessageId,
+  );
+}
+
+async function readReachableChat(): Promise<WebChatDTO | undefined> {
+  try {
+    return await container.get("ChatRepository").getChat();
+  } catch {
+    return undefined;
+  }
+}
+
+function wait(milliseconds: number) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}

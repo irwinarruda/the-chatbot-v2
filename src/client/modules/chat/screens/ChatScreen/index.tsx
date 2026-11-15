@@ -135,6 +135,7 @@ export function ChatScreen() {
   const chatErrorMessages: Record<ChatErrorCode, string> = {
     microphone: t.errorMicrophone,
     sending: t.errorSending,
+    unanswered: t.errorUnanswered,
     loading: t.errorLoading,
   };
   const chatErrorMessage = clientErrorMessage(chatError, chatErrorMessages);

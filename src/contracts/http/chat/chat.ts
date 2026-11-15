@@ -49,6 +49,7 @@ export const ChannelMessageResponseDTO = z.object({
   mimeType: z.string().optional(),
   transcript: z.string().optional(),
   trace: z.array(AiGenerationTraceDTO).optional(),
+  isAnswered: z.boolean().optional(),
   createdAt: z.iso.datetime(),
 });
 
