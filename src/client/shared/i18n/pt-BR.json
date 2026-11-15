@@ -120,6 +120,7 @@
     "loading": "Carregando...",
     "errorLoading": "Falha ao carregar o chat. Tente novamente.",
     "errorSending": "Falha ao enviar mensagem. Tente novamente.",
+    "errorUnanswered": "A resposta não chegou. Recarregue o chat antes de enviar de novo.",
     "errorMicrophone": "Não foi possível acessar o microfone. Verifique as permissões.",
     "logout": "sair",
     "emptyState": "Envie uma mensagem para começar a conversar",

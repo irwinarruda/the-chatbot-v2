@@ -16,6 +16,7 @@ import {
   type SessionService,
 } from "~/client/modules/identity/app/services/SessionService";
 import { container } from "~/client/shared/container";
+import { ApiError } from "~/client/shared/error/ApiError";
 import type { ChatMessageDTO, WebChatDTO } from "~/contracts/http/chat/chat";
 import { ReasoningEffort } from "~/domain/chat/reasoning-effort";
 import { createDeferred } from "~/tests/support/create-deferred";
@@ -54,6 +55,24 @@ function createChat(
       ReasoningEffort.High,
     ],
   };
+}
+
+function createAnsweredChat(
+  dto: { clientMessageId: string },
+  replies: ChatMessageDTO[] = [createMessage()],
+  reasoningEffort: ReasoningEffort = ReasoningEffort.Off,
+): WebChatDTO {
+  return createChat(
+    [
+      createMessage({
+        clientMessageId: dto.clientMessageId,
+        userType: "user",
+        isAnswered: true,
+      }),
+      ...replies,
+    ],
+    reasoningEffort,
+  );
 }
 
 function createStore(
@@ -124,6 +143,7 @@ describe("chatSlice", () => {
         clientMessageId: optimistic?.id,
         text: "Hello",
         userType: "user",
+        isAnswered: true,
       }),
       createMessage({ text: "Hello back" }),
     ];
@@ -166,10 +186,8 @@ describe("chatSlice", () => {
   });
 
   test("keeps the next draft editable while the assistant is responding", async () => {
-    let resolveSend: (chat: WebChatDTO) => void = () => {};
-    const sendResult = new Promise<WebChatDTO>((resolve) => {
-      resolveSend = resolve;
-    });
+    const sending = createDeferred<WebChatDTO>();
+    let answered = createChat([]);
     const service: ChatRepository &
       Pick<typeof apiSessionRepository, "getCurrentUser" | "logout"> = {
       async getCurrentUser() {
@@ -182,8 +200,9 @@ describe("chatSlice", () => {
       async getChat() {
         return createChat([]);
       },
-      async sendMessage() {
-        return sendResult;
+      async sendMessage(dto) {
+        answered = createAnsweredChat(dto, [createMessage({ text: "Answer" })]);
+        return sending.promise;
       },
       async sendAudio() {
         return createChat([]);
@@ -194,14 +213,14 @@ describe("chatSlice", () => {
     await store.getState().bootstrapChat();
     store.getState().setChatInput("First message");
 
-    const sending = store.getState().sendChatInput();
+    const send = store.getState().sendChatInput();
     store.getState().setChatInput("My next thought");
 
     expect(store.getState().chatInput).toBe("My next thought");
     expect(store.getState().canSendChatInput).toBe(false);
 
-    resolveSend(createChat([createMessage({ text: "Answer" })]));
-    await sending;
+    sending.resolve(answered);
+    await send;
 
     expect(store.getState().chatInput).toBe("My next thought");
     expect(store.getState().canSendChatInput).toBe(true);
@@ -210,10 +229,8 @@ describe("chatSlice", () => {
   test("reduces live reasoning and tool events until the snapshot replaces them", async () => {
     vi.useFakeTimers();
     let onProgress: Parameters<ChatRepository["sendMessage"]>[1] | undefined;
-    let resolveSend: (chat: WebChatDTO) => void = () => {};
-    const sendResult = new Promise<WebChatDTO>((resolve) => {
-      resolveSend = resolve;
-    });
+    const sendResult = createDeferred<WebChatDTO>();
+    let answered = createChat([]);
     const service: ChatRepository &
       Pick<typeof apiSessionRepository, "getCurrentUser" | "logout"> = {
       async getCurrentUser() {
@@ -226,9 +243,12 @@ describe("chatSlice", () => {
       async getChat() {
         return createChat([]);
       },
-      async sendMessage(_dto, listener) {
+      async sendMessage(dto, listener) {
         onProgress = listener;
-        return sendResult;
+        answered = createAnsweredChat(dto, [
+          createMessage({ text: "You have two pending todos." }),
+        ]);
+        return sendResult.promise;
       },
       async sendAudio() {
         return createChat([]);
@@ -294,25 +314,17 @@ describe("chatSlice", () => {
       store.getState().chatResponseProgress?.rounds[0]?.tools[0]?.outcome,
     ).toEqual({ status: "succeeded", data: { count: 2 } });
 
-    const messages = [createMessage({ text: "You have two pending todos." })];
-    resolveSend(createChat(messages));
+    sendResult.resolve(answered);
     await sending;
 
-    expect(store.getState().chatMessages).toEqual(messages);
+    expect(store.getState().chatMessages).toEqual(answered.messages);
     expect(store.getState().chatResponseProgress).toBeUndefined();
     expect(store.getState().isChatSubmitting).toBe(false);
   });
 
   test("effort selector sends the same durable slash command", async () => {
     let sentMessage: SendWebMessageDTO | undefined;
-    const commandHistory = [
-      createMessage({
-        type: "command",
-        userType: "user",
-        text: "/effort high",
-      }),
-      createMessage({ text: "Esforço de raciocínio definido como high." }),
-    ];
+    let commandHistory: ChatMessageDTO[] = [];
     const service: ChatRepository &
       Pick<typeof apiSessionRepository, "getCurrentUser" | "logout"> = {
       async getCurrentUser() {
@@ -327,6 +339,16 @@ describe("chatSlice", () => {
       },
       async sendMessage(dto) {
         sentMessage = dto;
+        commandHistory = [
+          createMessage({
+            clientMessageId: dto.clientMessageId,
+            type: "command",
+            userType: "user",
+            text: "/effort high",
+            isAnswered: true,
+          }),
+          createMessage({ text: "Esforço de raciocínio definido como high." }),
+        ];
         return createChat(commandHistory, ReasoningEffort.High);
       },
       async sendAudio() {
@@ -365,7 +387,7 @@ describe("chatSlice", () => {
       async sendMessage(dto) {
         sentMessage = dto;
         return {
-          ...createChat([]),
+          ...createAnsweredChat(dto),
           currentModel: selectedModel,
         };
       },
@@ -393,7 +415,7 @@ describe("chat refresh during sending", () => {
       const refreshing = createDeferred<WebChatDTO>();
       const sending = createDeferred<WebChatDTO>();
       const before = createChat([createMessage({ text: "Before" })]);
-      const after = createChat([createMessage({ text: "After" })]);
+      let after = createChat([createMessage({ text: "After" })]);
       let chatReads = 0;
       const service: ChatRepository &
         Pick<typeof apiSessionRepository, "getCurrentUser" | "logout"> = {
@@ -405,7 +427,8 @@ describe("chat refresh during sending", () => {
           if (chatReads === 1) return before;
           return refreshing.promise;
         },
-        async sendMessage() {
+        async sendMessage(dto) {
+          after = createAnsweredChat(dto, [createMessage({ text: "After" })]);
           return sending.promise;
         },
         async sendAudio() {
@@ -492,4 +515,297 @@ describe("chat refresh during sending", () => {
       expect(store.getState().isChatSubmitting).toBe(false);
     },
   );
+});
+
+describe("chat send recovery", () => {
+  afterEach(() => vi.useRealTimers());
+
+  function createRecoveryStore(
+    repository: Pick<ChatRepository, "getChat" | "sendMessage">,
+  ) {
+    return createStore({
+      async getCurrentUser() {
+        return { id: "user", name: "Irwin", phoneNumber: "5511999999999" };
+      },
+      async sendAudio() {
+        return undefined;
+      },
+      async logout() {},
+      ...repository,
+    });
+  }
+
+  test("waits for the reply when the connection drops after the message arrived", async () => {
+    vi.useFakeTimers();
+    const sent: SendWebMessageDTO[] = [];
+    let reads = 0;
+    const store = createRecoveryStore({
+      async sendMessage(dto) {
+        sent.push(dto);
+        return undefined;
+      },
+      async getChat() {
+        reads += 1;
+        const delivered = createMessage({
+          clientMessageId: sent[0]?.clientMessageId,
+          userType: "user",
+          text: "Hello",
+          isAnswered: reads > 1,
+        });
+        if (reads === 1) return createChat([delivered]);
+        return createChat([delivered, createMessage({ text: "Hello back" })]);
+      },
+    });
+    store.getState().setChatInput("Hello");
+
+    const sending = store.getState().sendChatInput();
+    await vi.advanceTimersByTimeAsync(3_000);
+
+    expect(store.getState().isChatSubmitting).toBe(true);
+    expect(store.getState().chatError).toBeUndefined();
+
+    await vi.advanceTimersByTimeAsync(3_000);
+    await sending;
+
+    expect(sent).toHaveLength(1);
+    expect(store.getState().chatMessages.map((m) => m.text)).toEqual([
+      "Hello",
+      "Hello back",
+    ]);
+    expect(store.getState().chatError).toBeUndefined();
+    expect(store.getState().isChatSubmitting).toBe(false);
+  });
+
+  test("sends the same message again when it never reached the server", async () => {
+    vi.useFakeTimers();
+    const sent: SendWebMessageDTO[] = [];
+    const store = createRecoveryStore({
+      async sendMessage(dto) {
+        sent.push(dto);
+        if (sent.length === 1) return undefined;
+        return createAnsweredChat(dto, [createMessage({ text: "Hello back" })]);
+      },
+      async getChat() {
+        return createChat([]);
+      },
+    });
+    store.getState().setChatInput("Hello");
+
+    const sending = store.getState().sendChatInput();
+    await vi.advanceTimersByTimeAsync(3_000);
+    await sending;
+
+    expect(sent).toHaveLength(2);
+    expect(sent[1]).toEqual(sent[0]);
+    expect(store.getState().chatMessages.at(-1)?.text).toBe("Hello back");
+    expect(store.getState().chatError).toBeUndefined();
+  });
+
+  test("keeps waiting while the server cannot be reached", async () => {
+    vi.useFakeTimers();
+    const sent: SendWebMessageDTO[] = [];
+    let reads = 0;
+    const store = createRecoveryStore({
+      async sendMessage(dto) {
+        sent.push(dto);
+        return undefined;
+      },
+      async getChat() {
+        reads += 1;
+        if (reads < 3) throw new TypeError("Failed to fetch");
+        return createAnsweredChat({
+          clientMessageId: sent[0]?.clientMessageId ?? "",
+        });
+      },
+    });
+    store.getState().setChatInput("Hello");
+
+    const sending = store.getState().sendChatInput();
+    await vi.advanceTimersByTimeAsync(9_000);
+    await sending;
+
+    expect(sent).toHaveLength(1);
+    expect(store.getState().chatMessages).toHaveLength(2);
+    expect(store.getState().chatError).toBeUndefined();
+  });
+
+  test("reports a missing reply at the deadline and keeps the delivered message", async () => {
+    vi.useFakeTimers();
+    const sent: SendWebMessageDTO[] = [];
+    const store = createRecoveryStore({
+      async sendMessage(dto) {
+        sent.push(dto);
+        return undefined;
+      },
+      async getChat() {
+        return createChat([
+          createMessage({
+            clientMessageId: sent[0]?.clientMessageId,
+            userType: "user",
+            text: "Hello",
+            isAnswered: false,
+          }),
+        ]);
+      },
+    });
+    store.getState().setChatInput("Hello");
+
+    const sending = store.getState().sendChatInput();
+    await vi.advanceTimersByTimeAsync(300_000);
+    await sending;
+
+    expect(sent).toHaveLength(1);
+    expect(store.getState().chatError).toBe("unanswered");
+    expect(store.getState().chatMessages).toMatchObject([
+      { clientMessageId: sent[0]?.clientMessageId, text: "Hello" },
+    ]);
+    expect(store.getState().chatInput).toBe("");
+    expect(store.getState().isChatSubmitting).toBe(false);
+  });
+
+  test("reads the chat once more when the connection is lost after the deadline", async () => {
+    vi.useFakeTimers();
+    const sent: SendWebMessageDTO[] = [];
+    const store = createRecoveryStore({
+      async sendMessage(dto) {
+        sent.push(dto);
+        await new Promise((resolve) => setTimeout(resolve, 360_000));
+        return undefined;
+      },
+      async getChat() {
+        return createAnsweredChat(
+          { clientMessageId: sent[0]?.clientMessageId ?? "" },
+          [createMessage({ text: "Hello back" })],
+        );
+      },
+    });
+    store.getState().setChatInput("Hello");
+
+    const sending = store.getState().sendChatInput();
+    await vi.advanceTimersByTimeAsync(360_000);
+    await sending;
+
+    expect(sent).toHaveLength(1);
+    expect(store.getState().chatError).toBeUndefined();
+    expect(store.getState().chatMessages.at(-1)?.text).toBe("Hello back");
+    expect(store.getState().isChatSubmitting).toBe(false);
+  });
+
+  test("a failure reported after the server saved the message keeps it and does not give the draft back", async () => {
+    const failure = new ApiError("The chat response failed.", 500);
+    const sent: SendWebMessageDTO[] = [];
+    const store = createRecoveryStore({
+      async sendMessage(dto) {
+        sent.push(dto);
+        throw failure;
+      },
+      async getChat() {
+        return createChat([
+          createMessage({
+            clientMessageId: sent[0]?.clientMessageId,
+            userType: "user",
+            text: "Hello",
+            isAnswered: false,
+          }),
+        ]);
+      },
+    });
+    store.getState().setChatInput("Hello");
+
+    await store.getState().sendChatInput();
+
+    expect(store.getState().chatMessages).toMatchObject([
+      { clientMessageId: sent[0]?.clientMessageId, text: "Hello" },
+    ]);
+    expect(store.getState().chatInput).toBe("");
+    expect(store.getState().chatError).toBe(failure);
+    expect(store.getState().isChatSubmitting).toBe(false);
+  });
+
+  test("a failure reported after the reply was saved shows the reply without an error", async () => {
+    const sent: SendWebMessageDTO[] = [];
+    const store = createRecoveryStore({
+      async sendMessage(dto) {
+        sent.push(dto);
+        throw new ApiError("The chat response failed.", 500);
+      },
+      async getChat() {
+        return createAnsweredChat(
+          { clientMessageId: sent[0]?.clientMessageId ?? "" },
+          [createMessage({ text: "Hello back" })],
+        );
+      },
+    });
+    store.getState().setChatInput("Hello");
+
+    await store.getState().sendChatInput();
+
+    expect(store.getState().chatMessages.at(-1)?.text).toBe("Hello back");
+    expect(store.getState().chatInput).toBe("");
+    expect(store.getState().chatError).toBeUndefined();
+  });
+
+  test("a rejected send removes the optimistic message and gives the draft back", async () => {
+    const rejection = new ApiError("Message is not valid", 400);
+    const store = createRecoveryStore({
+      async sendMessage() {
+        throw rejection;
+      },
+      async getChat() {
+        return createChat([]);
+      },
+    });
+    store.getState().setChatInput("Hello");
+
+    await store.getState().sendChatInput();
+
+    expect(store.getState().chatMessages).toEqual([]);
+    expect(store.getState().chatInput).toBe("Hello");
+    expect(store.getState().chatError).toBe(rejection);
+    expect(store.getState().isChatSubmitting).toBe(false);
+  });
+
+  test("a rejected send does not replace a newer draft", async () => {
+    const sending = createDeferred<WebChatDTO | undefined>();
+    const store = createRecoveryStore({
+      async sendMessage() {
+        return sending.promise;
+      },
+      async getChat() {
+        return createChat([]);
+      },
+    });
+    store.getState().setChatInput("Hello");
+
+    const send = store.getState().sendChatInput();
+    store.getState().setChatInput("My next thought");
+    sending.reject(new ApiError("Message is not valid", 400));
+    await send;
+
+    expect(store.getState().chatInput).toBe("My next thought");
+  });
+
+  test("leaving the chat stops waiting for the reply", async () => {
+    vi.useFakeTimers();
+    let reads = 0;
+    const store = createRecoveryStore({
+      async sendMessage() {
+        return undefined;
+      },
+      async getChat() {
+        reads += 1;
+        return createChat([]);
+      },
+    });
+    store.getState().setChatInput("Hello");
+
+    const sending = store.getState().sendChatInput();
+    store.getState().resetChat();
+    await vi.advanceTimersByTimeAsync(30_000);
+    await sending;
+
+    expect(reads).toBe(0);
+    expect(store.getState().chatMessages).toEqual([]);
+    expect(store.getState().isChatSubmitting).toBe(false);
+  });
 });

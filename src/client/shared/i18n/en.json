@@ -120,6 +120,7 @@
     "loading": "Loading...",
     "errorLoading": "Failed to load chat. Please try again.",
     "errorSending": "Failed to send message. Please try again.",
+    "errorUnanswered": "The reply did not arrive. Reload the chat before sending again.",
     "errorMicrophone": "Could not access microphone. Check permissions.",
     "logout": "logout",
     "emptyState": "Send a message to start chatting",

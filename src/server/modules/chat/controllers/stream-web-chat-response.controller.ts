@@ -6,25 +6,36 @@ import { toChatMessagesResponse } from "~/contracts/http/chat/chat-mapper";
 import type { MessageLocale } from "~/domain/chat/message-locale";
 import type { MessagingService } from "~/server/modules/chat/services/messaging.service";
 
+const defaultHeartbeatMs = 15_000;
+
 export function streamWebChatResponse(
-  messagingService: MessagingService,
+  messagingService: Pick<
+    MessagingService,
+    "receiveWebMessage" | "getModelConfiguration"
+  >,
   webAddress: string,
   body: unknown,
   locale: MessageLocale,
+  heartbeatMs: number = defaultHeartbeatMs,
 ): Response {
   const encoder = new TextEncoder();
   let isClosed = false;
+  let heartbeat: ReturnType<typeof setInterval> | undefined;
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
-      function enqueue(event: WebChatResponseEventDTO) {
+      function write(line: string) {
         if (isClosed) return;
-        const parsed = WebChatResponseEventSchema.parse(event);
         try {
-          controller.enqueue(encoder.encode(`${JSON.stringify(parsed)}\n`));
+          controller.enqueue(encoder.encode(`${line}\n`));
         } catch {
           isClosed = true;
         }
       }
+      function enqueue(event: WebChatResponseEventDTO) {
+        if (isClosed) return;
+        write(JSON.stringify(WebChatResponseEventSchema.parse(event)));
+      }
+      heartbeat = setInterval(() => write(""), heartbeatMs);
       void (async () => {
         try {
           const chat = await messagingService.receiveWebMessage(
@@ -46,6 +57,7 @@ export function streamWebChatResponse(
             message: "The chat response could not be completed.",
           });
         } finally {
+          clearInterval(heartbeat);
           if (!isClosed) {
             isClosed = true;
             controller.close();
@@ -55,6 +67,7 @@ export function streamWebChatResponse(
     },
     cancel() {
       isClosed = true;
+      clearInterval(heartbeat);
     },
   });
   return new Response(stream, {

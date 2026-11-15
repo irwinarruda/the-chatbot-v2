@@ -1037,6 +1037,8 @@ describe("MessagingService", () => {
     expect(chat?.messages[0]?.mimeType).toBe("audio/mp4; codecs=mp4a.40.2");
     expect(chat?.messages[1]?.text).not.toBeUndefined();
     expect(chat?.messages[1]?.audience).toBe(MessageAudience.Channel);
+    expect(chat?.messages[1]?.turnId).not.toBe(chat?.messages[0]?.turnId);
+    expect(chat?.messages[2]?.turnId).toBe(chat?.messages[0]?.turnId);
     expect(chat?.getModelMessages().map((m) => m.id)).not.toContain(
       chat?.messages[1]?.id,
     );
