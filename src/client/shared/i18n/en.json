@@ -38,6 +38,7 @@
     "windowTitle": "Home",
     "heading": "The Chatbot",
     "subtitle": "Your personal assistant on the web and WhatsApp.",
+    "privacyLink": "Privacy Policy",
     "description": "A personal workspace for conversations, tasks, notes, cash flow and monthly bills. Pick an area below, or just ask in chat.",
     "features": {
       "chat": {

@@ -103,4 +103,16 @@ describe("HomeScreen", () => {
     expect(screen.queryByText(t.summary.title)).not.toBeInTheDocument();
     expect(screen.getByText(t.areasLabel)).toBeInTheDocument();
   });
+
+  test.each([
+    { visitor: "a signed-out visitor", hasAccess: false },
+    { visitor: "a signed-in user", hasAccess: true },
+  ])("links to the privacy policy for $visitor", async ({ hasAccess }) => {
+    stubFeatures(hasAccess);
+    await renderHome();
+
+    expect(
+      screen.getByRole("link", { name: t.privacyLink }),
+    ).toBeInTheDocument();
+  });
 });
