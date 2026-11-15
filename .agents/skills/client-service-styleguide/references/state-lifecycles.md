@@ -12,7 +12,7 @@ Choose one path per mutation: accept the authoritative entity the server returns
 
 Use them only when latency hurts and there is a deterministic reconciliation key. An optimistic item has a client correlation id, a visible pending or failed state, exact reconciliation and a rollback. Never let a failed optimistic item look confirmed.
 
-A dropped connection is not a failed send. A repository that cannot confirm the outcome returns `undefined` instead of throwing; the service then reads the authoritative snapshot until the item's correlation id is answered, sends it again with the same id when the server never got it, and gives up with its own error at a deadline. Roll back only when the server rejected the item (`ChatService.submitMessage`).
+A dropped connection is not a failed send. A repository that cannot confirm the outcome returns `undefined` instead of throwing; the service then reads the authoritative snapshot until the item's correlation id is answered, sends it again with the same id when the server never got it, and gives up with its own error at a deadline. Roll back only when the server rejected the item and the snapshot does not have it: a failure reported after the server saved the item keeps it on screen (`ChatService.submitMessage`).
 
 ## Streams
 

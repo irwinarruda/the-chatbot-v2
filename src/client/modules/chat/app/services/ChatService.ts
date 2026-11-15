@@ -104,24 +104,35 @@ export const createChatService: StateCreator<ChatState, [], [], ChatService> = (
       let sent = findSentMessage(chat, optimistic.id);
       while (!chat || !sent?.isAnswered) {
         if (request !== generation) return;
-        if (Date.now() >= deadline) {
+        const isLastRead = Date.now() >= deadline;
+        if (!isLastRead) await wait(answerPollMs);
+        if (request !== generation) return;
+        chat = await readReachableChat();
+        if (request !== generation) return;
+        if (chat && !isLastRead && !findSentMessage(chat, optimistic.id)) {
+          chat = await send(progressBatcher.push);
+        }
+        sent = findSentMessage(chat, optimistic.id);
+        if (isLastRead && !sent?.isAnswered) {
           if (chat && sent) applyChatSnapshot(chat);
           set({ chatError: "unanswered", chatResponseProgress: undefined });
           return;
         }
-        await wait(answerPollMs);
-        if (request !== generation) return;
-        chat = await readReachableChat();
-        if (request !== generation) return;
-        if (chat && !findSentMessage(chat, optimistic.id)) {
-          chat = await send(progressBatcher.push);
-        }
-        sent = findSentMessage(chat, optimistic.id);
       }
       if (request !== generation) return;
       applyChatSnapshot(chat);
     } catch (error) {
       if (request !== generation) return;
+      const chat = await readReachableChat();
+      if (request !== generation) return;
+      const sent = findSentMessage(chat, optimistic.id);
+      if (chat && sent) {
+        applyChatSnapshot(chat);
+        if (!sent.isAnswered) {
+          set({ chatError: clientError(error, "unanswered") });
+        }
+        return;
+      }
       set((state) => {
         const failed: Partial<ChatService> = {
           chatMessages: state.chatMessages.filter(
@@ -324,7 +335,7 @@ function findSentMessage(
   );
 }
 
-async function readReachableChat(): Promise<WebChatDTO | undefined> {
+async function readReachableChat() {
   try {
     return await container.get("ChatRepository").getChat();
   } catch {

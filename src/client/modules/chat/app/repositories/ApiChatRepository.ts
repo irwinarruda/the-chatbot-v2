@@ -28,10 +28,7 @@ export function parseChatMessages(data: unknown): ChatMessageDTO[] {
 
 const streamIdleTimeoutMs = 45_000;
 
-async function openWebChatStream(
-  url: string,
-  options: RequestInit,
-): Promise<Response | undefined> {
+async function openWebChatStream(url: string, options: RequestInit) {
   try {
     return await apiClient.request(url, options);
   } catch (error) {
@@ -42,7 +39,7 @@ async function openWebChatStream(
 
 async function readWebChatStreamChunk(
   reader: ReadableStreamDefaultReader<Uint8Array>,
-): Promise<ReadableStreamReadResult<Uint8Array> | undefined> {
+) {
   let idleTimer: ReturnType<typeof setTimeout> | undefined;
   try {
     return await Promise.race([
@@ -63,7 +60,7 @@ async function sendThroughWebChatStream(
   url: string,
   options: RequestInit,
   onProgress?: ChatProgressListener,
-): Promise<WebChatDTO | undefined> {
+) {
   const response = await openWebChatStream(url, options);
   if (!response?.body) return undefined;
   const reader = response.body.getReader();

@@ -663,6 +663,88 @@ describe("chat send recovery", () => {
     expect(store.getState().isChatSubmitting).toBe(false);
   });
 
+  test("reads the chat once more when the connection is lost after the deadline", async () => {
+    vi.useFakeTimers();
+    const sent: SendWebMessageDTO[] = [];
+    const store = createRecoveryStore({
+      async sendMessage(dto) {
+        sent.push(dto);
+        await new Promise((resolve) => setTimeout(resolve, 360_000));
+        return undefined;
+      },
+      async getChat() {
+        return createAnsweredChat(
+          { clientMessageId: sent[0]?.clientMessageId ?? "" },
+          [createMessage({ text: "Hello back" })],
+        );
+      },
+    });
+    store.getState().setChatInput("Hello");
+
+    const sending = store.getState().sendChatInput();
+    await vi.advanceTimersByTimeAsync(360_000);
+    await sending;
+
+    expect(sent).toHaveLength(1);
+    expect(store.getState().chatError).toBeUndefined();
+    expect(store.getState().chatMessages.at(-1)?.text).toBe("Hello back");
+    expect(store.getState().isChatSubmitting).toBe(false);
+  });
+
+  test("a failure reported after the server saved the message keeps it and does not give the draft back", async () => {
+    const failure = new ApiError("The chat response failed.", 500);
+    const sent: SendWebMessageDTO[] = [];
+    const store = createRecoveryStore({
+      async sendMessage(dto) {
+        sent.push(dto);
+        throw failure;
+      },
+      async getChat() {
+        return createChat([
+          createMessage({
+            clientMessageId: sent[0]?.clientMessageId,
+            userType: "user",
+            text: "Hello",
+            isAnswered: false,
+          }),
+        ]);
+      },
+    });
+    store.getState().setChatInput("Hello");
+
+    await store.getState().sendChatInput();
+
+    expect(store.getState().chatMessages).toMatchObject([
+      { clientMessageId: sent[0]?.clientMessageId, text: "Hello" },
+    ]);
+    expect(store.getState().chatInput).toBe("");
+    expect(store.getState().chatError).toBe(failure);
+    expect(store.getState().isChatSubmitting).toBe(false);
+  });
+
+  test("a failure reported after the reply was saved shows the reply without an error", async () => {
+    const sent: SendWebMessageDTO[] = [];
+    const store = createRecoveryStore({
+      async sendMessage(dto) {
+        sent.push(dto);
+        throw new ApiError("The chat response failed.", 500);
+      },
+      async getChat() {
+        return createAnsweredChat(
+          { clientMessageId: sent[0]?.clientMessageId ?? "" },
+          [createMessage({ text: "Hello back" })],
+        );
+      },
+    });
+    store.getState().setChatInput("Hello");
+
+    await store.getState().sendChatInput();
+
+    expect(store.getState().chatMessages.at(-1)?.text).toBe("Hello back");
+    expect(store.getState().chatInput).toBe("");
+    expect(store.getState().chatError).toBeUndefined();
+  });
+
   test("a rejected send removes the optimistic message and gives the draft back", async () => {
     const rejection = new ApiError("Message is not valid", 400);
     const store = createRecoveryStore({
