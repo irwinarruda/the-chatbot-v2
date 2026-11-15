@@ -18,6 +18,7 @@ export class TestChatRepository implements ChatRepository {
         userType: "user",
         text: dto.text,
         buttonReply: dto.buttonReply,
+        isAnswered: true,
         createdAt: DemoNow,
       },
       {
@@ -32,14 +33,25 @@ export class TestChatRepository implements ChatRepository {
   }
 
   async sendAudio(dto: SendWebAudioDTO) {
-    mockDb.chat.messages.push({
-      id: crypto.randomUUID(),
-      clientMessageId: dto.clientMessageId,
-      type: "text",
-      userType: "bot",
-      text: "Audio is not transcribed in demo mode.",
-      createdAt: DemoNow,
-    });
+    mockDb.chat.messages.push(
+      {
+        id: crypto.randomUUID(),
+        clientMessageId: dto.clientMessageId,
+        type: "audio",
+        userType: "user",
+        mediaUrl: URL.createObjectURL(dto.blob),
+        mimeType: dto.mimeType,
+        isAnswered: true,
+        createdAt: DemoNow,
+      },
+      {
+        id: crypto.randomUUID(),
+        type: "text",
+        userType: "bot",
+        text: "Audio is not transcribed in demo mode.",
+        createdAt: DemoNow,
+      },
+    );
     return mockDb.chat;
   }
 }

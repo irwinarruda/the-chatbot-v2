@@ -243,7 +243,7 @@ export class MessagingService {
             locale,
           ),
           chat,
-          { turnId: message.turnId, audience: MessageAudience.Channel },
+          { audience: MessageAudience.Channel },
         );
         const gateway = this.delivery.gatewayFor(recipient.channel);
         const mediaContent = await gateway.downloadMediaAsync(mediaId);

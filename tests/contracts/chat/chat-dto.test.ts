@@ -120,6 +120,49 @@ describe("Chat contracts", () => {
     ]);
   });
 
+  test("web snapshots mark a user message answered once the assistant replies in its turn", () => {
+    const chat = new Chat();
+    const answered = chat.addUserTextMessage("first", crypto.randomUUID());
+    chat.addAssistantTextMessage("reply", { turnId: answered.turnId });
+    const _noticed = chat.addUserAudioMessage(
+      "media-id",
+      "audio/mp4",
+      crypto.randomUUID(),
+    );
+    chat.addAssistantTextMessage("Processing audio", {
+      audience: MessageAudience.Channel,
+    });
+    const command = chat.addUserCommandMessage(
+      "/effort high",
+      "effort",
+      { value: "high" },
+      crypto.randomUUID(),
+    );
+    chat.addAssistantTextMessage("Effort updated", {
+      turnId: command.turnId,
+      audience: MessageAudience.Channel,
+    });
+    chat.messages.forEach((message, index) => {
+      message.sequence = index + 1;
+    });
+
+    const response = toChatMessagesResponse(
+      chat,
+      createModelConfiguration([ReasoningEffort.Off]),
+    );
+
+    expect(
+      response.messages.map((message) => [message.text, message.isAnswered]),
+    ).toEqual([
+      ["first", true],
+      ["reply", undefined],
+      [undefined, false],
+      ["Processing audio", undefined],
+      ["/effort high", true],
+      ["Effort updated", undefined],
+    ]);
+  });
+
   test("web snapshots attach ordered generation traces to the final answer", () => {
     const chat = new Chat();
     chat.setReasoningEffort(ReasoningEffort.High);
