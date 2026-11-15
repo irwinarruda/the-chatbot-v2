@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AppShell } from "~/client/shared/components/terminal/AppShell";
+import { TerminalFooter } from "~/client/shared/components/terminal/TerminalFooter";
 import { TerminalPageHeader } from "~/client/shared/components/terminal/TerminalPageHeader";
 import { useDictionary } from "~/client/shared/hooks/useDictionary";
 import { useApp } from "~/client/shared/stores/app";
@@ -103,6 +104,14 @@ export function HomeScreen() {
           </ul>
         </>
       )}
+      <TerminalFooter>
+        <Link
+          to="/privacy"
+          className="rounded-sm text-info underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          {t.privacyLink}
+        </Link>
+      </TerminalFooter>
     </AppShell>
   );
 }
