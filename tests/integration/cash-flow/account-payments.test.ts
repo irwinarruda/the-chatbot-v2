@@ -67,6 +67,7 @@ beforeEach(async () => {
     new CashFlowSpreadsheetRepository(orquestrator.database),
     orquestrator.authService,
     gateway,
+    orquestrator.googleSheetsConfig,
   );
   bills = orquestrator.monthlyExpenseService;
   payments = new MonthlyExpensePaymentService(bills, cashFlow);

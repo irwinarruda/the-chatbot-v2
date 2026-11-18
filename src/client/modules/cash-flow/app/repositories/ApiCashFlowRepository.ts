@@ -4,6 +4,7 @@ import {
   type CashFlowDashboardResponseDTO,
   CashFlowDashboardResponseDTO as CashFlowDashboardResponseSchema,
 } from "~/contracts/http/cash-flow/cash-flow";
+import { CashFlowSpreadsheetPickerResponseDTO } from "~/contracts/http/cash-flow/cash-flow-spreadsheet";
 
 export function parseCashFlowDashboard(
   data: unknown,
@@ -54,6 +55,21 @@ export const apiCashFlowRepository: CashFlowRepository = {
   async deleteLast() {
     await apiClient.request("/api/v1/web/cash-flow/transactions/last", {
       method: "DELETE",
+    });
+  },
+
+  async getSpreadsheetPicker() {
+    const response = await apiClient.request(
+      "/api/v1/web/cash-flow/spreadsheet",
+    );
+    return CashFlowSpreadsheetPickerResponseDTO.parse(await response.json());
+  },
+
+  async connectSpreadsheet(url) {
+    await apiClient.request("/api/v1/web/cash-flow/spreadsheet", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
     });
   },
 };

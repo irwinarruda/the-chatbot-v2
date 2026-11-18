@@ -419,7 +419,7 @@ describe("CashFlowService", () => {
     expect(januaryStatus).toEqual([]);
   });
 
-  test("addSpreadsheetUrl rejects missing users and duplicate sheets", async () => {
+  test("addSpreadsheetUrl rejects missing users and replaces the linked sheet", async () => {
     await expect(
       orquestrator.cashFlowService.addSpreadsheetUrl(
         "5511900000000",
@@ -433,12 +433,45 @@ describe("CashFlowService", () => {
       orquestrator.googleSheetsConfig.testSheetId,
     );
 
+    await orquestrator.cashFlowService.addSpreadsheetUrl(
+      phoneNumber,
+      "https://docs.google.com/spreadsheets/d/another-sheet/edit",
+    );
+
+    const picker =
+      await orquestrator.cashFlowService.getSpreadsheetPicker(phoneNumber);
+    expect(picker.spreadsheetId).toBe("another-sheet");
+  });
+
+  test("getSpreadsheetPicker hands the user's Google token and the picker settings to the web app", async () => {
+    const phoneNumber = "5511982222222";
+    await createGoogleConnectedUser(phoneNumber);
+
+    const picker =
+      await orquestrator.cashFlowService.getSpreadsheetPicker(phoneNumber);
+
+    expect(picker.accessToken).not.toBe("");
+    expect(picker.appId).toBe(orquestrator.googleSheetsConfig.pickerAppId);
+    expect(picker.developerKey).toBe(
+      orquestrator.googleSheetsConfig.pickerApiKey,
+    );
+    expect(picker.spreadsheetId).toBeUndefined();
     await expect(
-      orquestrator.cashFlowService.addSpreadsheetUrl(
-        phoneNumber,
-        "https://docs.google.com/spreadsheets/d/another-sheet/edit",
-      ),
-    ).rejects.toThrow(ValidationException);
+      orquestrator.cashFlowService.getSpreadsheetPicker("5511900000000"),
+    ).rejects.toThrow(NotFoundException);
+  });
+
+  test("createSpreadsheetConnectUrl points the user to the connect page for that spreadsheet", () => {
+    const url = orquestrator.cashFlowService.createSpreadsheetConnectUrl(
+      "https://docs.google.com/spreadsheets/d/sheet-to-link/edit?gid=0#gid=0",
+    );
+
+    expect(url).toBe(
+      `${orquestrator.googleSheetsConfig.connectUrl}?spreadsheet=sheet-to-link`,
+    );
+    expect(() =>
+      orquestrator.cashFlowService.createSpreadsheetConnectUrl("WrongURL"),
+    ).toThrow(ValidationException);
   });
 
   test("cash-flow writes reject invalid transaction values", async () => {

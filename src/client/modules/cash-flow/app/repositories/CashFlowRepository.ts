@@ -3,6 +3,7 @@ import type {
   CreateCashFlowTransactionRequestDTO,
   SyncCashFlowBankAccountRequestDTO,
 } from "~/contracts/http/cash-flow/cash-flow";
+import type { CashFlowSpreadsheetPickerResponseDTO } from "~/contracts/http/cash-flow/cash-flow-spreadsheet";
 import type { SaveCashFlowTransferRequestDTO } from "~/contracts/http/cash-flow/cash-flow-transfer";
 
 export interface CashFlowRepository {
@@ -15,4 +16,6 @@ export interface CashFlowRepository {
     replace: boolean,
   ): Promise<void>;
   deleteTransfer(id: string): Promise<void>;
+  getSpreadsheetPicker(): Promise<CashFlowSpreadsheetPickerResponseDTO>;
+  connectSpreadsheet(url: string): Promise<void>;
 }

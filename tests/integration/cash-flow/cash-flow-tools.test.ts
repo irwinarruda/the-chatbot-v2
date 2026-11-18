@@ -99,4 +99,38 @@ describe("cash-flow AI tools", () => {
       });
     }
   });
+
+  test("asks the user to grant access instead of linking a spreadsheet by itself", async () => {
+    const phoneNumber = "5511987650000";
+    const user = await createUserWithSpreadsheet(phoneNumber);
+    const chat = new Chat();
+    chat.idUser = user.id;
+    const sourceMessage = chat.addUserTextMessage("Link my other sheet");
+
+    const [result] = await orquestrator.aiToolService.executeRound(
+      [
+        {
+          type: MessageContentType.ToolCall,
+          callId: "link",
+          name: "add_cash_flow_spreadsheet_url",
+          arguments: {
+            url: "https://docs.google.com/spreadsheets/d/other-sheet/edit",
+          },
+        },
+      ],
+      { chat, sourceMessage },
+    );
+
+    expect(result.outcome).toMatchObject({
+      status: ToolResultStatus.Succeeded,
+      data: {
+        url: `${orquestrator.googleSheetsConfig.connectUrl}?spreadsheet=other-sheet`,
+      },
+    });
+    const picker =
+      await orquestrator.cashFlowService.getSpreadsheetPicker(phoneNumber);
+    expect(picker.spreadsheetId).toBe(
+      orquestrator.googleSheetsConfig.testSheetId,
+    );
+  });
 });

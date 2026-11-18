@@ -1,3 +1,4 @@
+import { TestSpreadsheetPickerGateway } from "~/client/mock/gateways/TestSpreadsheetPickerGateway";
 import { TestArtifactRepository } from "~/client/mock/repositories/TestArtifactRepository";
 import { TestCashFlowRepository } from "~/client/mock/repositories/TestCashFlowRepository";
 import { TestChatRepository } from "~/client/mock/repositories/TestChatRepository";
@@ -16,6 +17,10 @@ export function bootstrapMockContainer() {
   container.register("PrefsGateway", cookiePrefsGateway);
   container.register("MonetaryPrivacyGateway", storageMonetaryPrivacyGateway);
   container.register("CashFlowRepository", new TestCashFlowRepository());
+  container.register(
+    "SpreadsheetPickerGateway",
+    new TestSpreadsheetPickerGateway(),
+  );
   container.register(
     "MonthlyExpenseRepository",
     new TestMonthlyExpenseRepository(),

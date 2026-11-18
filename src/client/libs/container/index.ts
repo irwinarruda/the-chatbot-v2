@@ -1,4 +1,5 @@
 import type { ArtifactRepository } from "~/client/modules/artifacts/app/repositories/ArtifactRepository";
+import type { SpreadsheetPickerGateway } from "~/client/modules/cash-flow/app/gateways/SpreadsheetPickerGateway";
 import type { CashFlowRepository } from "~/client/modules/cash-flow/app/repositories/CashFlowRepository";
 import type { MonthlyExpenseRepository } from "~/client/modules/cash-flow/app/repositories/MonthlyExpenseRepository";
 import type { AudioInputGateway } from "~/client/modules/chat/app/gateways/AudioInputGateway";
@@ -15,6 +16,7 @@ export interface InjectableItems {
   PrefsGateway: PrefsGateway;
   MonetaryPrivacyGateway: MonetaryPrivacyGateway;
   CashFlowRepository: CashFlowRepository;
+  SpreadsheetPickerGateway: SpreadsheetPickerGateway;
   MonthlyExpenseRepository: MonthlyExpenseRepository;
   ChatRepository: ChatRepository;
   AudioInputGateway: AudioInputGateway;

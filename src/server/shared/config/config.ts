@@ -85,6 +85,9 @@ export type AuthConfig = z.infer<typeof authConfigSchema>;
 
 export const googleSheetsConfigSchema = z.object({
   testSheetId: z.string().default(""),
+  pickerApiKey: z.string().default(""),
+  pickerAppId: z.string().default(""),
+  connectUrl: z.string().default(""),
 });
 export type GoogleSheetsConfig = z.infer<typeof googleSheetsConfigSchema>;
 
@@ -171,6 +174,11 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
     },
     googleSheets: {
       testSheetId: env.GOOGLE_SHEETS_TEST_SHEET_ID,
+      pickerApiKey: env.GOOGLE_PICKER_API_KEY,
+      pickerAppId: env.GOOGLE_CLIENT_ID?.split("-")[0],
+      connectUrl: env.GOOGLE_LOGIN_URI
+        ? new URL("/cash-flow/connect", env.GOOGLE_LOGIN_URI).toString()
+        : undefined,
     },
     jwt: {
       secret: env.JWT_SECRET,

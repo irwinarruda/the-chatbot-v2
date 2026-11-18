@@ -34,4 +34,10 @@ export class TestCashFlowRepository implements CashFlowRepository {
   async saveTransfer() {}
 
   async deleteTransfer() {}
+
+  async getSpreadsheetPicker() {
+    return { accessToken: "demo-token", appId: "", developerKey: "" };
+  }
+
+  async connectSpreadsheet() {}
 }

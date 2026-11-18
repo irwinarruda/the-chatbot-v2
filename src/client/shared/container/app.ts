@@ -1,4 +1,5 @@
 import { apiArtifactRepository } from "~/client/modules/artifacts/app/repositories/ApiArtifactRepository";
+import { browserSpreadsheetPickerGateway } from "~/client/modules/cash-flow/app/gateways/BrowserSpreadsheetPickerGateway";
 import { apiCashFlowRepository } from "~/client/modules/cash-flow/app/repositories/ApiCashFlowRepository";
 import { apiMonthlyExpenseRepository } from "~/client/modules/cash-flow/app/repositories/ApiMonthlyExpenseRepository";
 import { browserAudioInputGateway } from "~/client/modules/chat/app/gateways/BrowserAudioInputGateway";
@@ -16,6 +17,10 @@ export function bootstrapAppContainer() {
   container.register("PrefsGateway", cookiePrefsGateway);
   container.register("MonetaryPrivacyGateway", storageMonetaryPrivacyGateway);
   container.register("CashFlowRepository", apiCashFlowRepository);
+  container.register(
+    "SpreadsheetPickerGateway",
+    browserSpreadsheetPickerGateway,
+  );
   container.register("MonthlyExpenseRepository", apiMonthlyExpenseRepository);
   container.register("ChatRepository", apiChatRepository);
   container.register("AudioInputGateway", browserAudioInputGateway);

@@ -113,6 +113,7 @@ export function createServer(
     new CashFlowSpreadsheetRepository(database),
     auth,
     cashFlowSpreadsheet,
+    config.googleSheets,
   );
   const tools = new ToolExecutor([
     ...createChatTools(clock),

@@ -17,6 +17,7 @@ export const routes = rootRoute("client/routes/__root.tsx", [
   route("/artifacts", "client/routes/artifacts.tsx"),
   route("/a/$artifactId", "client/routes/a/$artifactId.tsx"),
   route("/cash-flow", "client/routes/cash-flow.tsx"),
+  route("/cash-flow/connect", "client/routes/cash-flow-connect.tsx"),
   route("/bills", "client/routes/bills.tsx"),
   route("/google", [
     route("/already-signed-in", "client/routes/google/already-signed-in.tsx"),
@@ -69,6 +70,10 @@ export const routes = rootRoute("client/routes/__root.tsx", [
   route(
     "/api/v1/web/cash-flow",
     "server/modules/cash-flow/controllers/web-cash-flow.controller.ts",
+  ),
+  route(
+    "/api/v1/web/cash-flow/spreadsheet",
+    "server/modules/cash-flow/controllers/web-cash-flow-spreadsheet.controller.ts",
   ),
   route(
     "/api/v1/web/cash-flow/transactions",

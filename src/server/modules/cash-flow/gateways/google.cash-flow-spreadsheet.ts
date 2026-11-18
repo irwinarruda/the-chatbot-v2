@@ -631,9 +631,22 @@ export class GoogleCashFlowSpreadsheetGateway
     }
   }
 
+  private isMissingAccessError(ex: unknown): boolean {
+    const error = ex as { status?: unknown; code?: unknown } | undefined;
+    return [error?.status, error?.code].some((value) =>
+      [403, 404].includes(Number(value)),
+    );
+  }
+
   private handleError(ex: unknown): Error {
     if (ex instanceof ValidationException || ex instanceof ServiceException)
       return ex;
+    if (this.isMissingAccessError(ex)) {
+      return new ValidationException(
+        "The Chatbot does not have access to your spreadsheet",
+        "Open Cash flow in the web app, choose Connect spreadsheet and select the file to grant access",
+      );
+    }
     return new ServiceException(
       ex instanceof Error ? ex : undefined,
       "Spreadsheet service is not working at the moment.",

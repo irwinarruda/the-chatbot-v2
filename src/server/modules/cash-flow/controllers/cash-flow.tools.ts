@@ -120,17 +120,17 @@ export function createCashFlowTools(
     {
       name: "add_cash_flow_spreadsheet_url",
       description:
-        "Associate a Google financial planning spreadsheet with a user. Fails if user not found, already has a sheet, or URL invalid. Returns { message }.",
+        "Start linking a Google financial planning spreadsheet to the user, or replacing the linked one. The app can only open a spreadsheet after the user grants access to that file, so this does not link it yet: it returns { message, url }. Send the url to the user and ask them to open it and choose the spreadsheet. Fails if the URL is invalid.",
       inputSchema: AddCashFlowSpreadsheetUrlToolDTO,
-      mutating: true,
+      mutating: false,
       run: async (args, context) => {
         const input = AddCashFlowSpreadsheetUrlToolDTO.parse(args);
-        const user = await requireToolUser(auth, context);
-        await cashFlowService.addSpreadsheetUrl(
-          requireCashFlowPhone(user),
-          input.url,
-        );
-        return { message: "Spreadsheet linked successfully" };
+        await requireToolUser(auth, context);
+        return {
+          message:
+            "The spreadsheet is not linked yet. The user must open the url and choose the spreadsheet to grant access.",
+          url: cashFlowService.createSpreadsheetConnectUrl(input.url),
+        };
       },
     },
     {
