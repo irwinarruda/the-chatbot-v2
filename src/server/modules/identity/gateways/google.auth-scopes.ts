@@ -2,12 +2,12 @@ export const GoogleAuthScopes = {
   openId: "openid",
   email: "https://www.googleapis.com/auth/userinfo.email",
   profile: "https://www.googleapis.com/auth/userinfo.profile",
-  spreadsheets: "https://www.googleapis.com/auth/spreadsheets",
+  driveFile: "https://www.googleapis.com/auth/drive.file",
 } as const;
 
 export function buildScopes(): string[] {
   return [
-    GoogleAuthScopes.spreadsheets,
+    GoogleAuthScopes.driveFile,
     GoogleAuthScopes.openId,
     GoogleAuthScopes.email,
     GoogleAuthScopes.profile,

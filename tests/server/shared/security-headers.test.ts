@@ -67,6 +67,19 @@ describe("security headers", () => {
     expect(directives["script-src"]).not.toContain("https:");
   });
 
+  test("lets only the Google Picker load from another origin", () => {
+    const directives = parseCsp(
+      createContentSecurityPolicy(PRODUCTION_R2_PUBLIC_URL),
+    );
+
+    expect(directives["script-src"]).toEqual([
+      "'self'",
+      "'unsafe-inline'",
+      "https://apis.google.com",
+    ]);
+    expect(directives["frame-src"]).toEqual(["https://docs.google.com"]);
+  });
+
   test.each([PRODUCTION_R2_PUBLIC_URL, PREVIEW_R2_PUBLIC_URL])(
     "allows only the configured R2 origin for %s",
     (r2PublicUrl) => {

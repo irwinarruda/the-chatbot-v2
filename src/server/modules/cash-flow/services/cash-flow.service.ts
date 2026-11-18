@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
+import type { CashFlowSpreadsheetPickerResponseDTO } from "~/contracts/http/cash-flow/cash-flow-spreadsheet";
 import type {
   CashFlowAddEarningDTO,
   CashFlowAddExpenseDTO,
@@ -21,6 +22,7 @@ import { ValidationException } from "~/domain/shared/domain-errors";
 import type { CashFlowSpreadsheetGateway } from "~/server/modules/cash-flow/gateways/cash-flow-spreadsheet";
 import type { CashFlowSpreadsheetRepository } from "~/server/modules/cash-flow/repositories/cash-flow-spreadsheet.repository";
 import type { AuthService } from "~/server/modules/identity/services/auth.service";
+import type { GoogleSheetsConfig } from "~/server/shared/config/config";
 import { NotFoundException } from "~/server/shared/errors/application-errors";
 
 export class CashFlowService {
@@ -28,18 +30,45 @@ export class CashFlowService {
     private spreadsheets: CashFlowSpreadsheetRepository,
     private authService: AuthService,
     private spreadsheetResource: CashFlowSpreadsheetGateway,
+    private googleSheetsConfig: GoogleSheetsConfig,
   ) {}
+
+  createSpreadsheetConnectUrl(url: string): string {
+    const sheetId = this.spreadsheetResource.getSpreadsheetIdByUrl(url);
+    const connectUrl = new URL(this.googleSheetsConfig.connectUrl);
+    connectUrl.searchParams.set("spreadsheet", sheetId);
+    return connectUrl.toString();
+  }
+
+  async getSpreadsheetPicker(
+    phoneNumber: string,
+  ): Promise<CashFlowSpreadsheetPickerResponseDTO> {
+    const user = await this.authService.getUserByPhoneNumber(phoneNumber);
+    if (!user) throw new NotFoundException("User not found");
+    await this.ensureSpreadsheetAccess(user);
+    if (!user.googleCredential) {
+      throw new ValidationException("User is not connected to Google");
+    }
+    const sheet = await this.spreadsheets.getByUserId(user.id);
+    return {
+      accessToken: user.googleCredential.accessToken,
+      appId: this.googleSheetsConfig.pickerAppId,
+      developerKey: this.googleSheetsConfig.pickerApiKey,
+      spreadsheetId: sheet?.idSheet,
+    };
+  }
 
   async addSpreadsheetUrl(phoneNumber: string, url: string): Promise<void> {
     const user = await this.authService.getUserByPhoneNumber(phoneNumber);
     if (!user) throw new NotFoundException("User not found");
+    const sheetId = this.spreadsheetResource.getSpreadsheetIdByUrl(url);
     const existing = await this.spreadsheets.getByUserId(user.id);
     if (existing) {
-      throw new ValidationException(
-        "User already has a financial planning spreadsheet configured",
-      );
+      existing.idSheet = sheetId;
+      existing.updatedAt = new Date();
+      await this.spreadsheets.updateSheet(existing);
+      return;
     }
-    const sheetId = this.spreadsheetResource.getSpreadsheetIdByUrl(url);
     const sheet = new CashFlowSpreadsheet();
     sheet.idUser = user.id;
     sheet.idSheet = sheetId;

@@ -31,10 +31,18 @@ function createDashboard(position: number): CashFlowDashboardResponseDTO {
   };
 }
 
+const spreadsheetPort = {
+  async getSpreadsheetPicker() {
+    return { accessToken: "token", appId: "app", developerKey: "key" };
+  },
+  async connectSpreadsheet() {},
+};
+
 describe("cashFlowSlice", () => {
   test("refreshes authoritative spreadsheet data after every mutation", async () => {
     let loadCount = 0;
     const service: CashFlowRepository = {
+      ...spreadsheetPort,
       async saveTransfer() {},
       async deleteTransfer() {},
       load: vi.fn(async () => createDashboard(loadCount++)),
@@ -76,6 +84,7 @@ describe("cashFlowSlice", () => {
   test("keeps a successful mutation distinct from a failed refresh", async () => {
     let loadCount = 0;
     const service: CashFlowRepository = {
+      ...spreadsheetPort,
       async saveTransfer() {},
       async deleteTransfer() {},
       async load() {
@@ -107,6 +116,7 @@ describe("cashFlowSlice", () => {
   test("invalidates the stale delete target when refresh fails", async () => {
     let loadCount = 0;
     const service: CashFlowRepository = {
+      ...spreadsheetPort,
       async saveTransfer() {},
       async deleteTransfer() {},
       async load() {
@@ -135,6 +145,7 @@ describe("cashFlowSlice", () => {
     const mutation = createDeferred<void>();
     const dashboard = createDeferred<CashFlowDashboardResponseDTO>();
     const service: CashFlowRepository = {
+      ...spreadsheetPort,
       async create() {},
       async sync() {},
       async deleteLast() {},
@@ -159,6 +170,7 @@ describe("cashFlowSlice", () => {
   test("a late bootstrap cannot overwrite the post-mutation dashboard", async () => {
     const old = createDeferred<CashFlowDashboardResponseDTO>();
     const service: CashFlowRepository = {
+      ...spreadsheetPort,
       async create() {},
       async sync() {},
       async deleteLast() {},
@@ -176,5 +188,85 @@ describe("cashFlowSlice", () => {
     old.resolve(createDashboard(1));
     await loading;
     expect(store.getState().cashFlowDashboard.transactions[0].position).toBe(2);
+  });
+
+  test("links the spreadsheet the user picks, opening the picker on the requested file", async () => {
+    const pickSpreadsheet = vi.fn(
+      async () => "https://docs.google.com/spreadsheets/d/picked/edit",
+    );
+    const connectSpreadsheet = vi.fn(async () => {});
+    container.register("CashFlowRepository", {
+      ...spreadsheetPort,
+      async getSpreadsheetPicker() {
+        return {
+          accessToken: "token",
+          appId: "app",
+          developerKey: "key",
+          spreadsheetId: "linked",
+        };
+      },
+      connectSpreadsheet,
+      async saveTransfer() {},
+      async deleteTransfer() {},
+      load: vi.fn(async () => createDashboard(0)),
+      create: vi.fn(async () => {}),
+      sync: vi.fn(async () => {}),
+      deleteLast: vi.fn(async () => {}),
+    });
+    container.register("SpreadsheetPickerGateway", { pickSpreadsheet });
+    const store = create<CashFlowService>()(createCashFlowService);
+
+    await expect(
+      store.getState().connectCashFlowSpreadsheet("requested"),
+    ).resolves.toBe(true);
+    await store.getState().connectCashFlowSpreadsheet();
+
+    expect(pickSpreadsheet).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ spreadsheetId: "requested" }),
+    );
+    expect(pickSpreadsheet).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ spreadsheetId: "linked" }),
+    );
+    expect(connectSpreadsheet).toHaveBeenCalledWith(
+      "https://docs.google.com/spreadsheets/d/picked/edit",
+    );
+    expect(store.getState().isCashFlowSubmitting).toBe(false);
+  });
+
+  test("links nothing when the user closes the picker, and reports a failed link", async () => {
+    const connectSpreadsheet = vi.fn(async () => {
+      throw new Error("offline");
+    });
+    container.register("CashFlowRepository", {
+      ...spreadsheetPort,
+      connectSpreadsheet,
+      async saveTransfer() {},
+      async deleteTransfer() {},
+      load: vi.fn(async () => createDashboard(0)),
+      create: vi.fn(async () => {}),
+      sync: vi.fn(async () => {}),
+      deleteLast: vi.fn(async () => {}),
+    });
+    const pickSpreadsheet = vi.fn<() => Promise<string | undefined>>(
+      async () => undefined,
+    );
+    container.register("SpreadsheetPickerGateway", { pickSpreadsheet });
+    const store = create<CashFlowService>()(createCashFlowService);
+
+    await expect(store.getState().connectCashFlowSpreadsheet()).resolves.toBe(
+      false,
+    );
+    expect(connectSpreadsheet).not.toHaveBeenCalled();
+    expect(store.getState().cashFlowError).toBeUndefined();
+
+    pickSpreadsheet.mockResolvedValue(
+      "https://docs.google.com/spreadsheets/d/picked/edit",
+    );
+    await expect(store.getState().connectCashFlowSpreadsheet()).resolves.toBe(
+      false,
+    );
+    expect(store.getState().cashFlowError).toBe("connecting");
   });
 });

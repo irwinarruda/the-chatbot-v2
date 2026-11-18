@@ -29,6 +29,14 @@ export class CashFlowSpreadsheetRepository {
     `;
   }
 
+  async updateSheet(sheet: CashFlowSpreadsheet): Promise<void> {
+    await this.database.sql`
+      UPDATE cash_flow_spreadsheets
+      SET id_sheet = ${sheet.idSheet}, updated_at = ${sheet.updatedAt}
+      WHERE id = ${sheet.id}
+    `;
+  }
+
   async withLock<T>(sheetId: string, operation: () => Promise<T>): Promise<T> {
     return this.database.transaction(async (sql) => {
       await sql`SELECT pg_advisory_xact_lock(hashtextextended(${`cash-flow:${sheetId}`}, 0))`;

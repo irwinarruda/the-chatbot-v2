@@ -1,7 +1,8 @@
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import {
   ArrowRightLeft,
   CircleAlert,
+  FileSpreadsheet,
   Landmark,
   Plus,
   RefreshCw,
@@ -114,6 +115,7 @@ export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
     saving: t.errorSaving,
     syncing: t.errorSyncing,
     deleting: t.errorDeleting,
+    connecting: t.errorConnecting,
   };
   const errorMessage = clientErrorMessage(error, errorMessages);
   const hasFilters = Object.values(filters).some(
@@ -211,6 +213,11 @@ export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
             label: t.syncAction,
             onClick: () => setIsSyncOpen(true),
             shortLabel: t.syncShort,
+          },
+          {
+            icon: FileSpreadsheet,
+            label: t.connectAction,
+            link: <Link to="/cash-flow/connect" />,
           },
         ]}
         heading={t.heading}

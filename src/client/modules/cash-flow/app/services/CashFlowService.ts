@@ -8,7 +8,12 @@ import type {
 } from "~/contracts/http/cash-flow/cash-flow";
 import type { SaveCashFlowTransferRequestDTO } from "~/contracts/http/cash-flow/cash-flow-transfer";
 
-export type CashFlowErrorCode = "loading" | "saving" | "syncing" | "deleting";
+export type CashFlowErrorCode =
+  | "loading"
+  | "saving"
+  | "syncing"
+  | "deleting"
+  | "connecting";
 
 export interface CashFlowService {
   cashFlowDashboard: CashFlowDashboardResponseDTO;
@@ -30,6 +35,7 @@ export interface CashFlowService {
     replace: boolean,
   ) => Promise<boolean>;
   deleteCashFlowTransfer: (id: string) => Promise<boolean>;
+  connectCashFlowSpreadsheet: (spreadsheetId?: string) => Promise<boolean>;
 }
 
 function emptyCashFlowDashboard(): CashFlowDashboardResponseDTO {
@@ -163,6 +169,31 @@ export const createCashFlowService: StateCreator<CashFlowService> = (
         () => container.get("CashFlowRepository").deleteTransfer(id),
         "deleting",
       );
+    },
+    async connectCashFlowSpreadsheet(spreadsheetId) {
+      const { isCashFlowSubmitting } = get();
+      if (isCashFlowSubmitting) return false;
+      const request = generation;
+      set({ isCashFlowSubmitting: true, cashFlowError: undefined });
+      try {
+        const repository = container.get("CashFlowRepository");
+        const picker = await repository.getSpreadsheetPicker();
+        const url = await container
+          .get("SpreadsheetPickerGateway")
+          .pickSpreadsheet({
+            ...picker,
+            spreadsheetId: spreadsheetId ?? picker.spreadsheetId,
+          });
+        if (!url) return false;
+        await repository.connectSpreadsheet(url);
+        return request === generation;
+      } catch (error) {
+        if (request === generation)
+          set({ cashFlowError: clientError(error, "connecting") });
+        return false;
+      } finally {
+        if (request === generation) set({ isCashFlowSubmitting: false });
+      }
     },
     clearCashFlowError() {
       set({ cashFlowError: undefined });
