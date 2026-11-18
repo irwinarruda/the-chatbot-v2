@@ -31,9 +31,17 @@ We share data with specific providers to facilitate our service:
 - **AI model providers**: To generate responses, we send the content of your conversation to an AI model provider. This includes the spreadsheet data needed to answer your request, such as transactions, categories and account balances. Our default provider is Z.ai. If you choose another provider in your settings, your conversations are processed by that provider instead. Please refer to the provider's data policy for more details.
 - **OpenAI**: We send voice messages to OpenAI to transcribe them into text.
 
-## 4. Data Retention and Security
+## 4. Data Protection, Retention and Security
 
-Your data, including chat logs and authentication tokens, is securely stored in our database. We retain this information to preserve the context of your conversations and ensure the continued operation of services such as expense tracking.
+Your data, including chat logs and authentication tokens, is stored in our database. We retain this information while your account exists, to preserve the context of your conversations and ensure the continued operation of services such as expense tracking.
+
+We protect sensitive data with these mechanisms:
+
+- **Encryption in transit**: every connection between you, The Chatbot and Google uses HTTPS (TLS).
+- **Encryption at rest**: your Google access and refresh tokens are encrypted with AES-256-GCM before they are stored.
+- **Restricted access**: only the application and its maintainer can reach the production database, and access keys are kept outside the source code.
+- **Protected sessions**: the web app keeps you signed in with a cookie that scripts cannot read (HttpOnly).
+- **Minimal Google access**: The Chatbot can only open the spreadsheet you select in Google's file picker, and no other file in your Google Drive.
 
 ## 5. Your Rights
 
@@ -43,7 +51,7 @@ You have the right to access, correct, or delete your personal data. You can req
 
 The use and transfer of raw or derived user data received from Google Workspace APIs will adhere to the [Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy), including the Limited Use requirements.
 
-- We access only the spreadsheet you link to The Chatbot, and only to read and record your financial data at your request.
+- We request only per-file access (the `drive.file` permission). We access only the spreadsheet you select in Google's file picker, and only to read and record your financial data at your request.
 - We do not use user data obtained through Google Workspace APIs, including the content of your Google Sheets, to develop, improve, or train generalized AI or machine learning models.
 - We send spreadsheet data to an AI model provider only to produce the answer or action you asked for.
 - We do not sell Google user data or use it for advertising.
