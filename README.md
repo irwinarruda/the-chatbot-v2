@@ -120,7 +120,7 @@ tests/                   # domain/ contracts/ server/ client/ integration/ and a
 | AI runtime | **Pi AI** and **Pi Agent Core** | Provider and model normalization, reasoning settings, streaming and the tool loop. |
 | Speech and storage | **OpenAI speech-to-text**, **Cloudflare R2** | Audio transcription and durable media storage. |
 | Integrations | **WhatsApp Business Cloud API**, **Google OAuth**, **Google Sheets** | Messaging, sign-in and finance data. |
-| Interface | **Tailwind CSS v4**, **shadcn/ui** | A responsive, windowed UI on accessible primitives, in the [Barro theme](https://github.com/irwinarruda/barro-theme), slate with a brick accent, or the optional [Favo theme](https://github.com/irwinarruda/favo-theme), each dark or light. |
+| Interface | **Tailwind CSS v4**, **shadcn/ui** | A responsive, windowed UI on accessible primitives, in the [Barro theme](https://github.com/irwinarruda/barro-theme), slate with a brick accent, or the optional [Favo](https://github.com/irwinarruda/favo-theme) and [Lila](https://github.com/irwinarruda/lila-theme) themes, each dark or light. |
 | Quality | **TypeScript**, **Biome**, **Vitest** | Static checks, formatting and linting, and layered tests. |
 
 ## Running locally
@@ -252,4 +252,5 @@ Then log in: create an upload token on the Artifacts page, press the copy button
 - [favo](https://github.com/irwinarruda/favo-cli): every AI subscription you have, on every computer you own.
 - [Favo theme](https://github.com/irwinarruda/favo-theme): a warm theme with the contrast to read code all day.
 - [Barro theme](https://github.com/irwinarruda/barro-theme): clay on slate, and the brick in this logo.
+- [Lila theme](https://github.com/irwinarruda/lila-theme): lilac on quiet grays.
 - [irwin-ui](https://github.com/irwinarruda/irwin-ui): the design system this app follows, with the rules for color, type and the marks.

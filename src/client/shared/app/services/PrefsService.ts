@@ -1,5 +1,6 @@
 import type { StateCreator } from "zustand";
 import type { HydratePrefsDTO } from "~/client/shared/app/dtos/HydratePrefsDTO";
+import type { Palette } from "~/client/shared/app/entities/Prefs";
 import { container } from "~/client/shared/container";
 import type { Locale } from "~/client/shared/i18n/dictionary";
 import type { PrefsDTO } from "~/contracts/http/shared/prefs";
@@ -10,7 +11,7 @@ export type PrefsService = {
   isPrefsHydrated: boolean;
   hydratePrefs: (dto: HydratePrefsDTO) => void;
   toggleTheme: () => Promise<void>;
-  togglePalette: () => Promise<void>;
+  choosePalette: (palette: Palette) => Promise<void>;
   toggleLocale: () => Promise<Locale>;
 };
 
@@ -31,14 +32,9 @@ export const createPrefsService: StateCreator<PrefsService> = (set, get) => ({
       }),
     });
   },
-  async togglePalette() {
+  async choosePalette(palette) {
     const { prefs } = get();
-    set({
-      prefs: savePrefs({
-        ...prefs,
-        palette: prefs.palette === "favo" ? "barro" : "favo",
-      }),
-    });
+    set({ prefs: savePrefs({ ...prefs, palette }) });
   },
   async toggleLocale() {
     const { prefs } = get();

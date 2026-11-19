@@ -53,7 +53,7 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 /* ==========================================================
-  Tailwind v4 — two palettes, each with a dark and a light variant
+  Tailwind v4 — three palettes, each with a dark and a light variant
   CSS-first config (no tailwind.config.{js,ts})
 
   Barro (https://github.com/irwinarruda/barro-theme), the owner's brand theme,
@@ -62,7 +62,9 @@
   their own red, `danger`, never a code color.
   Favo (https://github.com/irwinarruda/favo-theme) is chosen with
   [data-palette="favo"]: its calm gray pair, Smoke (dark) and Veil (light).
-  [data-theme="light"] picks the light variant of either palette.
+  Lila (https://github.com/irwinarruda/lila-theme) is chosen with
+  [data-palette="lila"]: lilac on quiet grays, Dusk (dark) and Petal (light).
+  [data-theme="light"] picks the light variant of any palette.
 
   Each palette writes every color once as a `--palette-*` variable named after
   a theme role, and the shadcn and signal tokens point at those roles, so
@@ -180,6 +182,11 @@
   --color-brand-soft: var(--brand-soft);
   --color-scrim: var(--scrim);
   --color-code: var(--code-background);
+
+  /* Each palette's fill, for the palette picker's dots; they never follow the active palette */
+  --color-swatch-barro: #b64d3f;
+  --color-swatch-favo: #f5a623;
+  --color-swatch-lila: #7a58ce;
 
   /* Code colors, for prose and code */
   --color-syntax-keyword: var(--palette-keyword);
@@ -482,6 +489,84 @@
     --palette-constant: #7145b5;
     --palette-param: #aa3069;
     --palette-regex: #c43e27;
+  }
+
+  [data-palette="lila"] {
+    /* Lila Dusk (lila-theme: palette.json, dusk; fg-reading to info-line from app/tokens.json, dark, on its mauve neutral) */
+    --palette-background: #0e0d11;
+    --palette-panel: #16151a;
+    --palette-raised: #1d1c21;
+    --palette-float: #08080c;
+    --palette-border: #313137;
+    --palette-selection: #322a4c;
+    --palette-faint: #6b6b74;
+    --palette-comment: #a7a4af;
+    --palette-foreground: #edecf2;
+    --palette-accent: #af97ff;
+    --palette-fill: #7a58ce;
+    --palette-fill-hover: #6e4dbe;
+    --palette-on-fill: #ffffff;
+    --palette-fg-reading: #c6c4cd;
+    --palette-accent-text: #af97ff;
+    --palette-accent-soft: #1d1a2c;
+    --palette-success: #7ec259;
+    --palette-success-soft: #162011;
+    --palette-success-line: #223915;
+    --palette-warning: #f9a275;
+    --palette-warning-soft: #281911;
+    --palette-warning-line: #482918;
+    --palette-danger: #f45959;
+    --palette-danger-soft: #2e1413;
+    --palette-danger-line: #561b1b;
+    --palette-info: #5db0f5;
+    --palette-info-soft: #111e29;
+    --palette-info-line: #16344d;
+    --palette-keyword: #af97ff;
+    --palette-function: #5db0f5;
+    --palette-type: #46d4c9;
+    --palette-string: #7ec259;
+    --palette-constant: #f9a275;
+    --palette-param: #f1ce5f;
+    --palette-regex: #f48aba;
+  }
+
+  [data-palette="lila"][data-theme="light"] {
+    /* Lila Petal (lila-theme: palette.json, petal; fg-reading to info-line from app/tokens.json, light, on its mauve neutral) */
+    --palette-background: #f9f9fb;
+    --palette-panel: #f2f1f5;
+    --palette-raised: #ebebef;
+    --palette-float: #fdfdff;
+    --palette-border: #d5d5db;
+    --palette-selection: #e3deff;
+    --palette-faint: #8a8890;
+    --palette-comment: #615f69;
+    --palette-foreground: #212128;
+    --palette-accent: #7a58ce;
+    --palette-fill: #7a58ce;
+    --palette-fill-hover: #6e4dbe;
+    --palette-on-fill: #ffffff;
+    --palette-fg-reading: #43424b;
+    --palette-accent-text: #6b45be;
+    --palette-accent-soft: #ece8ff;
+    --palette-success: #397900;
+    --palette-success-soft: #e1f2da;
+    --palette-success-line: #c2e1b4;
+    --palette-warning: #b04b00;
+    --palette-warning-soft: #fee6db;
+    --palette-warning-line: #f7cbb5;
+    --palette-danger: #c51d28;
+    --palette-danger-soft: #ffe5e2;
+    --palette-danger-line: #ffc5c1;
+    --palette-info: #006fb3;
+    --palette-info-soft: #dceeff;
+    --palette-info-line: #b6dbfb;
+    --palette-keyword: #6b45be;
+    --palette-function: #0076bd;
+    --palette-type: #007973;
+    --palette-string: #3e8200;
+    --palette-constant: #ba5000;
+    --palette-param: #8b6e00;
+    --palette-regex: #b62877;
   }
 
   html {

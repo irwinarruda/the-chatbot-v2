@@ -51,7 +51,7 @@ function contrast(first: string, second: string) {
 }
 
 describe("Theme palettes", () => {
-  test("Barro and Favo, dark and light, each define every color role", () => {
+  test("Barro, Favo and Lila, dark and light, each define every color role", () => {
     const blocks = paletteBlocks();
     const [barroSlate] = blocks;
 
@@ -60,6 +60,8 @@ describe("Theme palettes", () => {
       '[data-theme="light"]',
       '[data-palette="favo"]',
       '[data-palette="favo"][data-theme="light"]',
+      '[data-palette="lila"]',
+      '[data-palette="lila"][data-theme="light"]',
     ]);
     expect(barroSlate.roles).toHaveLength(35);
     for (const block of blocks) {

@@ -8,7 +8,7 @@ import {
 import { container } from "~/client/shared/container";
 
 describe("PrefsService", () => {
-  test("switches between the Barro and Favo palettes and saves each choice", async () => {
+  test("saves the chosen palette with the rest of the prefs", async () => {
     const gateway = { persistPrefs: vi.fn<PrefsGateway["persistPrefs"]>() };
     container.register("PrefsGateway", gateway);
     const store = create<PrefsService>()(createPrefsService);
@@ -16,26 +16,26 @@ describe("PrefsService", () => {
       .getState()
       .hydratePrefs({ locale: "en", theme: "light", palette: "barro" });
 
-    await store.getState().togglePalette();
+    await store.getState().choosePalette("lila");
 
     expect(store.getState().prefs).toEqual({
       locale: "en",
       theme: "light",
-      palette: "favo",
+      palette: "lila",
     });
     expect(gateway.persistPrefs).toHaveBeenLastCalledWith({
       locale: "en",
       theme: "light",
-      palette: "favo",
+      palette: "lila",
     });
 
-    await store.getState().togglePalette();
+    await store.getState().choosePalette("favo");
 
-    expect(store.getState().prefs.palette).toBe("barro");
+    expect(store.getState().prefs.palette).toBe("favo");
     expect(gateway.persistPrefs).toHaveBeenLastCalledWith({
       locale: "en",
       theme: "light",
-      palette: "barro",
+      palette: "favo",
     });
   });
 });
