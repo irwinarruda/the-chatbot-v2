@@ -21,8 +21,12 @@
     "showMonetaryValues": "Mostrar valores monetários",
     "switchToDarkTheme": "Usar tema escuro",
     "switchToLightTheme": "Usar tema claro",
-    "switchToFavoPalette": "Usar tema Favo",
-    "switchToBarroPalette": "Usar tema Barro"
+    "palettes": {
+      "label": "Tema",
+      "barro": "Tema Barro",
+      "favo": "Tema Favo",
+      "lila": "Tema Lila"
+    }
   },
   "nav": {
     "home": "Início",

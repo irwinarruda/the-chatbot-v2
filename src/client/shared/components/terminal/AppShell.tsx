@@ -13,7 +13,6 @@ import {
   ReceiptText,
   Shield,
   Sun,
-  SwatchBook,
   Wallet,
 } from "lucide-react";
 import { type ReactNode, useState } from "react";
@@ -38,6 +37,7 @@ import { usePrefs } from "~/client/shared/hooks/usePrefs";
 import type { Dictionary } from "~/client/shared/i18n/dictionary";
 import { useApp } from "~/client/shared/stores/app";
 import { MonetaryPrivacyControl } from "./MonetaryPrivacyControl";
+import { PalettePicker } from "./PalettePicker";
 import { TerminalChromeButton } from "./TerminalChromeButton";
 import { TerminalResponsiveOverlay } from "./TerminalResponsiveOverlay";
 
@@ -164,7 +164,6 @@ export function AppShell({
   const router = useRouter();
   const prefs = usePrefs();
   const toggleTheme = useApp((state) => state.toggleTheme);
-  const togglePalette = useApp((state) => state.togglePalette);
   const toggleLocale = useApp((state) => state.toggleLocale);
   const sessionError = useApp((state) => state.sessionError);
   const logout = useApp((state) => state.logout);
@@ -201,10 +200,12 @@ export function AppShell({
     prefs.theme === "light"
       ? (dictionary?.common.switchToDarkTheme ?? "Use dark theme")
       : (dictionary?.common.switchToLightTheme ?? "Use light theme");
-  const paletteLabel =
-    prefs.palette === "favo"
-      ? (dictionary?.common.switchToBarroPalette ?? "Use Barro theme")
-      : (dictionary?.common.switchToFavoPalette ?? "Use Favo theme");
+  const paletteLabels = dictionary?.common.palettes ?? {
+    label: "Theme",
+    barro: "Barro theme",
+    favo: "Favo theme",
+    lila: "Lila theme",
+  };
 
   async function onLocaleToggle() {
     await toggleLocale();
@@ -251,11 +252,7 @@ export function AppShell({
     </TerminalChromeButton>
   );
 
-  const paletteControl = (
-    <TerminalChromeButton onClick={togglePalette} title={paletteLabel}>
-      <SwatchBook />
-    </TerminalChromeButton>
-  );
+  const paletteControl = <PalettePicker labels={paletteLabels} />;
 
   const skipLink = (
     <a

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
@@ -112,7 +112,7 @@ describe("AppShell", () => {
     expect(screen.getByText("content")).toBeInTheDocument();
   });
 
-  test("switches the page to the Favo theme from the title bar", async () => {
+  test("switches the page to the Lila theme from the title bar", async () => {
     const user = userEvent.setup();
     render(
       <AppShell activePath="/todo" dictionary={dictionary} title="Todos">
@@ -121,12 +121,36 @@ describe("AppShell", () => {
     );
 
     await user.click(
-      screen.getByRole("button", {
-        name: dictionary.common.switchToFavoPalette,
-      }),
+      screen.getAllByRole("button", {
+        name: dictionary.common.palettes.lila,
+      })[0],
     );
 
-    expect(document.documentElement.dataset.palette).toBe("favo");
+    expect(document.documentElement.dataset.palette).toBe("lila");
+  });
+
+  test("offers every palette and marks the current one", () => {
+    mockedPrefs.current = { locale: "en", theme: "dark", palette: "favo" };
+    render(
+      <AppShell activePath="/todo" dictionary={dictionary} title="Todos">
+        <p>content</p>
+      </AppShell>,
+    );
+
+    const [picker] = screen.getAllByRole("group", {
+      name: dictionary.common.palettes.label,
+    });
+    const swatches = within(picker).getAllByRole("button");
+    expect(swatches.map((swatch) => swatch.getAttribute("aria-label"))).toEqual(
+      [
+        dictionary.common.palettes.barro,
+        dictionary.common.palettes.favo,
+        dictionary.common.palettes.lila,
+      ],
+    );
+    expect(
+      swatches.map((swatch) => swatch.getAttribute("aria-pressed")),
+    ).toEqual(["false", "true", "false"]);
   });
 
   test("shows the light-letter wordmark in the dark theme", () => {
@@ -141,7 +165,7 @@ describe("AppShell", () => {
     ).toHaveAttribute("src", "/brand/logo-dark.svg");
   });
 
-  test("keeps the light wordmark and offers Barro back while Favo is on", () => {
+  test("keeps the light wordmark while Favo is on", () => {
     mockedPrefs.current = { locale: "en", theme: "light", palette: "favo" };
     render(
       <AppShell activePath="/todo" dictionary={dictionary} title="Todos">
@@ -149,11 +173,6 @@ describe("AppShell", () => {
       </AppShell>,
     );
 
-    expect(
-      screen.getByRole("button", {
-        name: dictionary.common.switchToBarroPalette,
-      }),
-    ).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "The Chatbot" }).querySelector("img"),
     ).toHaveAttribute("src", "/brand/logo-light.svg");

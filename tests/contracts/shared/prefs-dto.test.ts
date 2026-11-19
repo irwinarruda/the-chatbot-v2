@@ -16,6 +16,12 @@ describe("Prefs cookie contract", () => {
     expect(resolvePrefs(prefsCookie(prefs))).toEqual(prefs);
   });
 
+  test("a saved Lila palette comes back with the rest of the prefs", () => {
+    const prefs = { locale: "pt-BR", theme: "dark", palette: "lila" };
+
+    expect(resolvePrefs(prefsCookie(prefs))).toEqual(prefs);
+  });
+
   test("a cookie saved before palettes existed keeps its prefs on Barro", () => {
     expect(resolvePrefs(prefsCookie({ locale: "en", theme: "light" }))).toEqual(
       { locale: "en", theme: "light", palette: "barro" },
