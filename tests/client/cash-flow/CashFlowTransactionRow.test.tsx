@@ -52,7 +52,7 @@ describe("CashFlowTransactionRow", () => {
     expect(onDelete).toHaveBeenCalledOnce();
   });
 
-  test("deletes a transfer as a pair and leaves bill payments to the bills page", () => {
+  test("offers the transfer delete on transfer rows and no delete on bill payments", () => {
     const { unmount } = renderRow({
       transferId: "a5337eac-71f5-4cce-9a4e-f2e4a95d789f",
     });

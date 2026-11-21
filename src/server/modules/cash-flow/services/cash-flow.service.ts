@@ -297,11 +297,9 @@ export class CashFlowService {
     await this.spreadsheets.withLock(config.sheetId, async () => {
       const transactions =
         await this.spreadsheetResource.getAllTransactions(config);
-      if (!transactions.some((item) => item.transferId === id)) return;
-      await this.spreadsheetResource.deleteTransactions(
-        config,
-        this.getTransferPositions(transactions, id),
-      );
+      const position = transactions.findIndex((item) => item.transferId === id);
+      if (position < 0) return;
+      await this.removeTransaction(config, transactions, position);
     });
   }
 
@@ -438,9 +436,9 @@ export class CashFlowService {
         "This transaction is linked to a bill payment",
       );
     }
-    let positions = [position];
-    if (transferId)
-      positions = this.getTransferPositions(transactions, transferId);
+    const positions = transferId
+      ? this.getTransferPositions(transactions, transferId)
+      : [position];
     await this.spreadsheetResource.deleteTransactions(config, positions);
   }
 

@@ -84,11 +84,7 @@ export class GoogleCashFlowSpreadsheetGateway
   ): Promise<void> {
     return this.withRetry(async () => {
       const journal = await this.readJournal(sheetConfig);
-      const rowIndexes = positions.flatMap((position) => {
-        const transaction = journal.transactions[position];
-        return transaction ? [transaction.rowIndex] : [];
-      });
-      if (rowIndexes.length !== positions.length) {
+      if (positions.some((position) => !journal.transactions[position])) {
         throw new ValidationException(
           "The transaction could not be found",
           "Reload the cash flow and try again",
@@ -98,7 +94,8 @@ export class GoogleCashFlowSpreadsheetGateway
         { startColumnIndex: 1, endColumnIndex: 2 },
         { startColumnIndex: 3, endColumnIndex: 7 },
       ];
-      const requests: sheets_v4.Schema$Request[] = [...rowIndexes]
+      const requests: sheets_v4.Schema$Request[] = positions
+        .map((position) => journal.transactions[position].rowIndex)
         .sort((first, second) => second - first)
         .flatMap((rowIndex, removedCount) => {
           const lastRowIndex = journal.nextRow - 1 - removedCount;

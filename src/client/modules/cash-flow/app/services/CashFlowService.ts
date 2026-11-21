@@ -146,8 +146,12 @@ export const createCashFlowService: StateCreator<CashFlowService> = (
           set((state) => ({
             cashFlowDashboard: {
               ...state.cashFlowDashboard,
-              transactions: state.cashFlowDashboard.transactions.filter(
-                (item) => item.position !== transaction.position,
+              transactions: state.cashFlowDashboard.transactions.flatMap(
+                (item) => {
+                  if (item.position === transaction.position) return [];
+                  if (item.position < transaction.position) return [item];
+                  return [{ ...item, position: item.position - 1 }];
+                },
               ),
             },
           }));

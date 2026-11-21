@@ -118,8 +118,15 @@ describe("cashFlowSlice", () => {
     expect(store.getState().cashFlowError).toBe("loading");
   });
 
-  test("drops the deleted transaction when the refresh after it fails", async () => {
+  test("drops the deleted transaction and moves the rows below it up when the refresh after it fails", async () => {
     let loadCount = 0;
+    const [row] = createDashboard(0).transactions;
+    const dashboard = {
+      ...createDashboard(0),
+      transactions: ["Lunch", "Dinner", "Coffee"].map(
+        (description, position) => ({ ...row, description, position }),
+      ),
+    };
     const service: CashFlowRepository = {
       ...spreadsheetPort,
       async saveTransfer() {},
@@ -127,7 +134,7 @@ describe("cashFlowSlice", () => {
       async load() {
         loadCount += 1;
         if (loadCount > 1) throw new Error("refresh failed");
-        return createDashboard(0);
+        return dashboard;
       },
       async create() {},
       async sync() {},
@@ -137,14 +144,22 @@ describe("cashFlowSlice", () => {
     const store = create<CashFlowService>()(createCashFlowService);
     await store.getState().bootstrapCashFlow();
 
-    const [transaction] = store.getState().cashFlowDashboard.transactions;
-    const deleted = await store
-      .getState()
-      .deleteCashFlowTransaction(transaction);
+    const [, dinner] = store.getState().cashFlowDashboard.transactions;
+    const deleted = await store.getState().deleteCashFlowTransaction(dinner);
 
     expect(deleted).toBe(true);
-    expect(service.deleteTransaction).toHaveBeenCalledWith(transaction);
-    expect(store.getState().cashFlowDashboard.transactions).toEqual([]);
+    expect(service.deleteTransaction).toHaveBeenCalledWith(dinner);
+    expect(
+      store
+        .getState()
+        .cashFlowDashboard.transactions.map(({ description, position }) => [
+          description,
+          position,
+        ]),
+    ).toEqual([
+      ["Lunch", 0],
+      ["Coffee", 1],
+    ]);
     expect(store.getState().cashFlowError).toBe("loading");
   });
   test("reset stops a pending mutation from refreshing or clearing new loading state", async () => {

@@ -251,6 +251,27 @@ describe("Deleting any transaction", () => {
     ).toEqual(["Lunch", "Coffee"]);
   });
 
+  test("refuses to delete one side of a transfer whose other side is gone", async () => {
+    await setupUser();
+    await cashFlow.transferBetweenBankAccounts(transfer);
+    await gateway.deleteTransactions(
+      {
+        sheetId: orquestrator.googleSheetsConfig.testSheetId,
+        sheetAccessToken: "ya29.a0ARrdaM9test_access_token_123456789",
+      },
+      [1],
+    );
+    const [debit] = await getShownTransactions();
+
+    await expect(
+      cashFlow.deleteTransfer(phoneNumber, transfer.id),
+    ).rejects.toThrow(ValidationException);
+    await expect(deleteShown(debit)).rejects.toThrow(ValidationException);
+    expect(await cashFlow.getAllTransactions(phoneNumber)).toMatchObject([
+      { transferId: transfer.id, value: -transfer.value },
+    ]);
+  });
+
   test("leaves bill payments to the bills page", async () => {
     const { user, bill, dto } = await setupBill();
     await payments.payFromAccount(user.id, phoneNumber, bill.expense.id, dto);
