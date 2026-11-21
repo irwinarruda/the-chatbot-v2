@@ -5,9 +5,11 @@ import type {
   CashFlowAddExpenseDTO,
   CashFlowAddTransactionDTO,
   CashFlowDashboardDTO,
+  CashFlowDeleteTransactionDTO,
   CashFlowSyncBankAccountBalanceDTO,
   CashFlowTransferDTO,
 } from "~/domain/cash-flow/cash-flow-commands";
+import { formatCashFlowDate } from "~/domain/cash-flow/cash-flow-date";
 import { CashFlowSpreadsheet } from "~/domain/cash-flow/cash-flow-spreadsheet";
 import { CashFlowSpreadsheetType } from "~/domain/cash-flow/cash-flow-spreadsheet-type";
 import type {
@@ -150,16 +152,51 @@ export class CashFlowService {
       sheetAccessToken: credential.accessToken,
     };
     await this.spreadsheets.withLock(config.sheetId, async () => {
-      const last = await this.spreadsheetResource.getLastTransaction(config);
-      if (last?.transferId) {
-        await this.spreadsheetResource.deleteTransfer(config, last.transferId);
-        return;
-      }
-      if (last?.paymentId)
+      const transactions =
+        await this.spreadsheetResource.getAllTransactions(config);
+      if (transactions.length === 0) {
         throw new ValidationException(
-          "This transaction is linked to a bill payment",
+          "There are no items to be deleted",
+          "Verify if deleting is the correct operation",
         );
-      await this.spreadsheetResource.deleteLastTransaction(config);
+      }
+      await this.removeTransaction(
+        config,
+        transactions,
+        transactions.length - 1,
+      );
+    });
+  }
+
+  async deleteTransaction(
+    transaction: CashFlowDeleteTransactionDTO,
+  ): Promise<void> {
+    const { sheet, credential } = await this.getUserAndSheet(
+      transaction.phoneNumber,
+    );
+    const config = {
+      sheetId: sheet.idSheet,
+      sheetAccessToken: credential.accessToken,
+    };
+    await this.spreadsheets.withLock(config.sheetId, async () => {
+      const transactions =
+        await this.spreadsheetResource.getAllTransactions(config);
+      const current = transactions[transaction.position];
+      if (
+        !current ||
+        formatCashFlowDate(current.date) !==
+          formatCashFlowDate(transaction.date) ||
+        current.value !== transaction.value ||
+        current.category !== transaction.category ||
+        current.description !== transaction.description ||
+        current.bankAccount !== transaction.bankAccount
+      ) {
+        throw new ValidationException(
+          "This transaction changed in the spreadsheet",
+          "Reload the cash flow and try again",
+        );
+      }
+      await this.removeTransaction(config, transactions, transaction.position);
     });
   }
 
@@ -253,15 +290,19 @@ export class CashFlowService {
 
   async deleteTransfer(phoneNumber: string, id: string): Promise<void> {
     const { sheet, credential } = await this.getUserAndSheet(phoneNumber);
-    await this.spreadsheets.withLock(sheet.idSheet, () =>
-      this.spreadsheetResource.deleteTransfer(
-        {
-          sheetId: sheet.idSheet,
-          sheetAccessToken: credential.accessToken,
-        },
-        id,
-      ),
-    );
+    const config = {
+      sheetId: sheet.idSheet,
+      sheetAccessToken: credential.accessToken,
+    };
+    await this.spreadsheets.withLock(config.sheetId, async () => {
+      const transactions =
+        await this.spreadsheetResource.getAllTransactions(config);
+      if (!transactions.some((item) => item.transferId === id)) return;
+      await this.spreadsheetResource.deleteTransactions(
+        config,
+        this.getTransferPositions(transactions, id),
+      );
+    });
   }
 
   async payBill(
@@ -384,6 +425,36 @@ export class CashFlowService {
       ...new Set([...expenseCategories, ...earningCategories]),
     ];
     return { categories, bankAccounts };
+  }
+
+  private async removeTransaction(
+    config: SheetConfigDTO,
+    transactions: TransactionDTO[],
+    position: number,
+  ): Promise<void> {
+    const { transferId, paymentId } = transactions[position];
+    if (paymentId) {
+      throw new ValidationException(
+        "This transaction is linked to a bill payment",
+      );
+    }
+    let positions = [position];
+    if (transferId)
+      positions = this.getTransferPositions(transactions, transferId);
+    await this.spreadsheetResource.deleteTransactions(config, positions);
+  }
+
+  private getTransferPositions(
+    transactions: TransactionDTO[],
+    id: string,
+  ): number[] {
+    const positions = transactions.flatMap((item, position) =>
+      item.transferId === id ? [position] : [],
+    );
+    if (positions.length !== 2) {
+      throw new ValidationException("The transfer is missing a linked entry");
+    }
+    return positions;
   }
 
   private validateTransactionInput(

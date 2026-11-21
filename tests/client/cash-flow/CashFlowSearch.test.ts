@@ -15,7 +15,6 @@ const transactions: CashFlowTransactionResponseDTO[] = [
     category: "Food",
     description: "Lunch",
     bankAccount: "NuConta",
-    isLast: false,
   },
   {
     position: 1,
@@ -25,7 +24,6 @@ const transactions: CashFlowTransactionResponseDTO[] = [
     category: "Refund",
     description: "Store refund",
     bankAccount: "Caju",
-    isLast: true,
   },
 ];
 

@@ -21,7 +21,6 @@ function createDashboard(position: number): CashFlowDashboardResponseDTO {
         category: "Refund",
         description: "Store refund",
         bankAccount: "NuConta",
-        isLast: true,
       },
     ],
     bankAccounts: ["NuConta"],
@@ -48,7 +47,7 @@ describe("cashFlowSlice", () => {
       load: vi.fn(async () => createDashboard(loadCount++)),
       create: vi.fn(async () => {}),
       sync: vi.fn(async () => {}),
-      deleteLast: vi.fn(async () => {}),
+      deleteTransaction: vi.fn(async () => {}),
     };
     container.register("CashFlowRepository", service);
     const store = create<CashFlowService>()(createCashFlowService);
@@ -69,11 +68,17 @@ describe("cashFlowSlice", () => {
       description: "Balance adjustment",
       bankAccount: "NuConta",
     });
-    await store.getState().deleteLastCashFlowTransaction();
+    await store
+      .getState()
+      .deleteCashFlowTransaction(
+        store.getState().cashFlowDashboard.transactions[0],
+      );
 
     expect(service.create).toHaveBeenCalledOnce();
     expect(service.sync).toHaveBeenCalledOnce();
-    expect(service.deleteLast).toHaveBeenCalledOnce();
+    expect(service.deleteTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ position: 2, description: "Store refund" }),
+    );
     expect(service.load).toHaveBeenCalledTimes(4);
     expect(store.getState().cashFlowDashboard.transactions[0]?.position).toBe(
       3,
@@ -94,7 +99,7 @@ describe("cashFlowSlice", () => {
       },
       async create() {},
       async sync() {},
-      async deleteLast() {},
+      async deleteTransaction() {},
     };
     container.register("CashFlowRepository", service);
     const store = create<CashFlowService>()(createCashFlowService);
@@ -113,7 +118,7 @@ describe("cashFlowSlice", () => {
     expect(store.getState().cashFlowError).toBe("loading");
   });
 
-  test("invalidates the stale delete target when refresh fails", async () => {
+  test("drops the deleted transaction when the refresh after it fails", async () => {
     let loadCount = 0;
     const service: CashFlowRepository = {
       ...spreadsheetPort,
@@ -126,18 +131,19 @@ describe("cashFlowSlice", () => {
       },
       async create() {},
       async sync() {},
-      deleteLast: vi.fn(async () => {}),
+      deleteTransaction: vi.fn(async () => {}),
     };
     container.register("CashFlowRepository", service);
     const store = create<CashFlowService>()(createCashFlowService);
     await store.getState().bootstrapCashFlow();
 
-    const deleted = await store.getState().deleteLastCashFlowTransaction();
-    const retried = await store.getState().deleteLastCashFlowTransaction();
+    const [transaction] = store.getState().cashFlowDashboard.transactions;
+    const deleted = await store
+      .getState()
+      .deleteCashFlowTransaction(transaction);
 
     expect(deleted).toBe(true);
-    expect(retried).toBe(false);
-    expect(service.deleteLast).toHaveBeenCalledOnce();
+    expect(service.deleteTransaction).toHaveBeenCalledWith(transaction);
     expect(store.getState().cashFlowDashboard.transactions).toEqual([]);
     expect(store.getState().cashFlowError).toBe("loading");
   });
@@ -148,7 +154,7 @@ describe("cashFlowSlice", () => {
       ...spreadsheetPort,
       async create() {},
       async sync() {},
-      async deleteLast() {},
+      async deleteTransaction() {},
       async saveTransfer() {},
       deleteTransfer: () => mutation.promise,
       load: vi.fn(() => dashboard.promise),
@@ -173,7 +179,7 @@ describe("cashFlowSlice", () => {
       ...spreadsheetPort,
       async create() {},
       async sync() {},
-      async deleteLast() {},
+      async deleteTransaction() {},
       async saveTransfer() {},
       async deleteTransfer() {},
       load: vi
@@ -211,7 +217,7 @@ describe("cashFlowSlice", () => {
       load: vi.fn(async () => createDashboard(0)),
       create: vi.fn(async () => {}),
       sync: vi.fn(async () => {}),
-      deleteLast: vi.fn(async () => {}),
+      deleteTransaction: vi.fn(async () => {}),
     });
     container.register("SpreadsheetPickerGateway", { pickSpreadsheet });
     const store = create<CashFlowService>()(createCashFlowService);
@@ -247,7 +253,7 @@ describe("cashFlowSlice", () => {
       load: vi.fn(async () => createDashboard(0)),
       create: vi.fn(async () => {}),
       sync: vi.fn(async () => {}),
-      deleteLast: vi.fn(async () => {}),
+      deleteTransaction: vi.fn(async () => {}),
     });
     const pickSpreadsheet = vi.fn<() => Promise<string | undefined>>(
       async () => undefined,

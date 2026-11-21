@@ -1,6 +1,9 @@
 import { mockDb } from "~/client/mock/db";
 import type { CashFlowRepository } from "~/client/modules/cash-flow/app/repositories/CashFlowRepository";
-import type { CreateCashFlowTransactionRequestDTO } from "~/contracts/http/cash-flow/cash-flow";
+import type {
+  CashFlowTransactionResponseDTO,
+  CreateCashFlowTransactionRequestDTO,
+} from "~/contracts/http/cash-flow/cash-flow";
 
 export class TestCashFlowRepository implements CashFlowRepository {
   async load() {
@@ -9,7 +12,6 @@ export class TestCashFlowRepository implements CashFlowRepository {
 
   async create(dto: CreateCashFlowTransactionRequestDTO) {
     const { transactions } = mockDb.cashFlow;
-    for (const transaction of transactions) transaction.isLast = false;
     transactions.push({
       position: transactions.length,
       date: dto.date,
@@ -18,17 +20,15 @@ export class TestCashFlowRepository implements CashFlowRepository {
       category: dto.category,
       description: dto.description,
       bankAccount: dto.bankAccount,
-      isLast: true,
     });
   }
 
   async sync() {}
 
-  async deleteLast() {
-    const { transactions } = mockDb.cashFlow;
-    transactions.pop();
-    const last = transactions[transactions.length - 1];
-    if (last) last.isLast = true;
+  async deleteTransaction(transaction: CashFlowTransactionResponseDTO) {
+    mockDb.cashFlow.transactions = mockDb.cashFlow.transactions
+      .filter((item) => item.position !== transaction.position)
+      .map((item, position) => ({ ...item, position }));
   }
 
   async saveTransfer() {}

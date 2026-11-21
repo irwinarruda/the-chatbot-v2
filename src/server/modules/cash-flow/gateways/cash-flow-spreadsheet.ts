@@ -22,7 +22,6 @@ export interface CashFlowSpreadsheetGateway {
     dto: SaveSpreadsheetTransferDTO,
     replace: boolean,
   ): Promise<void>;
-  deleteTransfer(config: SheetConfigDTO, id: string): Promise<void>;
   addBillPayment(
     dto: AddExpenseDTO & { paymentId: string },
   ): Promise<TransactionDTO>;
@@ -30,7 +29,10 @@ export interface CashFlowSpreadsheetGateway {
   addTransaction(transaction: AddTransactionDTO): Promise<void>;
   addExpense(expense: AddExpenseDTO): Promise<void>;
   addEarning(earning: AddEarningDTO): Promise<void>;
-  deleteLastTransaction(sheetConfig: SheetConfigDTO): Promise<void>;
+  deleteTransactions(
+    sheetConfig: SheetConfigDTO,
+    positions: number[],
+  ): Promise<void>;
   getSpreadsheetIdByUrl(url: string): string;
   getAllTransactions(sheetConfig: SheetConfigDTO): Promise<TransactionDTO[]>;
   getLatestTransactions(

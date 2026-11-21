@@ -175,6 +175,92 @@ describe("Linked transfers", () => {
   });
 });
 
+describe("Deleting any transaction", () => {
+  async function getShownTransactions() {
+    const dashboard = await cashFlow.getDashboard(phoneNumber, date);
+    return toCashFlowDashboardResponse(dashboard).transactions;
+  }
+
+  function deleteShown(
+    transaction: Awaited<ReturnType<typeof getShownTransactions>>[number],
+  ) {
+    return cashFlow.deleteTransaction({
+      ...transaction,
+      phoneNumber,
+      date: new Date(`${transaction.date}T12:00:00.000Z`),
+    });
+  }
+
+  async function addExpenses(descriptions: string[]) {
+    for (const [index, description] of descriptions.entries()) {
+      await cashFlow.addExpense({
+        phoneNumber,
+        date,
+        value: 10 + index,
+        category: "Delivery",
+        description,
+        bankAccount: "NuConta",
+      });
+    }
+  }
+
+  test("removes a transaction in the middle and keeps the rest in order", async () => {
+    await setupUser();
+    await addExpenses(["Lunch", "Dinner", "Coffee"]);
+    const [, dinner] = await getShownTransactions();
+
+    await deleteShown(dinner);
+
+    expect(
+      (await cashFlow.getAllTransactions(phoneNumber)).map(
+        (item) => item.description,
+      ),
+    ).toEqual(["Lunch", "Coffee"]);
+  });
+
+  test("refuses to delete a row that changed since the user saw it", async () => {
+    await setupUser();
+    await addExpenses(["Lunch", "Dinner"]);
+    const [lunch] = await getShownTransactions();
+    await deleteShown(lunch);
+
+    await expect(deleteShown(lunch)).rejects.toThrow(ValidationException);
+    await expect(
+      deleteShown({ ...lunch, position: 0, value: -99 }),
+    ).rejects.toThrow(ValidationException);
+    expect(
+      (await cashFlow.getAllTransactions(phoneNumber)).map(
+        (item) => item.description,
+      ),
+    ).toEqual(["Dinner"]);
+  });
+
+  test("removes both entries when the user deletes one side of a transfer", async () => {
+    await setupUser();
+    await addExpenses(["Lunch"]);
+    await cashFlow.transferBetweenBankAccounts(transfer);
+    await addExpenses(["Coffee"]);
+    const shown = await getShownTransactions();
+
+    await deleteShown(shown[2]);
+
+    expect(
+      (await cashFlow.getAllTransactions(phoneNumber)).map(
+        (item) => item.description,
+      ),
+    ).toEqual(["Lunch", "Coffee"]);
+  });
+
+  test("leaves bill payments to the bills page", async () => {
+    const { user, bill, dto } = await setupBill();
+    await payments.payFromAccount(user.id, phoneNumber, bill.expense.id, dto);
+    const [payment] = await getShownTransactions();
+
+    await expect(deleteShown(payment)).rejects.toThrow(ValidationException);
+    expect(await cashFlow.getAllTransactions(phoneNumber)).toHaveLength(1);
+  });
+});
+
 describe("Monthly bill bank payments", () => {
   test("creates one expense for concurrent requests, keeps checkbox-only behavior, and isolates months", async () => {
     const { user, bill, dto } = await setupBill();

@@ -161,7 +161,7 @@ describe("Google Sheets linked writes", () => {
     );
   });
 
-  test("finds a linked pair after row reordering, deduplicates retries, and clears only both entries", async () => {
+  test("finds a linked pair after row reordering, deduplicates retries, and removes only both entries", async () => {
     const note = `the-chatbot:transfer:${transfer.id}`;
     const { gateway, batchUpdate } = setup(
       [
@@ -186,12 +186,67 @@ describe("Google Sheets linked writes", () => {
         (request) => request.updateCells?.start?.rowIndex,
       ),
     ).toEqual([2, 2, 5, 5]);
-    await gateway.deleteTransfer(transfer, transfer.id);
+    await gateway.deleteTransactions(transfer, [0, 2]);
     expect(
-      batchUpdate.mock.calls[1][0].requestBody?.requests?.map(
-        (request) => request.updateCells?.range?.startRowIndex,
-      ),
-    ).toEqual([2, 2, 5, 5]);
+      batchUpdate.mock.calls[1][0].requestBody?.requests?.map((request) => [
+        request.copyPaste?.source?.startRowIndex ??
+          request.updateCells?.range?.startRowIndex,
+        request.copyPaste?.destination?.startRowIndex,
+      ]),
+    ).toEqual([
+      [5, undefined],
+      [5, undefined],
+      [3, 2],
+      [3, 2],
+      [4, undefined],
+      [4, undefined],
+    ]);
+  });
+
+  test("closes the gap of a deleted transaction by moving the rows below it up, around the formula column", async () => {
+    const { gateway, batchUpdate } = setup([
+      row("NuConta", "-10", ""),
+      row("NuConta", "-20", ""),
+      row("Caju", "30", "the-chatbot:bill:bill-id:2026-09"),
+    ]);
+    await gateway.deleteTransactions(transfer, [0]);
+    const journal = (startRowIndex: number, endRowIndex: number) => [
+      {
+        sheetId: 42,
+        startRowIndex,
+        endRowIndex,
+        startColumnIndex: 1,
+        endColumnIndex: 2,
+      },
+      {
+        sheetId: 42,
+        startRowIndex,
+        endRowIndex,
+        startColumnIndex: 3,
+        endColumnIndex: 7,
+      },
+    ];
+    const destinations = journal(2, 4);
+    expect(batchUpdate.mock.calls[0][0].requestBody?.requests).toEqual([
+      ...journal(3, 5).map((source, index) => ({
+        copyPaste: {
+          source,
+          destination: destinations[index],
+          pasteType: "PASTE_NORMAL",
+        },
+      })),
+      ...journal(4, 5).map((range) => ({
+        updateCells: { range, fields: "userEnteredValue,note" },
+      })),
+    ]);
+  });
+
+  test("refuses to delete a transaction the journal no longer has", async () => {
+    const { gateway, batchUpdate } = setup([row("NuConta", "-10", "")]);
+    await expect(gateway.deleteTransactions(transfer, [1])).rejects.toThrow(
+      ValidationException,
+    );
+    expect(batchUpdate).not.toHaveBeenCalled();
   });
 
   test("reconciles a bill payment from its durable note using the original values", async () => {
@@ -213,14 +268,11 @@ describe("Google Sheets linked writes", () => {
     expect(batchUpdate).not.toHaveBeenCalled();
   });
 
-  test("does not attempt a partial edit or delete when a transfer's other entry is missing", async () => {
+  test("does not attempt a partial edit when a transfer's other entry is missing", async () => {
     const { gateway, batchUpdate } = setup([
       row("NuConta", "-100,25", `the-chatbot:transfer:${transfer.id}`),
     ]);
     await expect(gateway.saveTransfer(transfer, true)).rejects.toThrow(
-      ValidationException,
-    );
-    await expect(gateway.deleteTransfer(transfer, transfer.id)).rejects.toThrow(
       ValidationException,
     );
     expect(batchUpdate).not.toHaveBeenCalled();

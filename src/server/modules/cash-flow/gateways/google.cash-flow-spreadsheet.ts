@@ -78,37 +78,67 @@ export class GoogleCashFlowSpreadsheetGateway
     await this.addTransaction(earning);
   }
 
-  async deleteLastTransaction(sheetConfig: SheetConfigDTO): Promise<void> {
+  async deleteTransactions(
+    sheetConfig: SheetConfigDTO,
+    positions: number[],
+  ): Promise<void> {
     return this.withRetry(async () => {
-      const sheetsService = this.getSheetsService(
-        sheetConfig.sheetId,
-        sheetConfig.sheetAccessToken,
-      );
-      const query = "Diário!A:G";
-      const sheet = await sheetsService.spreadsheets.values.get({
-        spreadsheetId: sheetConfig.sheetId,
-        range: query,
+      const journal = await this.readJournal(sheetConfig);
+      const rowIndexes = positions.flatMap((position) => {
+        const transaction = journal.transactions[position];
+        return transaction ? [transaction.rowIndex] : [];
       });
-      this.throwWrongSpreadsheetException(sheet.data.values);
-      const lastItemLine = sheet.data.values?.length ?? 0;
-      if (lastItemLine <= 2) {
+      if (rowIndexes.length !== positions.length) {
         throw new ValidationException(
-          "There are no items to be deleted",
-          "Verify if deleting is the correct operation",
+          "The transaction could not be found",
+          "Reload the cash flow and try again",
         );
       }
-      await sheetsService.spreadsheets.values.batchUpdate({
-        spreadsheetId: sheetConfig.sheetId,
-        requestBody: {
-          data: [
-            { values: [[""]], range: `Diário!B${lastItemLine}` },
-            {
-              values: [["", "", "", ""]],
-              range: `Diário!D${lastItemLine}:G${lastItemLine}`,
+      const journalColumns = [
+        { startColumnIndex: 1, endColumnIndex: 2 },
+        { startColumnIndex: 3, endColumnIndex: 7 },
+      ];
+      const requests: sheets_v4.Schema$Request[] = [...rowIndexes]
+        .sort((first, second) => second - first)
+        .flatMap((rowIndex, removedCount) => {
+          const lastRowIndex = journal.nextRow - 1 - removedCount;
+          const clear = journalColumns.map((columns) => ({
+            updateCells: {
+              range: {
+                sheetId: journal.sheetId,
+                startRowIndex: lastRowIndex,
+                endRowIndex: lastRowIndex + 1,
+                ...columns,
+              },
+              fields: "userEnteredValue,note",
             },
-          ],
-          valueInputOption: "USER_ENTERED",
-        },
+          }));
+          if (rowIndex === lastRowIndex) return clear;
+          const shift = journalColumns.map((columns) => ({
+            copyPaste: {
+              source: {
+                sheetId: journal.sheetId,
+                startRowIndex: rowIndex + 1,
+                endRowIndex: lastRowIndex + 1,
+                ...columns,
+              },
+              destination: {
+                sheetId: journal.sheetId,
+                startRowIndex: rowIndex,
+                endRowIndex: lastRowIndex,
+                ...columns,
+              },
+              pasteType: "PASTE_NORMAL",
+            },
+          }));
+          return [...shift, ...clear];
+        });
+      await this.getSheetsService(
+        sheetConfig.sheetId,
+        sheetConfig.sheetAccessToken,
+      ).spreadsheets.batchUpdate({
+        spreadsheetId: sheetConfig.sheetId,
+        requestBody: { requests },
       });
     });
   }
@@ -173,51 +203,6 @@ export class GoogleCashFlowSpreadsheetGateway
         rowIndex: existing[1]?.rowIndex ?? journal.nextRow + 1,
       },
     ]);
-  }
-
-  async deleteTransfer(config: SheetConfigDTO, id: string): Promise<void> {
-    const journal = await this.readJournal(config);
-    const entries = journal.transactions.filter(
-      (item) => item.transferId === id,
-    );
-    if (entries.length === 0) return;
-    if (entries.length !== 2)
-      throw new ValidationException("The transfer is missing a linked entry");
-    const requests: sheets_v4.Schema$Request[] = entries.flatMap(
-      ({ rowIndex }) => [
-        {
-          updateCells: {
-            range: {
-              sheetId: journal.sheetId,
-              startRowIndex: rowIndex,
-              endRowIndex: rowIndex + 1,
-              startColumnIndex: 1,
-              endColumnIndex: 2,
-            },
-            fields: "userEnteredValue,note",
-          },
-        },
-        {
-          updateCells: {
-            range: {
-              sheetId: journal.sheetId,
-              startRowIndex: rowIndex,
-              endRowIndex: rowIndex + 1,
-              startColumnIndex: 3,
-              endColumnIndex: 7,
-            },
-            fields: "userEnteredValue",
-          },
-        },
-      ],
-    );
-    await this.getSheetsService(
-      config.sheetId,
-      config.sheetAccessToken,
-    ).spreadsheets.batchUpdate({
-      spreadsheetId: config.sheetId,
-      requestBody: { requests },
-    });
   }
 
   async addBillPayment(

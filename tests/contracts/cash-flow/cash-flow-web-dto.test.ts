@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { parseCashFlowDashboard } from "~/client/modules/cash-flow/app/repositories/ApiCashFlowRepository";
+import { DeleteCashFlowTransactionRequestDTO } from "~/contracts/http/cash-flow/cash-flow";
 import { toCashFlowDashboardResponse } from "~/contracts/http/cash-flow/cash-flow-mapper";
 import type { CashFlowDashboardDTO } from "~/domain/cash-flow/cash-flow-commands";
 import { CashFlowTransactionType } from "~/domain/cash-flow/cash-flow-transaction-type";
@@ -38,15 +39,40 @@ describe("Cash flow web contracts", () => {
         position: 0,
         date: "2026-07-01",
         type: CashFlowTransactionType.Expense,
-        isLast: false,
       }),
       expect.objectContaining({
         position: 1,
         date: "2026-07-02",
         type: CashFlowTransactionType.Earning,
-        isLast: true,
       }),
     ]);
     expect(parseCashFlowDashboard(wireResponse)).toEqual(response);
+  });
+
+  test("identifies the transaction to delete by what the user saw", () => {
+    const transaction = {
+      position: 3,
+      transferId: "a5337eac-71f5-4cce-9a4e-f2e4a95d789f",
+      date: "2026-07-02",
+      value: -25.5,
+      type: CashFlowTransactionType.Expense,
+      category: "Food",
+      description: "Lunch",
+      bankAccount: "NuConta",
+    };
+
+    expect(DeleteCashFlowTransactionRequestDTO.parse(transaction)).toEqual({
+      date: "2026-07-02",
+      value: -25.5,
+      category: "Food",
+      description: "Lunch",
+      bankAccount: "NuConta",
+    });
+    expect(
+      DeleteCashFlowTransactionRequestDTO.safeParse({
+        ...transaction,
+        date: "02/07/2026",
+      }).success,
+    ).toBe(false);
   });
 });

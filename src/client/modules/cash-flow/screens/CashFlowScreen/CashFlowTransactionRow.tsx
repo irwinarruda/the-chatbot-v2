@@ -68,15 +68,6 @@ export function CashFlowTransactionRow({
               {t.transferLabel}
             </Badge>
           )}
-          {transaction.isLast && (
-            <Badge
-              className="border-border bg-muted text-muted-foreground"
-              title={t.latestHint}
-              variant="outline"
-            >
-              {t.latestBadge}
-            </Badge>
-          )}
         </div>
         <p className="m-0 flex min-w-0 gap-x-1.5 truncate text-muted-foreground text-xs">
           <span>{date}</span>
@@ -111,29 +102,28 @@ export function CashFlowTransactionRow({
               <Pencil />
             </Button>
           )}
-          {(Boolean(transaction.transferId) ||
-            (transaction.isLast && !transaction.paymentId)) && (
+          {!transaction.paymentId && (
             <ConfirmDialog
               cancelLabel={t.cancelAction}
               confirmLabel={t.deleteAction}
               description={
                 transaction.transferId
                   ? t.transferDeleteHint
-                  : t.deleteLastConfirmation
+                  : t.deleteTransactionHint
               }
               isDisabled={isSubmitting}
               onConfirm={onDelete}
               title={
                 transaction.transferId
                   ? t.transferDeleteTitle
-                  : t.deleteLastTitle
+                  : t.deleteTransactionTitle
               }
               trigger={
                 <Button
                   aria-label={
                     transaction.transferId
                       ? t.transferDeleteAction
-                      : t.deleteLastAction
+                      : t.deleteTransactionAction
                   }
                   disabled={isSubmitting}
                   size="icon-sm"

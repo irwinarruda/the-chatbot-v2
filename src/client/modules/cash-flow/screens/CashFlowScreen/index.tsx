@@ -69,9 +69,7 @@ export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
   const bootstrap = useApp((state) => state.bootstrapCashFlow);
   const createTransaction = useApp((state) => state.createCashFlowTransaction);
   const syncBankAccount = useApp((state) => state.syncCashFlowBankAccount);
-  const deleteLastTransaction = useApp(
-    (state) => state.deleteLastCashFlowTransaction,
-  );
+  const deleteTransaction = useApp((state) => state.deleteCashFlowTransaction);
   const clearError = useApp((state) => state.clearCashFlowError);
   const saveTransfer = useApp((state) => state.saveCashFlowTransfer);
   const deleteTransfer = useApp((state) => state.deleteCashFlowTransfer);
@@ -101,11 +99,7 @@ export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
     filters,
   );
   const netBalance = calculateCashFlowNetBalance(dashboard.bankAccountStatuses);
-  const transactionListKey = JSON.stringify({
-    filters,
-    transactionCount: dashboard.transactions.length,
-    latestPosition: dashboard.transactions.at(-1)?.position,
-  });
+  const transactionListKey = JSON.stringify(filters);
   const currency = new Intl.NumberFormat(
     prefs.locale === "pt-BR" ? "pt-BR" : "en-US",
     { style: "currency", currency: "BRL" },
@@ -385,7 +379,7 @@ export function CashFlowScreen({ search }: { search: CashFlowSearch }) {
             isSubmitting={isSubmitting}
             key={transactionListKey}
             locale={prefs.locale}
-            onDelete={() => void deleteLastTransaction()}
+            onDelete={(transaction) => void deleteTransaction(transaction)}
             onEditTransfer={onOpenTransfer}
             onDeleteTransfer={(id) => void deleteTransfer(id)}
             t={t}

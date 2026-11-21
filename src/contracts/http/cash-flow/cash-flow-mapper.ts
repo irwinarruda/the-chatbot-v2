@@ -9,7 +9,6 @@ import {
 export function toCashFlowDashboardResponse(
   dashboard: CashFlowDashboardDTO,
 ): CashFlowDashboardResponseDTO {
-  const lastIndex = dashboard.transactions.length - 1;
   return CashFlowDashboardResponseSchema.parse({
     transactions: dashboard.transactions.map((transaction, index) => ({
       position: index,
@@ -24,7 +23,6 @@ export function toCashFlowDashboardResponse(
       category: transaction.category,
       description: transaction.description,
       bankAccount: transaction.bankAccount,
-      isLast: index === lastIndex,
     })),
     bankAccounts: dashboard.bankAccounts,
     expenseCategories: dashboard.expenseCategories,

@@ -80,8 +80,8 @@ export const routes = rootRoute("client/routes/__root.tsx", [
     "server/modules/cash-flow/controllers/web-cash-flow-transactions.controller.ts",
   ),
   route(
-    "/api/v1/web/cash-flow/transactions/last",
-    "server/modules/cash-flow/controllers/web-cash-flow-last-transaction.controller.ts",
+    "/api/v1/web/cash-flow/transactions/$position",
+    "server/modules/cash-flow/controllers/web-cash-flow-transaction.controller.ts",
   ),
   route(
     "/api/v1/web/cash-flow/sync",

@@ -14,7 +14,6 @@ function createTransactions(count: number): CashFlowTransactionResponseDTO[] {
     category: "Food",
     description: `Transaction ${position}`,
     bankAccount: "NuConta",
-    isLast: position === 0,
   }));
 }
 
