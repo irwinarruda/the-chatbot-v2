@@ -293,10 +293,8 @@ function createCashFlow(): CashFlowDashboardResponseDTO {
       category: category as string,
       description: description as string,
       bankAccount: bankAccount as string,
-      isLast: false,
     }),
   );
-  transactions[transactions.length - 1].isLast = true;
   return {
     transactions,
     bankAccounts: ["Nubank", "Itaú", "Credit card", "Savings box", "Cash"],

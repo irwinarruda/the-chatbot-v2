@@ -61,14 +61,6 @@ export class TestCashFlowSpreadsheetGateway
     transactions.push(...entries);
   }
 
-  async deleteTransfer(config: SheetConfigDTO, id: string): Promise<void> {
-    await this.getAllTransactions(config);
-    TestCashFlowSpreadsheetGateway.transactions =
-      TestCashFlowSpreadsheetGateway.transactions.filter(
-        (item) => item.transferId !== id,
-      );
-  }
-
   async addBillPayment(
     dto: AddExpenseDTO & { paymentId: string },
   ): Promise<TransactionDTO> {
@@ -126,23 +118,20 @@ export class TestCashFlowSpreadsheetGateway
     await this.addTransaction(earning);
   }
 
-  async deleteLastTransaction(sheetConfig: SheetConfigDTO): Promise<void> {
-    TestCashFlowSpreadsheetGateway.validateAccessToken(
-      sheetConfig.sheetAccessToken,
-    );
-    if (sheetConfig.sheetId !== this.validSheetId) {
-      throw new ServiceException(
-        undefined,
-        "The provided sheet ID is not valid",
-      );
-    }
-    if (TestCashFlowSpreadsheetGateway.transactions.length === 0) {
+  async deleteTransactions(
+    sheetConfig: SheetConfigDTO,
+    positions: number[],
+  ): Promise<void> {
+    const transactions = await this.getAllTransactions(sheetConfig);
+    if (positions.some((position) => !transactions[position])) {
       throw new ValidationException(
-        "There are no items to be deleted",
-        "Verify if deleting is the correct operation",
+        "The transaction could not be found",
+        "Reload the cash flow and try again",
       );
     }
-    TestCashFlowSpreadsheetGateway.transactions.pop();
+    TestCashFlowSpreadsheetGateway.transactions = transactions.filter(
+      (_, position) => !positions.includes(position),
+    );
   }
 
   async getAllTransactions(

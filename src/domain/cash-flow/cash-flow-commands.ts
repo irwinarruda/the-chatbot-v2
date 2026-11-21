@@ -22,6 +22,16 @@ export interface CashFlowAddTransactionDTO {
   bankAccount: string;
 }
 
+export interface CashFlowDeleteTransactionDTO {
+  phoneNumber: string;
+  position: number;
+  date: Date;
+  value: number;
+  category: string;
+  description: string;
+  bankAccount: string;
+}
+
 export interface CashFlowSyncBankAccountBalanceDTO {
   phoneNumber: string;
   bankAccount: string;

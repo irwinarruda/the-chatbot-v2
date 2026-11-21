@@ -1,60 +1,72 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, test } from "vitest";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, test, vi } from "vitest";
 import { CashFlowTransactionRow } from "~/client/modules/cash-flow/screens/CashFlowScreen/CashFlowTransactionRow";
 import { getDictionary } from "~/client/shared/i18n/dictionary";
 import type { CashFlowTransactionResponseDTO } from "~/contracts/http/cash-flow/cash-flow";
 import { CashFlowTransactionType } from "~/domain/cash-flow/cash-flow-transaction-type";
 
-function createTransaction(isLast: boolean): CashFlowTransactionResponseDTO {
-  return {
-    position: 0,
-    date: "2026-07-02",
-    value: -25,
-    type: CashFlowTransactionType.Expense,
-    category: "Food",
-    description: "Lunch",
-    bankAccount: "NuConta",
-    isLast,
-  };
+const t = getDictionary("en").cashFlowPage;
+
+function renderRow(
+  patch: Partial<CashFlowTransactionResponseDTO> = {},
+  onDelete = () => {},
+) {
+  return render(
+    <CashFlowTransactionRow
+      currency={
+        new Intl.NumberFormat("en-US", { style: "currency", currency: "BRL" })
+      }
+      hiddenMonetaryValueLabel="Hidden monetary value"
+      isSubmitting={false}
+      locale="en"
+      onDelete={onDelete}
+      t={t}
+      transaction={{
+        position: 4,
+        date: "2026-07-02",
+        value: -25,
+        type: CashFlowTransactionType.Expense,
+        category: "Food",
+        description: "Lunch",
+        bankAccount: "NuConta",
+        ...patch,
+      }}
+    />,
+  );
 }
 
 describe("CashFlowTransactionRow", () => {
-  test("offers deletion only for the latest spreadsheet transaction", () => {
-    const t = getDictionary("en").cashFlowPage;
-    const currency = new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "BRL",
+  test("deletes any spreadsheet transaction after confirmation", async () => {
+    const user = userEvent.setup();
+    const onDelete = vi.fn();
+    renderRow({}, onDelete);
+
+    await user.click(
+      screen.getByRole("button", { name: t.deleteTransactionAction }),
+    );
+    expect(screen.getByText(t.deleteTransactionHint)).toBeInTheDocument();
+    expect(onDelete).not.toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: t.deleteAction }));
+
+    expect(onDelete).toHaveBeenCalledOnce();
+  });
+
+  test("offers the transfer delete on transfer rows and no delete on bill payments", () => {
+    const { unmount } = renderRow({
+      transferId: "a5337eac-71f5-4cce-9a4e-f2e4a95d789f",
     });
-    const { rerender } = render(
-      <CashFlowTransactionRow
-        currency={currency}
-        hiddenMonetaryValueLabel="Hidden monetary value"
-        isSubmitting={false}
-        locale="en"
-        onDelete={() => {}}
-        t={t}
-        transaction={createTransaction(false)}
-      />,
-    );
-
     expect(
-      screen.queryByRole("button", { name: t.deleteLastAction }),
-    ).not.toBeInTheDocument();
-
-    rerender(
-      <CashFlowTransactionRow
-        currency={currency}
-        hiddenMonetaryValueLabel="Hidden monetary value"
-        isSubmitting={false}
-        locale="en"
-        onDelete={() => {}}
-        t={t}
-        transaction={createTransaction(true)}
-      />,
-    );
-
-    expect(
-      screen.getByRole("button", { name: t.deleteLastAction }),
+      screen.getByRole("button", { name: t.transferDeleteAction }),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: t.deleteTransactionAction }),
+    ).not.toBeInTheDocument();
+    unmount();
+
+    renderRow({ paymentId: "bill-id:2026-07" });
+    expect(
+      screen.queryByRole("button", { name: t.deleteTransactionAction }),
+    ).not.toBeInTheDocument();
   });
 });

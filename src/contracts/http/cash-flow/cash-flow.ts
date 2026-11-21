@@ -11,11 +11,23 @@ export const CashFlowTransactionResponseDTO = z.object({
   category: z.string(),
   description: z.string(),
   bankAccount: z.string(),
-  isLast: z.boolean(),
 });
 
 export type CashFlowTransactionResponseDTO = z.infer<
   typeof CashFlowTransactionResponseDTO
+>;
+
+export const DeleteCashFlowTransactionRequestDTO =
+  CashFlowTransactionResponseDTO.pick({
+    date: true,
+    value: true,
+    category: true,
+    description: true,
+    bankAccount: true,
+  });
+
+export type DeleteCashFlowTransactionRequestDTO = z.infer<
+  typeof DeleteCashFlowTransactionRequestDTO
 >;
 
 export const CashFlowBankAccountStatusResponseDTO = z.object({

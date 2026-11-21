@@ -3,6 +3,7 @@ import { apiClient } from "~/client/shared/app/gateways/ApiClient";
 import {
   type CashFlowDashboardResponseDTO,
   CashFlowDashboardResponseDTO as CashFlowDashboardResponseSchema,
+  DeleteCashFlowTransactionRequestDTO,
 } from "~/contracts/http/cash-flow/cash-flow";
 import { CashFlowSpreadsheetPickerResponseDTO } from "~/contracts/http/cash-flow/cash-flow-spreadsheet";
 
@@ -52,10 +53,17 @@ export const apiCashFlowRepository: CashFlowRepository = {
     });
   },
 
-  async deleteLast() {
-    await apiClient.request("/api/v1/web/cash-flow/transactions/last", {
-      method: "DELETE",
-    });
+  async deleteTransaction(transaction) {
+    await apiClient.request(
+      `/api/v1/web/cash-flow/transactions/${transaction.position}`,
+      {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          DeleteCashFlowTransactionRequestDTO.parse(transaction),
+        ),
+      },
+    );
   },
 
   async getSpreadsheetPicker() {

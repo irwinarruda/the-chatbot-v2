@@ -3,6 +3,7 @@ import { container } from "~/client/shared/container";
 import { type ApiError, clientError } from "~/client/shared/error/ApiError";
 import type {
   CashFlowDashboardResponseDTO,
+  CashFlowTransactionResponseDTO,
   CreateCashFlowTransactionRequestDTO,
   SyncCashFlowBankAccountRequestDTO,
 } from "~/contracts/http/cash-flow/cash-flow";
@@ -27,7 +28,9 @@ export interface CashFlowService {
   syncCashFlowBankAccount: (
     dto: SyncCashFlowBankAccountRequestDTO,
   ) => Promise<boolean>;
-  deleteLastCashFlowTransaction: () => Promise<boolean>;
+  deleteCashFlowTransaction: (
+    transaction: CashFlowTransactionResponseDTO,
+  ) => Promise<boolean>;
   clearCashFlowError: () => void;
   resetCashFlow: () => void;
   saveCashFlowTransfer: (
@@ -134,24 +137,21 @@ export const createCashFlowService: StateCreator<CashFlowService> = (
         "syncing",
       );
     },
-    async deleteLastCashFlowTransaction() {
-      const { cashFlowDashboard } = get();
-      if (!cashFlowDashboard.transactions.some(({ isLast }) => isLast))
-        return false;
+    deleteCashFlowTransaction(transaction) {
       return mutateCashFlow(
-        () => container.get("CashFlowRepository").deleteLast(),
+        () =>
+          container.get("CashFlowRepository").deleteTransaction(transaction),
         "deleting",
         () => {
-          const last = cashFlowDashboard.transactions.find(
-            ({ isLast }) => isLast,
-          );
           set((state) => ({
             cashFlowDashboard: {
               ...state.cashFlowDashboard,
-              transactions: state.cashFlowDashboard.transactions.filter(
-                (item) =>
-                  !item.isLast &&
-                  (!last?.transferId || item.transferId !== last.transferId),
+              transactions: state.cashFlowDashboard.transactions.flatMap(
+                (item) => {
+                  if (item.position === transaction.position) return [];
+                  if (item.position < transaction.position) return [item];
+                  return [{ ...item, position: item.position - 1 }];
+                },
               ),
             },
           }));

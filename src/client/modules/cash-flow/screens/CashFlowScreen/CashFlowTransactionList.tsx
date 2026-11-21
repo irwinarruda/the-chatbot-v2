@@ -21,7 +21,7 @@ export function CashFlowTransactionList({
   hiddenMonetaryValueLabel: string;
   isSubmitting: boolean;
   locale: Locale;
-  onDelete: () => void;
+  onDelete: (transaction: CashFlowTransactionResponseDTO) => void;
   onEditTransfer?: (id: string) => void;
   onDeleteTransfer?: (id: string) => void;
   t: Dictionary["cashFlowPage"];
@@ -71,7 +71,7 @@ export function CashFlowTransactionList({
                   onDeleteTransfer?.(transaction.transferId);
                   return;
                 }
-                onDelete();
+                onDelete(transaction);
               }}
               onEditTransfer={() => {
                 if (transaction.transferId)

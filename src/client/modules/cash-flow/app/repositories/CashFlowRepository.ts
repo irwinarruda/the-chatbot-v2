@@ -1,5 +1,6 @@
 import type {
   CashFlowDashboardResponseDTO,
+  CashFlowTransactionResponseDTO,
   CreateCashFlowTransactionRequestDTO,
   SyncCashFlowBankAccountRequestDTO,
 } from "~/contracts/http/cash-flow/cash-flow";
@@ -10,7 +11,7 @@ export interface CashFlowRepository {
   load(): Promise<CashFlowDashboardResponseDTO>;
   create(dto: CreateCashFlowTransactionRequestDTO): Promise<void>;
   sync(dto: SyncCashFlowBankAccountRequestDTO): Promise<void>;
-  deleteLast(): Promise<void>;
+  deleteTransaction(transaction: CashFlowTransactionResponseDTO): Promise<void>;
   saveTransfer(
     dto: SaveCashFlowTransferRequestDTO,
     replace: boolean,
