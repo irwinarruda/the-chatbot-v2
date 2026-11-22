@@ -3,6 +3,7 @@ dist/
 .output/
 .vinxi/
 .tanstack/
+.ui-council/
 .env.development
 .env.local
 .env.preview
