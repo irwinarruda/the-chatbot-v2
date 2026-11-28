@@ -1,5 +1,8 @@
 import { hashOAuthSecret } from "~/server/modules/mcp/utils/oauth-pkce";
-import type { DatabaseGateway } from "~/server/shared/database/database";
+import type {
+  DatabaseGateway,
+  DatabaseGatewaySql,
+} from "~/server/shared/database/database";
 
 export interface McpOAuthClient {
   id: string;
@@ -19,9 +22,14 @@ export interface McpOAuthCode extends McpOAuthGrant {
   codeChallenge: string;
 }
 
+export interface McpOAuthRefreshGrant extends McpOAuthGrant {
+  idFamily: string;
+}
+
 export interface McpOAuthTokenPair {
   idClient: string;
   idUser: string;
+  idFamily: string;
   accessToken: string;
   accessExpiresAt: Date;
   refreshToken: string;
@@ -104,13 +112,17 @@ export class McpOAuthRepository {
     };
   }
 
-  async createTokenPair(pair: McpOAuthTokenPair): Promise<void> {
-    await this.database.sql`
+  async createTokenPair(
+    pair: McpOAuthTokenPair,
+    sql: DatabaseGatewaySql = this.database.sql,
+  ): Promise<void> {
+    await sql`
       INSERT INTO mcp_oauth_tokens (
         token_hash,
         kind,
         id_client,
         id_user,
+        id_family,
         expires_at,
         created_at
       )
@@ -120,6 +132,7 @@ export class McpOAuthRepository {
           'access',
           ${pair.idClient},
           ${pair.idUser},
+          ${pair.idFamily},
           ${pair.accessExpiresAt},
           ${pair.createdAt}
         ),
@@ -128,19 +141,71 @@ export class McpOAuthRepository {
           'refresh',
           ${pair.idClient},
           ${pair.idUser},
+          ${pair.idFamily},
           ${pair.refreshExpiresAt},
           ${pair.createdAt}
         )
     `;
   }
 
-  async consumeRefreshToken(token: string): Promise<McpOAuthGrant | undefined> {
-    const rows = await this.database.sql<DbMcpOAuthToken[]>`
-      DELETE FROM mcp_oauth_tokens
-      WHERE token_hash = ${hashOAuthSecret(token)} AND kind = 'refresh'
-      RETURNING id_client, id_user, expires_at
+  async claimRefreshToken(
+    token: string,
+    usedAt: Date,
+    sql: DatabaseGatewaySql = this.database.sql,
+  ): Promise<McpOAuthRefreshGrant | undefined> {
+    const rows = await sql<DbMcpOAuthRefreshToken[]>`
+      UPDATE mcp_oauth_tokens
+      SET used_at = ${usedAt}
+      WHERE token_hash = ${hashOAuthSecret(token)}
+        AND kind = 'refresh'
+        AND used_at IS NULL
+      RETURNING id_client, id_user, id_family, expires_at
     `;
-    return toGrant(rows[0]);
+    const row = rows[0];
+    if (!row) return undefined;
+    return {
+      idClient: row.id_client,
+      idUser: row.id_user,
+      idFamily: row.id_family,
+      expiresAt: row.expires_at,
+    };
+  }
+
+  async lockRefreshTokenFamily(
+    token: string,
+    sql: DatabaseGatewaySql = this.database.sql,
+  ): Promise<string | undefined> {
+    const rows = await sql<{ id_family: string }[]>`
+      SELECT id_family
+      FROM mcp_oauth_tokens
+      WHERE token_hash = ${hashOAuthSecret(token)} AND kind = 'refresh'
+    `;
+    const idFamily = rows[0]?.id_family;
+    if (idFamily) {
+      await sql`SELECT pg_advisory_xact_lock(hashtextextended(${idFamily}::text, 0))`;
+    }
+    return idFamily;
+  }
+
+  async deleteFamily(
+    idFamily: string,
+    sql: DatabaseGatewaySql = this.database.sql,
+  ): Promise<void> {
+    await sql`
+      DELETE FROM mcp_oauth_tokens
+      WHERE id_family = ${idFamily}
+    `;
+  }
+
+  async deleteExpiredFamilyTokens(
+    idFamily: string,
+    now: Date,
+    sql: DatabaseGatewaySql = this.database.sql,
+  ): Promise<void> {
+    await sql`
+      DELETE FROM mcp_oauth_tokens
+      WHERE id_family = ${idFamily} AND expires_at <= ${now}
+    `;
   }
 
   async findAccessToken(token: string): Promise<McpOAuthGrant | undefined> {
@@ -181,4 +246,8 @@ interface DbMcpOAuthToken {
   id_client: string;
   id_user: string;
   expires_at: Date;
+}
+
+interface DbMcpOAuthRefreshToken extends DbMcpOAuthToken {
+  id_family: string;
 }

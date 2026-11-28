@@ -193,7 +193,11 @@ export function createServer(
         cashFlow,
       ),
       mcp: new McpService(externalTools),
-      mcpOAuth: new McpOAuthService(new McpOAuthRepository(database), auth),
+      mcpOAuth: new McpOAuthService(
+        database,
+        new McpOAuthRepository(database),
+        auth,
+      ),
       messaging,
       migration: new MigrationService(migrations, config.auth),
       notes,

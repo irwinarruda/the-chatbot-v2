@@ -11,7 +11,7 @@ Esta pasta tem duas peças:
 
 O MCP expõe 4 ferramentas: `chatbot_guide`, `chatbot_read`, `chatbot_write` e `chatbot_destructive`. O modelo chama o guia de um tópico, aprende as operações e depois chama a ferramenta do risco certo com `{ operation, input }`. Separar leitura, escrita e destruição em ferramentas diferentes deixa você dar aprovações diferentes no Grok para cada uma.
 
-O login usa OAuth 2.1 com PKCE e registro dinâmico de cliente. Ao adicionar o conector, o Grok se registra sozinho, abre a página de consentimento do The Chatbot, você entra com o Google (a mesma conta do app web) e aprova. O Grok recebe um token de acesso de 1 hora e um refresh token de 30 dias, que ele renova sozinho. O banco guarda só o hash SHA-256 de cada código e token.
+O login usa OAuth 2.1 com PKCE e registro dinâmico de cliente. Ao adicionar o conector, o Grok se registra sozinho, abre a página de consentimento do The Chatbot, você entra com o Google (a mesma conta do app web) e aprova. O Grok recebe um token de acesso de 1 hora e um refresh token de 30 dias, que ele renova sozinho. Cada refresh token vale uma vez só: a renovação troca o par inteiro, e se um refresh token já usado aparecer de novo, o The Chatbot revoga todos os tokens daquela conexão. O banco guarda só o hash SHA-256 de cada código e token.
 
 Endpoints, para depuração:
 
@@ -84,7 +84,7 @@ Os testes automatizados cobrem o mesmo caminho sem rede: `tests/integration/mcp/
 | A página diz que o aplicativo não está registrado | O banco foi recriado depois que o Grok se registrou. Remova o conector e adicione de novo. |
 | A página diz que o endereço de retorno não está registrado | O Grok mudou o `redirect_uri`. Remova e adicione o conector de novo. |
 | Depois do login Google você cai no `/chat` em vez do consentimento | O login foi feito em outro domínio (por exemplo `localhost` em vez do ngrok). Abra o fluxo pelo mesmo endereço que o conector usa. |
-| As ferramentas respondem `UnauthorizedException` ou o Grok pede login de novo | O refresh token expirou (30 dias) ou o banco foi limpo. Reconecte o conector. |
+| As ferramentas respondem `UnauthorizedException` ou o Grok pede login de novo | O refresh token expirou (30 dias), foi reutilizado (o The Chatbot revoga a conexão inteira) ou o banco foi limpo. Reconecte o conector. |
 | `add_transaction` falha com telefone ausente | As ferramentas da planilha precisam do telefone do usuário cadastrado no app. |
 
 ## Fora deste escopo
