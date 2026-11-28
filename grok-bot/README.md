@@ -20,7 +20,7 @@ Endpoints, para depuração:
 | `/.well-known/oauth-protected-resource/api/v1/mcp` | Diz ao cliente qual servidor de autorização protege o MCP |
 | `/.well-known/oauth-authorization-server` | Metadados do servidor de autorização |
 | `/api/v1/oauth/register` | Registro dinâmico de clientes públicos |
-| `/api/v1/oauth/authorize` | Página de consentimento |
+| `/api/v1/oauth/authorize` | Redireciona para a página de consentimento (`/oauth/authorize`) |
 | `/api/v1/oauth/token` | Troca do código e renovação do token |
 | `/api/v1/mcp` | O servidor MCP (Streamable HTTP, só POST, respostas JSON, sem sessão) |
 
