@@ -77,7 +77,7 @@ describe("cash-flow AI tools", () => {
           },
         },
       ],
-      { chat, sourceMessage },
+      { idUser: chat.idUser, idSourceMessage: sourceMessage.id },
     );
 
     expect(results.map((result) => result.callId)).toEqual([
@@ -118,7 +118,7 @@ describe("cash-flow AI tools", () => {
           },
         },
       ],
-      { chat, sourceMessage },
+      { idUser: chat.idUser, idSourceMessage: sourceMessage.id },
     );
 
     expect(result.outcome).toMatchObject({

@@ -1,7 +1,10 @@
 import { AppendToNoteToolDTO } from "~/contracts/tools/notes/append-to-note";
 import { CreateNoteToolDTO } from "~/contracts/tools/notes/create-note";
+import { DeleteNoteToolDTO } from "~/contracts/tools/notes/delete-note";
 import { ListNotesToolDTO } from "~/contracts/tools/notes/list-notes";
 import { ReadNoteToolDTO } from "~/contracts/tools/notes/read-note";
+import { UpdateNoteToolDTO } from "~/contracts/tools/notes/update-note";
+import { ToolRisk, ToolTopic } from "~/domain/chat/tool-exposure";
 import {
   type RegisteredTool,
   requireToolUser,
@@ -25,12 +28,13 @@ export function createNoteTools(
       ].join("\n"),
       inputSchema: CreateNoteToolDTO,
       mutating: true,
+      external: { topic: ToolTopic.Notes, risk: ToolRisk.Write },
       run: async (args, context) => {
         const input = CreateNoteToolDTO.parse(args);
         const user = await requireToolUser(auth, context);
         const note = await noteService.createNote({
           idUser: user.id,
-          idSourceMessage: context.sourceMessage.id,
+          idSourceMessage: context.idSourceMessage,
           name: input.name,
           markdown: input.markdown,
         });
@@ -46,6 +50,7 @@ export function createNoteTools(
       ].join("\n"),
       inputSchema: ListNotesToolDTO,
       mutating: false,
+      external: { topic: ToolTopic.Notes, risk: ToolRisk.Read },
       run: async (args, context) => {
         const input = ListNotesToolDTO.parse(args);
         const user = await requireToolUser(auth, context);
@@ -72,6 +77,7 @@ export function createNoteTools(
       ].join("\n"),
       inputSchema: ReadNoteToolDTO,
       mutating: false,
+      external: { topic: ToolTopic.Notes, risk: ToolRisk.Read },
       run: async (args, context) => {
         const input = ReadNoteToolDTO.parse(args);
         const user = await requireToolUser(auth, context);
@@ -90,6 +96,7 @@ export function createNoteTools(
       ].join("\n"),
       inputSchema: AppendToNoteToolDTO,
       mutating: true,
+      external: { topic: ToolTopic.Notes, risk: ToolRisk.Write },
       run: async (args, context) => {
         const input = AppendToNoteToolDTO.parse(args);
         const user = await requireToolUser(auth, context);
@@ -99,6 +106,51 @@ export function createNoteTools(
           input.markdown,
         );
         return { message: "Note updated", note: note.toJSON() };
+      },
+    },
+    {
+      name: "update_note",
+      description: [
+        "Rename one note or replace its whole Markdown body.",
+        "Use the exact ID returned by list_notes. Read the note first and send the complete new body, because markdown replaces everything.",
+        "Prefer append_to_note when the user only wants to add information.",
+        "Returns { message, note }.",
+      ].join("\n"),
+      inputSchema: UpdateNoteToolDTO,
+      mutating: true,
+      external: {
+        topic: ToolTopic.Notes,
+        risk: ToolRisk.Write,
+        isExternalOnly: true,
+      },
+      run: async (args, context) => {
+        const input = UpdateNoteToolDTO.parse(args);
+        const user = await requireToolUser(auth, context);
+        const note = await noteService.updateNote({
+          idUser: user.id,
+          id: input.note_id,
+          name: input.name,
+          markdown: input.markdown,
+        });
+        return { message: "Note updated", note: note.toJSON() };
+      },
+    },
+    {
+      name: "delete_note",
+      description:
+        "Permanently delete one note by the exact ID returned by list_notes. Returns { message }.",
+      inputSchema: DeleteNoteToolDTO,
+      mutating: true,
+      external: {
+        topic: ToolTopic.Notes,
+        risk: ToolRisk.Destructive,
+        isExternalOnly: true,
+      },
+      run: async (args, context) => {
+        const input = DeleteNoteToolDTO.parse(args);
+        const user = await requireToolUser(auth, context);
+        await noteService.deleteNote(user.id, input.note_id);
+        return { message: "Note deleted" };
       },
     },
   ];

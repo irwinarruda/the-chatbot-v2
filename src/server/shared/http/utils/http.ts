@@ -23,6 +23,17 @@ export class Http {
     });
   }
 
+  static html(data: string, init?: Init): Response {
+    return new Response(data, {
+      status: 200,
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "no-store",
+      },
+      ...init,
+    });
+  }
+
   static ok(init?: Init): Response {
     return new Response(undefined, { status: 200, ...init });
   }

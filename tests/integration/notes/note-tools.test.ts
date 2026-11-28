@@ -29,7 +29,7 @@ describe("note AI tools", () => {
           markdown: "# Ideia\n\nCriar um editor simples e agradável.",
         },
       },
-      { chat, sourceMessage },
+      { idUser: chat.idUser, idSourceMessage: sourceMessage.id },
     );
     expect(created.outcome).toMatchObject({
       status: ToolResultStatus.Succeeded,
@@ -45,7 +45,7 @@ describe("note AI tools", () => {
         name: "list_notes",
         arguments: { search: "Markdown" },
       },
-      { chat, sourceMessage },
+      { idUser: chat.idUser, idSourceMessage: sourceMessage.id },
     );
     expect(listed.outcome).toMatchObject({
       status: ToolResultStatus.Succeeded,
@@ -62,7 +62,7 @@ describe("note AI tools", () => {
           markdown: "## Link\n\nhttps://mdxeditor.dev",
         },
       },
-      { chat, sourceMessage },
+      { idUser: chat.idUser, idSourceMessage: sourceMessage.id },
     );
     expect(appended.outcome).toMatchObject({
       status: ToolResultStatus.Succeeded,
@@ -76,7 +76,7 @@ describe("note AI tools", () => {
         name: "read_note",
         arguments: { note_id: note.id },
       },
-      { chat, sourceMessage },
+      { idUser: chat.idUser, idSourceMessage: sourceMessage.id },
     );
     expect(read.outcome).toMatchObject({
       status: ToolResultStatus.Succeeded,

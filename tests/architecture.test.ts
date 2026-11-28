@@ -12,6 +12,7 @@ const ModuleLevels: Record<string, number> = {
   "cash-flow": 4,
   notes: 4,
   todos: 4,
+  mcp: 5,
 };
 const StaticImport =
   /^\s*(?:import|export)(\s+type)?\s+(?:[\w$*{},\s]*?from\s*)?["']([^"']+)["']/gm;

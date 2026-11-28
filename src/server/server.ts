@@ -1,5 +1,6 @@
 import { createAccountTools } from "~/server/modules/accounts/controllers/accounts.tools";
 import { AccountsService } from "~/server/modules/accounts/services/accounts.service";
+import { createArtifactTools } from "~/server/modules/artifacts/controllers/artifacts.tools";
 import { ArtifactRepository } from "~/server/modules/artifacts/repositories/artifact.repository";
 import { ArtifactUploadTokenRepository } from "~/server/modules/artifacts/repositories/artifact-upload-token.repository";
 import { ArtifactService } from "~/server/modules/artifacts/services/artifact.service";
@@ -32,6 +33,9 @@ import { GoogleAuthChallengeRepository } from "~/server/modules/identity/reposit
 import { UserRepository } from "~/server/modules/identity/repositories/user.repository";
 import { AuthService } from "~/server/modules/identity/services/auth.service";
 import { GoogleCredentialEncryptionService } from "~/server/modules/identity/utils/google-credential-encryption";
+import { McpOAuthRepository } from "~/server/modules/mcp/repositories/mcp-oauth.repository";
+import { McpService } from "~/server/modules/mcp/services/mcp.service";
+import { McpOAuthService } from "~/server/modules/mcp/services/mcp-oauth.service";
 import { createNoteTools } from "~/server/modules/notes/controllers/notes.tools";
 import { NoteRepository } from "~/server/modules/notes/repositories/note.repository";
 import { NoteService } from "~/server/modules/notes/services/note.service";
@@ -115,7 +119,11 @@ export function createServer(
     cashFlowSpreadsheet,
     config.googleSheets,
   );
-  const tools = new ToolExecutor([
+  const artifacts = new ArtifactService(
+    new ArtifactRepository(database),
+    new ArtifactUploadTokenRepository(database),
+  );
+  const registeredTools = [
     ...createChatTools(clock),
     ...createCashFlowTools(
       auth,
@@ -130,7 +138,14 @@ export function createServer(
     ...createTodoTools(auth, todos),
     ...createNoteTools(auth, notes),
     ...createAccountTools(auth, accounts),
-  ]);
+    ...createArtifactTools(auth, artifacts),
+  ];
+  const tools = new ToolExecutor(
+    registeredTools.filter((tool) => !tool.external?.isExternalOnly),
+  );
+  const externalTools = new ToolExecutor(
+    registeredTools.filter((tool) => tool.external),
+  );
   const commands = new ChatCommandService(
     database,
     chats,
@@ -167,10 +182,7 @@ export function createServer(
     config,
     services: {
       accounts,
-      artifacts: new ArtifactService(
-        new ArtifactRepository(database),
-        new ArtifactUploadTokenRepository(database),
-      ),
+      artifacts,
       auth,
       aiModels,
       cashFlow,
@@ -180,6 +192,8 @@ export function createServer(
         monthlyExpenses,
         cashFlow,
       ),
+      mcp: new McpService(externalTools),
+      mcpOAuth: new McpOAuthService(new McpOAuthRepository(database), auth),
       messaging,
       migration: new MigrationService(migrations, config.auth),
       notes,

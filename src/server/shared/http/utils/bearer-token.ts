@@ -1,9 +1,13 @@
 import { UnauthorizedException } from "~/server/shared/errors/application-errors";
 
-export function requireBearerToken(request: Request): string {
+export function readBearerToken(request: Request): string | undefined {
   const authorization = request.headers.get("authorization") ?? "";
-  const match = authorization.match(/^Bearer ([^\s]+)$/i);
-  if (match?.[1]) return match[1];
+  return authorization.match(/^Bearer ([^\s]+)$/i)?.[1];
+}
+
+export function requireBearerToken(request: Request): string {
+  const token = readBearerToken(request);
+  if (token) return token;
   throw new UnauthorizedException(
     "A bearer token is required.",
     "Send the artifact upload token in the Authorization header.",

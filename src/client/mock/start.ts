@@ -2,7 +2,7 @@ import { createMiddleware, createStart } from "@tanstack/react-start";
 import type { WebAuthTokenPayloadDTO } from "~/contracts/http/identity/identity";
 import { resolvePrefs } from "~/contracts/http/shared/prefs-cookie";
 
-export const ServerPathPrefixes = ["/api/", "/g/"];
+export const ServerPathPrefixes = ["/api/", "/g/", "/.well-known/"];
 
 interface WebAuthContext {
   webAuth: WebAuthTokenPayloadDTO;

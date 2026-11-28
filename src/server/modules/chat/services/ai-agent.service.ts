@@ -207,8 +207,9 @@ export class AiAgentService {
             .type !== MessageContentType.ToolResult,
       );
       const results = await this.tools.executeRound(pendingCalls, {
-        chat,
-        sourceMessage,
+        idUser: chat.idUser,
+        idSourceMessage: sourceMessage.id,
+        channelAddress: chat.getChannelAddress(),
         model: runtimeModel,
       });
       for (const [index, result] of results.entries()) {

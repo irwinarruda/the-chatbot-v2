@@ -15,6 +15,13 @@ describe("WebLoginNavigation", () => {
     expect(normalizeWebLoginRedirect("/artifacts")).toBe("/artifacts");
   });
 
+  test("returns to the MCP consent page after sign-in without marking it in the navigation", () => {
+    const authorize = "/api/v1/oauth/authorize?client_id=abc&state=xyz";
+
+    expect(normalizeWebLoginRedirect(authorize)).toBe(authorize);
+    expect(getWebLoginActivePath(authorize)).toBe(DEFAULT_WEB_LOGIN_REDIRECT);
+  });
+
   test("rejects external, public, and lookalike destinations", () => {
     const rejectedDestinations = [
       "https://attacker.example/notes",

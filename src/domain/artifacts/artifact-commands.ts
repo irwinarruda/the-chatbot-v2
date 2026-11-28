@@ -6,6 +6,11 @@ export interface SaveArtifactDTO {
   visibility: ArtifactVisibility;
 }
 
+export interface ReplaceArtifactDTO
+  extends Omit<SaveArtifactDTO, "visibility"> {
+  visibility?: ArtifactVisibility;
+}
+
 export interface ArtifactUploadTokenStatusDTO {
   configured: boolean;
   createdAt?: Date;

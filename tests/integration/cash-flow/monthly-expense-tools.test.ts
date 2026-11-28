@@ -28,7 +28,7 @@ describe("monthly expense AI tools", () => {
           due_day: 12,
         },
       },
-      { chat, sourceMessage },
+      { idUser: chat.idUser, idSourceMessage: sourceMessage.id },
     );
     expect(created.outcome).toMatchObject({
       status: ToolResultStatus.Succeeded,
@@ -50,7 +50,7 @@ describe("monthly expense AI tools", () => {
         name: "set_monthly_expense_paid",
         arguments: { expense_id: expense.expense.id, is_paid: true },
       },
-      { chat, sourceMessage },
+      { idUser: chat.idUser, idSourceMessage: sourceMessage.id },
     );
     await orquestrator.monthlyExpenseService.updateMonthlyExpense({
       idUser: user.id,
@@ -65,7 +65,7 @@ describe("monthly expense AI tools", () => {
         name: "list_monthly_expenses",
         arguments: { status: "Paid" },
       },
-      { chat, sourceMessage },
+      { idUser: chat.idUser, idSourceMessage: sourceMessage.id },
     );
 
     expect(paid.outcome).toMatchObject({

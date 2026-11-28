@@ -1,6 +1,5 @@
 import { describe, expect, test, vi } from "vitest";
 import { z } from "zod";
-import { Chat } from "~/domain/chat/chat";
 import { MessageContentType } from "~/domain/chat/message-content-type";
 import { ToolResultStatus } from "~/domain/chat/tool-result-status";
 import { ValidationException } from "~/domain/shared/domain-errors";
@@ -22,8 +21,6 @@ async function executeFailingTool(error: Error, mutating: boolean) {
       },
     },
   ]);
-  const chat = new Chat();
-  const sourceMessage = chat.addUserTextMessage("Run the tool");
   return executor.execute(
     {
       type: MessageContentType.ToolCall,
@@ -31,7 +28,7 @@ async function executeFailingTool(error: Error, mutating: boolean) {
       name: "test_tool",
       arguments: {},
     },
-    { chat, sourceMessage },
+    { idUser: "user-1" },
   );
 }
 
@@ -104,7 +101,7 @@ function createRoundTool(
       log.running--;
       if (options.fails) throw new ValidationException("Record rejected");
       const write = async () => {
-        log.writes.push(context.sourceMessage.text ?? "");
+        log.writes.push(context.idSourceMessage ?? "");
       };
       const inCallOrder = context.inCallOrder;
       await (inCallOrder ? inCallOrder(write) : write());
@@ -122,10 +119,8 @@ function roundCall(callId: string, name: string, delay?: number) {
   } as const;
 }
 
-function roundContext() {
-  const chat = new Chat();
-  const sourceMessage = chat.addUserTextMessage("Record everything");
-  return { chat, sourceMessage };
+function roundContext(): AiToolContext {
+  return { idUser: "user-1", idSourceMessage: "message-1" };
 }
 
 function createLog() {

@@ -9,6 +9,11 @@ export const WEB_LOGIN_PATHS = [
 
 export type WebLoginPath = (typeof WEB_LOGIN_PATHS)[number];
 
+const WEB_LOGIN_RETURN_PATHS = [
+  ...WEB_LOGIN_PATHS,
+  "/api/v1/oauth/authorize",
+] as const;
+
 export const DEFAULT_WEB_LOGIN_REDIRECT: WebLoginPath = "/chat";
 
 export function normalizeWebLoginRedirect(value: unknown): string {
@@ -22,7 +27,7 @@ export function normalizeWebLoginRedirect(value: unknown): string {
   } catch {
     return DEFAULT_WEB_LOGIN_REDIRECT;
   }
-  const allowedPath = WEB_LOGIN_PATHS.find(
+  const allowedPath = WEB_LOGIN_RETURN_PATHS.find(
     (path) => url.pathname === path || url.pathname.startsWith(`${path}/`),
   );
   if (!allowedPath) return DEFAULT_WEB_LOGIN_REDIRECT;
