@@ -3,6 +3,7 @@ import {
   ReplyWithOptionsToolDTO,
   replyWithOptionsToolName,
 } from "~/contracts/tools/chat/reply-with-options";
+import { ToolRisk, ToolTopic } from "~/domain/chat/tool-exposure";
 import { ValidationException } from "~/domain/shared/domain-errors";
 import type { RegisteredTool } from "~/server/modules/chat/services/tool-executor.service";
 
@@ -29,6 +30,7 @@ export function createChatTools(
       ].join("\n"),
       inputSchema: GetCurrentDateTimeToolDTO,
       mutating: false,
+      external: { topic: ToolTopic.General, risk: ToolRisk.Read },
       run: async (args) => {
         GetCurrentDateTimeToolDTO.parse(args);
         const now = clock();

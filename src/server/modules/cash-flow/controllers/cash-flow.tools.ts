@@ -9,6 +9,7 @@ import { SetMonthlyExpensePaidToolDTO } from "~/contracts/tools/cash-flow/set-mo
 import { SyncBankAccountBalanceToolDTO } from "~/contracts/tools/cash-flow/sync-bank-account-balance";
 import { TransferBetweenBankAccountsToolDTO } from "~/contracts/tools/cash-flow/transfer-between-bank-accounts";
 import type { MonthlyExpenseItemDTO } from "~/domain/cash-flow/monthly-expense-commands";
+import { ToolRisk, ToolTopic } from "~/domain/chat/tool-exposure";
 import type { User } from "~/domain/identity/user";
 import { ValidationException } from "~/domain/shared/domain-errors";
 import type { CashFlowService } from "~/server/modules/cash-flow/services/cash-flow.service";
@@ -47,6 +48,7 @@ export function createCashFlowTools(
       ].join("\n"),
       inputSchema: CreateMonthlyExpenseToolDTO,
       mutating: true,
+      external: { topic: ToolTopic.Bills, risk: ToolRisk.Write },
       run: async (args, context) => {
         const input = CreateMonthlyExpenseToolDTO.parse(args);
         const user = await requireToolUser(auth, context);
@@ -72,6 +74,7 @@ export function createCashFlowTools(
       ].join("\n"),
       inputSchema: ListMonthlyExpensesToolDTO,
       mutating: false,
+      external: { topic: ToolTopic.Bills, risk: ToolRisk.Read },
       run: async (args, context) => {
         const input = ListMonthlyExpensesToolDTO.parse(args);
         const user = await requireToolUser(auth, context);
@@ -100,6 +103,7 @@ export function createCashFlowTools(
       ].join("\n"),
       inputSchema: SetMonthlyExpensePaidToolDTO,
       mutating: true,
+      external: { topic: ToolTopic.Bills, risk: ToolRisk.Write },
       run: async (args, context) => {
         const input = SetMonthlyExpensePaidToolDTO.parse(args);
         const user = await requireToolUser(auth, context);
@@ -123,6 +127,7 @@ export function createCashFlowTools(
         "Start linking a Google financial planning spreadsheet to the user, or replacing the linked one. The app can only open a spreadsheet after the user grants access to that file, so this does not link it yet: it returns { message, url }. Send the url to the user and ask them to open it and choose the spreadsheet. Fails if the URL is invalid.",
       inputSchema: AddCashFlowSpreadsheetUrlToolDTO,
       mutating: false,
+      external: { topic: ToolTopic.Finance, risk: ToolRisk.Write },
       run: async (args, context) => {
         const input = AddCashFlowSpreadsheetUrlToolDTO.parse(args);
         await requireToolUser(auth, context);
@@ -140,10 +145,11 @@ export function createCashFlowTools(
         "Omit limit to return the full spreadsheet history.",
         "Provide limit to return the most recent N transactions; there is no maximum.",
         "Items are returned oldest-first within the result; the last item is the newest.",
-        "Returns { count, transactions: [ { sheet_id, date, value, category, description, bank_account } ] }.",
+        "Returns { count, transactions: [ { sheetId, date, value, category, description, bankAccount } ] }.",
       ].join("\n"),
       inputSchema: GetLatestTransactionsToolDTO,
       mutating: false,
+      external: { topic: ToolTopic.Finance, risk: ToolRisk.Read },
       run: async (args, context) => {
         const input = GetLatestTransactionsToolDTO.parse(args);
         const user = await requireToolUser(auth, context);
@@ -160,6 +166,7 @@ export function createCashFlowTools(
         "Get the most recently appended transaction. Returns { transaction? }.",
       inputSchema: PhoneNumberToolDTO,
       mutating: false,
+      external: { topic: ToolTopic.Finance, risk: ToolRisk.Read },
       run: async (args, context) => {
         PhoneNumberToolDTO.parse(args);
         const user = await requireToolUser(auth, context);
@@ -175,6 +182,7 @@ export function createCashFlowTools(
         "Delete the last (most recent) transaction. Returns { message }.",
       inputSchema: PhoneNumberToolDTO,
       mutating: true,
+      external: { topic: ToolTopic.Finance, risk: ToolRisk.Destructive },
       run: async (args, context) => {
         PhoneNumberToolDTO.parse(args);
         const user = await requireToolUser(auth, context);
@@ -185,16 +193,17 @@ export function createCashFlowTools(
     {
       name: "add_transaction",
       description: [
-        "Append a transaction specifying its type. Category and bank_account are automatically resolved via classification using available categories and bank accounts.",
-        "For an Expense, the result also includes unpaid_monthly_expenses for the current month.",
+        "Append a transaction specifying its type. Category and bankAccount are automatically resolved via classification using available categories and bank accounts.",
+        "For an Expense, the result also includes unpaidMonthlyExpenses for the current month.",
         "Compare the transaction description, user message, value, category, and bank account with those candidates.",
         "If exactly one is a plausible match, finish by calling reply_with_options to ask whether it should be marked paid. Do not mark it automatically.",
         "If several are plausible, ask the user to choose. If none plausibly match, do not mention the checklist.",
         bankAccountBalancesNote,
-        "Returns { message, type, category, bank_account, description, date, value, unpaid_monthly_expenses, bankAccountBalances }.",
+        "Returns { message, type, category, bankAccount, description, date, value, unpaidMonthlyExpenses, bankAccountBalances }.",
       ].join("\n"),
       inputSchema: AddTransactionToolDTO,
       mutating: true,
+      external: { topic: ToolTopic.Finance, risk: ToolRisk.Write },
       isParallelSafe: true,
       afterRound: loadBankAccountBalances,
       run: async (args, context) => {
@@ -233,6 +242,7 @@ export function createCashFlowTools(
       ].join("\n"),
       inputSchema: TransferBetweenBankAccountsToolDTO,
       mutating: true,
+      external: { topic: ToolTopic.Finance, risk: ToolRisk.Write },
       isParallelSafe: true,
       afterRound: loadBankAccountBalances,
       run: async (args, context) => {
@@ -255,6 +265,7 @@ export function createCashFlowTools(
       description: "List expense categories. Returns { count, categories }.",
       inputSchema: PhoneNumberToolDTO,
       mutating: false,
+      external: { topic: ToolTopic.Finance, risk: ToolRisk.Read },
       run: async (args, context) => {
         PhoneNumberToolDTO.parse(args);
         const user = await requireToolUser(auth, context);
@@ -269,6 +280,7 @@ export function createCashFlowTools(
       description: "List earning categories. Returns { count, categories }.",
       inputSchema: PhoneNumberToolDTO,
       mutating: false,
+      external: { topic: ToolTopic.Finance, risk: ToolRisk.Read },
       run: async (args, context) => {
         PhoneNumberToolDTO.parse(args);
         const user = await requireToolUser(auth, context);
@@ -280,10 +292,10 @@ export function createCashFlowTools(
     },
     {
       name: "get_bank_accounts",
-      description:
-        "List bank accounts referenced. Returns { count, bank_accounts }.",
+      description: "List bank accounts referenced. Returns { count, banks }.",
       inputSchema: PhoneNumberToolDTO,
       mutating: false,
+      external: { topic: ToolTopic.Finance, risk: ToolRisk.Read },
       run: async (args, context) => {
         PhoneNumberToolDTO.parse(args);
         const user = await requireToolUser(auth, context);
@@ -296,9 +308,10 @@ export function createCashFlowTools(
     {
       name: "get_bank_accounts_status",
       description:
-        "List bank accounts with nonzero balances for a month. If date is omitted, uses the current date. Returns { count, bank_accounts: [ { bank_account, balance } ] }.",
+        "List bank accounts with nonzero balances for a month. If date is omitted, uses the current date. Returns { count, bankAccounts: [ { bankAccount, balance } ] }.",
       inputSchema: GetBankAccountsStatusToolDTO,
       mutating: false,
+      external: { topic: ToolTopic.Finance, risk: ToolRisk.Read },
       run: async (args, context) => {
         const input = GetBankAccountsStatusToolDTO.parse(args);
         const user = await requireToolUser(auth, context);
@@ -318,6 +331,7 @@ export function createCashFlowTools(
       ].join("\n"),
       inputSchema: SyncBankAccountBalanceToolDTO,
       mutating: true,
+      external: { topic: ToolTopic.Finance, risk: ToolRisk.Write },
       afterRound: loadBankAccountBalances,
       run: async (args, context) => {
         const input = SyncBankAccountBalanceToolDTO.parse(args);

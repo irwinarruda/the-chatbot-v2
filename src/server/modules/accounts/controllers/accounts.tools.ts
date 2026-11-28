@@ -5,6 +5,7 @@ import {
   requireToolUser,
 } from "~/server/modules/chat/services/tool-executor.service";
 import type { AuthService } from "~/server/modules/identity/services/auth.service";
+import { UnauthorizedException } from "~/server/shared/errors/application-errors";
 
 export function createAccountTools(
   auth: AuthService,
@@ -20,7 +21,10 @@ export function createAccountTools(
       run: async (args, context) => {
         DeleteUserByChatChannelAddressToolDTO.parse(args);
         const user = await requireToolUser(auth, context);
-        await accounts.deleteAccount(user.id, context.chat.getChannelAddress());
+        if (!context.channelAddress) {
+          throw new UnauthorizedException("A chat channel address is required");
+        }
+        await accounts.deleteAccount(user.id, context.channelAddress);
         return { message: "The account was deleted successfully" };
       },
     },

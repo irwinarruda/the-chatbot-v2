@@ -1,5 +1,8 @@
 import { CreateTodosToolDTO } from "~/contracts/tools/todos/create-todos";
+import { DeleteTodoToolDTO } from "~/contracts/tools/todos/delete-todo";
 import { ListTodosToolDTO } from "~/contracts/tools/todos/list-todos";
+import { UpdateTodoToolDTO } from "~/contracts/tools/todos/update-todo";
+import { ToolRisk, ToolTopic } from "~/domain/chat/tool-exposure";
 import {
   parseToolDate,
   type RegisteredTool,
@@ -29,13 +32,14 @@ export function createTodoTools(
       ].join("\n"),
       inputSchema: CreateTodosToolDTO,
       mutating: true,
+      external: { topic: ToolTopic.Todos, risk: ToolRisk.Write },
       run: async (args, context) => {
         const input = CreateTodosToolDTO.parse(args);
         const user = await requireToolUser(auth, context);
         const created = await todoService.createTodos(
           input.todos.map((todo) => ({
             idUser: user.id,
-            idSourceMessage: context.sourceMessage.id,
+            idSourceMessage: context.idSourceMessage,
             name: todo.name,
             description: todo.description,
             dueDate: parseToolDate(todo.dueDate),
@@ -54,6 +58,7 @@ export function createTodoTools(
         "List todos for the user filtered by status. Returns { count, todos }.",
       inputSchema: ListTodosToolDTO,
       mutating: false,
+      external: { topic: ToolTopic.Todos, risk: ToolRisk.Read },
       run: async (args, context) => {
         const input = ListTodosToolDTO.parse(args);
         const user = await requireToolUser(auth, context);
@@ -61,6 +66,52 @@ export function createTodoTools(
           status: input.status,
         });
         return { count: todos.length, todos: todos.map((t) => t.toJSON()) };
+      },
+    },
+    {
+      name: "update_todo",
+      description: [
+        "Change one todo: rename it, change its description, set or clear its due date, or complete or reopen it.",
+        "Use the exact ID returned by list_todos. Send only the fields that change.",
+        "Returns { message, todo }.",
+      ].join("\n"),
+      inputSchema: UpdateTodoToolDTO,
+      mutating: true,
+      external: {
+        topic: ToolTopic.Todos,
+        risk: ToolRisk.Write,
+        isExternalOnly: true,
+      },
+      run: async (args, context) => {
+        const input = UpdateTodoToolDTO.parse(args);
+        const user = await requireToolUser(auth, context);
+        const todo = await todoService.updateTodo({
+          idUser: user.id,
+          id: input.todo_id,
+          name: input.name,
+          description: input.description,
+          dueDate: input.clear_due_date ? null : parseToolDate(input.due_date),
+          status: input.status,
+        });
+        return { message: "Todo updated", todo: todo.toJSON() };
+      },
+    },
+    {
+      name: "delete_todo",
+      description:
+        "Permanently delete one todo by the exact ID returned by list_todos. Returns { message }.",
+      inputSchema: DeleteTodoToolDTO,
+      mutating: true,
+      external: {
+        topic: ToolTopic.Todos,
+        risk: ToolRisk.Destructive,
+        isExternalOnly: true,
+      },
+      run: async (args, context) => {
+        const input = DeleteTodoToolDTO.parse(args);
+        const user = await requireToolUser(auth, context);
+        await todoService.deleteTodo(user.id, input.todo_id);
+        return { message: "Todo deleted" };
       },
     },
   ];

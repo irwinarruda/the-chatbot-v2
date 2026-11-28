@@ -1,11 +1,7 @@
 import { ZodError } from "zod";
-import type { Chat } from "~/domain/chat/chat";
-import type {
-  Message,
-  ToolCallContent,
-  ToolResultContent,
-} from "~/domain/chat/message";
+import type { ToolCallContent, ToolResultContent } from "~/domain/chat/message";
 import { MessageContentType } from "~/domain/chat/message-content-type";
+import type { ToolExposureDTO } from "~/domain/chat/tool-exposure";
 import { ToolResultStatus } from "~/domain/chat/tool-result-status";
 import type { User } from "~/domain/identity/user";
 import { DomainError } from "~/domain/shared/domain-errors";
@@ -22,10 +18,16 @@ import {
 export type InCallOrder = <T>(write: () => Promise<T>) => Promise<T>;
 
 export interface AiToolContext {
-  chat: Chat;
-  sourceMessage: Message;
+  idUser?: string;
+  idSourceMessage?: string;
+  channelAddress?: string;
+  publicOrigin?: string;
   model?: AiModelSelectionDTO;
   inCallOrder?: InCallOrder;
+}
+
+export interface ExternalToolDefinitionDTO extends AiToolDefinitionDTO {
+  exposure: ToolExposureDTO;
 }
 
 export type AfterRoundLoader = (
@@ -36,6 +38,7 @@ export interface RegisteredTool extends AiToolDefinitionDTO {
   mutating: boolean;
   isParallelSafe?: boolean;
   afterRound?: AfterRoundLoader;
+  external?: ToolExposureDTO;
   run(args: unknown, context: AiToolContext): Promise<unknown>;
 }
 
@@ -51,6 +54,12 @@ export class ToolExecutor {
       description,
       inputSchema,
     }));
+  }
+
+  getExternalDefinitions(): ExternalToolDefinitionDTO[] {
+    return this.tools.flatMap(({ name, description, inputSchema, external }) =>
+      external ? [{ name, description, inputSchema, exposure: external }] : [],
+    );
   }
 
   async executeRound(
@@ -245,10 +254,10 @@ export async function requireToolUser(
   authService: AuthService,
   context: AiToolContext,
 ): Promise<User> {
-  if (!context.chat.idUser) {
+  if (!context.idUser) {
     throw new UnauthorizedException("Authenticated user is required");
   }
-  const user = await authService.getUserById(context.chat.idUser);
+  const user = await authService.getUserById(context.idUser);
   if (!user) {
     throw new UnauthorizedException("Authenticated user was not found");
   }

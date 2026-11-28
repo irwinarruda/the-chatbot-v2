@@ -20,6 +20,8 @@ import type { MessagingService } from "~/server/modules/chat/services/messaging.
 import type { ToolExecutor } from "~/server/modules/chat/services/tool-executor.service";
 import { TestAuthGateway } from "~/server/modules/identity/gateways/test.auth";
 import type { AuthService } from "~/server/modules/identity/services/auth.service";
+import type { McpService } from "~/server/modules/mcp/services/mcp.service";
+import type { McpOAuthService } from "~/server/modules/mcp/services/mcp-oauth.service";
 import type { NoteService } from "~/server/modules/notes/services/note.service";
 import { NodePgMigrationsGateway } from "~/server/modules/system/gateways/node-pg.migrations";
 import type { MigrationService } from "~/server/modules/system/services/migration.service";
@@ -70,6 +72,8 @@ export class Orquestrator {
   todoService: TodoService;
   noteService: NoteService;
   migrationService: MigrationService;
+  mcpService: McpService;
+  mcpOAuthService: McpOAuthService;
   aiToolService: ToolExecutor;
   aiGateway: TestAiChatGateway;
   cashFlowSpreadsheetGateway: TestCashFlowSpreadsheetGateway;
@@ -127,6 +131,8 @@ export class Orquestrator {
     this.noteService = application.services.notes;
     this.migrationService = application.services.migration;
     this.aiToolService = application.services.tools;
+    this.mcpService = application.services.mcp;
+    this.mcpOAuthService = application.services.mcpOAuth;
   }
 
   async wipeDatabase(): Promise<void> {

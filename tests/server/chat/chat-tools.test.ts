@@ -19,7 +19,7 @@ describe("chat tools", () => {
         name: "get_current_datetime",
         arguments: {},
       },
-      { chat, sourceMessage },
+      { idUser: chat.idUser, idSourceMessage: sourceMessage.id },
     );
 
     expect(result.outcome).toEqual({
@@ -47,7 +47,7 @@ describe("chat tools", () => {
           options: ["Sim, marcar como paga", "Não"],
         },
       },
-      { chat, sourceMessage },
+      { idUser: chat.idUser, idSourceMessage: sourceMessage.id },
     );
 
     expect(result.outcome).toEqual({
@@ -81,7 +81,7 @@ describe("chat tools", () => {
           arguments: {},
         },
       ],
-      { chat, sourceMessage },
+      { idUser: chat.idUser, idSourceMessage: sourceMessage.id },
     );
 
     expect(result.outcome).toEqual({

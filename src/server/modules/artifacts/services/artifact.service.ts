@@ -2,6 +2,7 @@ import { Artifact } from "~/domain/artifacts/artifact";
 import type {
   ArtifactUploadTokenStatusDTO,
   CreatedArtifactUploadTokenDTO,
+  ReplaceArtifactDTO,
   SaveArtifactDTO,
 } from "~/domain/artifacts/artifact-commands";
 import { ArtifactVisibility } from "~/domain/artifacts/artifact-visibility";
@@ -50,7 +51,7 @@ export class ArtifactService {
   async replaceArtifact(
     idUser: string,
     artifactId: string,
-    dto: SaveArtifactDTO,
+    dto: ReplaceArtifactDTO,
   ): Promise<Artifact> {
     const { artifact, concurrencyToken } = await this.getOwnedSnapshot(
       idUser,
@@ -59,7 +60,7 @@ export class ArtifactService {
     const compiled = await this.compileArtifact(dto.html, dto.title);
     artifact.replace({
       title: dto.title,
-      visibility: dto.visibility,
+      visibility: dto.visibility ?? artifact.visibility,
       sourceHtml: dto.html,
       renderedHtml: compiled.html,
       rendererVersion: compiled.rendererVersion,

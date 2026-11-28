@@ -151,6 +151,35 @@ export const routes = rootRoute("client/routes/__root.tsx", [
     "/api/v1/web/monthly-expenses/$expenseId/payment",
     "server/modules/cash-flow/controllers/web-monthly-expense-payment.controller.ts",
   ),
+  route(
+    "/.well-known/oauth-protected-resource",
+    "server/modules/mcp/controllers/oauth-protected-resource.controller.ts",
+  ),
+  route(
+    "/.well-known/oauth-protected-resource/api/v1/mcp",
+    "server/modules/mcp/controllers/mcp-oauth-protected-resource.controller.ts",
+  ),
+  route(
+    "/.well-known/oauth-authorization-server",
+    "server/modules/mcp/controllers/oauth-authorization-server.controller.ts",
+  ),
+  route("/api/v1/mcp", "server/modules/mcp/controllers/mcp.controller.ts"),
+  route(
+    "/api/v1/oauth/register",
+    "server/modules/mcp/controllers/oauth-register.controller.ts",
+  ),
+  route(
+    "/api/v1/oauth/authorize",
+    "server/modules/mcp/controllers/oauth-authorize.controller.ts",
+  ),
+  route(
+    "/api/v1/oauth/token",
+    "server/modules/mcp/controllers/oauth-token.controller.ts",
+  ),
+  route(
+    "/api/v1/web/oauth/authorize",
+    "server/modules/mcp/controllers/web-oauth-authorize.controller.ts",
+  ),
 ]);
 
 export default routes;
