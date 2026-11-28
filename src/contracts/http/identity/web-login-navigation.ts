@@ -36,6 +36,12 @@ export function normalizeWebLoginRedirect(value: unknown): string {
   return `${url.pathname}${url.search}`;
 }
 
+export function isWebLoginReturnPath(pathname: string): boolean {
+  return WEB_LOGIN_RETURN_PATHS.some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`),
+  );
+}
+
 export function getWebLoginActivePath(value: unknown): WebLoginPath {
   const redirectTo = normalizeWebLoginRedirect(value);
   const pathname = new URL(redirectTo, "https://the-chatbot.local").pathname;

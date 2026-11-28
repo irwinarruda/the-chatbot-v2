@@ -14,8 +14,7 @@ import { Http } from "~/server/shared/http/utils/http";
 import { parseJsonRequest } from "~/server/shared/http/utils/json-request";
 import { getWebAuthToken } from "~/server/shared/http/utils/web-auth-cookie";
 
-const INVALID_REQUEST_MESSAGE =
-  "O pedido de conexão é inválido. Remova o conector e adicione de novo.";
+const INVALID_REQUEST_MESSAGE = "The connection request is invalid.";
 
 export const Route = createFileRoute("/api/v1/web/oauth/authorize")({
   server: {
@@ -36,7 +35,7 @@ export const Route = createFileRoute("/api/v1/web/oauth/authorize")({
         );
         return Http.json(
           toOAuthConsentPromptResponse({
-            clientName: prompt.client.name ?? "Um aplicativo",
+            clientName: prompt.client.name,
             redirectHost: new URL(parsed.data.redirect_uri).host,
             userEmail: prompt.user?.email ?? context.webAuth.email,
           }),

@@ -40,6 +40,20 @@ describe("SessionBoundary", () => {
     );
   });
 
+  test("sends an expired consent page back through sign-in and returns to it", () => {
+    const href = "/oauth/authorize?request=client_id%3Dabc";
+    router.location = { pathname: "/oauth/authorize", href };
+    useApp.setState({ isSessionExpired: true });
+    render(<SessionBoundary>Consent</SessionBoundary>);
+    expect(router.navigate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: "/login",
+        search: { redirect: href },
+      }),
+      undefined,
+    );
+  });
+
   test.each(["/a/public-artifact", "/login", "/register"])(
     "keeps %s available after session expiry",
     (pathname) => {

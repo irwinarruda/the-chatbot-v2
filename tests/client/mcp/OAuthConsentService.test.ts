@@ -79,6 +79,19 @@ describe("OAuthConsentService", () => {
     });
   });
 
+  test("refuses a redirect that is not an http link", async () => {
+    const { store } = createStore({
+      decide: vi.fn(async () => ({ redirectUrl: "javascript:alert(1)" })),
+    });
+    await store.getState().loadConsent("client_id=abc");
+    await store.getState().decideConsent("client_id=abc", "approve");
+    expect(store.getState()).toMatchObject({
+      consentError: "deciding",
+      isConsentDeciding: false,
+      consentRedirectUrl: undefined,
+    });
+  });
+
   test("ignores an answer that arrives after the page was left", async () => {
     let resolve: (value: typeof prompt) => void = () => {};
     const { store } = createStore({

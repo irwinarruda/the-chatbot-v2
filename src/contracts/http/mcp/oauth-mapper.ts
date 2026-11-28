@@ -88,7 +88,7 @@ export function toOAuthConsentPagePath(authorizationQuery: string): string {
 }
 
 export function toOAuthConsentPromptResponse(prompt: {
-  clientName: string;
+  clientName?: string;
   redirectHost: string;
   userEmail: string;
 }): OAuthConsentPromptResponseDTO {

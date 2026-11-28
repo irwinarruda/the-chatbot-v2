@@ -105,6 +105,16 @@ describe("MCP OAuth contracts", () => {
     expect(params.get("request")).toBe(query);
   });
 
+  test("keeps plus, percent and ampersand escapes intact in the query", () => {
+    const query =
+      "state=a%2Bb%26c+d&redirect_uri=https%3A%2F%2Fgrok.example%2Fcb";
+    const path = toOAuthConsentPagePath(query);
+    const decoded = new URLSearchParams(path.split("?")[1]).get("request");
+
+    expect(decoded).toBe(query);
+    expect(new URLSearchParams(decoded ?? "").get("state")).toBe("a+b&c d");
+  });
+
   test("describes the consent prompt and the decision for the web page", () => {
     expect(
       toOAuthConsentPromptResponse({

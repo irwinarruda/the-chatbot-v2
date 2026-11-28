@@ -486,6 +486,7 @@
     "errorHeading": "Could not connect",
     "errorLoading": "Could not load this connection request. Remove the connector and add it again.",
     "errorDeciding": "Could not save your choice. Try again.",
-    "homeAction": "Back to home"
+    "homeAction": "Back to home",
+    "unknownClient": "An app"
   }
 }

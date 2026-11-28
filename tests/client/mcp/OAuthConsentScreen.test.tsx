@@ -43,7 +43,7 @@ function register(overrides: Partial<OAuthConsentRepository> = {}) {
   return repository;
 }
 
-const assign = vi.fn();
+const replace = vi.fn();
 
 beforeEach(() => {
   useApp.setState({ prefs: { ...DEFAULT_PREFS, locale: "pt-BR" } });
@@ -55,11 +55,11 @@ beforeEach(() => {
       removeEventListener: vi.fn(),
     }),
   );
-  vi.stubGlobal("location", { ...window.location, assign });
+  vi.stubGlobal("location", { ...window.location, replace });
 });
 
 afterEach(() => {
-  assign.mockClear();
+  replace.mockClear();
   vi.unstubAllGlobals();
 });
 
@@ -89,7 +89,7 @@ describe("OAuthConsentScreen", () => {
 
     expect(repository.decide).toHaveBeenCalledWith("client_id=abc", "approve");
     await waitFor(() =>
-      expect(assign).toHaveBeenCalledWith("https://cursor.com/cb"),
+      expect(replace).toHaveBeenCalledWith("https://cursor.com/cb"),
     );
     expect(
       screen.getByRole("button", { name: "Voltando ao aplicativo…" }),
@@ -108,7 +108,7 @@ describe("OAuthConsentScreen", () => {
     expect(repository.decide).toHaveBeenCalledWith("client_id=abc", "deny");
   });
 
-  test("never follows a redirect that is not an http link", async () => {
+  test("refuses a redirect that is not an http link and lets the user retry", async () => {
     register({
       decide: vi.fn(async () => ({ redirectUrl: "javascript:alert(1)" })),
     });
@@ -118,15 +118,40 @@ describe("OAuthConsentScreen", () => {
       await screen.findByRole("button", { name: "Permitir acesso" }),
     );
 
-    await waitFor(() =>
-      expect(
-        screen.getByRole("button", { name: "Voltando ao aplicativo…" }),
-      ).toBeInTheDocument(),
-    );
-    expect(assign).not.toHaveBeenCalled();
+    expect(
+      await screen.findByText(
+        "Não foi possível salvar sua escolha. Tente de novo.",
+      ),
+    ).toBeInTheDocument();
+    expect(replace).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("button", { name: "Permitir acesso" }),
+    ).toBeEnabled();
   });
 
-  test("shows the server's reason when the request is invalid", async () => {
+  test("shows a hostile app name as plain text", async () => {
+    const hostile = '<img src=x onerror="alert(1)">';
+    register({
+      getPrompt: vi.fn(async () => ({ ...prompt, clientName: hostile })),
+    });
+    const { container: view } = render(
+      <OAuthConsentScreen authorizationQuery="client_id=abc" />,
+    );
+
+    expect(await screen.findByText(hostile)).toBeInTheDocument();
+    expect(view.querySelector("img[onerror]")).toBeNull();
+  });
+
+  test("falls back to a generic name when the app registered none", async () => {
+    register({
+      getPrompt: vi.fn(async () => ({ ...prompt, clientName: undefined })),
+    });
+    render(<OAuthConsentScreen authorizationQuery="client_id=abc" />);
+
+    expect(await screen.findByText("Um aplicativo")).toBeInTheDocument();
+  });
+
+  test("explains that the request could not be loaded when it is invalid", async () => {
     register({
       getPrompt: vi.fn(async () => {
         throw new ApiError("O pedido de conexão é inválido.", 400);
@@ -138,7 +163,9 @@ describe("OAuthConsentScreen", () => {
       await screen.findByRole("heading", { name: "Não foi possível conectar" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("O pedido de conexão é inválido."),
+      screen.getByText(
+        "Não foi possível carregar este pedido de conexão. Remova o conector e adicione de novo.",
+      ),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Permitir acesso" }),

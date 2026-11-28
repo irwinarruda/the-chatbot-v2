@@ -486,6 +486,7 @@
     "errorHeading": "Não foi possível conectar",
     "errorLoading": "Não foi possível carregar este pedido de conexão. Remova o conector e adicione de novo.",
     "errorDeciding": "Não foi possível salvar sua escolha. Tente de novo.",
-    "homeAction": "Voltar ao início"
+    "homeAction": "Voltar ao início",
+    "unknownClient": "Um aplicativo"
   }
 }

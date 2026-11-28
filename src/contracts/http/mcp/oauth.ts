@@ -73,7 +73,7 @@ export type OAuthAuthorizationDecisionDTO = z.infer<
 >;
 
 export const OAuthConsentPromptResponseDTO = z.object({
-  clientName: z.string(),
+  clientName: z.string().optional(),
   redirectHost: z.string(),
   userEmail: z.string(),
 });

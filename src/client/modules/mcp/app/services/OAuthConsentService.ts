@@ -22,6 +22,12 @@ export interface OAuthConsentService {
   resetConsent: () => void;
 }
 
+function isWebUrl(value: string) {
+  if (!URL.canParse(value)) return false;
+  const { protocol } = new URL(value);
+  return protocol === "https:" || protocol === "http:";
+}
+
 const initialConsentState = {
   consentPrompt: undefined,
   consentRedirectUrl: undefined,
@@ -61,7 +67,9 @@ export const createOAuthConsentService: StateCreator<OAuthConsentService> = (
         const { redirectUrl } = await container
           .get("OAuthConsentRepository")
           .decide(authorizationQuery, decision);
-        if (request === generation) set({ consentRedirectUrl: redirectUrl });
+        if (request !== generation) return;
+        if (!isWebUrl(redirectUrl)) throw new Error("Unsafe redirect");
+        set({ consentRedirectUrl: redirectUrl });
       } catch (error) {
         if (request === generation) {
           set({

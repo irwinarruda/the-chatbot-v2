@@ -16,7 +16,6 @@ import { AppShell } from "~/client/shared/components/terminal/AppShell";
 import { Alert, AlertDescription } from "~/client/shared/components/ui/alert";
 import { Button } from "~/client/shared/components/ui/button";
 import { Skeleton } from "~/client/shared/components/ui/skeleton";
-import { clientErrorMessage } from "~/client/shared/error/ApiError";
 import { useDictionary } from "~/client/shared/hooks/useDictionary";
 import { useApp } from "~/client/shared/stores/app";
 import type { OAuthConsentDecision } from "~/contracts/http/mcp/oauth";
@@ -36,12 +35,6 @@ const AccessItems: { key: AccessKey; icon: LucideIcon }[] = [
   { key: "accessArtifacts", icon: PanelsTopLeft },
 ];
 
-function isWebUrl(value: string) {
-  if (!URL.canParse(value)) return false;
-  const { protocol } = new URL(value);
-  return protocol === "https:" || protocol === "http:";
-}
-
 export function OAuthConsentScreen({
   authorizationQuery,
 }: {
@@ -57,10 +50,7 @@ export function OAuthConsentScreen({
   const loadConsent = useApp((state) => state.loadConsent);
   const decideConsent = useApp((state) => state.decideConsent);
   const resetConsent = useApp((state) => state.resetConsent);
-  const errorMessage = clientErrorMessage(error, {
-    loading: t.errorLoading,
-    deciding: t.errorDeciding,
-  });
+  const decisionError = error ? t.errorDeciding : undefined;
 
   useEffect(() => {
     void loadConsent(authorizationQuery);
@@ -68,9 +58,7 @@ export function OAuthConsentScreen({
   }, [authorizationQuery]);
 
   useEffect(() => {
-    if (redirectUrl && isWebUrl(redirectUrl)) {
-      window.location.assign(redirectUrl);
-    }
+    if (redirectUrl) window.location.replace(redirectUrl);
   }, [redirectUrl]);
 
   function onDecide(decision: OAuthConsentDecision) {
@@ -109,16 +97,16 @@ export function OAuthConsentScreen({
           icon={ShieldAlert}
           iconClassName="bg-warning-soft text-warning"
         >
-          {errorMessage ?? t.errorLoading}
+          {t.errorLoading}
         </AuthCard>
       )}
       {!isLoading && prompt && (
         <AuthCard
           actions={
             <>
-              {errorMessage && (
+              {decisionError && (
                 <Alert variant="destructive">
-                  <AlertDescription>{errorMessage}</AlertDescription>
+                  <AlertDescription>{decisionError}</AlertDescription>
                 </Alert>
               )}
               <Button
@@ -146,7 +134,7 @@ export function OAuthConsentScreen({
         >
           <p className="m-0 break-words">
             <strong className="font-semibold text-foreground">
-              {prompt.clientName}
+              {prompt.clientName ?? t.unknownClient}
             </strong>
             {t.introMiddle}
             <strong className="font-semibold text-foreground">
