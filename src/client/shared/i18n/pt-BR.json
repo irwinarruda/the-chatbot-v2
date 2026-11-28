@@ -467,5 +467,26 @@
     "body": "O The Chatbot começa pelo WhatsApp. Envie qualquer mensagem ao bot, abra o link que ele responder e entre com sua conta Google por lá, depois volte e entre aqui com a mesma conta.",
     "backLink": "Voltar ao início",
     "retryAction": "Usar outra conta Google"
+  },
+  "oauthConsentPage": {
+    "windowTitle": "Conectar aplicativo",
+    "heading": "Conectar ao The Chatbot",
+    "introMiddle": " quer acessar o seguinte no The Chatbot em nome de ",
+    "introEnd": ":",
+    "accessCashFlow": "Finanças e fluxo de caixa",
+    "accessBills": "Contas do mês",
+    "accessNotes": "Notas",
+    "accessTodos": "Tarefas",
+    "accessArtifacts": "Artefatos",
+    "allowAction": "Permitir acesso",
+    "denyAction": "Cancelar",
+    "redirectingAction": "Voltando ao aplicativo…",
+    "redirectNote": "Depois de decidir, você volta para {host}.",
+    "loadingLabel": "Carregando o pedido de conexão",
+    "errorHeading": "Não foi possível conectar",
+    "errorLoading": "Não foi possível carregar este pedido de conexão. Remova o conector e adicione de novo.",
+    "errorDeciding": "Não foi possível salvar sua escolha. Tente de novo.",
+    "homeAction": "Voltar ao início",
+    "unknownClient": "Um aplicativo"
   }
 }

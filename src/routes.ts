@@ -4,6 +4,7 @@ export const routes = rootRoute("client/routes/__root.tsx", [
   index("client/routes/index.tsx"),
   route("/privacy", "client/routes/privacy.tsx"),
   route("/login", "client/routes/login.tsx"),
+  route("/oauth/authorize", "client/routes/oauth-authorize.tsx"),
   route("/not-registered", "client/routes/not-registered.tsx"),
   route("/chat", [index("client/routes/chat/index.tsx")]),
   route("/todo", "client/routes/todo.tsx", [

@@ -467,5 +467,26 @@
     "body": "The Chatbot starts on WhatsApp. Send any message to the bot, open the link it replies with and sign in with Google there, then come back and sign in here with that same account.",
     "backLink": "Back to home",
     "retryAction": "Try another Google account"
+  },
+  "oauthConsentPage": {
+    "windowTitle": "Connect an app",
+    "heading": "Connect to The Chatbot",
+    "introMiddle": " wants to access the following on The Chatbot on behalf of ",
+    "introEnd": ":",
+    "accessCashFlow": "Finances and cash flow",
+    "accessBills": "Monthly bills",
+    "accessNotes": "Notes",
+    "accessTodos": "To-dos",
+    "accessArtifacts": "Artifacts",
+    "allowAction": "Allow access",
+    "denyAction": "Cancel",
+    "redirectingAction": "Returning to the app…",
+    "redirectNote": "After you decide, you go back to {host}.",
+    "loadingLabel": "Loading the connection request",
+    "errorHeading": "Could not connect",
+    "errorLoading": "Could not load this connection request. Remove the connector and add it again.",
+    "errorDeciding": "Could not save your choice. Try again.",
+    "homeAction": "Back to home",
+    "unknownClient": "An app"
   }
 }

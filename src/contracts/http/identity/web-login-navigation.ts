@@ -1,3 +1,5 @@
+import { OAUTH_CONSENT_PAGE_PATH } from "~/contracts/http/mcp/oauth";
+
 export const WEB_LOGIN_PATHS = [
   "/chat",
   "/todo",
@@ -11,7 +13,7 @@ export type WebLoginPath = (typeof WEB_LOGIN_PATHS)[number];
 
 const WEB_LOGIN_RETURN_PATHS = [
   ...WEB_LOGIN_PATHS,
-  "/api/v1/oauth/authorize",
+  OAUTH_CONSENT_PAGE_PATH,
 ] as const;
 
 export const DEFAULT_WEB_LOGIN_REDIRECT: WebLoginPath = "/chat";
@@ -32,6 +34,12 @@ export function normalizeWebLoginRedirect(value: unknown): string {
   );
   if (!allowedPath) return DEFAULT_WEB_LOGIN_REDIRECT;
   return `${url.pathname}${url.search}`;
+}
+
+export function isWebLoginReturnPath(pathname: string): boolean {
+  return WEB_LOGIN_RETURN_PATHS.some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`),
+  );
 }
 
 export function getWebLoginActivePath(value: unknown): WebLoginPath {

@@ -4,6 +4,7 @@ import { TestCashFlowRepository } from "~/client/mock/repositories/TestCashFlowR
 import { TestChatRepository } from "~/client/mock/repositories/TestChatRepository";
 import { TestMonthlyExpenseRepository } from "~/client/mock/repositories/TestMonthlyExpenseRepository";
 import { TestNoteRepository } from "~/client/mock/repositories/TestNoteRepository";
+import { TestOAuthConsentRepository } from "~/client/mock/repositories/TestOAuthConsentRepository";
 import { TestSessionRepository } from "~/client/mock/repositories/TestSessionRepository";
 import { TestTodoRepository } from "~/client/mock/repositories/TestTodoRepository";
 import { browserAudioInputGateway } from "~/client/modules/chat/app/gateways/BrowserAudioInputGateway";
@@ -31,4 +32,8 @@ export function bootstrapMockContainer() {
   container.register("NoteRepository", new TestNoteRepository());
   container.register("TodoRepository", new TestTodoRepository());
   container.register("ArtifactRepository", new TestArtifactRepository());
+  container.register(
+    "OAuthConsentRepository",
+    new TestOAuthConsentRepository(),
+  );
 }

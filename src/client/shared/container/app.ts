@@ -6,6 +6,7 @@ import { browserAudioInputGateway } from "~/client/modules/chat/app/gateways/Bro
 import { browserAudioRecordingGateway } from "~/client/modules/chat/app/gateways/BrowserAudioRecordingGateway";
 import { apiChatRepository } from "~/client/modules/chat/app/repositories/ApiChatRepository";
 import { apiSessionRepository } from "~/client/modules/identity/app/repositories/ApiSessionRepository";
+import { apiOAuthConsentRepository } from "~/client/modules/mcp/app/repositories/ApiOAuthConsentRepository";
 import { apiNoteRepository } from "~/client/modules/notes/app/repositories/ApiNoteRepository";
 import { apiTodoRepository } from "~/client/modules/todos/app/repositories/ApiTodoRepository";
 import { cookiePrefsGateway } from "~/client/shared/app/gateways/CookiePrefsGateway";
@@ -28,4 +29,5 @@ export function bootstrapAppContainer() {
   container.register("NoteRepository", apiNoteRepository);
   container.register("TodoRepository", apiTodoRepository);
   container.register("ArtifactRepository", apiArtifactRepository);
+  container.register("OAuthConsentRepository", apiOAuthConsentRepository);
 }

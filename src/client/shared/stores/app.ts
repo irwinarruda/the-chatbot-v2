@@ -25,6 +25,10 @@ import {
   type SessionService,
 } from "~/client/modules/identity/app/services/SessionService";
 import {
+  createOAuthConsentService,
+  type OAuthConsentService,
+} from "~/client/modules/mcp/app/services/OAuthConsentService";
+import {
   createNoteService,
   type NoteService,
 } from "~/client/modules/notes/app/services/NoteService";
@@ -52,6 +56,7 @@ export type AppServices = SessionService &
   PrefsService &
   PrivacyService &
   NoteService &
+  OAuthConsentService &
   TodoService;
 
 export const useApp = create<AppServices>()(
@@ -84,6 +89,7 @@ export const useApp = create<AppServices>()(
       createChatService(...args),
       createRecordingService(...args),
       createNoteService(...args),
+      createOAuthConsentService(...args),
       createTodoService(...args),
       createArtifactService(...args),
     );

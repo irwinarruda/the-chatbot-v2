@@ -2,9 +2,12 @@ import {
   AuthorizationServerMetadataResponseDTO,
   MCP_PATH,
   OAUTH_AUTHORIZE_PATH,
+  OAUTH_CONSENT_PAGE_PATH,
   OAUTH_REGISTER_PATH,
   OAUTH_TOKEN_PATH,
   OAuthClientRegistrationResponseDTO,
+  OAuthConsentDecisionResponseDTO,
+  OAuthConsentPromptResponseDTO,
   type OAuthErrorCode,
   OAuthErrorResponseDTO,
   OAuthTokenResponseDTO,
@@ -77,4 +80,23 @@ export function toOAuthErrorResponse(
 
 export function toProtectedResourceMetadataUrl(origin: string): string {
   return new URL(`${PROTECTED_RESOURCE_METADATA_PATH}${MCP_PATH}`, origin).href;
+}
+
+export function toOAuthConsentPagePath(authorizationQuery: string): string {
+  const params = new URLSearchParams({ request: authorizationQuery });
+  return `${OAUTH_CONSENT_PAGE_PATH}?${params}`;
+}
+
+export function toOAuthConsentPromptResponse(prompt: {
+  clientName?: string;
+  redirectHost: string;
+  userEmail: string;
+}): OAuthConsentPromptResponseDTO {
+  return OAuthConsentPromptResponseDTO.parse(prompt);
+}
+
+export function toOAuthConsentDecisionResponse(
+  redirectUrl: string,
+): OAuthConsentDecisionResponseDTO {
+  return OAuthConsentDecisionResponseDTO.parse({ redirectUrl });
 }
