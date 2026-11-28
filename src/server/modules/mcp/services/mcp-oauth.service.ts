@@ -16,6 +16,10 @@ import {
   createOAuthSecret,
   isPkceVerifierValid,
 } from "~/server/modules/mcp/utils/oauth-pkce";
+import type {
+  DatabaseGateway,
+  DatabaseGatewaySql,
+} from "~/server/shared/database/database";
 import { AppError } from "~/server/shared/errors/application-errors";
 
 const CODE_TTL_MS = 10 * 60 * 1000;
@@ -44,6 +48,7 @@ export interface McpIssuedTokens {
 
 export class McpOAuthService {
   constructor(
+    private readonly database: DatabaseGateway,
     private readonly oauth: McpOAuthRepository,
     private readonly auth: AuthService,
     private readonly clock: () => Date = () => new Date(),
@@ -108,9 +113,7 @@ export class McpOAuthService {
 
   async exchangeToken(dto: OAuthTokenRequestDTO): Promise<McpIssuedTokens> {
     if (dto.grant_type === "refresh_token") {
-      const grant = await this.oauth.consumeRefreshToken(dto.refresh_token);
-      this.requireLiveGrant(grant, dto.client_id);
-      return this.issueTokens(dto.client_id, grant.idUser);
+      return this.rotateRefreshToken(dto.refresh_token, dto.client_id);
     }
     const code = await this.oauth.consumeCode(dto.code);
     this.requireLiveGrant(code, dto.client_id);
@@ -126,7 +129,7 @@ export class McpOAuthService {
         "The code verifier does not match the code challenge.",
       );
     }
-    return this.issueTokens(dto.client_id, code.idUser);
+    return this.issueTokens(dto.client_id, code.idUser, uuidv4());
   }
 
   async findUserIdByAccessToken(token: string): Promise<string | undefined> {
@@ -135,22 +138,57 @@ export class McpOAuthService {
     return grant.idUser;
   }
 
+  private async rotateRefreshToken(
+    refreshToken: string,
+    idClient: string,
+  ): Promise<McpIssuedTokens> {
+    const tokens = await this.database.transaction(async (sql) => {
+      const now = this.clock();
+      const idFamily = await this.oauth.lockRefreshTokenFamily(
+        refreshToken,
+        sql,
+      );
+      if (!idFamily) return undefined;
+      const grant = await this.oauth.claimRefreshToken(refreshToken, now, sql);
+      if (!grant) {
+        await this.oauth.deleteFamily(idFamily, sql);
+        return undefined;
+      }
+      this.requireLiveGrant(grant, idClient);
+      await this.oauth.deleteExpiredFamilyTokens(grant.idFamily, now, sql);
+      return this.issueTokens(idClient, grant.idUser, grant.idFamily, sql);
+    });
+    if (!tokens) {
+      throw new OAuthException(
+        OAuthErrorCode.InvalidGrant,
+        "The grant is invalid, expired or already used.",
+      );
+    }
+    return tokens;
+  }
+
   private async issueTokens(
     idClient: string,
     idUser: string,
+    idFamily: string,
+    sql?: DatabaseGatewaySql,
   ): Promise<McpIssuedTokens> {
     const now = this.clock();
     const accessToken = createOAuthSecret("tcm_");
     const refreshToken = createOAuthSecret("tcr_");
-    await this.oauth.createTokenPair({
-      idClient,
-      idUser,
-      accessToken,
-      accessExpiresAt: new Date(now.getTime() + ACCESS_TOKEN_TTL_MS),
-      refreshToken,
-      refreshExpiresAt: new Date(now.getTime() + REFRESH_TOKEN_TTL_MS),
-      createdAt: now,
-    });
+    await this.oauth.createTokenPair(
+      {
+        idClient,
+        idUser,
+        idFamily,
+        accessToken,
+        accessExpiresAt: new Date(now.getTime() + ACCESS_TOKEN_TTL_MS),
+        refreshToken,
+        refreshExpiresAt: new Date(now.getTime() + REFRESH_TOKEN_TTL_MS),
+        createdAt: now,
+      },
+      sql,
+    );
     return {
       accessToken,
       refreshToken,
