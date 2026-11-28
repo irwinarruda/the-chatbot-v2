@@ -6,13 +6,12 @@ import {
 } from "~/contracts/http/mcp/oauth";
 import {
   toAuthorizationServerMetadataResponse,
+  toOAuthConsentDecisionResponse,
+  toOAuthConsentPagePath,
+  toOAuthConsentPromptResponse,
   toProtectedResourceMetadataResponse,
   toProtectedResourceMetadataUrl,
 } from "~/contracts/http/mcp/oauth-mapper";
-import {
-  toOAuthConsentPage,
-  toOAuthRedirectPage,
-} from "~/contracts/http/mcp/oauth-page-mapper";
 
 const authorization = {
   response_type: "code",
@@ -96,20 +95,30 @@ describe("MCP OAuth contracts", () => {
     );
   });
 
-  test("escapes the consent page and keeps the redirect script inert", () => {
-    const page = toOAuthConsentPage({
-      clientName: '<script>alert("x")</script>',
+  test("sends the authorization query to the consent page as one opaque value", () => {
+    const query =
+      "client_id=abc&state=1e3&redirect_uri=https%3A%2F%2Fgrok.example%2Fcb";
+    const path = toOAuthConsentPagePath(query);
+    const params = new URL(path, "https://chatbot.example").searchParams;
+
+    expect(path.startsWith("/oauth/authorize?request=")).toBe(true);
+    expect(params.get("request")).toBe(query);
+  });
+
+  test("describes the consent prompt and the decision for the web page", () => {
+    expect(
+      toOAuthConsentPromptResponse({
+        clientName: "Cursor",
+        redirectHost: "grok.example",
+        userEmail: "irwin@example.com",
+      }),
+    ).toEqual({
+      clientName: "Cursor",
       redirectHost: "grok.example",
       userEmail: "irwin@example.com",
-      request: OAuthAuthorizationRequestDTO.parse(authorization),
     });
-    const redirect = toOAuthRedirectPage(
-      "https://grok.example/cb?code=a&state=</script>",
-    );
-
-    expect(page).not.toContain("<script>alert");
-    expect(page).toContain('name="code_challenge"');
-    expect(redirect).not.toContain('</script>")');
-    expect(redirect).toContain("\\u003c/script>");
+    expect(
+      toOAuthConsentDecisionResponse("https://grok.example/cb?code=a"),
+    ).toEqual({ redirectUrl: "https://grok.example/cb?code=a" });
   });
 });

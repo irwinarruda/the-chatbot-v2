@@ -2,7 +2,8 @@ import { z } from "zod";
 
 export const MCP_PATH = "/api/v1/mcp";
 export const OAUTH_AUTHORIZE_PATH = "/api/v1/oauth/authorize";
-export const OAUTH_APPROVE_PATH = "/api/v1/web/oauth/authorize";
+export const OAUTH_CONSENT_PAGE_PATH = "/oauth/authorize";
+export const OAUTH_CONSENT_API_PATH = "/api/v1/web/oauth/authorize";
 export const OAUTH_TOKEN_PATH = "/api/v1/oauth/token";
 export const OAUTH_REGISTER_PATH = "/api/v1/oauth/register";
 export const PROTECTED_RESOURCE_METADATA_PATH =
@@ -60,12 +61,31 @@ export type OAuthAuthorizationRequestDTO = z.infer<
   typeof OAuthAuthorizationRequestDTO
 >;
 
+export const OAuthConsentDecision = z.enum(["approve", "deny"]);
+export type OAuthConsentDecision = z.infer<typeof OAuthConsentDecision>;
+
 export const OAuthAuthorizationDecisionDTO =
   OAuthAuthorizationRequestDTO.extend({
-    decision: z.enum(["approve", "deny"]),
+    decision: OAuthConsentDecision,
   });
 export type OAuthAuthorizationDecisionDTO = z.infer<
   typeof OAuthAuthorizationDecisionDTO
+>;
+
+export const OAuthConsentPromptResponseDTO = z.object({
+  clientName: z.string(),
+  redirectHost: z.string(),
+  userEmail: z.string(),
+});
+export type OAuthConsentPromptResponseDTO = z.infer<
+  typeof OAuthConsentPromptResponseDTO
+>;
+
+export const OAuthConsentDecisionResponseDTO = z.object({
+  redirectUrl: z.string().min(1),
+});
+export type OAuthConsentDecisionResponseDTO = z.infer<
+  typeof OAuthConsentDecisionResponseDTO
 >;
 
 export const OAuthTokenRequestDTO = z.discriminatedUnion("grant_type", [

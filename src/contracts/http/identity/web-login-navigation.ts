@@ -1,3 +1,5 @@
+import { OAUTH_CONSENT_PAGE_PATH } from "~/contracts/http/mcp/oauth";
+
 export const WEB_LOGIN_PATHS = [
   "/chat",
   "/todo",
@@ -11,7 +13,7 @@ export type WebLoginPath = (typeof WEB_LOGIN_PATHS)[number];
 
 const WEB_LOGIN_RETURN_PATHS = [
   ...WEB_LOGIN_PATHS,
-  "/api/v1/oauth/authorize",
+  OAUTH_CONSENT_PAGE_PATH,
 ] as const;
 
 export const DEFAULT_WEB_LOGIN_REDIRECT: WebLoginPath = "/chat";

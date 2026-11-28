@@ -6,6 +6,7 @@ import type { AudioInputGateway } from "~/client/modules/chat/app/gateways/Audio
 import type { AudioRecordingGateway } from "~/client/modules/chat/app/gateways/AudioRecordingGateway";
 import type { ChatRepository } from "~/client/modules/chat/app/repositories/ChatRepository";
 import type { SessionRepository } from "~/client/modules/identity/app/repositories/SessionRepository";
+import type { OAuthConsentRepository } from "~/client/modules/mcp/app/repositories/OAuthConsentRepository";
 import type { NoteRepository } from "~/client/modules/notes/app/repositories/NoteRepository";
 import type { TodoRepository } from "~/client/modules/todos/app/repositories/TodoRepository";
 import type { MonetaryPrivacyGateway } from "~/client/shared/app/gateways/MonetaryPrivacyGateway";
@@ -24,6 +25,7 @@ export interface InjectableItems {
   NoteRepository: NoteRepository;
   TodoRepository: TodoRepository;
   ArtifactRepository: ArtifactRepository;
+  OAuthConsentRepository: OAuthConsentRepository;
 }
 
 export function createContainer() {

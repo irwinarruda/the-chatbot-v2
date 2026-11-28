@@ -16,7 +16,7 @@ describe("WebLoginNavigation", () => {
   });
 
   test("returns to the MCP consent page after sign-in without marking it in the navigation", () => {
-    const authorize = "/api/v1/oauth/authorize?client_id=abc&state=xyz";
+    const authorize = "/oauth/authorize?request=client_id%3Dabc%26state%3Dxyz";
 
     expect(normalizeWebLoginRedirect(authorize)).toBe(authorize);
     expect(getWebLoginActivePath(authorize)).toBe(DEFAULT_WEB_LOGIN_REDIRECT);
